@@ -1,0 +1,20 @@
+F
+======================================================================
+FAIL: test_early_admission_rejection_pages_and_names_blocked_jobs (test_seed_notifications.NotificationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 89, in test_early_admission_rejection_pages_and_names_blocked_jobs
+    self.assertEqual([c['method'] for c in result['calls']], ['listForRepo', 'create'])
+AssertionError: Lists differ: [] != ['listForRepo', 'create']
+
+Second list contains 2 additional elements.
+First extra element 0:
+'listForRepo'
+
+- []
++ ['listForRepo', 'create']
+
+----------------------------------------------------------------------
+Ran 1 test in 0.966s
+
+FAILED (failures=1)

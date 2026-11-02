@@ -1,0 +1,418 @@
+EEFEE..F
+======================================================================
+ERROR: test_bootstrap_only_failure_pages (test_seed_notifications.NotificationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 99, in test_bootstrap_only_failure_pages
+    self.assertEqual(result['calls'][-1]['method'], 'create')
+IndexError: list index out of range
+
+======================================================================
+ERROR: test_cancelled_excluded_job_still_pages (test_seed_notifications.NotificationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 141, in test_cancelled_excluded_job_still_pages
+    self.assertEqual(execute(needs)['calls'][-1]['method'], 'create')
+IndexError: list index out of range
+
+======================================================================
+ERROR: test_missing_bootstrap_plan_is_not_a_success (test_seed_notifications.NotificationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 177, in test_missing_bootstrap_plan_is_not_a_success
+    self.assertEqual(result['calls'][-1]['method'],'create')
+IndexError: list index out of range
+
+======================================================================
+ERROR: test_same_run_attempt_deduplicates_and_later_attempt_updates_managed_incident (test_seed_notifications.NotificationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 152, in test_same_run_attempt_deduplicates_and_later_attempt_updates_managed_incident
+    first = execute(needs)['calls'][-1]['args']
+IndexError: list index out of range
+
+======================================================================
+ERROR: test_source_plan_failure_and_independent_health_failure_page (test_seed_notifications.NotificationTests) (key='source_plan')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 107, in test_source_plan_failure_and_independent_health_failure_page
+    self.assertEqual(result['calls'][-1]['method'], 'create')
+IndexError: list index out of range
+
+======================================================================
+ERROR: test_source_plan_failure_and_independent_health_failure_page (test_seed_notifications.NotificationTests) (key='healthcheck')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 107, in test_source_plan_failure_and_independent_health_failure_page
+    self.assertEqual(result['calls'][-1]['method'], 'create')
+IndexError: list index out of range
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='source_plan', state='cancelled')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('source_plan', 'cancelled', {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='source_plan', state='skipped')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('source_plan', 'skipped', {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='source_plan', state='')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('source_plan', '', {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='source_plan', state='pending')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('source_plan', 'pending', {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='source_plan', state=None)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('source_plan', None, {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='healthcheck', state='cancelled')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('healthcheck', 'cancelled', {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='healthcheck', state='skipped')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('healthcheck', 'skipped', {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='healthcheck', state='')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('healthcheck', '', {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='healthcheck', state='pending')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('healthcheck', 'pending', {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='healthcheck', state=None)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('healthcheck', None, {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='migrate', state='cancelled')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('migrate', 'cancelled', {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='migrate', state='skipped')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('migrate', 'skipped', {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='migrate', state='')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('migrate', '', {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='migrate', state='pending')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('migrate', 'pending', {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='migrate', state=None)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('migrate', None, {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='seed', state='cancelled')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('seed', 'cancelled', {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='seed', state='skipped')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('seed', 'skipped', {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='seed', state='')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('seed', '', {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='seed', state='pending')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('seed', 'pending', {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='seed', state=None)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 121, in test_each_critical_result_is_fail_closed
+    result = execute(needs)
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 78, in execute
+    raise AssertionError(proc.stderr)
+AssertionError: TypeError: Cannot read properties of undefined (reading 'result')
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='bootstrap', state='cancelled')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('bootstrap', 'cancelled', {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='bootstrap', state='')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('bootstrap', '', {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='bootstrap', state='pending')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('bootstrap', 'pending', {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='bootstrap', state=None)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('bootstrap', None, {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='validate', state='cancelled')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('validate', 'cancelled', {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='validate', state='skipped')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('validate', 'skipped', {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='validate', state='')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('validate', '', {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='validate', state='pending')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('validate', 'pending', {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='validate', state=None)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 121, in test_each_critical_result_is_fail_closed
+    result = execute(needs)
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 78, in execute
+    raise AssertionError(proc.stderr)
+AssertionError: TypeError: Cannot read properties of undefined (reading 'result')
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='revalidate', state='cancelled')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('revalidate', 'cancelled', {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='revalidate', state='skipped')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('revalidate', 'skipped', {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='revalidate', state='')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('revalidate', '', {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='revalidate', state='pending')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 122, in test_each_critical_result_is_fail_closed
+    self.assertTrue(result['calls'], (key,state,result))
+AssertionError: [] is not true : ('revalidate', 'pending', {'calls': [], 'summary': '', 'failure': None, 'selected': False})
+
+======================================================================
+FAIL: test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests) (key='revalidate', state=None)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 121, in test_each_critical_result_is_fail_closed
+    result = execute(needs)
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 78, in execute
+    raise AssertionError(proc.stderr)
+AssertionError: TypeError: Cannot read properties of undefined (reading 'result')
+
+======================================================================
+FAIL: test_early_admission_rejection_pages_and_names_blocked_jobs (test_seed_notifications.NotificationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 89, in test_early_admission_rejection_pages_and_names_blocked_jobs
+    self.assertEqual([c['method'] for c in result['calls']], ['listForRepo', 'create'])
+AssertionError: Lists differ: [] != ['listForRepo', 'create']
+
+Second list contains 2 additional elements.
+First extra element 0:
+'listForRepo'
+
+- []
++ ['listForRepo', 'create']
+
+======================================================================
+FAIL: test_full_lookup_and_api_failure_fail_visibly_without_duplicate_create (test_seed_notifications.NotificationTests) (fail_api=None, count=100)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 167, in test_full_lookup_and_api_failure_fail_visibly_without_duplicate_create
+    execute(needs,issues=issues,fail_api=fail_api)
+AssertionError: AssertionError not raised
+
+======================================================================
+FAIL: test_full_lookup_and_api_failure_fail_visibly_without_duplicate_create (test_seed_notifications.NotificationTests) (fail_api='listForRepo', count=0)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 167, in test_full_lookup_and_api_failure_fail_visibly_without_duplicate_create
+    execute(needs,issues=issues,fail_api=fail_api)
+AssertionError: AssertionError not raised
+
+======================================================================
+FAIL: test_full_lookup_and_api_failure_fail_visibly_without_duplicate_create (test_seed_notifications.NotificationTests) (fail_api='create', count=0)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 167, in test_full_lookup_and_api_failure_fail_visibly_without_duplicate_create
+    execute(needs,issues=issues,fail_api=fail_api)
+AssertionError: AssertionError not raised
+
+======================================================================
+FAIL: test_success_and_intentional_manual_exclusions_do_not_page (test_seed_notifications.NotificationTests) (event='schedule', inputs={})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 137, in test_success_and_intentional_manual_exclusions_do_not_page
+    self.assertIn('completed as planned', result['summary'])
+AssertionError: 'completed as planned' not found in ''
+
+======================================================================
+FAIL: test_success_and_intentional_manual_exclusions_do_not_page (test_seed_notifications.NotificationTests) (event='schedule', inputs={})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 137, in test_success_and_intentional_manual_exclusions_do_not_page
+    self.assertIn('completed as planned', result['summary'])
+AssertionError: 'completed as planned' not found in ''
+
+======================================================================
+FAIL: test_success_and_intentional_manual_exclusions_do_not_page (test_seed_notifications.NotificationTests) (event='workflow_dispatch', inputs={'domain': 'audits'})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 137, in test_success_and_intentional_manual_exclusions_do_not_page
+    self.assertIn('completed as planned', result['summary'])
+AssertionError: 'completed as planned' not found in ''
+
+======================================================================
+FAIL: test_success_and_intentional_manual_exclusions_do_not_page (test_seed_notifications.NotificationTests) (event='workflow_dispatch', inputs={'dry_run': 'true', 'domain': 'audits'})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 137, in test_success_and_intentional_manual_exclusions_do_not_page
+    self.assertIn('completed as planned', result['summary'])
+AssertionError: 'completed as planned' not found in ''
+
+======================================================================
+FAIL: test_success_and_intentional_manual_exclusions_do_not_page (test_seed_notifications.NotificationTests) (event='workflow_dispatch', inputs={'run_validation': 'false', 'domain': 'audits'})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 137, in test_success_and_intentional_manual_exclusions_do_not_page
+    self.assertIn('completed as planned', result['summary'])
+AssertionError: 'completed as planned' not found in ''
+
+======================================================================
+FAIL: test_validation_still_required_after_seed_failure (test_seed_notifications.NotificationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 147, in test_validation_still_required_after_seed_failure
+    self.assertIn('unexpectedly skipped', result['summary'])
+AssertionError: 'unexpectedly skipped' not found in ''
+
+----------------------------------------------------------------------
+Ran 12 tests in 2.526s
+
+FAILED (failures=44, errors=6)

@@ -1,0 +1,219 @@
+{
+  "coordinator_doc_sha256": "54c871b779dd0ae7819c56bc66a25540bb2a2715dcb15507f071947141e87263",
+  "four_receipt_hashes_match": {
+    "pg-result-summary.json": true,
+    "owned-media-pg-receipts.json": true,
+    "host-native-video.xml": true,
+    "combined-manual-restore-normal.xml": true
+  },
+  "original_skipped_cases": 17,
+  "postgres_cases": 8,
+  "host_native_cases": 9,
+  "reconciled": [
+    {
+      "source_file": "tests/social/test_media_cleanup.py",
+      "function": "test_pg_stale_cleanup_candidate_cannot_release_other_pending_quota",
+      "original_skip_count": 1,
+      "additional_scope": "postgres",
+      "executed_cases_per_selection": [
+        [
+          "test_pg_stale_cleanup_candidate_cannot_release_other_pending_quota"
+        ],
+        [
+          "test_pg_stale_cleanup_candidate_cannot_release_other_pending_quota"
+        ]
+      ]
+    },
+    {
+      "source_file": "tests/social/test_media_cleanup.py",
+      "function": "test_pg_same_intent_replay_and_quota_races",
+      "original_skip_count": 1,
+      "additional_scope": "postgres",
+      "executed_cases_per_selection": [
+        [
+          "test_pg_same_intent_replay_and_quota_races"
+        ],
+        [
+          "test_pg_same_intent_replay_and_quota_races"
+        ]
+      ]
+    },
+    {
+      "source_file": "tests/social/test_media_cleanup.py",
+      "function": "test_pg_concurrent_completion_is_busy_during_active_remote_finalize",
+      "original_skip_count": 1,
+      "additional_scope": "postgres",
+      "executed_cases_per_selection": [
+        [
+          "test_pg_concurrent_completion_is_busy_during_active_remote_finalize"
+        ],
+        [
+          "test_pg_concurrent_completion_is_busy_during_active_remote_finalize"
+        ]
+      ]
+    },
+    {
+      "source_file": "tests/social/test_media_inspection_adversary.py",
+      "function": "test_actual_mp4_has_positive_inspected_evidence",
+      "original_skip_count": 1,
+      "additional_scope": "host_native",
+      "executed_cases_per_selection": [
+        [
+          "test_actual_mp4_has_positive_inspected_evidence"
+        ]
+      ]
+    },
+    {
+      "source_file": "tests/social/test_media_inspection_adversary.py",
+      "function": "test_actual_header_only_and_truncated_mp4_are_not_ready",
+      "original_skip_count": 1,
+      "additional_scope": "host_native",
+      "executed_cases_per_selection": [
+        [
+          "test_actual_header_only_and_truncated_mp4_are_not_ready"
+        ]
+      ]
+    },
+    {
+      "source_file": "tests/social/test_media_inspection_adversary.py",
+      "function": "test_actual_corrupt_h264_packets_cannot_be_ready",
+      "original_skip_count": 1,
+      "additional_scope": "host_native",
+      "executed_cases_per_selection": [
+        [
+          "test_actual_corrupt_h264_packets_cannot_be_ready"
+        ]
+      ]
+    },
+    {
+      "source_file": "tests/social/test_media_inspection_adversary.py",
+      "function": "test_actual_one_corrupt_h264_packet_among_good_packets_is_not_ready",
+      "original_skip_count": 2,
+      "additional_scope": "host_native",
+      "executed_cases_per_selection": [
+        [
+          "test_actual_one_corrupt_h264_packet_among_good_packets_is_not_ready[0]",
+          "test_actual_one_corrupt_h264_packet_among_good_packets_is_not_ready[-1]"
+        ]
+      ]
+    },
+    {
+      "source_file": "tests/social/test_media_inspection_adversary.py",
+      "function": "test_actual_missing_final_h264_packet_cannot_pass_after_a_good_first_frame",
+      "original_skip_count": 1,
+      "additional_scope": "host_native",
+      "executed_cases_per_selection": [
+        [
+          "test_actual_missing_final_h264_packet_cannot_pass_after_a_good_first_frame"
+        ]
+      ]
+    },
+    {
+      "source_file": "tests/social/test_media_inspection_adversary.py",
+      "function": "test_actual_h264_and_aac_have_positive_decoding_evidence",
+      "original_skip_count": 1,
+      "additional_scope": "host_native",
+      "executed_cases_per_selection": [
+        [
+          "test_actual_h264_and_aac_have_positive_decoding_evidence"
+        ]
+      ]
+    },
+    {
+      "source_file": "tests/social/test_media_inspection_adversary.py",
+      "function": "test_actual_corrupt_aac_with_good_h264_video_is_not_ready",
+      "original_skip_count": 1,
+      "additional_scope": "host_native",
+      "executed_cases_per_selection": [
+        [
+          "test_actual_corrupt_aac_with_good_h264_video_is_not_ready"
+        ]
+      ]
+    },
+    {
+      "source_file": "tests/social/test_media_inspection_adversary.py",
+      "function": "test_actual_missing_final_aac_packet_cannot_pass_with_complete_good_video",
+      "original_skip_count": 1,
+      "additional_scope": "host_native",
+      "executed_cases_per_selection": [
+        [
+          "test_actual_missing_final_aac_packet_cannot_pass_with_complete_good_video"
+        ]
+      ]
+    },
+    {
+      "source_file": "tests/social/test_media_maintenance.py",
+      "function": "test_pg_two_grant_signers_keep_one_intent_and_reservation",
+      "original_skip_count": 1,
+      "additional_scope": "postgres",
+      "executed_cases_per_selection": [
+        [
+          "test_pg_two_grant_signers_keep_one_intent_and_reservation"
+        ],
+        [
+          "test_pg_two_grant_signers_keep_one_intent_and_reservation"
+        ]
+      ]
+    },
+    {
+      "source_file": "tests/social/test_media_maintenance.py",
+      "function": "test_pg_reconciliation_accepts_receipt_between_its_locked_transactions",
+      "original_skip_count": 1,
+      "additional_scope": "postgres",
+      "executed_cases_per_selection": [
+        [
+          "test_pg_reconciliation_accepts_receipt_between_its_locked_transactions"
+        ],
+        [
+          "test_pg_reconciliation_accepts_receipt_between_its_locked_transactions"
+        ]
+      ]
+    },
+    {
+      "source_file": "tests/social/test_media_maintenance.py",
+      "function": "test_pg_reconciliation_freeze_blocks_other_reconciler_and_cleanup_then_releases_once",
+      "original_skip_count": 1,
+      "additional_scope": "postgres",
+      "executed_cases_per_selection": [
+        [
+          "test_pg_reconciliation_freeze_blocks_other_reconciler_and_cleanup_then_releases_once"
+        ],
+        [
+          "test_pg_reconciliation_freeze_blocks_other_reconciler_and_cleanup_then_releases_once"
+        ]
+      ]
+    },
+    {
+      "source_file": "tests/social/test_media_maintenance.py",
+      "function": "test_pg_revision_asset_lock_precedes_ready_quarantine_cleanup_and_retains_history",
+      "original_skip_count": 1,
+      "additional_scope": "postgres",
+      "executed_cases_per_selection": [
+        [
+          "test_pg_revision_asset_lock_precedes_ready_quarantine_cleanup_and_retains_history"
+        ],
+        [
+          "test_pg_revision_asset_lock_precedes_ready_quarantine_cleanup_and_retains_history"
+        ]
+      ]
+    },
+    {
+      "source_file": "tests/social/test_media_maintenance.py",
+      "function": "test_pg_archived_cleanup_rejects_concurrent_revision_before_delete_ack",
+      "original_skip_count": 1,
+      "additional_scope": "postgres",
+      "executed_cases_per_selection": [
+        [
+          "test_pg_archived_cleanup_rejects_concurrent_revision_before_delete_ack"
+        ],
+        [
+          "test_pg_archived_cleanup_rejects_concurrent_revision_before_delete_ack"
+        ]
+      ]
+    }
+  ],
+  "host_native_total_cases": 21,
+  "host_native_all_passed": true,
+  "cold_plus_manual_cases": 6,
+  "approval": "Coordinator acceptance counts/skip reconciliation and limits supported. Host video run is compatibility only; exact package/deployed parity not claimed. No reviewer rerun of these additional selections."
+}

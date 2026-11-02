@@ -1,0 +1,5 @@
+Test Suites: 1 passed, 1 total
+Tests:       11 passed, 11 total
+Snapshots:   0 total
+Time:        1.064 s
+Ran all test suites matching __tests__/admin/social/schedules.test.tsx.

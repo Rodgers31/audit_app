@@ -1,0 +1,22 @@
+test_bootstrap_only_failure_pages (test_seed_notifications.NotificationTests.test_bootstrap_only_failure_pages) ... ok
+test_cancelled_excluded_job_still_pages (test_seed_notifications.NotificationTests.test_cancelled_excluded_job_still_pages) ... ok
+test_disabled_schedule_is_intentional_and_manual_still_reports (test_seed_notifications.NotificationTests.test_disabled_schedule_is_intentional_and_manual_still_reports) ... ok
+test_each_critical_result_is_fail_closed (test_seed_notifications.NotificationTests.test_each_critical_result_is_fail_closed) ... ok
+test_early_admission_rejection_pages_and_names_blocked_jobs (test_seed_notifications.NotificationTests.test_early_admission_rejection_pages_and_names_blocked_jobs) ... ok
+test_full_lookup_and_api_failure_fail_visibly_without_duplicate_create (test_seed_notifications.NotificationTests.test_full_lookup_and_api_failure_fail_visibly_without_duplicate_create) ... ok
+test_health_reporting_keeps_warnings_partial_and_unknown_distinct (test_seed_notifications.NotificationTests.test_health_reporting_keeps_warnings_partial_and_unknown_distinct) ... ok
+test_malformed_notification_inputs_fail_visibly (test_seed_notifications.NotificationTests.test_malformed_notification_inputs_fail_visibly) ... ok
+test_missing_bootstrap_plan_is_not_a_success (test_seed_notifications.NotificationTests.test_missing_bootstrap_plan_is_not_a_success) ... ok
+test_multiple_managed_incidents_are_ambiguous (test_seed_notifications.NotificationTests.test_multiple_managed_incidents_are_ambiguous) ... ok
+test_same_run_attempt_deduplicates_and_later_attempt_updates_managed_incident (test_seed_notifications.NotificationTests.test_same_run_attempt_deduplicates_and_later_attempt_updates_managed_incident) ... ok
+test_scheduled_null_inputs_are_supported (test_seed_notifications.NotificationTests.test_scheduled_null_inputs_are_supported) ... ok
+test_source_plan_failure_and_independent_health_failure_page (test_seed_notifications.NotificationTests.test_source_plan_failure_and_independent_health_failure_page) ... ok
+test_success_and_intentional_manual_exclusions_do_not_page (test_seed_notifications.NotificationTests.test_success_and_intentional_manual_exclusions_do_not_page) ... ok
+test_unmanaged_issues_are_not_modified (test_seed_notifications.NotificationTests.test_unmanaged_issues_are_not_modified) ... ok
+test_untrusted_domain_and_result_never_enter_issue (test_seed_notifications.NotificationTests.test_untrusted_domain_and_result_never_enter_issue) ... ok
+test_validation_still_required_after_seed_failure (test_seed_notifications.NotificationTests.test_validation_still_required_after_seed_failure) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 2.625s
+
+OK

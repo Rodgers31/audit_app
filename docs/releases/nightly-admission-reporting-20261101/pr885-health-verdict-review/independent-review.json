@@ -1,0 +1,15 @@
+{
+  "reviewer": "media_launch_acceptance",
+  "result": "CLEAR",
+  "reviewed_helper_sha256": "88216ad8cdc90f695dea0749689ecb7f448b40489d1a0dd099b166ba71a57d92",
+  "cases": 481,
+  "external_calls": 0,
+  "artifacts_sha256": {
+    "docs/releases/admin-media-acceptance-20261101/review-885-health-probes.cjs": "92b29712a1aa0edc2fa94381b97d6697d8ebb5a42b9779716c81b736e6ad445b",
+    "docs/releases/admin-media-acceptance-20261101/review-885-health-probes.txt": "d274c7bbfe85e951091e71c7d96238c2ba4869b50b9835fa2f6209ac0e42c2e1",
+    "docs/releases/admin-media-acceptance-20261101/review-885-red-green.json": "c623ec8c4a72dac79660db00f22061106c687da4f1c55213db94fa75ce259065"
+  },
+  "author_replay": "Same independent probe passed; not an additional independent count",
+  "hosted_observation": "not performed; pending coordinator/ordinary observation",
+  "approval": "Author repair and separate executable review complete; no unresolved finding."
+}

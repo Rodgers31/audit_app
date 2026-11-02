@@ -1,0 +1,435 @@
+F
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count='', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count='', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count=None, alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count=None, alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count=False, alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count=False, alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count=True, alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count=True, alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count=0, alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — 0 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count=0, alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — 0 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count=3, alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — 3 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count=3, alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — 3 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count=3.0, alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — 3 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count=3.0, alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — 3 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count=-1, alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count=-1, alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count='00', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — 00 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count='00', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — 00 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count='03', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — 03 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count='03', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — 03 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count='-1', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count='-1', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count='1.0', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count='1.0', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count='1e1', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count='1e1', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count=' 3', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count=' 3', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count='3 ', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count='3 ', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count='999999', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count='999999', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count='NaN', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count='NaN', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count='Infinity', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count='Infinity', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count='<script>', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count='<script>', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count=[], alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count=[], alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count={}, alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests) (count={}, alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 248, in test_invalid_health_count_never_invents_budget_exhaustion
+    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_invalid_health_count_never_invents_budget_exhaustion (test_seed_notifications.NotificationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 252, in test_invalid_health_count_never_invents_budget_exhaustion
+    self.assert_health_message({'has_failures': 'false'},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed unprobed source count' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+----------------------------------------------------------------------
+Ran 1 test in 1.211s
+
+FAILED (failures=43)

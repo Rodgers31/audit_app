@@ -1,0 +1,74 @@
+import SocialComposer from '@/components/admin/social/SocialComposer';
+import api from '@/lib/api/axios';
+import { SocialSystemStatus } from '@/lib/api/social';
+import { socialKeys } from '@/lib/hooks/useSocial';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { accounts, actorId, post, publicationReceipt, system, validation } from '@/tests/socialFixtures';
+jest.mock('@/lib/api/axios', () => ({ __esModule: true, default: { get: jest.fn(), post: jest.fn(), patch: jest.fn() } }));
+jest.mock('@/lib/auth/admin', () => ({ useAdmin: () => ({ isAdmin: true }) }));
+jest.mock('@/lib/auth/AuthProvider', () => ({ useAuth: () => ({ user: { id: '00000000-0000-4000-8000-000000000001' } }) }));
+const get = api.get as jest.Mock, send = api.post as jest.Mock;
+let clients: QueryClient[];
+function mount(worker: SocialSystemStatus['worker']) {
+  const p=post(),qc=new QueryClient({defaultOptions:{queries:{retry:false},mutations:{retry:false}}});
+  clients.push(qc); qc.setQueryData(socialKeys.detail(actorId,p.id),p);
+  render(<QueryClientProvider client={qc}><SocialComposer initialPost={p} accounts={accounts} system={{...system,worker}} /></QueryClientProvider>);
+}
+function fresh() {const stamp=new Date().toISOString();return {state:'idle',heartbeat_at:stamp,last_scan_at:stamp};}
+beforeEach(()=>{
+  jest.clearAllMocks();clients=[];
+  get.mockImplementation(async(path:string)=>({data:path.endsWith('/media/capabilities')?{upload_available:false,library_available:true,allowed_mime_types:[],max_image_bytes:10485760,max_video_bytes:52428800,unavailable_reason:'Uploads OFF'}:post()}));
+  send.mockImplementation(async(path:string)=>({data:path.endsWith('/validate')?validation(post()):publicationReceipt(post())}));
+});
+afterEach(()=>clients.forEach(qc=>qc.clear()));
+test.each(['absent','missing-heartbeat','missing-scan','invalid-heartbeat','invalid-scan','future-heartbeat','future-scan','stale-idle'])('%s report never permits immediate publish after real rendered validation',async damage=>{
+  const worker=fresh();
+  if(damage==='missing-heartbeat') worker.heartbeat_at=null;
+  if(damage==='missing-scan') worker.last_scan_at=null;
+  if(damage==='invalid-heartbeat') worker.heartbeat_at='not-a-date';
+  if(damage==='invalid-scan') worker.last_scan_at='not-a-date';
+  if(damage==='future-heartbeat') worker.heartbeat_at=new Date(Date.now()+60000).toISOString();
+  if(damage==='future-scan') worker.last_scan_at=new Date(Date.now()+60000).toISOString();
+  if(damage==='stale-idle') worker.last_scan_at=new Date(Date.now()-150001).toISOString();
+  mount(damage==='absent'?undefined:worker);
+  fireEvent.click(screen.getByRole('button',{name:'Save & validate'}));
+  await screen.findByText(/All selected destinations passed/);
+  const publish=screen.getByRole('button',{name:'Publish now'});
+  expect(publish).toBeDisabled();fireEvent.click(publish);
+  expect(send.mock.calls.map(([path])=>path).every(path=>path.endsWith('/validate'))).toBe(true);
+  expect(screen.getByRole('region',{name:'Publication readiness'})).toHaveTextContent(/worker.*(unavailable|stale|incomplete)/i);
+});
+test('fresh actual composer posts exact human revision and queued receipt creates no provider success',async()=>{
+  mount(fresh());
+  fireEvent.click(screen.getByRole('button',{name:'Save & validate'}));
+  await waitFor(()=>expect(screen.getByRole('button',{name:'Publish now'})).toBeEnabled());
+  fireEvent.click(screen.getByRole('button',{name:'Publish now'}));
+  await screen.findByText(/Publication accepted for 1 destination/);
+  const request=send.mock.calls.find(([path])=>path.endsWith('/publish'));
+  expect(request?.[1]).toEqual({expected_version:post().version,revision_id:post().revision_id,acknowledged_warning_codes:[]});
+  expect(send.mock.calls.some(([path])=>/\/(approve|controls)$/.test(path))).toBe(false);
+  expect(screen.queryByRole('link',{name:/View Facebook post/})).not.toBeInTheDocument();
+});
+test('wrong scheduled receipt cannot certify a valid human schedule with worker unavailable',async()=>{
+  mount(undefined);fireEvent.click(screen.getByRole('button',{name:'Save & validate'}));
+  await screen.findByText(/All selected destinations passed/);
+  fireEvent.click(screen.getByRole('button',{name:'Schedule',exact:true}));
+  fireEvent.change(screen.getByLabelText('Local publish time'),{target:{value:'2099-01-05T10:00'}});
+  fireEvent.click(screen.getByRole('button',{name:'Confirm schedule'}));
+  await screen.findByRole('alert');
+  expect(send.mock.calls.some(([path])=>path.endsWith('/schedule'))).toBe(true);
+  expect(screen.queryByText(/Schedule accepted/)).not.toBeInTheDocument();
+});
+test('unavailable worker does not block an exact future human schedule receipt',async()=>{
+  send.mockImplementation(async(path:string)=>({data:path.endsWith('/validate')?validation(post()):publicationReceipt(post(),{scheduled_for:'2099-01-05T07:00:00Z'})}));
+  mount(undefined);fireEvent.click(screen.getByRole('button',{name:'Save & validate'}));
+  await screen.findByText(/All selected destinations passed/);
+  fireEvent.click(screen.getByRole('button',{name:'Schedule',exact:true}));
+  fireEvent.change(screen.getByLabelText('Local publish time'),{target:{value:'2099-01-05T10:00'}});
+  fireEvent.click(screen.getByRole('button',{name:'Confirm schedule'}));
+  await screen.findByText(/Schedule accepted for 1 destination/);
+  expect(send.mock.calls.find(([path])=>path.endsWith('/schedule'))?.[1]).toEqual({expected_version:post().version,revision_id:post().revision_id,acknowledged_warning_codes:[],schedule:{local_time:'2099-01-05T10:00:00',timezone:'Africa/Nairobi',utc_offset:'+03:00'}});
+  expect(send.mock.calls.some(([path])=>path.endsWith('/publish')||path.endsWith('/controls'))).toBe(false);
+  expect(screen.queryByRole('link',{name:/View Facebook post/})).not.toBeInTheDocument();
+});
