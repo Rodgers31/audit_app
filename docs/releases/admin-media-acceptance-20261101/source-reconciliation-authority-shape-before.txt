@@ -1,0 +1,8 @@
+{
+  "classification": "fail_closed_non_bypass_but_unstructured_error",
+  "verifier_sha256": "3f8937c668813f1d6971071ec1dd8f43cda668b5440429aa9b4ef137dca2870a",
+  "exit": 1,
+  "stdout": "",
+  "observed_error": "TypeError: unhashable type: 'list'",
+  "expected_structured_refusal": false
+}

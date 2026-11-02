@@ -1,0 +1,8 @@
+PASS __tests__/admin/social/manual-publication.test.tsx
+PASS __tests__/admin/social/composer-media-integration.test.tsx
+
+Test Suites: 2 passed, 2 total
+Tests:       11 passed, 11 total
+Snapshots:   0 total
+Time:        1.284 s
+Ran all test suites matching __tests__/admin/social/manual-publication.test.tsx|__tests__/admin/social/composer-media-integration.test.tsx.

@@ -1,0 +1,14 @@
+PASS ../docs/releases/admin-media-acceptance-20261101/independent-composer-metadata.spec.tsx
+  ✓ clean identical immutable revision adopts newer delivery metadata without a false revision conflict (122 ms)
+  ✓ dirty local text is preserved even when the server revision content is unchanged (46 ms)
+  ✓ revision identity drift cannot be silently adopted (49 ms)
+  ✓ content identity drift cannot be silently adopted (44 ms)
+  ✓ post identity drift cannot be silently adopted (42 ms)
+  ✓ active media ownership prevents metadata adoption while its callback remains busy (59 ms)
+  ✓ an in-flight validation retains its original version until the command settles (64 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       7 passed, 7 total
+Snapshots:   0 total
+Time:        1.36 s
+Ran all test suites within paths "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/docs/releases/admin-media-acceptance-20261101/independent-composer-metadata.spec.tsx".

@@ -1,0 +1,10 @@
+PASS __tests__/admin/social/schedules.test.tsx
+PASS __tests__/admin/social/schedule-contract.test.ts
+PASS __tests__/admin/social/manual-publication.test.tsx
+PASS __tests__/admin/social/composer-media-integration.test.tsx
+
+Test Suites: 4 passed, 4 total
+Tests:       34 passed, 34 total
+Snapshots:   0 total
+Time:        2.38 s
+Ran all test suites matching __tests__/admin/social/schedules.test.tsx|__tests__/admin/social/schedule-contract.test.ts|__tests__/admin/social/manual-publication.test.tsx|__tests__/admin/social/composer-media-integration.test.tsx.

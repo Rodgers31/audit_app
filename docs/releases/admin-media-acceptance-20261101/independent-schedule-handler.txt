@@ -1,0 +1,1 @@
+{"status":"PASS","cases":16,"scope":"actual_schedule_component_and_hook_direct_handlers","external_calls":0}

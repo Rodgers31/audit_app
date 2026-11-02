@@ -1,0 +1,20 @@
+{
+  "scope": "review_of_owner_browser_receipt_and_local_screenshot; no_reviewer_browser_rebuild",
+  "checks": 6,
+  "requests": 49,
+  "external_requests": 0,
+  "page_errors": 0,
+  "owner_source_manifest_changed_files": [],
+  "sha256": {
+    "docs/releases/admin-publish-workflow-20261101/browser.json": "16a985a2530af87b5e226bcd4f29e58269197eac48fa54094cb69f6c1770e40c",
+    "docs/releases/admin-publish-workflow-20261101/source.json": "40407fa2a0565b94b9fe7ca4ac4e2cd90a688cca84d6a3d0ed0a218b20e11e99",
+    "docs/releases/admin-publish-workflow-20261101/generated-queued-mobile.png": "5a187f93e77c876faf8cf43aadc761a0314096cc3cf8d9811bd11275cac936bd"
+  },
+  "visual_observations": [
+    "approved version 3 displayed",
+    "queued receipt/result displayed; no remote publication claimed",
+    "no newer saved version/local-edits warning",
+    "human attestation remains checked",
+    "Publication was requested status replaces endless checking"
+  ]
+}

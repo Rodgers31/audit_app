@@ -1,0 +1,521 @@
+{
+  "status": "PASS",
+  "cases": 102,
+  "source_sha256": "3e5f0d994874d9b1e34b979d5e8c4c1e0eaa19e9e6fc98cb6be4bf6198a547e8",
+  "source_snapshot": "/tmp/source-evidence-review-884/final-probes/reconciler-pinned.py",
+  "cases_detail": [
+    {
+      "case": "minimal_direct_positive",
+      "result": "VERIFIED",
+      "detail": ""
+    },
+    {
+      "case": "minimal_cli_positive",
+      "result": "VERIFIED",
+      "detail": ""
+    },
+    {
+      "case": "receipt-type-None",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_RECEIPT"
+    },
+    {
+      "case": "receipt-type-{}",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_RECEIPT"
+    },
+    {
+      "case": "receipt-type-[]",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_RECEIPT"
+    },
+    {
+      "case": "receipt-type-True",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_RECEIPT"
+    },
+    {
+      "case": "receipt-type-1",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_RECEIPT"
+    },
+    {
+      "case": "receipt-type-'receipt'",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_RECEIPT"
+    },
+    {
+      "case": "schema-None",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_RECEIPT"
+    },
+    {
+      "case": "schema-True",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_RECEIPT"
+    },
+    {
+      "case": "schema-False",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_RECEIPT"
+    },
+    {
+      "case": "schema-0",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_RECEIPT"
+    },
+    {
+      "case": "schema-2",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_RECEIPT"
+    },
+    {
+      "case": "schema-'1'",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_RECEIPT"
+    },
+    {
+      "case": "schema-[]",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_RECEIPT"
+    },
+    {
+      "case": "schema-{}",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_RECEIPT"
+    },
+    {
+      "case": "production_authorized-None",
+      "result": "REFUSED",
+      "detail": "INVALID_AUTHORITY_CLAIM"
+    },
+    {
+      "case": "production_authorized-True",
+      "result": "REFUSED",
+      "detail": "INVALID_AUTHORITY_CLAIM"
+    },
+    {
+      "case": "production_authorized-0",
+      "result": "REFUSED",
+      "detail": "INVALID_AUTHORITY_CLAIM"
+    },
+    {
+      "case": "production_authorized-'false'",
+      "result": "REFUSED",
+      "detail": "INVALID_AUTHORITY_CLAIM"
+    },
+    {
+      "case": "production_authorized-[]",
+      "result": "REFUSED",
+      "detail": "INVALID_AUTHORITY_CLAIM"
+    },
+    {
+      "case": "production_authorized-{}",
+      "result": "REFUSED",
+      "detail": "INVALID_AUTHORITY_CLAIM"
+    },
+    {
+      "case": "test_execution_during_reconciliation-None",
+      "result": "REFUSED",
+      "detail": "INVALID_AUTHORITY_CLAIM"
+    },
+    {
+      "case": "test_execution_during_reconciliation-True",
+      "result": "REFUSED",
+      "detail": "INVALID_AUTHORITY_CLAIM"
+    },
+    {
+      "case": "test_execution_during_reconciliation-0",
+      "result": "REFUSED",
+      "detail": "INVALID_AUTHORITY_CLAIM"
+    },
+    {
+      "case": "test_execution_during_reconciliation-'false'",
+      "result": "REFUSED",
+      "detail": "INVALID_AUTHORITY_CLAIM"
+    },
+    {
+      "case": "test_execution_during_reconciliation-[]",
+      "result": "REFUSED",
+      "detail": "INVALID_AUTHORITY_CLAIM"
+    },
+    {
+      "case": "test_execution_during_reconciliation-{}",
+      "result": "REFUSED",
+      "detail": "INVALID_AUTHORITY_CLAIM"
+    },
+    {
+      "case": "scopes-None",
+      "result": "REFUSED",
+      "detail": "SOURCE_SCOPES_REQUIRED"
+    },
+    {
+      "case": "scopes-[]",
+      "result": "REFUSED",
+      "detail": "SOURCE_SCOPES_REQUIRED"
+    },
+    {
+      "case": "scopes-{}",
+      "result": "REFUSED",
+      "detail": "SOURCE_SCOPES_REQUIRED"
+    },
+    {
+      "case": "scopes-True",
+      "result": "REFUSED",
+      "detail": "SOURCE_SCOPES_REQUIRED"
+    },
+    {
+      "case": "scopes-'scopes'",
+      "result": "REFUSED",
+      "detail": "SOURCE_SCOPES_REQUIRED"
+    },
+    {
+      "case": "files-None",
+      "result": "REFUSED",
+      "detail": "SOURCE_FILES_REQUIRED"
+    },
+    {
+      "case": "files-{}",
+      "result": "REFUSED",
+      "detail": "SOURCE_FILES_REQUIRED"
+    },
+    {
+      "case": "files-[]",
+      "result": "REFUSED",
+      "detail": "SOURCE_FILES_REQUIRED"
+    },
+    {
+      "case": "files-True",
+      "result": "REFUSED",
+      "detail": "SOURCE_FILES_REQUIRED"
+    },
+    {
+      "case": "files-{'file': None}",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_HASH"
+    },
+    {
+      "case": "commit-None",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_COMMIT"
+    },
+    {
+      "case": "commit-True",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_COMMIT"
+    },
+    {
+      "case": "commit-[]",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_COMMIT"
+    },
+    {
+      "case": "commit-{}",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_COMMIT"
+    },
+    {
+      "case": "commit-'ffffffffffffffffffffffffffffffffffffffff'",
+      "result": "REFUSED",
+      "detail": "GIT_SOURCE_UNAVAILABLE"
+    },
+    {
+      "case": "commit-'7B0611A'",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_COMMIT"
+    },
+    {
+      "case": "commit-'831f8d2'",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_COMMIT"
+    },
+    {
+      "case": "filehash-None",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_HASH"
+    },
+    {
+      "case": "filehash-True",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_HASH"
+    },
+    {
+      "case": "filehash-0",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_HASH"
+    },
+    {
+      "case": "filehash-'bad'",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_HASH"
+    },
+    {
+      "case": "filehash-'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'",
+      "result": "REFUSED",
+      "detail": "SOURCE_BLOB_MISMATCH"
+    },
+    {
+      "case": "authoritative-None",
+      "result": "REFUSED",
+      "detail": "AUTHORITATIVE_SCOPE_REQUIRED"
+    },
+    {
+      "case": "authoritative-[]",
+      "result": "REFUSED",
+      "detail": "AUTHORITATIVE_SCOPE_REQUIRED"
+    },
+    {
+      "case": "authoritative-{}",
+      "result": "REFUSED",
+      "detail": "AUTHORITATIVE_SCOPE_REQUIRED"
+    },
+    {
+      "case": "authoritative-'missing'",
+      "result": "REFUSED",
+      "detail": "AUTHORITATIVE_SCOPE_REQUIRED"
+    },
+    {
+      "case": "authoritative_cli_list",
+      "result": "REFUSED",
+      "detail": "AUTHORITATIVE_SCOPE_REQUIRED"
+    },
+    {
+      "case": "authoritative_cli_dict",
+      "result": "REFUSED",
+      "detail": "AUTHORITATIVE_SCOPE_REQUIRED"
+    },
+    {
+      "case": "history-None",
+      "result": "REFUSED",
+      "detail": "HISTORICAL_INVENTORY_REQUIRED"
+    },
+    {
+      "case": "history-[]",
+      "result": "REFUSED",
+      "detail": "HISTORICAL_INVENTORY_REQUIRED"
+    },
+    {
+      "case": "history-{}",
+      "result": "REFUSED",
+      "detail": "HISTORICAL_INVENTORY_REQUIRED"
+    },
+    {
+      "case": "history-True",
+      "result": "REFUSED",
+      "detail": "HISTORICAL_INVENTORY_REQUIRED"
+    },
+    {
+      "case": "history-field-raw_sha256-'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'",
+      "result": "REFUSED",
+      "detail": "HISTORICAL_GIT_BYTES_CHANGED"
+    },
+    {
+      "case": "history-field-preserved_in_commit-'ffffffffffffffffffffffffffffffffffffffff'",
+      "result": "REFUSED",
+      "detail": "GIT_SOURCE_UNAVAILABLE"
+    },
+    {
+      "case": "history-field-preserved_in_commit-True",
+      "result": "REFUSED",
+      "detail": "INVALID_HISTORICAL_ARTIFACT"
+    },
+    {
+      "case": "history-field-classification-'current'",
+      "result": "REFUSED",
+      "detail": "HISTORICAL_SCOPE_LABEL_REQUIRED"
+    },
+    {
+      "case": "duplicate-history-path",
+      "result": "REFUSED",
+      "detail": "DUPLICATE_HISTORICAL_ARTIFACT"
+    },
+    {
+      "case": "source-fields-None",
+      "result": "REFUSED",
+      "detail": "INVALID_HISTORICAL_COMPARISON"
+    },
+    {
+      "case": "source-fields-{}",
+      "result": "REFUSED",
+      "detail": "INVALID_HISTORICAL_COMPARISON"
+    },
+    {
+      "case": "source-fields-True",
+      "result": "REFUSED",
+      "detail": "INVALID_HISTORICAL_COMPARISON"
+    },
+    {
+      "case": "source-fields-['missing_field']",
+      "result": "REFUSED",
+      "detail": "INVALID_HISTORICAL_SOURCE_MAP"
+    },
+    {
+      "case": "compare-to-None",
+      "result": "REFUSED",
+      "detail": "INVALID_HISTORICAL_COMPARISON"
+    },
+    {
+      "case": "compare-to-{}",
+      "result": "REFUSED",
+      "detail": "INVALID_HISTORICAL_COMPARISON"
+    },
+    {
+      "case": "compare-to-True",
+      "result": "REFUSED",
+      "detail": "INVALID_HISTORICAL_COMPARISON"
+    },
+    {
+      "case": "compare-to-['not_a_scope']",
+      "result": "REFUSED",
+      "detail": "INVALID_HISTORICAL_COMPARISON"
+    },
+    {
+      "case": "badpath-''",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_PATH"
+    },
+    {
+      "case": "badpath-'../README.md'",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_PATH"
+    },
+    {
+      "case": "badpath-'/README.md'",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_PATH"
+    },
+    {
+      "case": "badpath-'.git/config'",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_PATH"
+    },
+    {
+      "case": "badpath-'docs/../README.md'",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_PATH"
+    },
+    {
+      "case": "badpath-'docs//README.md'",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_PATH"
+    },
+    {
+      "case": "badpath-'docs/\\nREADME.md'",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_PATH"
+    },
+    {
+      "case": "tree-as-source-file",
+      "result": "REFUSED",
+      "detail": "SOURCE_PATH_NOT_REGULAR_BLOB"
+    },
+    {
+      "case": "tree-cli",
+      "result": "REFUSED",
+      "detail": "SOURCE_PATH_NOT_REGULAR_BLOB"
+    },
+    {
+      "case": "blob-as-scope-commit",
+      "result": "REFUSED",
+      "detail": "INVALID_SOURCE_COMMIT"
+    },
+    {
+      "case": "blob-as-preservation-commit",
+      "result": "REFUSED",
+      "detail": "INVALID_HISTORICAL_ARTIFACT"
+    },
+    {
+      "case": "git-error-commit-kind",
+      "result": "REFUSED",
+      "detail": "GIT_SOURCE_UNAVAILABLE"
+    },
+    {
+      "case": "git-error-required-ls-tree",
+      "result": "REFUSED",
+      "detail": "GIT_SOURCE_UNAVAILABLE"
+    },
+    {
+      "case": "git-error-history-ls-tree",
+      "result": "REFUSED",
+      "detail": "GIT_SOURCE_UNAVAILABLE"
+    },
+    {
+      "case": "git-error-companion-ls-tree",
+      "result": "REFUSED",
+      "detail": "GIT_SOURCE_UNAVAILABLE"
+    },
+    {
+      "case": "git-error-blob-size",
+      "result": "REFUSED",
+      "detail": "GIT_SOURCE_UNAVAILABLE"
+    },
+    {
+      "case": "git-error-blob-read",
+      "result": "REFUSED",
+      "detail": "GIT_SOURCE_UNAVAILABLE"
+    },
+    {
+      "case": "historical_git_error_cli",
+      "result": "REFUSED",
+      "detail": "GIT_SOURCE_UNAVAILABLE"
+    },
+    {
+      "case": "missing_git_cli",
+      "result": "REFUSED",
+      "detail": "SOURCE_RECONCILIATION_UNAVAILABLE"
+    },
+    {
+      "case": "owned-root-positive",
+      "result": "VERIFIED",
+      "detail": ""
+    },
+    {
+      "case": "corrupt-owned-raw",
+      "result": "REFUSED",
+      "detail": "HISTORICAL_WORKTREE_BYTES_CHANGED"
+    },
+    {
+      "case": "corrupt_raw_cli",
+      "result": "REFUSED",
+      "detail": "HISTORICAL_WORKTREE_BYTES_CHANGED"
+    },
+    {
+      "case": "absent-owned-raw",
+      "result": "REFUSED",
+      "detail": "HISTORICAL_FILE_MISSING"
+    },
+    {
+      "case": "absent_raw_cli",
+      "result": "REFUSED",
+      "detail": "HISTORICAL_FILE_MISSING"
+    },
+    {
+      "case": "raw-replacement-map-provenance",
+      "result": "VERIFIED_ORIGINAL_SNAPSHOT_ONLY",
+      "detail": ""
+    },
+    {
+      "case": "duplicate-json",
+      "result": "REFUSED",
+      "detail": "DUPLICATE_JSON_KEY"
+    },
+    {
+      "case": "bad-json",
+      "result": "REFUSED",
+      "detail": "SOURCE_RECEIPT_INVALID_JSON"
+    },
+    {
+      "case": "invalid-utf8",
+      "result": "REFUSED",
+      "detail": "SOURCE_RECEIPT_INVALID_JSON"
+    },
+    {
+      "case": "oversize",
+      "result": "REFUSED",
+      "detail": "SOURCE_RECEIPT_TOO_LARGE"
+    }
+  ],
+  "external_actions": 0,
+  "original_raw_history_sha256": "0ffd5f8da926dd3a278f6001ce07326a83335d8aa2b4ce134b80d763736a2bb6",
+  "original_raw_history_unchanged": true
+}

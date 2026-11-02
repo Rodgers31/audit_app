@@ -1,0 +1,1 @@
+{"production_authorized": false, "reason": "SOURCE_RECEIPT_MISSING", "status": "REFUSED", "tests_executed": false}

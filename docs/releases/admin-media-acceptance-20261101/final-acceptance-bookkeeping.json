@@ -1,0 +1,44 @@
+{
+  "scope": "final_local_receipt_readback_only",
+  "source_hash_count": 17,
+  "source_changed_files": [],
+  "source_manifest_matches_validation": true,
+  "build_log_sha256_matches": true,
+  "validation_build_exit": 0,
+  "inert_api": "http://127.0.0.1:9",
+  "inert_supabase": "http://127.0.0.1:9",
+  "artifact_deployed": false,
+  "combined_xml": [
+    {
+      "file": "combined-manual-restore-normal.xml",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "file": "combined-manual-restore-optimized.xml",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "five_media_artifact_hashes_match": true,
+  "browser_groups": 6,
+  "browser_requests": 49,
+  "external_requests": 0,
+  "page_errors": 0,
+  "sha256": {
+    "docs/releases/admin-publish-workflow-20261101/VALIDATION.json": "f3b61e17d0eeab0692fd85df47a0e57636dad4a0f4fdbea21b27f2c5b2ee8c8c",
+    "docs/releases/admin-publish-workflow-20261101/production-mode-build.txt": "23da90aebad45c71f90feba87f5f8e4257a7f7697c2de9363b24aa58b2700964",
+    "docs/releases/admin-media-acceptance-20261101/COORDINATOR_ACCEPTANCE.md": "1a74d8a74d4590eb36c9fcea7088e436dc8fdcdf270b637833d7693989603500",
+    "docs/releases/admin-media-acceptance-20261101/coordinator-receipts-sha256.json": "8f88d22ec5b802aee6bc68cf412b5651bfe26ae5453ae83b998f2cec5ab37c04",
+    "docs/releases/admin-publish-workflow-20261101/frontend-tests.txt": "7b100fee9dff4edf59f5b2615eebcc2ac331c6f28d1fc319b16273bf58f31a4e"
+  },
+  "frontend_suites_summary_verified": 47,
+  "frontend_tests_summary_verified": 750,
+  "frontend_summary_skips": 0,
+  "backend_manual_api_test_sha256_matches": true,
+  "historical_representation_note": "Build-log and VALIDATION.json hashes in this snapshot predate Git text normalization; raw original remains retained. committed-build-log-normalization.json independently verifies the normalized committed representation and unchanged 17 committed source hashes."
+}

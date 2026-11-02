@@ -1,0 +1,31 @@
+FAIL ../docs/releases/admin-media-acceptance-20261101/independent-composer-metadata.spec.tsx
+  ✕ clean identical immutable revision adopts newer delivery metadata without a false revision conflict (104 ms)
+  ✓ dirty local text is preserved even when the server revision content is unchanged (50 ms)
+  ✓ revision identity drift cannot be silently adopted (44 ms)
+  ✓ content identity drift cannot be silently adopted (42 ms)
+  ✓ post identity drift cannot be silently adopted (47 ms)
+  ✓ active media ownership prevents metadata adoption while its callback remains busy (81 ms)
+  ✓ an in-flight validation retains its original version until the command settles (69 ms)
+
+  ● clean identical immutable revision adopts newer delivery metadata without a false revision conflict
+
+    expect(element).toBeEnabled()
+
+    Received element is not enabled:
+      <button class="button" disabled="" type="button" />
+
+      40 |   await waitFor(() => expect(screen.queryByRole('button', { name: 'Load current revision' })).not.toBeInTheDocument());
+      41 |   expect(screen.getByLabelText('Post text', { exact: true })).toHaveValue(post().document.master.text);
+    > 42 |   expect(screen.getByRole('button', { name: 'Cancel unsent deliveries' })).toBeEnabled();
+         |                                                                            ^
+      43 |   expect(send).not.toHaveBeenCalled();
+      44 | });
+      45 | test('dirty local text is preserved even when the server revision content is unchanged', async () => {
+
+      at Object.toBeEnabled (../docs/releases/admin-media-acceptance-20261101/independent-composer-metadata.spec.tsx:42:76)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 6 passed, 7 total
+Snapshots:   0 total
+Time:        1 s
+Ran all test suites within paths "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/docs/releases/admin-media-acceptance-20261101/independent-composer-metadata.spec.tsx".

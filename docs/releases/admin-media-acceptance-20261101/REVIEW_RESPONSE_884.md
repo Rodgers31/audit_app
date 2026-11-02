@@ -1,0 +1,15 @@
+# Review #884 reconciliation
+
+The full [body-only review](https://github.com/Rodgers31/audit_app/pull/884#pullrequestreview-5730649331) was read, including its third manifest finding.
+
+**Classification: half-right — valid scope/index ambiguity, different mechanism.** The five-file status-sync maps match companion UI commit `0bc7839`. The nineteen-file final assembly map matches combined commit `7b0611a`. Their differences from isolated media PR `bb3fa2b` reflect companion code being absent or at base versions there. The initial independent-review map is an earlier uncommitted stage; two UI files were subsequently superseded. It has no invented full-tree commit identity.
+
+The correction preserves all nine original source JSON artifacts byte-for-byte and adds one clear [source authority index](SOURCE_EVIDENCE_INDEX.md) and [scoped receipt](SOURCE_EVIDENCE.json). The refreshed scope binds immutable combined runtime `831f8d2779ffba42a729879f5087e76791064a85`, after the review fixes and before the new index files. Fresh-clone instructions fetch the original PR objects and dedicated evidence ref; this is neither current main nor the final media PR tree.
+
+The executable reconciliation verifies five scoped commits, including 227 selected files in each combined scope, plus all nine preserved raw captures. Its comparisons distinguish matching, changed and absent companion files. They establish Git/blob equivalence only; no old test receipt is relabelled as a rerun against the refreshed commit.
+
+Verification: [30 author controls](source-reconciliation-controls.txt), [102 independent controls and complete-receipt review](INDEPENDENT_SOURCE_RECONCILIATION_REVIEW.md), and the [complete read-only reconciliation](source-reconciliation.txt). Independent observed-red findings in the new verifier were repaired before publication: regular-file blob checks cover every source lookup, Git errors refuse instead of becoming absence, and historical maps are parsed from the same verified byte buffer. The source index records these controls and original setup/error outcomes separately from product tests. Media runtime and the cold-restore fixture are unchanged, so no broad product tests were repeated for this documentation correction.
+
+**Production limitations remain accepted scope limits.** Actual production restore/custody, retention, privacy/provider, representative capacity/cost and owner enablement gates remain open. The synthetic fixture and reconciliation supply no production acceptance or activation authority. Publishing, uploads, all workers and financial generation remain OFF; the parent coordinator owns the separately authorized review/merge/deploy process.
+
+The companion #885 repair was also independently verified: the actual pre-fix Git blob reports missing verdict/count as Partial; the repaired helper reports Unknown. [481 direct/intercepted-workflow scenarios](review-885-health-probes.txt) preserve valid critical, partial and complete outcomes, cancellation, intentional exclusions and deduplication. Those new receipts cover the changed helper; the historical notification probe receipts retain their original source scope.

@@ -1,0 +1,200 @@
+{
+  "approval": "APPROVED for coordinator review/merge policy; no unresolved verifier or portable-document findings. No deployment/activation authorization supplied by this receipt.",
+  "verifier_sha256": "3e5f0d994874d9b1e34b979d5e8c4c1e0eaa19e9e6fc98cb6be4bf6198a547e8",
+  "source_evidence_sha256": "6c7183679cbbd77f8dbde34befe901585e17533092390a2b290a6faa24bd3032",
+  "source_index_sha256": "9a39e8826daea89d791226041b969239587fe86cf745aeb2deee82812962c5bd",
+  "probes": "102 direct/CLI adversarial cases PASS, zero external actions",
+  "probe_result_sha256": "89a5cd82204727a66f5d6a8513fcbd646781bca1229c9351230f3361d3f376d5",
+  "probe_source_sha256": "64694fe6ee1afb38509e693778c517657bc48363f2eeb67bb2886e4fe4c78946",
+  "full_actual_receipt_cli": "exit0;5scopes/9rawartifacts;false tests_executed/production_authorized",
+  "full_cli_result_sha256": "4e5a96c01403555fd22007973eba03bfa8ad4fe0e65f03c93a25af9e1c7c34b0",
+  "pinned_scopes": {
+    "media_pr_original": {
+      "commit": "bb3fa2bea4b652bcbca5898c01cf1c7560149dc5",
+      "verified_source_files": 24
+    },
+    "ui_pr_original": {
+      "commit": "0bc78394a3bbb638ab1fd26aa103ece2f47c6a51",
+      "verified_source_files": 18
+    },
+    "nightly_pr_original": {
+      "commit": "aae2f322d639c6c3f2c7461c6c46d1733bd0e92e",
+      "verified_source_files": 4
+    },
+    "combined_before_review": {
+      "commit": "7b0611a1bb135564a4713ceb0ab155767c9aefb5",
+      "verified_source_files": 227
+    },
+    "combined_after_review": {
+      "commit": "831f8d2779ffba42a729879f5087e76791064a85",
+      "verified_source_files": 227
+    }
+  },
+  "all_original_raw_history_unchanged": {
+    "docs/releases/admin-media-acceptance-20261101/source-before-production-cohort.json": true,
+    "docs/releases/admin-media-acceptance-20261101/source-stability.json": true,
+    "docs/releases/admin-media-acceptance-20261101/independent-review-source-before.json": true,
+    "docs/releases/admin-media-acceptance-20261101/independent-review-source-after.json": true,
+    "docs/releases/admin-media-acceptance-20261101/final-refresh-source-before.json": true,
+    "docs/releases/admin-media-acceptance-20261101/final-refresh-source-after.json": true,
+    "docs/releases/admin-media-acceptance-20261101/status-sync-review-before.json": true,
+    "docs/releases/admin-media-acceptance-20261101/status-sync-review-after.json": true,
+    "docs/releases/admin-media-acceptance-20261101/final-reviewed-source.json": true
+  },
+  "index_stage_count_checks": [
+    {
+      "artifact": "independent-review-source-after.json",
+      "field": "sha256",
+      "scope": "media_pr_original",
+      "matched": 0,
+      "different": 3,
+      "absent": 6
+    },
+    {
+      "artifact": "independent-review-source-after.json",
+      "field": "sha256",
+      "scope": "combined_before_review",
+      "matched": 7,
+      "different": 2,
+      "absent": 0
+    },
+    {
+      "artifact": "independent-review-source-after.json",
+      "field": "sha256",
+      "scope": "combined_after_review",
+      "matched": 5,
+      "different": 4,
+      "absent": 0
+    },
+    {
+      "artifact": "status-sync-review-after.json",
+      "field": "sha256",
+      "scope": "media_pr_original",
+      "matched": 0,
+      "different": 3,
+      "absent": 2
+    },
+    {
+      "artifact": "status-sync-review-after.json",
+      "field": "sha256",
+      "scope": "ui_pr_original",
+      "matched": 5,
+      "different": 0,
+      "absent": 0
+    },
+    {
+      "artifact": "status-sync-review-after.json",
+      "field": "sha256",
+      "scope": "combined_before_review",
+      "matched": 5,
+      "different": 0,
+      "absent": 0
+    },
+    {
+      "artifact": "status-sync-review-after.json",
+      "field": "sha256",
+      "scope": "combined_after_review",
+      "matched": 5,
+      "different": 0,
+      "absent": 0
+    },
+    {
+      "artifact": "status-sync-review-after.json",
+      "field": "final_sha256",
+      "scope": "media_pr_original",
+      "matched": 0,
+      "different": 3,
+      "absent": 2
+    },
+    {
+      "artifact": "status-sync-review-after.json",
+      "field": "final_sha256",
+      "scope": "ui_pr_original",
+      "matched": 5,
+      "different": 0,
+      "absent": 0
+    },
+    {
+      "artifact": "status-sync-review-after.json",
+      "field": "final_sha256",
+      "scope": "combined_before_review",
+      "matched": 5,
+      "different": 0,
+      "absent": 0
+    },
+    {
+      "artifact": "status-sync-review-after.json",
+      "field": "final_sha256",
+      "scope": "combined_after_review",
+      "matched": 5,
+      "different": 0,
+      "absent": 0
+    },
+    {
+      "artifact": "final-reviewed-source.json",
+      "field": "sha256",
+      "scope": "media_pr_original",
+      "matched": 3,
+      "different": 8,
+      "absent": 8
+    },
+    {
+      "artifact": "final-reviewed-source.json",
+      "field": "sha256",
+      "scope": "combined_before_review",
+      "matched": 19,
+      "different": 0,
+      "absent": 0
+    },
+    {
+      "artifact": "final-reviewed-source.json",
+      "field": "sha256",
+      "scope": "combined_after_review",
+      "matched": 17,
+      "different": 2,
+      "absent": 0
+    }
+  ],
+  "resolved_findings": [
+    {
+      "source_sha256": "1eb6d33b3d7ab792a39f5488824efca5d5c84fb0c34fa56cc27647a8296be7a3",
+      "finding": "Tree objects counted as source files; Git errors labeled absent companions",
+      "red": "review-884-pinned-red.txt"
+    },
+    {
+      "source_sha256": "0e8640b2e12d050e019245e973b98a385fda020e0b29c9330bb00063e28fdadf",
+      "finding": "Historical maps parsed from unverified later file read",
+      "red": "review-884-snapshot-red.txt"
+    },
+    {
+      "source_sha256": "3f8937c668813f1d6971071ec1dd8f43cda668b5440429aa9b4ef137dca2870a",
+      "finding": "Unhashable authority shapes failed closed with TypeError; normalized to structured refusal",
+      "severity": "non-bypass robustness"
+    }
+  ],
+  "portable_ui_patch": {
+    "commit": "5d576907ba8044cfb3ea6aae715aaeb25987f1af",
+    "result": "CLEAR:>=24.22.1<25 stable24matchesguard; /tmp report/diagnostic paths match runner",
+    "pinned_blobs_sha256": {
+      "docs/releases/admin-publish-workflow-20261101/UI.md": "28827b072ddb6a8e7a764439d1bf81f09f40572cb1cef03aef876190aa9b5eea",
+      "frontend/package.json": "f66bebbe195d4a9ac24b59d4c41921337e4e297c585b123f01d411a78f221065",
+      "frontend/scripts/verify-node-runtime.cjs": "b6e00b881cc5e45039f978a5d2d3c5f61796fb303a5f74398494d6634dc2b35e",
+      "frontend/tests/manualPublicationBrowser.mjs": "51aa19cd693a5384d79a77322b7314c3fc211c92ef35d7056e357c4e3f8b6f02"
+    },
+    "tests_rerun": false
+  },
+  "limits": [
+    "VERIFIED does not mean every historical map matches final source; differences and absent companion files remain explicit.",
+    "Snapshot identity and comparisons use the same verified raw bytes; no end-of-run filesystem locking guarantee.",
+    "Pinned file/blob equivalence does not redate old executions or certify production/deployment/activation."
+  ],
+  "reviewer_edits": "Review evidence and temporary owned fixtures only; no original historical bytes/source/API/branch/index changes.",
+  "metadata_only_refresh": {
+    "previous_source_evidence_sha256": "05af8b1803a813ddd93d656ea13ac0857c3f362e8ee995a802767d73bcb4357a",
+    "previous_source_index_sha256": "1cda9e2cdd97e04e5a03e3442070ce47beba4dc6eeea3ea6b25fdc57b2716c94",
+    "receipt_change": "Descriptive evidence_ref added; removing that field reproduces exact previous receipt bytes/hash. Pinned scopes/history and verifier unchanged.",
+    "index_review": "Fetch prerequisite PR884/885 heads plus dedicated evidence ref; expected FETCH_HEAD831f8d2779ffba42a729879f5087e76791064a85; no checkout/activation. Local ancestry check confirms originalUI0bc is already ancestor of831 while originalmedia/nightly commits are not.",
+    "tests_rerun": false,
+    "network_or_fetch_performed": false
+  }
+}

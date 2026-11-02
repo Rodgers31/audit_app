@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 10, in <module>
+    import yaml
+ModuleNotFoundError: No module named 'yaml'

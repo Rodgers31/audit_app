@@ -1,0 +1,84 @@
+{
+  "verified_receipts": [
+    {
+      "file": "manual-media-pg-normal.xml",
+      "sha256_match": true,
+      "tests": 299,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "file": "manual-media-pg-optimized.xml",
+      "sha256_match": true,
+      "tests": 302,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "file": "operator-pg-normal.xml",
+      "sha256_match": true,
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "file": "operator-pg-optimized.xml",
+      "sha256_match": true,
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "file": "owned-pg-normal.xml",
+      "sha256_match": true,
+      "tests": 36,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "file": "owned-pg-optimized.xml",
+      "sha256_match": true,
+      "tests": 36,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "file": "retirement-pg-normal.xml",
+      "sha256_match": true,
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "file": "retirement-pg-optimized.xml",
+      "sha256_match": true,
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "file": "host-native-video.xml",
+      "tests": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "file": "combined-manual-restore-normal.xml",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "copied_receipt_hashes_match": true,
+  "scope": "independent_readback_of_local_receipts_only"
+}

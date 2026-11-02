@@ -1,0 +1,10 @@
+{
+  "sha256": {
+    "frontend/components/admin/social/SocialScheduleControls.tsx": "f2fd9309cafc66fa9531c1f6cc2f6d2bdd44c41ade2ed82374771e8827300365",
+    "frontend/__tests__/admin/social/schedules.test.tsx": "116926b876a6367b88c9803f7578104785247779b5dc0dfecd0951b664a22289",
+    "frontend/__tests__/admin/social/schedule-contract.test.ts": "f15a74cc8381f52696f3b5fca62900ee36d74b3f362397b89b61137ef38310af",
+    "frontend/tests/manualPublicationBrowser.mjs": "3f8d97b0e919608358f2fd0b7139d3db0e630308554ca4f67f4cd27173f5b21f",
+    "docs/releases/admin-publish-workflow-20261101/LAUNCH_GATES.md": "b445a1569c6661070adc9d4cd33282d37aa587e8cc8ea27ec3a2edf76437e7aa"
+  },
+  "changed_files": []
+}

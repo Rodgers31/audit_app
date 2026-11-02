@@ -1,0 +1,111 @@
+import copy,hashlib,importlib.util,json,os,shutil,subprocess,sys
+from pathlib import Path
+ROOT=Path(os.environ.get('AUDIT_REVIEW_REPO_ROOT',Path.cwd()));TMP=Path('/tmp/source-evidence-review-884/final-probes');TMP.mkdir(parents=True,exist_ok=True)
+SOURCE=ROOT/'docs/releases/admin-media-acceptance-20261101/reconcile_source_evidence.py';PIN=TMP/'reconciler-pinned.py';PIN.write_bytes(SOURCE.read_bytes());SHA=hashlib.sha256(PIN.read_bytes()).hexdigest()
+spec=importlib.util.spec_from_file_location('subject',PIN);m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+BASE=json.loads((ROOT/'docs/releases/nightly-admission-reporting-20261101/review-884-minimal-valid.json').read_text());COMMIT=BASE['scopes'][0]['commit'];HISTORY=BASE['historical_artifacts'][0]['path'];FILE=next(iter(BASE['scopes'][0]['files']))
+records=[]
+def record(name,status,detail=''):
+ records.append({'case':name,'result':status,'detail':detail})
+def direct_reject(name,receipt,root=ROOT):
+ try:
+  result=m.verify(receipt,root)
+ except m.Refused as e:record(name,'REFUSED',str(e));return
+ except Exception as e:record(name,'FAIL_CLOSED_EXCEPTION',type(e).__name__);return
+ raise AssertionError((name,'unexpected VERIFIED',result))
+def clone_change(name,mutator):
+ r=copy.deepcopy(BASE);mutator(r);direct_reject(name,r)
+def cli(name,receipt,*,env=None,cwd=ROOT,expect=2):
+ path=TMP/(name+'.json');path.write_text(json.dumps(receipt));run=subprocess.run([sys.executable,str(PIN),'--receipt',str(path)],cwd=cwd,env=env,capture_output=True,text=True,timeout=30)
+ if expect==0:
+  if run.returncode!=0:raise AssertionError((name,run.returncode,run.stderr,run.stdout))
+  data=json.loads(run.stdout);assert data['status']=='VERIFIED_SOURCE_SCOPE_RECONCILIATION';record(name,'VERIFIED');return data
+ if run.returncode==0:raise AssertionError((name,'CLI falsely verified',run.stdout))
+ try:data=json.loads(run.stdout)
+ except ValueError:record(name,'FAIL_CLOSED_EXCEPTION',run.stderr.splitlines()[-1] if run.stderr else 'no-json');return
+ assert data['status']=='REFUSED' and data['production_authorized'] is False;record(name,'REFUSED',data['reason'])
+
+positive=m.verify(copy.deepcopy(BASE),ROOT);assert positive['status']=='VERIFIED_SOURCE_SCOPE_RECONCILIATION';record('minimal_direct_positive','VERIFIED')
+cli('minimal_cli_positive',BASE,expect=0)
+for value in [None,{},[],True,1,'receipt']:
+ direct_reject('receipt-type-'+repr(value),value)
+for value in [None,True,False,0,2,'1',[],{}]:
+ clone_change('schema-'+repr(value),lambda r,v=value:r.update(schema_version=v))
+for key in ['production_authorized','test_execution_during_reconciliation']:
+ for value in [None,True,0,'false',[],{}]:clone_change(key+'-'+repr(value),lambda r,k=key,v=value:r.update({k:v}))
+for value in [None,[],{},True,'scopes']:
+ clone_change('scopes-'+repr(value),lambda r,v=value:r.update(scopes=v))
+for value in [None,{},[],True,{'file':None}]:
+ clone_change('files-'+repr(value),lambda r,v=value:r['scopes'][0].update(files=v))
+for value in [None,True,[],{},'f'*40,'7B0611A','831f8d2']:
+ clone_change('commit-'+repr(value),lambda r,v=value:r['scopes'][0].update(commit=v))
+for value in [None,True,0,'bad','f'*64]:
+ clone_change('filehash-'+repr(value),lambda r,v=value:r['scopes'][0]['files'].update({FILE:v}))
+for value in [None,[],{},'missing']:
+ clone_change('authoritative-'+repr(value),lambda r,v=value:r.update(authoritative_scope=v))
+for value in [[],{}]:
+ r=copy.deepcopy(BASE);r['authoritative_scope']=value;cli('authoritative_cli_'+type(value).__name__,r)
+for value in [None,[],{},True]:
+ clone_change('history-'+repr(value),lambda r,v=value:r.update(historical_artifacts=v))
+for key,value in [('raw_sha256','f'*64),('preserved_in_commit','f'*40),('preserved_in_commit',True),('classification','current')]:
+ clone_change('history-field-'+key+'-'+repr(value),lambda r,k=key,v=value:r['historical_artifacts'][0].update({k:v}))
+clone_change('duplicate-history-path',lambda r:r['historical_artifacts'].append(copy.deepcopy(r['historical_artifacts'][0])))
+for value in [None,{},True,['missing_field']]:
+ clone_change('source-fields-'+repr(value),lambda r,v=value:r['historical_artifacts'][0].update(source_fields=v))
+for value in [None,{},True,['not_a_scope']]:
+ clone_change('compare-to-'+repr(value),lambda r,v=value:r['historical_artifacts'][0].update(compare_to=v))
+for path in ['', '../README.md','/README.md','.git/config','docs/../README.md','docs//README.md','docs/\nREADME.md']:
+ clone_change('badpath-'+repr(path),lambda r,v=path:r['scopes'][0].update(files={v:'f'*64}))
+# A tree object must not become a counted source file.
+tree=copy.deepcopy(BASE);tree['scopes'][0]['files']={'docs/releases':hashlib.sha256(subprocess.check_output(['/usr/bin/git','-C',str(ROOT),'show',COMMIT+':docs/releases'])).hexdigest()};direct_reject('tree-as-source-file',tree);cli('tree-cli',tree)
+# A blob SHA cannot stand in for a commit pin.
+blobid=subprocess.check_output(['/usr/bin/git','-C',str(ROOT),'rev-parse',COMMIT+':'+FILE],text=True).strip()
+clone_change('blob-as-scope-commit',lambda r:r['scopes'][0].update(commit=blobid));clone_change('blob-as-preservation-commit',lambda r:r['historical_artifacts'][0].update(preserved_in_commit=blobid))
+# All object/lookup errors, especially a failing historical lookup, must refuse.
+original_run=m.subprocess.run
+stages=[('commit-kind',lambda a:a[-3:]==['cat-file','-t',COMMIT]),
+ ('required-ls-tree',lambda a:a[-2:]==['--',FILE]),
+ ('history-ls-tree',lambda a:a[-2:]==['--',HISTORY]),
+ ('companion-ls-tree',lambda a:a[-2:]==['--','frontend/components/admin/social/SocialComposer.tsx']),
+ ('blob-size',lambda a:len(a)>2 and a[-3:-1]==['cat-file','-s']),
+ ('blob-read',lambda a:len(a)>2 and a[-3:-1]==['cat-file','blob'])]
+for label,predicate in stages:
+ def failure(args,*a,predicate=predicate,**kw):
+  if predicate(args):return subprocess.CompletedProcess(args,128,b'',b'fatal: injected Git object database failure')
+  return original_run(args,*a,**kw)
+ m.subprocess.run=failure
+ try:direct_reject('git-error-'+label,copy.deepcopy(BASE))
+ finally:m.subprocess.run=original_run
+# Actual CLI with a selective Git failure shim; all other operations use real Git.
+shimdir=TMP/'git-shim';shimdir.mkdir(exist_ok=True);shim=shimdir/'git'
+shim.write_text('#!/usr/bin/python3\nimport os,sys\nif sys.argv[-2:]==["--","frontend/components/admin/social/SocialComposer.tsx"]:\n sys.stderr.write("fatal: injected object error\\n");sys.exit(128)\nos.execv("/usr/bin/git",["git",*sys.argv[1:]])\n');shim.chmod(0o700)
+cli('historical_git_error_cli',BASE,env={'PATH':str(shimdir)+':/usr/bin:/bin'})
+cli('missing_git_cli',BASE,env={'PATH':str(TMP/'absent-bin')})
+# Owned raw-file copies reuse only read-only Git objects; original raw files never change.
+fake=TMP/'owned-root';fake.mkdir(exist_ok=True);gitdir=subprocess.check_output(['/usr/bin/git','-C',str(ROOT),'rev-parse','--absolute-git-dir'],text=True).strip();(fake/'.git').write_text('gitdir: '+gitdir+'\n')
+rawpath=fake/HISTORY;rawpath.parent.mkdir(parents=True,exist_ok=True);RAW=(ROOT/HISTORY).read_bytes();rawpath.write_bytes(RAW)
+assert m.verify(copy.deepcopy(BASE),fake)['status']=='VERIFIED_SOURCE_SCOPE_RECONCILIATION';record('owned-root-positive','VERIFIED')
+rawpath.write_bytes(RAW+b' ');direct_reject('corrupt-owned-raw',copy.deepcopy(BASE),fake);cli('corrupt_raw_cli',BASE,cwd=fake)
+rawpath.unlink();direct_reject('absent-owned-raw',copy.deepcopy(BASE),fake);cli('absent_raw_cli',BASE,cwd=fake);rawpath.write_bytes(RAW)
+# Force a filesystem replacement exactly at parse time. Comparisons must use verified bytes.
+original_parse=m.parse_json;changed=[]
+def gated_parse(raw):
+ if raw==RAW and not changed:
+  changed.append(True);document=json.loads(RAW);document['sha256'][FILE]=BASE['scopes'][0]['files'][FILE];rawpath.write_text(json.dumps(document))
+ return original_parse(raw)
+m.parse_json=gated_parse
+try:result=m.verify(copy.deepcopy(BASE),fake)
+finally:m.parse_json=original_parse
+assert changed and hashlib.sha256(rawpath.read_bytes()).hexdigest()!=BASE['historical_artifacts'][0]['raw_sha256']
+comparison=result['historical_artifacts'][0]['comparisons'][0]
+assert FILE in comparison['different_files'] and FILE not in comparison['matched_files'];record('raw-replacement-map-provenance','VERIFIED_ORIGINAL_SNAPSHOT_ONLY')
+rawpath.write_bytes(RAW)
+# Parser boundaries independently of the rest of the receipt.
+for label,raw in [('duplicate-json',b'{"x":1,"x":2}'),('bad-json',b'{'),('invalid-utf8',b'\xff'),('oversize',b' '* (m.LIMIT+1))]:
+ p=TMP/(label+'.json');p.write_bytes(raw)
+ try:m.read_json(p)
+ except m.Refused as e:record(label,'REFUSED',str(e))
+ else:raise AssertionError((label,'parser accepted'))
+assert hashlib.sha256(SOURCE.read_bytes()).hexdigest()==SHA,'Source changed during independent review'
+report={'status':'PASS','cases':len(records),'source_sha256':SHA,'source_snapshot':str(PIN),'cases_detail':records,'external_actions':0,'original_raw_history_sha256':hashlib.sha256(RAW).hexdigest(),'original_raw_history_unchanged':(ROOT/HISTORY).read_bytes()==RAW}
+print(json.dumps(report,indent=2))

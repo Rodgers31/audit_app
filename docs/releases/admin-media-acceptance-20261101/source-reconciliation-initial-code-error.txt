@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/docs/releases/admin-media-acceptance-20261101/reconcile_source_evidence.py", line 174, in <module>
+    sys.exit(main())
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/docs/releases/admin-media-acceptance-20261101/reconcile_source_evidence.py", line 163, in main
+    result = verify(read_json(args.receipt), root)
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/docs/releases/admin-media-acceptance-20261101/reconcile_source_evidence.py", line 99, in verify
+    require(digest(blob(root, commit, name)) == expected, 'SOURCE_BLOB_MISMATCH')
+UnboundLocalError: local variable 'blob' referenced before assignment
