@@ -210,5 +210,7 @@
     "Five existing low registry audit entries remain visible; exact installed repair bytes and caller guards were verified."
   ],
   "production_controls_changed": false,
-  "deployment_performed": false
+  "deployment_performed": false,
+  "record_stage": "historical initial87-entry qualification; final155-entry graph is FRONTEND_NATIVE_ADDON.json",
+  "final_validation_record": "FRONTEND_NATIVE_ADDON.json"
 }

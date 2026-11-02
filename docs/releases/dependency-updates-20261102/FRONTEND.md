@@ -1,3 +1,5 @@
+This is the historical initial qualification record. See [FRONTEND_NATIVE_ADDON.md](FRONTEND_NATIVE_ADDON.md) for the final graph, source hashes, additional inventory repair and executable reviews.
+
 # Frontend dependency qualification — 2 November 2026
 
 This manually reviewed batch combines proposals #873, #874, #875 and #880 into one installed graph. It preserves all 17 manifest intents and 87 lock-version targets, including the lock-only Supabase JS resolution. Direct and overridden PostCSS agree. Source-bound repair, caller and inventory guards are unchanged. The source heads, exact candidate file hashes, results and retained raw-receipt digests are in [FRONTEND_VALIDATION.json](FRONTEND_VALIDATION.json).
