@@ -60,6 +60,14 @@ export async function updateSession(request: NextRequest) {
   }
 
   let supabaseResponse = NextResponse.next({ request });
+  const sessionHeaders = new Headers();
+  function withSessionState(response: NextResponse) {
+    // SSR supplies cache protection with cookie writes. Preserve both when a
+    // later write rebuilds the response or route authorization redirects it.
+    sessionHeaders.forEach((value, name) => response.headers.set(name, value));
+    supabaseResponse.cookies.getAll().forEach(cookie => response.cookies.set(cookie));
+    return response;
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -69,9 +77,10 @@ export async function updateSession(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet, headers = {}) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          supabaseResponse = NextResponse.next({ request });
+          Object.entries(headers).forEach(([name, value]) => sessionHeaders.set(name, value));
+          supabaseResponse = withSessionState(NextResponse.next({ request }));
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );
@@ -90,7 +99,7 @@ export async function updateSession(request: NextRequest) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = '/';
     redirectUrl.searchParams.set('authRequired', '1');
-    return NextResponse.redirect(redirectUrl);
+    return withSessionState(NextResponse.redirect(redirectUrl));
   }
 
   /* ── Admin-required routes: check roles in profiles table ── */
@@ -107,7 +116,7 @@ export async function updateSession(request: NextRequest) {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = '/';
       redirectUrl.searchParams.set('unauthorized', '1');
-      return NextResponse.redirect(redirectUrl);
+      return withSessionState(NextResponse.redirect(redirectUrl));
     }
   }
 

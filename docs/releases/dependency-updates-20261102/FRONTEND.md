@@ -1,0 +1,15 @@
+# Frontend dependency qualification — 2 November 2026
+
+This manually reviewed batch combines proposals #873, #874, #875 and #880 into one installed graph. It preserves all 17 manifest intents and 87 lock-version targets, including the lock-only Supabase JS resolution. Direct and overridden PostCSS agree. Source-bound repair, caller and inventory guards are unchanged. The source heads, exact candidate file hashes, results and retained raw-receipt digests are in [FRONTEND_VALIDATION.json](FRONTEND_VALIDATION.json).
+
+The application compatibility fix retains the new SSR SDK's cache-protection headers and cookies across repeated writes and authorization redirects. Actual upgraded-SDK admin, non-admin and revoked-session cases were observed failing before this fix. Identity and role checks remain authoritative. The recovery HTTP tests now use the actual legacy SSR 0.8 cookie encoding; their existing status, exchange-count, principal and concurrent-tab assertions remain. Actual old-SDK cookie consumption and malformed-cookie no-request refusals are covered.
+
+Fresh scripted installations and full peer graphs pass on macOS ARM64 and Linux x64. All 25 repaired files remain verified. The 217 dependency boundaries, nine runtime controls, TypeScript, lint, all 2,960 Jest tests with zero skips, 14 admin Chromium cases, actual browser WASM/semantic ranking and actual model/Sharp/ZIP checks pass. The Linux production compile ran with network disabled; expected public-API absence fallbacks are not live API acceptance. The optional budget reader ran against three retained PostgreSQL HTTP captures, not a new database run.
+
+Independent checks include 41 private actual-SDK/cookie/authorization controls and 52 existing auth cases, plus eight coordinator multi-write/header/role controls seen failing against the original middleware and passing against the candidate. These counts overlap and are not additive to the full suite. Raw logs and complete inventories remain in the Codex task artifacts under the digests recorded above; they are not provider or deployment receipts.
+
+The raw complete npm audit still reports five existing low deepmerge/Jest entries; the production audit reports zero. The exact installed repair bytes are verified, and no advisory is ignored or dismissed. This is dependency compatibility qualification, not a whole-system security or live publishing acceptance.
+
+Publishing, uploads, workers and financial generation remain off. This merge performs no deployment or database migration. Vercel Git automation was disconnected with owner authorization before merging to avoid paid automatic builds; the current production deployment and manual prebuilt release path remain available. Render automatic deployment remains off. Reconnecting deployment automation requires a deliberate cost/release decision.
+
+Source rollback reverts this batch's manifests, lockfile and middleware together; database state is unchanged. A future production release must bind its actual built graph and accepted artifact independently of these source checks.
