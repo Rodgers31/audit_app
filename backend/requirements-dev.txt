@@ -3,8 +3,8 @@ pytest==9.1.1
 pytest-asyncio==1.4.0
 pytest-cov==6.0.0
 pytest-mock==3.14.0
-PyYAML==6.0.2
-schedule==1.2.0
+PyYAML==6.0.3
+schedule==1.2.2
 
 # Code quality
 black==26.10.1
