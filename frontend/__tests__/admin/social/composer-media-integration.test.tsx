@@ -4,7 +4,7 @@ import { SocialPost } from '@/lib/api/social';
 import { socialKeys } from '@/lib/hooks/useSocial';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { accounts, actorId, facebookId, instagramId, post, system, validation } from '../../../tests/socialFixtures';
+import { deliverySystem, accounts, actorId, facebookId, instagramId, post, validation } from '../../../tests/socialFixtures';
 
 jest.mock('@/lib/api/axios', () => ({ __esModule: true, default: { get: jest.fn(), post: jest.fn(), patch: jest.fn() } }));
 jest.mock('@/lib/auth/admin', () => ({ useAdmin: () => ({ isAdmin: true }) }));
@@ -21,7 +21,7 @@ function grant() {
 }
 function mount(p = post()) {
   saved = p; qc.setQueryData(socialKeys.detail(actorId, p.id), p);
-  render(<QueryClientProvider client={qc}><SocialComposer initialPost={p} accounts={accounts} system={system} /></QueryClientProvider>);
+  render(<QueryClientProvider client={qc}><SocialComposer initialPost={p} accounts={accounts} system={deliverySystem()} /></QueryClientProvider>);
 }
 async function upload(index: number) {
   await waitFor(() => expect(screen.getAllByRole('button', { name: 'Upload media' })[index]).toBeEnabled());
@@ -73,4 +73,19 @@ test('switching account while an override uploads never attaches that asset to t
   fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
   await waitFor(() => expect(patch).toHaveBeenCalledTimes(1));
   expect(patch.mock.calls[0][1].document.targets.map((t: { overrides: object }) => t.overrides)).toEqual([{ media: { mode: 'replace', value: [] } }, { media: { mode: 'replace', value: [] } }]);
+});
+
+
+test('a same-revision status refresh cannot reconcile over a pending media operation or the completed local selection', async () => {
+  mount();
+  await upload(0);
+  await act(async () => { qc.setQueryData(socialKeys.detail(actorId, saved.id), post({ ...saved, version: 2, editorial_state: 'pending_review' })); });
+  await screen.findByText(/A newer saved post version is available/);
+  expect(screen.getByRole('button', { name: 'Load current revision' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Save draft' })).toBeDisabled();
+  await act(async () => { finish({ data: asset() }); });
+  expect(await screen.findByLabelText('Master media 1 alt text')).toHaveValue('Evidence description');
+  expect(screen.getByText('Unsaved edits')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Load current revision' })).toBeDisabled();
+  expect(patch).not.toHaveBeenCalled();
 });

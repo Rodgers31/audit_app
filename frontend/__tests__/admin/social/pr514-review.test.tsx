@@ -7,7 +7,7 @@ import { socialKeys } from '@/lib/hooks/useSocial';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { useState } from 'react';
-import { accounts, actorId, post, system, target } from '../../../tests/socialFixtures';
+import { deliverySystem, accounts, actorId, post, system, target } from '../../../tests/socialFixtures';
 jest.mock('@/lib/api/axios', () => ({ __esModule: true, default: { get: jest.fn(), post: jest.fn(), patch: jest.fn() } }));
 jest.mock('@/lib/auth/admin', () => ({ useAdmin: () => ({ isAdmin: true }) }));
 jest.mock('@/lib/auth/AuthProvider', () => ({ useAuth: () => ({ user: { id: '00000000-0000-4000-8000-000000000001' } }) }));
@@ -42,7 +42,7 @@ test('publication refresh updates civil inputs and clears an obsolete DST choice
 
 test('publish-now receipt resets old future inputs to the accepted UTC schedule', async () => {
   const p = scheduled(), qc = client(); let acceptedTime = '';
-  function Harness() { const [current, update] = useState(p); return <SocialScheduleControls post={current} system={system} disabled={false} onUpdated={update} />; }
+  function Harness() { const [current, update] = useState(p); return <SocialScheduleControls post={current} system={deliverySystem()} disabled={false} onUpdated={update} />; }
   send.mockImplementation(async () => {
     const due = new Date().toISOString(); acceptedTime = due.slice(0, 16);
     return { data: { ...p, version: 2, publication: { ...p.publication!, version: 3, scheduled_for: due, schedule_timezone: 'UTC', requested_local_time: due.slice(0, -1) }, targets: [{ ...p.targets[0], next_action_at: due }] } };

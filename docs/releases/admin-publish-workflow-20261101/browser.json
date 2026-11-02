@@ -1,0 +1,359 @@
+{
+  "boundary": "hydrated production components/hooks/decoders with contract API fixtures and inert auth",
+  "checks": [
+    "off controls + media unavailable render visible exact reasons with zero mutations",
+    "valid saved revision + stale worker blocks immediate delivery",
+    "publication error and malformed receipt preserve key/body and never claim publication",
+    "manual create + library media + alt text + save + validate + reviewed preview + human publish accepts queued receipt only",
+    "generated mobile default preview + visible media + automatic saved revision validation + human reviewed Publish with exact revision attestation",
+    "390/320px visible publication control, preview interaction, no horizontal overflow"
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/posts/00000000-0000-4000-8000-000000000010",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/accounts",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/system/status",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/media/capabilities",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/posts/00000000-0000-4000-8000-000000000010",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/accounts",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/system/status",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/media/capabilities",
+      "body": null
+    },
+    {
+      "method": "POST",
+      "path": "/posts/00000000-0000-4000-8000-000000000010/validate",
+      "body": {
+        "expected_version": 1
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/media/capabilities",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/accounts",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/system/status",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/media/assets",
+      "body": null
+    },
+    {
+      "method": "POST",
+      "path": "/posts",
+      "key": "9cd08906-a73e-4bb2-840f-c973345ae020",
+      "body": {
+        "title": "Inert manually reviewed evidence.",
+        "content_type": "announcement",
+        "document": {
+          "schema_version": 1,
+          "master": {
+            "text": "Inert manually reviewed evidence.",
+            "link": "https://www.auditgava.com",
+            "hashtags": [],
+            "media": [
+              {
+                "asset_id": "00000000-0000-4000-8000-000000000030",
+                "alt_text": "Human reviewed evidence description",
+                "caption_asset_id": null
+              }
+            ]
+          },
+          "targets": [
+            {
+              "account_id": "00000000-0000-4000-8000-000000000020",
+              "format": "image",
+              "overrides": {}
+            }
+          ]
+        },
+        "references": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/posts/00000000-0000-4000-8000-000000000010",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/accounts",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/system/status",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/media/capabilities",
+      "body": null
+    },
+    {
+      "method": "POST",
+      "path": "/posts/00000000-0000-4000-8000-000000000010/validate",
+      "body": {
+        "expected_version": 1
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/posts/00000000-0000-4000-8000-000000000010/publish",
+      "key": "6d0a9240-5f74-4974-9073-5a4589acc750",
+      "body": {
+        "expected_version": 1,
+        "revision_id": "00000000-0000-4000-8000-000000000040",
+        "acknowledged_warning_codes": []
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/posts/00000000-0000-4000-8000-000000000010/validate",
+      "body": {
+        "expected_version": 1
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/posts/00000000-0000-4000-8000-000000000010/publish",
+      "key": "6d0a9240-5f74-4974-9073-5a4589acc750",
+      "body": {
+        "expected_version": 1,
+        "revision_id": "00000000-0000-4000-8000-000000000040",
+        "acknowledged_warning_codes": []
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/posts/00000000-0000-4000-8000-000000000010/validate",
+      "body": {
+        "expected_version": 1
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/posts/00000000-0000-4000-8000-000000000010/publish",
+      "key": "6d0a9240-5f74-4974-9073-5a4589acc750",
+      "body": {
+        "expected_version": 1,
+        "revision_id": "00000000-0000-4000-8000-000000000040",
+        "acknowledged_warning_codes": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/posts/00000000-0000-4000-8000-000000000010",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/system/status",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/posts/00000000-0000-4000-8000-000000000010/status",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/posts/00000000-0000-4000-8000-000000000010",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/accounts",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/system/status",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/media/capabilities",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/posts/00000000-0000-4000-8000-000000000010/evidence",
+      "body": null
+    },
+    {
+      "method": "POST",
+      "path": "/posts/00000000-0000-4000-8000-000000000010/validate",
+      "body": {
+        "expected_version": 1
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/media/assets",
+      "body": null
+    },
+    {
+      "method": "PATCH",
+      "path": "/posts/00000000-0000-4000-8000-000000000010",
+      "key": "1ea1767b-98ef-4511-94f3-9ed61e8f2a29",
+      "body": {
+        "title": "What does unsupported expenditure mean?",
+        "content_type": "announcement",
+        "document": {
+          "schema_version": 1,
+          "master": {
+            "text": "Read the finding and its supporting evidence.",
+            "link": "https://www.auditgava.com/audits",
+            "hashtags": [
+              "#Evidence"
+            ],
+            "media": [
+              {
+                "asset_id": "00000000-0000-4000-8000-000000000030",
+                "alt_text": "Inert evidence card",
+                "caption_asset_id": null
+              }
+            ]
+          },
+          "targets": [
+            {
+              "account_id": "00000000-0000-4000-8000-000000000020",
+              "format": "image",
+              "overrides": {}
+            }
+          ]
+        },
+        "references": [
+          {
+            "url": "https://example.invalid/inert-source",
+            "label": "Inert source"
+          }
+        ],
+        "expected_version": 1
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/posts/00000000-0000-4000-8000-000000000010/validate",
+      "body": {
+        "expected_version": 2
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/posts/00000000-0000-4000-8000-000000000010/evidence",
+      "body": null
+    },
+    {
+      "method": "POST",
+      "path": "/posts/00000000-0000-4000-8000-000000000010/publish",
+      "key": "b3451b4c-098b-463d-8531-358cda0af4ae",
+      "body": {
+        "expected_version": 2,
+        "revision_id": "00000000-0000-4000-8000-000000000042",
+        "acknowledged_warning_codes": [],
+        "review_attestation": {
+          "facts_checked": true,
+          "sources_checked": true
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/posts/00000000-0000-4000-8000-000000000010",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/system/status",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/posts/00000000-0000-4000-8000-000000000010/status",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/posts/00000000-0000-4000-8000-000000000010",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/accounts",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/system/status",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/media/capabilities",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/posts/00000000-0000-4000-8000-000000000010",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/accounts",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/system/status",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "path": "/media/capabilities",
+      "body": null
+    }
+  ],
+  "externalRequests": [],
+  "interceptedProviderNavigations": [],
+  "pageErrors": []
+}

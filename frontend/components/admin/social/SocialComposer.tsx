@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth/AuthProvider';
 import { consumeApprovedTraversal, useUnsavedHistoryGuard } from '@/lib/navigation/historyGuard';
 import useComposerErrors from './useComposerErrors';
 import SocialArchiveControls from './SocialArchiveControls';
+import useDeliveryWorkerReadiness from './useDeliveryWorkerReadiness';
 
 import { decodePost, decodePublication, DocumentTarget, PublishInput, SocialAccount, SocialApiError, SocialDraftInput, SocialPost, SocialSystemStatus, SocialValidation, socialApi, toSocialError } from '@/lib/api/social';
 import { useSocialDeliveryStatus, useSocialMutation, useSocialPost } from '@/lib/hooks/useSocial';
@@ -111,6 +112,45 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
   const canResume = publicationGates && cancelledAuthorization && !!resumeReason.trim();
   const canSubmit = !commandBusy && !locked && !stale && (!post || hasContentChanges || ['draft', 'rejected'].includes(post.editorial_state));
   const preparationIssues = copyPreparationIssues(input, accounts);
+  const workerIssue = useDeliveryWorkerReadiness(system?.worker);
+  const reviewRequired = error?.code === 'REVIEW_ATTESTATION_REQUIRED' && !attested;
+  const canPublishNow = canPublish && !workerIssue && !reviewRequired;
+  const readinessId = useId();
+  const publicationIssues: string[] = [];
+  if (!system) publicationIssues.push('Publishing status is unavailable. Refresh status before publication.');
+  else if (!system.publishing_enabled) publicationIssues.push('Publishing is paused at the system level. Draft saving and human review remain available.');
+  if (workerIssue) publicationIssues.push(workerIssue);
+  if (!accountsAvailable) publicationIssues.push('Connected accounts could not be verified. Refresh accounts before publication.');
+  if (!input.document.targets.length) publicationIssues.push('Select at least one destination.');
+  if (!distinctSelection) publicationIssues.push('A destination is selected more than once. Select each account once.');
+  for (const selected of input.document.targets) {
+    const connected = accounts.find(a => a.id === selected.account_id);
+    if (!connected) publicationIssues.push(`Selected account ${selected.account_id} is unavailable. Remove it explicitly or restore account access.`);
+    else {
+      if (!connected.publishing_enabled) publicationIssues.push(`${connected.display_name}: account publishing is disabled.`);
+      if (connected.connection_state !== 'connected') publicationIssues.push(`${connected.display_name}: connection is ${connected.connection_state}. Verify the account before publication.`);
+    }
+  }
+  if (reviewRequired) publicationIssues.push('The server requires a facts-and-sources review attestation for this revision. Complete that review and check the attestation above before publishing.');
+  if (mediaPending) publicationIssues.push('Media inspection is pending. Wait for inspected media before saving or publishing.');
+  if (!post || dirty) publicationIssues.push('Save & validate this revision, then review every destination preview.');
+  else if (stale) publicationIssues.push('Load the current revision, then validate and review it again.');
+  else if (!valid) publicationIssues.push('Save & validate this revision before publication.');
+  else if (!allValid) publicationIssues.push('Validation has not confirmed every selected destination and its exact content. Resolve the validation details above, including required media, then validate again.');
+  if (valid && !warningsAccepted) publicationIssues.push('Review and acknowledge every validation warning before publication.');
+  if (currentPublication && !readyAuthorization) publicationIssues.push('This authorization is not ready for immediate publication. Review its schedule and delivery results; cancelled deliveries require an explicit resume.');
+  if (post && !['draft', 'pending_review', 'approved'].includes(post.editorial_state)) publicationIssues.push('This draft must return to review before publication.');
+  if (commandBusy && !mediaPending) publicationIssues.push('Another command is in progress. Wait for its result before publication.');
+
+  // A delivery/approval command can advance the post version without changing
+  // its immutable content revision. Reconcile only a clean, idle editor; never
+  // adopt remote input or reset a person's review state from a status refresh.
+  useEffect(() => {
+    if (!post || !latestPost || dirty || commandBusy || running.current || archiveRunning.current || mediaOperations.current.size
+        || latestPost.version <= post.version || latestPost.id !== post.id || latestPost.revision_id !== post.revision_id
+        || draftFingerprint(post) !== draftFingerprint(input) || draftFingerprint(latestPost) !== draftFingerprint(post)) return;
+    setPost(latestPost);
+  }, [post, latestPost, input, dirty, commandBusy]);
 
   useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
   useEffect(() => {
@@ -187,7 +227,7 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
   // after a short idle window; this never approves, schedules or publishes.
   const autoFingerprint = draftFingerprint(input);
   useEffect(() => {
-    if (post?.origin_type !== 'generated' || locked || stale || commandBusy || !accountsAvailable) return;
+    if (post?.origin_type !== 'generated' || locked || stale || commandBusy || !accountsAvailable || (!dirty && !!currentPublication?.scheduled_for)) return;
     if (!dirty && validation?.version === post.version) return;
     const attempt = `${post.id}:${post.version}:${autoFingerprint}`;
     if (autoAttempt.current === attempt) return;
@@ -199,7 +239,7 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
     return () => clearTimeout(timer);
     // validate captures this exact document/revision. Busy/attempt guards prevent loops.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [post?.id, post?.version, post?.origin_type, autoFingerprint, dirty, validation?.version, locked, stale, commandBusy, accountsAvailable]);
+  }, [post?.id, post?.version, post?.origin_type, autoFingerprint, dirty, validation?.version, locked, stale, commandBusy, accountsAvailable, currentPublication?.scheduled_for]);
 
   function changeMasterMedia(media: SocialDraftInput['document']['master']['media'], selectedAsset?: MediaAsset) {
     if (selectedAsset?.mime_type) mediaMimeTypes.current.set(selectedAsset.id, selectedAsset.mime_type);
@@ -222,7 +262,7 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
   }
 
   async function publish(scheduled: boolean) {
-    if (!post || !canPublish) return;
+    if (!post || !(scheduled ? canPublish : canPublishNow)) return;
     await perform(async () => {
       const body: PublishInput = { expected_version: post.version, revision_id: post.revision_id, acknowledged_warning_codes: acknowledged, ...(attested ? { review_attestation: { facts_checked: true, sources_checked: true } } : {}) };
       if (scheduled && (!selectedTime || Date.parse(selectedTime.utc) <= Date.now())) throw new SocialApiError('INVALID_SCHEDULE_TIME', 'Choose a future, unambiguous schedule time.');
@@ -276,13 +316,13 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
   const primaryActions = !locked && <div className={`${styles.actionBar} ${isMobile && (dirty || !post) ? styles.floatingActions : ''}`}><button type='button' className={`${styles.button} ${dirty || !post ? styles.primary : ''}`} disabled={commandBusy || stale || (!!post && !dirty)} onClick={() => perform(async () => { const saved = await save(); setMessage(hasContentChanges ? 'Draft saved. Nothing has been queued for publication.' : 'Saved content is unchanged. The current revision and authorization were kept.'); if (!initialPost) onSaved?.(saved); })}>Save draft</button></div>;
 
   return <article ref={editorRef} className={styles.editor} aria-label='Social post composer'>
-    <div className={styles.editorHeading}><div><span className={styles.tag}>{post?.origin_type === 'generated' ? 'Generated from source data' : 'Written manually'}</span><h2>{post ? input.title || 'Untitled draft' : 'Create a manual post'}</h2></div><span className={styles.badge}>{busy ? 'Saving / checking…' : dirty ? 'Unsaved edits' : post ? `${post.editorial_state.replaceAll('_', ' ')} · revision ${post.version}` : 'Draft · not saved'}</span></div>
+    <div className={styles.editorHeading}><div><span className={styles.tag}>{post?.origin_type === 'generated' ? 'Generated from source data' : 'Written manually'}</span><h2>{post ? input.title || 'Untitled draft' : 'Create a manual post'}</h2></div><span className={styles.badge}>{busy ? 'Saving / checking…' : dirty ? 'Unsaved edits' : post ? `${post.editorial_state.replaceAll('_', ' ')} · version ${post.version}` : 'Draft · not saved'}</span></div>
     <div className={styles.editorBody}>
       {error && <SocialErrorBanner error={error} id={errorId} fieldLinks={fieldLinks} onFieldSelect={selectField} />}
       {live.error && <SocialErrorBanner error={live.error} onRetry={() => live.refetch()} />}
       {delivery.error && <SocialErrorBanner error={delivery.error} onRetry={() => delivery.refetch()} />}
       {message && <p className={styles.success} role='status'>{message}</p>}
-      {stale && <p className={styles.notice} role='alert'>A newer revision is available (version {latestPost?.version}). Your local edits are preserved. Load the current revision before publishing.</p>}
+      {stale && <p className={styles.notice} role='alert'>A newer saved post version is available (version {latestPost?.version}). {dirty && 'Your local edits are preserved. '}{latestPost?.revision_id !== post?.revision_id && 'Its content revision changed. '}Load the current revision before publishing.</p>}
       {(stale || error?.code === 'VERSION_CONFLICT') && <div className={styles.fields}>{dirty && <label className={styles.reviewCheck}><input type='checkbox' checked={discard} onChange={e => setDiscard(e.target.checked)} />Discard my local edits when loading the current revision</label>}<button type='button' className={styles.button} disabled={commandBusy || (dirty && !discard)} onClick={() => perform(async () => { if (post) adopt(await socialApi.post(post.id)); setMessage('Current revision loaded. Review it before saving or publishing.'); })}>Load current revision</button></div>}
       {locked && <p className={styles.notice}>This revision has begun publishing or is archived. Content is locked. Review the results or duplicate it as a new manual draft.</p>}
       {currentPublication && currentPublication.approved_by === null && <p className={styles.notice}>Authorized by an approved policy. Human schedule changes require a new reviewed revision.</p>}
@@ -295,7 +335,7 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
           {accountsAvailable && preparationIssues.length > 0 && <ul aria-label='Copy preparation checklist'>{preparationIssues.map(issue => <li key={issue}>{issue}</li>)}</ul>}
           <section tabIndex={-1} {...fieldIssueProps('document.master.media')}><SocialMedia label='Master' contextKey={`${post.id}:master`} onBusyChange={active => mediaBusyChanged('master', active)} media={input.document.master.media} onChange={changeMasterMedia} /></section>
           <button type='button' className={styles.button} disabled={commandBusy || dirty || stale || locked} onClick={prepareCopy}>Refresh caption &amp; hashtags</button>
-          <p className={styles.muted} role='status'>{busy ? 'Saving or checking this revision…' : dirty ? 'Waiting to save your changes…' : validation?.version === post.version ? 'This saved revision has been checked. Review any account holds or warnings below.' : 'Checking the saved revision…'}</p>
+          <p className={styles.muted} role='status'>{busy ? 'Saving or checking this revision…' : dirty ? 'Waiting to save your changes…' : currentPublication?.scheduled_for && currentPublication.revision_id === post.revision_id ? 'Publication was requested for this saved revision. Review the delivery results below.' : validation?.version === post.version ? 'This saved revision has been checked. Review any account holds or warnings below.' : 'Checking the saved revision…'}</p>
         </section>}
         <div className={styles.composerGrid}>
           <fieldset data-composer-panel='editor' disabled={locked} className={`${styles.destinations} ${styles.fields} ${mobilePanel === 'preview' ? styles.mobileHidden : ''}`}>
@@ -307,7 +347,7 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
             <label>Master hashtags<input value={hashtagText} {...fieldIssueProps('document.master.hashtags')} onChange={e => { setHashtagText(e.target.value); edit({ ...input, document: { ...input.document, master: { ...input.document.master, hashtags: e.target.value.split(/\s+/).filter(Boolean) } } }); }} /><span className={styles.muted}>Separate hashtags with spaces. Prepared captions use the verified facts and the selected account’s limits.</span></label>
             </div></details>
             {post?.origin_type === 'generated' && <GeneratedEvidence key={post.revision_id} postId={post.id} revisionId={post.revision_id} expectedVersion={post.version} />}<details className={styles.evidence}><summary>Source references</summary><div><p className={styles.muted}>Original publisher references support this post. Readers can find them on its AuditGava destination.</p>{input.references.map((reference, index) => <div className={styles.fields} key={index}><label>Source URL {index + 1}<input type='url' value={reference.url} {...fieldIssueProps(`references.${index}.url`)} onChange={e => edit({ ...input, references: input.references.map((r, i) => i === index ? { ...r, url: e.target.value } : r) })} /></label><label>Source label {index + 1}<input value={reference.label ?? ''} {...fieldIssueProps(`references.${index}.label`)} onChange={e => edit({ ...input, references: input.references.map((r, i) => i === index ? { ...r, label: e.target.value } : r) })} /></label>{httpsUrl(reference.url) && <a href={httpsUrl(reference.url)} target='_blank' rel='noopener noreferrer'>Open source {index + 1}</a>}<button type='button' className={styles.button} onClick={() => edit({ ...input, references: input.references.filter((_, i) => i !== index) })}>Remove source {index + 1}</button></div>)}<button type='button' className={styles.button} onClick={() => edit({ ...input, references: [...input.references, { url: '' }] })}>Add source reference</button></div></details>
-            {post?.origin_type !== 'generated' && <details className={styles.evidence}><summary>Images & video</summary><div><section tabIndex={-1} {...fieldIssueProps('document.master.media')}><SocialMedia label='Master' contextKey={`${post?.id ?? composerContext}:master`} onBusyChange={active => mediaBusyChanged('master', active)} media={input.document.master.media} onChange={changeMasterMedia} /></section></div></details>}
+            {post?.origin_type !== 'generated' && <section className={styles.fields} aria-label='Images & video'><h3>Images &amp; video</h3><p className={styles.muted}>Choose an inspected image or video from the library, or upload when available.</p><div><section tabIndex={-1} {...fieldIssueProps('document.master.media')}><SocialMedia label='Master' contextKey={`${post?.id ?? composerContext}:master`} onBusyChange={active => mediaBusyChanged('master', active)} media={input.document.master.media} onChange={changeMasterMedia} /></section></div></section>}
             <fieldset className={styles.destinations}><legend>Destinations</legend>
               {!accountsAvailable ? <p className={styles.notice}>Connected accounts could not be loaded. Saved selections are preserved; publishing is unavailable until accounts can be verified.</p> : !accounts.length && <p className={styles.empty}>No connected accounts. You can save a manual draft.</p>}
               <div className={styles.accounts}>{accounts.map(a => <label className={styles.account} key={a.id}><input type='checkbox' checked={input.document.targets.some(t => t.account_id === a.id)} onChange={e => select(a.id, e.target.checked)} /><span>{platformLabels[a.platform]} · {a.display_name}<small>{a.handle ?? 'Handle unavailable'} · {a.connection_state}{!a.publishing_enabled ? ' · publishing disabled' : ''}</small></span></label>)}</div>
@@ -333,7 +373,8 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
       {!locked && <><label className={styles.reviewCheck}><input type='checkbox' checked={attested} disabled={commandBusy} onChange={e => setAttested(e.target.checked)} />I checked the facts and sources. This attestation is required when the server identifies sensitive content.</label><div className={styles.actions}><button type='button' className={`${styles.button} ${!dirty && !allValid ? styles.primary : ''}`} disabled={commandBusy || stale} onClick={validate}>Save & validate</button><button type='button' className={`${styles.button} ${!dirty && allValid ? styles.primary : ''}`} disabled={!canSubmit} onClick={() => editorial('submit')}>Submit for review</button></div>
         {!allValid && <p className={styles.muted}>The saved revision must pass every selected account’s checks before publication.</p>}
         {post?.editorial_state === 'pending_review' && <button type='button' className={`${styles.button} ${!dirty && allValid ? styles.primary : ''}`} disabled={commandBusy || !allValid} onClick={() => editorial('approve')}>Approve revision</button>}
-        <details className={styles.evidence}><summary>Delivery & scheduling</summary><div><p className={styles.muted}>Publishing is a separate action after review. The current system and account gates must permit delivery.</p><button type='button' className={styles.button} disabled={!canPublish} onClick={() => publish(false)}>Publish now</button></div>
+        <section className={styles.fields} aria-label='Publication readiness'><h3>Review &amp; publish</h3><p className={styles.muted}>Review the saved text, media, sources and every destination preview. Publish now authorizes this exact revision and queues delivery; each destination reports its own result.</p><div id={readinessId}>{publicationIssues.length ? <ul>{publicationIssues.map(issue => <li key={issue}>{issue}</li>)}</ul> : <p>Ready for your publication decision. The server checks all gates again when you publish.</p>}</div><button type='button' className={`${styles.button} ${styles.primary}`} aria-describedby={readinessId} disabled={!canPublishNow} onClick={() => publish(false)}>Publish now</button></section>
+        <details className={styles.evidence}><summary>Delivery & scheduling</summary><div><p className={styles.muted}>A future schedule records a separate human decision. Worker availability and delivery gates are checked again when due.</p></div>
         <div className={styles.actions}><button type='button' className={styles.button} disabled={commandBusy || (!!currentPublication && !readyAuthorization)} aria-expanded={scheduleOpen} onClick={() => setScheduleOpen(!scheduleOpen)}>Schedule</button></div>
         {scheduleOpen && <div className={styles.schedule}><h3>One schedule for all selected accounts</h3><div className={styles.twoFields}><label>Local publish time<input type='datetime-local' value={localTime} disabled={commandBusy} onChange={e => { setLocalTime(e.target.value); setOffsetChoice(''); }} /></label><label>IANA timezone<input value={timezone} disabled={commandBusy} onChange={e => { setTimezone(e.target.value); setOffsetChoice(''); }} /></label></div>{civil.error && <p className={styles.notice} role='alert'>{civil.error}</p>}{civil.candidates.length > 1 && <label>UTC offset (this local time occurs twice)<select value={offsetChoice} disabled={commandBusy} onChange={e => setOffsetChoice(e.target.value)}><option value=''>Choose the intended occurrence</option>{civil.candidates.map(c => <option key={c.offset} value={c.offset}>{c.offset} · {c.utc}</option>)}</select></label>}{selectedTime && <p>UTC preview: {selectedTime.utc} · offset {selectedTime.offset}</p>}<button type='button' className={`${styles.button} ${styles.primary}`} disabled={!canPublish || !selectedTime || Date.parse(selectedTime.utc) <= Date.now()} onClick={() => publish(true)}>Confirm schedule</button><p className={styles.muted}>The server rejects invalid, ambiguous or past times. A scheduled target still requires publishing gates to be enabled when due.</p></div>}
         </details>

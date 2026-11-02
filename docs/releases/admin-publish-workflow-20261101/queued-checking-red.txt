@@ -1,0 +1,22 @@
+FAIL __tests__/admin/social/clean-status-sync.test.tsx
+  ● own generated publication reconciles its clean delivery version without inventing a new content revision or clearing human review
+
+    expect(element).not.toBeInTheDocument()
+
+    expected document not to contain element, found <p class="muted" role="status">Checking the saved revision…</p> instead
+
+      51 |   expect(screen.queryByRole('link', { name: /View Facebook post/ })).not.toBeInTheDocument();
+      52 |   expect(send.mock.calls.map(([path]) => path.split('/').at(-1))).toEqual(['validate', 'publish']);
+    > 53 |   expect(screen.queryByText('Checking the saved revision…')).not.toBeInTheDocument();
+         |                                                                  ^
+      54 |   expect(screen.getByText('Publication was requested for this saved revision. Review the delivery results below.')).toBeVisible();
+      55 | });
+      56 |
+
+      at Object.toBeInTheDocument (__tests__/admin/social/clean-status-sync.test.tsx:53:66)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 5 skipped, 6 total
+Snapshots:   0 total
+Time:        0.899 s, estimated 1 s
+Ran all test suites matching __tests__/admin/social/clean-status-sync.test.tsx with tests matching "own generated publication".

@@ -1,0 +1,49 @@
+Source: /tmp/admin-publish-ui-red.log
+  ● manual media and publication are visible without expanding secondary controls
+  ● publication readiness explains system, account, worker and saved-validation holds
+  ● stale worker blocks immediate delivery but permits a valid future schedule
+    Received element is not disabled:
+  ● stopped worker blocks immediate delivery but permits a valid future schedule
+    Received element is not disabled:
+  ● unavailable worker blocks immediate delivery but permits a valid future schedule
+    Received element is not disabled:
+  ● worker freshness expires while the composer stays open
+    Received element is not disabled:
+Test Suites: 1 failed, 1 total
+Tests:       6 failed, 1 passed, 7 total
+Time:        5.304 s
+
+Source: /tmp/admin-publish-media-description-red.log
+  ● media availability never offers uploads when only the inspected library is available
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 7 skipped, 8 total
+Time:        6.284 s
+
+Source: /tmp/admin-publish-review-attestation-red.log
+  ● server review-attestation refusal explains the missing human review before retry
+    Received element is not disabled:
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 8 skipped, 9 total
+Time:        1.615 s, estimated 3 s
+
+
+Source: /tmp/admin-publish-schedule-worker-red.log
+  ● unavailable worker blocks advancing an approved delivery now while keeping future rescheduling available
+    Received element is not disabled:
+  ● stale worker blocks advancing an approved delivery now while keeping future rescheduling available
+    Received element is not disabled:
+  ● stopped worker blocks advancing an approved delivery now while keeping future rescheduling available
+    Received element is not disabled:
+Test Suites: 1 failed, 1 total
+Tests:       3 failed, 8 skipped, 11 total
+Time:        1.533 s
+
+Source: status-sync-red.txt (independent pre-fix publication readback control)
+  accepted publication status version2 to3 with same saved revision creates no local-edit conflict
+  expected document not to contain element: A newer revision is available (version 3). Your local edits are preserved.
+  Tests: 1 failed, 5 skipped, 6 total (only the intended red case selected)
+
+Source: queued-checking-red.txt (post-sync false checking status control)
+  own generated publication reconciles its clean delivery version without inventing a new content revision or clearing human review
+  expected document not to contain element: Checking the saved revision…
+  Tests: 1 failed, 5 skipped, 6 total (only the intended red case selected)

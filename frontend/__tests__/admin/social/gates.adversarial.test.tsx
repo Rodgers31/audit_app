@@ -4,7 +4,7 @@ import { decodePost, SocialPost, SocialValidation, TargetState } from '@/lib/api
 import { socialKeys } from '@/lib/hooks/useSocial';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { accounts, actorId, instagramId, post, system, target, validation } from '../../../tests/socialFixtures';
+import { deliverySystem, accounts, actorId, instagramId, post, target, validation } from '../../../tests/socialFixtures';
 
 jest.mock('@/lib/api/axios', () => ({ __esModule: true, default: { get: jest.fn(), post: jest.fn(), patch: jest.fn() } }));
 jest.mock('@/lib/auth/admin', () => ({ useAdmin: () => ({ isAdmin: true }) }));
@@ -30,7 +30,7 @@ function mount(p: SocialPost, connected = accounts) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   clients.push(qc);
   qc.setQueryData(socialKeys.detail(actorId, decoded.id), decoded);
-  render(<QueryClientProvider client={qc}><SocialComposer initialPost={decoded} accounts={connected} system={system} /></QueryClientProvider>);
+  render(<QueryClientProvider client={qc}><SocialComposer initialPost={decoded} accounts={connected} system={deliverySystem()} /></QueryClientProvider>);
   return qc;
 }
 async function validate() {
@@ -152,7 +152,7 @@ test('a live newer revision blocks validated commands and preserves unsaved text
   const p = post(), qc = mount(p); await validate();
   fireEvent.change(screen.getByLabelText('Post text'), { target: { value: 'Must preserve local text' } });
   await act(async () => qc.setQueryData(socialKeys.detail(actorId, p.id), post({ version: 2, document: { ...p.document, master: { ...p.document.master, text: 'Changed by someone else' } } })));
-  await screen.findByText(/A newer revision is available/);
+  await screen.findByText(/A newer saved post version is available/);
   expect(screen.getByLabelText('Post text')).toHaveValue('Must preserve local text');
   expect(screen.getByRole('button', { name: 'Load current revision' })).toBeDisabled();
   expectClosed();

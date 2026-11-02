@@ -6,7 +6,7 @@ import { SocialApiError, SocialPost } from '@/lib/api/social';
 import { socialKeys } from '@/lib/hooks/useSocial';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { accounts, actorId, facebookId, post, system, validation } from '../../../tests/socialFixtures';
+import { deliverySystem, publicationReceipt, accounts, actorId, facebookId, post, system, validation } from '../../../tests/socialFixtures';
 
 jest.mock('@/lib/api/axios', () => ({ __esModule: true, default: { get: jest.fn(), post: jest.fn(), patch: jest.fn() } }));
 jest.mock('@/lib/auth/admin', () => ({ useAdmin: () => ({ isAdmin: true }) }));
@@ -37,7 +37,7 @@ beforeEach(() => {
 });
 afterEach(()=>qc.clear());
 const readyAccounts=accounts.map(a=>({...a,capabilities:{...a.capabilities,supported_formats:['text','image','reel'] as ('text'|'image'|'reel')[]}}));
-function mount(destinationAccounts=readyAccounts){return render(<QueryClientProvider client={qc}><SocialComposer initialPost={saved} accounts={destinationAccounts} system={{...system,publishing_enabled:false}} /></QueryClientProvider>);}
+function mount(destinationAccounts=readyAccounts, status={...system,publishing_enabled:false}){return render(<QueryClientProvider client={qc}><SocialComposer initialPost={saved} accounts={destinationAccounts} system={status} /></QueryClientProvider>);}
 
 test.each(['image/png','video/mp4'] as const)('add %s, review saved preview without writing or Save & validate',async mime=>{
   kind=mime;mount();
@@ -152,4 +152,24 @@ test('a refused current-source preparation stays visibly held without changing t
   expect(screen.queryByText('Review saved copy')).not.toBeInTheDocument();
   expect(patch).not.toHaveBeenCalled();
   expect(screen.getByRole('button',{name:'Publish now'})).toBeDisabled();
+});
+
+
+test('generated draft media remains discoverable from the default preview and publishes only after a human decision', async () => {
+  send.mockImplementation(async (path:string) => ({data:path.endsWith('/validate')?validation(saved):publicationReceipt(saved)}));
+  mount(readyAccounts, deliverySystem());
+  expect(screen.getByRole('button',{name:'Preview',exact:true})).toHaveAttribute('aria-pressed','true');
+  await waitFor(()=>expect(screen.getByRole('button',{name:'Choose from library'})).toBeEnabled());
+  expect(screen.getByRole('button',{name:'Choose from library'}).closest('[data-composer-panel]')).toBeNull();
+  fireEvent.click(screen.getByRole('button',{name:'Choose from library'}));
+  fireEvent.click(await screen.findByRole('button',{name:'Use report.png'}));
+  await waitFor(()=>expect(patch).toHaveBeenCalledTimes(1),{timeout:2500});
+  await waitFor(()=>expect(screen.getByRole('button',{name:'Publish now'})).toBeEnabled());
+  expect(screen.getByRole('region',{name:'Resolved post preview'})).toHaveTextContent('An inspected source illustration');
+  expect(send.mock.calls.every(([path])=>path.endsWith('/validate'))).toBe(true);
+  fireEvent.click(screen.getByRole('checkbox',{name:/I checked the facts and sources/}));
+  fireEvent.click(screen.getByRole('button',{name:'Publish now'}));
+  await screen.findByText(/Publication accepted for 1 destination/);
+  expect(send.mock.calls.find(([path])=>path.endsWith('/publish'))[1]).toEqual({expected_version:2,revision_id:saved.revision_id,acknowledged_warning_codes:[],review_attestation:{facts_checked:true,sources_checked:true}});
+  expect(screen.queryByRole('link',{name:/View Facebook post/})).not.toBeInTheDocument();
 });

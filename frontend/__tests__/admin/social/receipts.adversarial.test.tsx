@@ -4,7 +4,7 @@ import { decodePost, SocialPost } from '@/lib/api/social';
 import { socialKeys } from '@/lib/hooks/useSocial';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { accounts, actorId, instagramId, post, system, target, validation } from '../../../tests/socialFixtures';
+import { deliverySystem, accounts, actorId, instagramId, post, target, validation } from '../../../tests/socialFixtures';
 
 jest.mock('@/lib/api/axios', () => ({ __esModule: true, default: { get: jest.fn(), post: jest.fn(), patch: jest.fn() } }));
 jest.mock('@/lib/auth/admin', () => ({ useAdmin: () => ({ isAdmin: true }) }));
@@ -17,7 +17,7 @@ function mount(p: SocialPost) {
   get.mockResolvedValue({ data: decoded });
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   clients.push(qc); qc.setQueryData(socialKeys.detail(actorId, p.id), decoded);
-  render(<QueryClientProvider client={qc}><SocialComposer initialPost={decoded} accounts={accounts} system={system} /></QueryClientProvider>);
+  render(<QueryClientProvider client={qc}><SocialComposer initialPost={decoded} accounts={accounts} system={deliverySystem()} /></QueryClientProvider>);
 }
 beforeEach(() => {
   jest.clearAllMocks(); clients = [];

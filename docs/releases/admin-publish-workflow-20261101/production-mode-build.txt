@@ -1,0 +1,256 @@
+
+> audit-app-frontend@1.0.0 prebuild
+> node scripts/verify-node-runtime.cjs && node scripts/apply-tooling-repairs.cjs --check && node scripts/verify-tooling-inputs.cjs
+
+{"check":"node-runtime","node":"v24.22.1","supported":true}
+{"check":"source-bound-tooling-repairs","packages":["node_modules/braces","node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml","node_modules/deepmerge","node_modules/@eslint/eslintrc","node_modules/eslint-plugin-import","node_modules/eslint-plugin-react","node_modules/eslint-plugin-jsx-a11y"],"absentPackages":[],"changedFiles":0}
+{"check":"bounded-tooling-inputs","tailwindPatterns":["./pages/**/*.{js,ts,jsx,tsx,mdx}","./components/**/*.{js,ts,jsx,tsx,mdx}","./app/**/*.{js,ts,jsx,tsx,mdx}","./src/**/*.{js,ts,jsx,tsx,mdx}"],"nextRoot":"literal working directory","lintFilesChecked":362}
+
+> audit-app-frontend@1.0.0 build
+> next build
+
+[next.config] API rewrite target: http://127.0.0.1:9
+   ▲ Next.js 15.5.28
+   - Experiments (use with caution):
+     ✓ scrollRestoration
+     · optimizePackageImports
+
+[next.config] API rewrite target: http://127.0.0.1:9
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 6.1s
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/46) ...
+   Generating static pages (11/46) 
+   Generating static pages (22/46) 
+   Generating static pages (34/46) 
+❌ API Error: {
+  url: '/debt/timeline',
+  method: 'get',
+  status: undefined,
+  message: 'connect ECONNREFUSED 127.0.0.1:9',
+  retries: 2
+}
+❌ API Error: {
+  url: '/debt/national',
+  method: 'get',
+  status: undefined,
+  message: 'connect ECONNREFUSED 127.0.0.1:9',
+  retries: 2
+}
+❌ API Error: {
+  url: '/fiscal/summary',
+  method: 'get',
+  status: undefined,
+  message: 'connect ECONNREFUSED 127.0.0.1:9',
+  retries: 2
+}
+❌ API Error: {
+  url: '/audits/federal?top_findings=4',
+  method: 'get',
+  status: undefined,
+  message: 'connect ECONNREFUSED 127.0.0.1:9',
+  retries: 2
+}
+❌ API Error: {
+  url: '/budget/national',
+  method: 'get',
+  status: undefined,
+  message: 'connect ECONNREFUSED 127.0.0.1:9',
+  retries: 2
+}
+❌ API Error: {
+  url: '/debt/loans',
+  method: 'get',
+  status: undefined,
+  message: 'connect ECONNREFUSED 127.0.0.1:9',
+  retries: 2
+}
+❌ API Error: {
+  url: '/counties',
+  method: 'get',
+  status: undefined,
+  message: 'connect ECONNREFUSED 127.0.0.1:9',
+  retries: 2
+}
+❌ API Error: {
+  url: '/audit/summary',
+  method: 'get',
+  status: undefined,
+  message: 'connect ECONNREFUSED 127.0.0.1:9',
+  retries: 2
+}
+❌ API Error: {
+  url: '/audit/trends',
+  method: 'get',
+  status: undefined,
+  message: 'connect ECONNREFUSED 127.0.0.1:9',
+  retries: 2
+}
+❌ API Error: {
+  url: '/audit/recurring',
+  method: 'get',
+  status: undefined,
+  message: 'connect ECONNREFUSED 127.0.0.1:9',
+  retries: 2
+}
+❌ API Error: {
+  url: '/audit/findings?page=1&limit=20',
+  method: 'get',
+  status: undefined,
+  message: 'connect ECONNREFUSED 127.0.0.1:9',
+  retries: 2
+}
+❌ API Error: {
+  url: '/counties/fiscal-years',
+  method: 'get',
+  status: undefined,
+  message: 'connect ECONNREFUSED 127.0.0.1:9',
+  retries: 2
+}
+❌ API Error: {
+  url: '/debt/national',
+  method: 'get',
+  status: undefined,
+  message: 'connect ECONNREFUSED 127.0.0.1:9',
+  retries: 2
+}
+❌ API Error: {
+  url: '/debt/loans',
+  method: 'get',
+  status: undefined,
+  message: 'connect ECONNREFUSED 127.0.0.1:9',
+  retries: 2
+}
+❌ API Error: {
+  url: '/debt/timeline',
+  method: 'get',
+  status: undefined,
+  message: 'connect ECONNREFUSED 127.0.0.1:9',
+  retries: 2
+}
+❌ API Error: {
+  url: '/fiscal/summary',
+  method: 'get',
+  status: undefined,
+  message: 'connect ECONNREFUSED 127.0.0.1:9',
+  retries: 2
+}
+❌ API Error: {
+  url: '/pending-bills',
+  method: 'get',
+  status: undefined,
+  message: 'connect ECONNREFUSED 127.0.0.1:9',
+  retries: 2
+}
+❌ API Error: {
+  url: '/pending-bills/summary',
+  method: 'get',
+  status: undefined,
+  message: 'connect ECONNREFUSED 127.0.0.1:9',
+  retries: 2
+}
+❌ API Error: {
+  url: '/budget/overview',
+  method: 'get',
+  status: undefined,
+  message: 'connect ECONNREFUSED 127.0.0.1:9',
+  retries: 2
+}
+❌ API Error: {
+  url: '/budget/enhanced',
+  method: 'get',
+  status: undefined,
+  message: 'connect ECONNREFUSED 127.0.0.1:9',
+  retries: 2
+}
+❌ API Error: {
+  url: '/fiscal/summary',
+  method: 'get',
+  status: undefined,
+  message: 'connect ECONNREFUSED 127.0.0.1:9',
+  retries: 2
+}
+❌ API Error: {
+  url: '/counties?limit=50',
+  method: 'get',
+  status: undefined,
+  message: 'connect ECONNREFUSED 127.0.0.1:9',
+  retries: 2
+}
+❌ API Error: {
+  url: '/counties',
+  method: 'get',
+  status: undefined,
+  message: 'connect ECONNREFUSED 127.0.0.1:9',
+  retries: 2
+}
+ ✓ Generating static pages (46/46)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                      Size  First Load JS  Revalidate  Expire
+┌ ○ /                                         31.6 kB         445 kB          1h      1y
+├ ○ /_not-found                                  1 kB         104 kB
+├ ○ /about                                     3.8 kB         154 kB
+├ ○ /account                                  5.55 kB         216 kB
+├ ○ /accountability/unaccounted-funds         5.43 kB         237 kB
+├ ○ /admin                                    6.53 kB         201 kB
+├ ○ /admin/audit-log                          6.67 kB         242 kB
+├ ○ /admin/etl                                7.86 kB         253 kB
+├ ƒ /admin/etl/commands/[commandId]            1.1 kB         206 kB
+├ ○ /admin/ingestion                          5.08 kB         204 kB
+├ ƒ /admin/ingestion/[jobId]                  5.53 kB         205 kB
+├ ○ /admin/social                               405 B         254 kB
+├ ƒ /admin/social/[postId]                      465 B         254 kB
+├ ○ /admin/social/accounts                    7.58 kB         216 kB
+├ ƒ /admin/social/accounts/callback             179 B         103 kB
+├ ƒ /admin/social/accounts/platform-callback    179 B         103 kB
+├ ○ /admin/social/automation                  6.75 kB         220 kB
+├ ○ /admin/social/media                         425 B         210 kB
+├ ○ /admin/social/new                           422 B         254 kB
+├ ○ /admin/social/privacy                     5.79 kB         205 kB
+├ ○ /admin/social/studio                      15.5 kB         215 kB
+├ ○ /admin/users                              5.21 kB         240 kB
+├ ƒ /admin/users/[userId]                     8.43 kB         243 kB
+├ ƒ /api/account/delete                         179 B         103 kB
+├ ƒ /api/auth/reset-password                    179 B         103 kB
+├ ƒ /api/health                                 179 B         103 kB
+├ ƒ /api/revalidate                             179 B         103 kB
+├ ○ /apple-icon.png                               0 B            0 B
+├ ○ /audits                                   11.1 kB         371 kB          1h      1y
+├ ƒ /auth/callback                              179 B         103 kB
+├ ○ /budget                                   25.8 kB         431 kB          1h      1y
+├ ○ /counties                                   23 kB         384 kB          1h      1y
+├ ƒ /counties/[id]                            13.6 kB         310 kB
+├ ○ /counties/compare                         5.91 kB         300 kB          1h      1y
+├ ○ /debt                                     29.2 kB         449 kB          1h      1y
+├ ○ /icon.png                                     0 B            0 B
+├ ○ /learn                                    29.1 kB         187 kB
+├ ○ /learn/glossary                           7.41 kB         255 kB
+├ ○ /learn/government                         6.04 kB         156 kB
+├ ○ /learn/quiz                               6.52 kB         162 kB
+├ ○ /learn/videos                               179 B         103 kB
+├ ○ /learn/why-it-matters                     3.31 kB         154 kB
+├ ○ /newsletter/unsubscribe                   4.28 kB         224 kB
+├ ○ /privacy                                  3.91 kB         154 kB
+├ ƒ /reports/[domain]/[documentId]            5.19 kB         278 kB
+├ ○ /reset-password                           6.66 kB         208 kB
+├ ○ /robots.txt                                 179 B         103 kB
+├ ○ /sitemap.xml                                179 B         103 kB
+├ ○ /sources                                  6.91 kB         239 kB
+├ ƒ /sources/figures/[table]/[id]             4.68 kB         277 kB
+├ ○ /status                                   3.35 kB         201 kB
+├ ○ /terms                                    3.22 kB         153 kB
+└ ○ /transparency                             12.1 kB         311 kB          1h      1y
++ First Load JS shared by all                  103 kB
+  ├ chunks/1255-60d8dc7c8c9309a1.js           46.3 kB
+  ├ chunks/4bd1b696-100b9d70ed4e49c1.js       54.2 kB
+  └ other shared chunks (total)               2.44 kB
+
+
+ƒ Middleware                                  83.1 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
