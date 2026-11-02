@@ -24,6 +24,10 @@ from sqlalchemy.engine import make_url
 # Add backend to path to import models
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), "backend"))
 
+# Use the same explicit DBAPI driver as serving and migrations (SQLAlchemy2.1
+# otherwise changes bare PostgreSQL URLs to the uninstalled psycopg3 driver).
+from db_url import with_explicit_driver
+
 # Ensure environment variables are available from backend/.env and root .env
 try:
     from dotenv import load_dotenv  # type: ignore
@@ -37,7 +41,6 @@ if load_dotenv:
     load_dotenv(os.path.join(repo_root, ".env"), override=False)
 
 try:
-    from database import get_db  # type: ignore
     from models import Country  # type: ignore
     from models import (
         Audit,
@@ -126,7 +129,7 @@ class DatabaseLoader:
                 db_url = None
 
         # Final fallback for local dev only
-        self.database_url = (
+        self.database_url = with_explicit_driver(
             db_url or "postgresql://postgres:password@localhost:5432/audit_app"
         )
 

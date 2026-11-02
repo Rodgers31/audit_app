@@ -66,7 +66,9 @@ def test_enable_refuses_but_pause_preserves_uncertainty(media_db,change,code):
     cred=db.get(SocialCredential,row.credential_id)
     if change=='revoked': cred.revoked_at=SocialService(db).now()
     if change=='expired': cred.access_expires_at=SocialService(db).now()-timedelta(seconds=1)
-    if change=='refresh': cred.refresh_lease_token=uuid4(); cred.refresh_lease_expires_at=SocialService(db).now()-timedelta(seconds=1)
+    if change=='refresh':
+        expired_at=SocialService(db).now()-timedelta(seconds=1)
+        cred.refresh_lease_token=uuid4(); cred.refresh_lease_expires_at=expired_at
     db.commit(); before=row.publish_lease_token
     body=intent(db,row)
     with pytest.raises(SocialError, match=code): execute(db,row,body)

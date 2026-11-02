@@ -186,7 +186,9 @@ def dead_db_client():
     # dispatch_func at construction, long before this fixture runs).
     # Pipeline health uses its own executor-thread session; its factory must
     # fail through this same fixture rather than touch a configured engine.
-    with patch("main.get_db", _raise), patch("database.SessionLocal", _raise):
+    with patch("main.get_db", _raise), patch("database.SessionLocal", _raise), patch(
+        "database.RequestSessionLocal", _raise
+    ):
         yield TestClient(app, raise_server_exceptions=False)
 
     if _saved_override is None:
@@ -339,7 +341,7 @@ class TestTheFixtureReachesEveryRoute:
     live database and reporting a pass for routes it never tested.
     """
 
-    def test_no_route_reaches_the_real_session_factory(self, dead_db_client):
+    def test_no_route_reaches_the_real_session_factory(self, dead_db_client, monkeypatch):
         """Every route uses fixture dependencies, including the worker factory.
 
         The tripwire RAISES instead of connecting, so this test never opens a
@@ -347,14 +349,20 @@ class TestTheFixtureReachesEveryRoute:
         fails.
         """
         import database
+        from main import _status_require_admin
+        from supabase_auth import AdminUser
 
+        # v2 is admin-only. Exercise its worker after explicit fixture auth;
+        # unauthenticated refusal remains covered by the route-auth controls.
+        monkeypatch.setitem(app.dependency_overrides, _status_require_admin,
+                            lambda: AdminUser("owned-outage-admin", None, ["admin"]))
         reached: List[str] = []
 
         def _tripwire(*_a, **_kw):
             reached.append("SessionLocal()")
             raise OperationalError("SELECT 1", {}, Exception("tripwire"))
 
-        fixture_factory = database.SessionLocal
+        fixture_factory = database.RequestSessionLocal
         worker_calls = []
 
         def _watched_fixture_factory():
@@ -363,13 +371,17 @@ class TestTheFixtureReachesEveryRoute:
 
         # A worker factory is now an intended route dependency. Watch its
         # actual fixture call and trip on any connection to the real engine.
-        with patch.object(database, "SessionLocal", _watched_fixture_factory), patch.object(
+        with patch.object(database, "RequestSessionLocal", _watched_fixture_factory), patch.object(
             database.engine, "connect", _tripwire
-        ):
+        ), patch.object(database.request_engine, "connect", _tripwire):
             spec = app.openapi()
             for route in _derived_routes():
                 url, query = _concrete_url(route, spec["paths"][route])
-                dead_db_client.get(url, params=query)
+                response = dead_db_client.get(url, params=query)
+                if route == "/api/v1/system/pipeline-health/v2":
+                    assert response.status_code == 200, response.text
+                    assert response.json()["database"] == {}
+                    assert response.json()["status"] != "healthy"
 
         assert worker_calls, "pipeline health never exercised the dead worker factory"
         assert not reached, (

@@ -160,10 +160,15 @@ class DocumentExtractor:
 
             for table_idx, df in enumerate(tables):
                 if not df.empty:
+                    # pandas 3 string columns represent missing cells as NaN.
+                    # Export absence without changing literal text or numbers.
+                    rows = df.astype(object).where(pd.notna(df), None).values.tolist()
+                    if any(not pd.api.types.is_scalar(cell) for row in rows for cell in row):
+                        raise ValueError("Tabula produced a non-scalar table cell")
                     table_data = {
                         "table_index": table_idx,
                         "headers": df.columns.tolist(),
-                        "rows": df.values.tolist(),
+                        "rows": rows,
                         "row_count": len(df),
                     }
                     extracted_data["tables"].append(table_data)

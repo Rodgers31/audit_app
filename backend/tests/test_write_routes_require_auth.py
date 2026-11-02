@@ -300,8 +300,8 @@ def test_provider_signed_route_refuses_before_persistence(client, monkeypatch, p
         verify_token='inert-fixture-verify', subscriptions=(('fixture-sub', 'fixture-account'),),
         account_ids=('fixture-account',),
     )
-    monkeypatch.setattr(client.app.state, 'social_platform_events_config',
-                        {provider: config}, raising=False)
+    monkeypatch.setitem(client.app.state._state, 'social_platform_events_config',
+                        {provider: config})
     ran = []
     monkeypatch.setattr(platform_events, 'accept_event', lambda *a, **k: ran.append(1))
     path = f'/api/v1/social/platform-events/{provider}'
@@ -311,7 +311,7 @@ def test_provider_signed_route_refuses_before_persistence(client, monkeypatch, p
                                headers={'content-type': 'application/json', **headers})
         assert response.status_code == 403, response.text
         assert response.json()['detail']['code'] == 'PROVIDER_SIGNATURE_INVALID'
-    monkeypatch.setattr(client.app.state, 'social_platform_events_config', {})
+    monkeypatch.setitem(client.app.state._state, 'social_platform_events_config', {})
     response = client.post(path, content=b'{"fixture":true}')
     assert response.status_code == 503, response.text
     assert ran == []

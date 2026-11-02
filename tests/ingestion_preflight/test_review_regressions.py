@@ -352,7 +352,7 @@ def test_report_count_bounds_couple_all_fixed_reads(rows, decoded):
     )
     child = deepcopy(parent)
     child["status"] = "OBSERVED_READ_CHECKS_ONLY"
-    child["runtime"].update(driver="2.9.12", libpq=170006)
+    child["runtime"].update(driver=tool.DRIVER, libpq=170006)
     child["observation"] = {
         "checks": dict.fromkeys(tool.CHECKS, False),
         "sql_commands": 20,
