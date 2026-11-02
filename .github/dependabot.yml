@@ -1,3 +1,4 @@
+# Two routine review queues; security updates use separate groups and limits.
 version: 2
 updates:
   - package-ecosystem: npm
@@ -7,100 +8,45 @@ updates:
       day: monday
       time: "08:00"
       timezone: America/Chicago
-    open-pull-requests-limit: 4
-    commit-message:
-      prefix: build
-      include: scope
+    open-pull-requests-limit: 1
+    # GitHub documents allow.update-types as version-update-only. Urgent security
+    # fixes may therefore require a major version even with this routine policy.
+    allow:
+      - dependency-name: "*"
+        update-types: [version-update:semver-minor, version-update:semver-patch]
+    commit-message: {prefix: build, include: scope}
     groups:
-      next-framework:
-        patterns: ["next", "eslint-config-next", "@next/*"]
-        update-types: [minor, patch]
-      react:
-        patterns: ["react", "react-dom", "@types/react", "@types/react-dom"]
-        update-types: [minor, patch]
-      jest:
-        patterns: ["jest", "jest-environment-jsdom", "@jest/*", "@types/jest"]
-        update-types: [minor, patch]
-      native-patches:
-        patterns: ["@huggingface/transformers", "sharp"]
-        update-types: [patch]
-      frontend-libraries:
+      frontend-weekly:
+        applies-to: version-updates
         patterns: ["*"]
-        exclude-patterns: ["next", "eslint-config-next", "@next/*", "react", "react-dom", "@types/react", "@types/react-dom", "jest", "jest-environment-jsdom", "@jest/*", "@types/jest", "@huggingface/transformers", "sharp"]
         update-types: [minor, patch]
+      frontend-security:
+        applies-to: security-updates
+        patterns: ["*"]
   - package-ecosystem: pip
-    directory: /backend
+    directories:
+      - /backend
+      - /etl
+      - /tools/worker_host_fixture
+      - /docs/admin/batch66
+      - /docs/admin/batch71
+      - /docs/admin/batch80
     schedule:
       interval: weekly
       day: monday
       time: "08:15"
       timezone: America/Chicago
     versioning-strategy: increase
-    open-pull-requests-limit: 3
-    commit-message:
-      prefix: build
-      include: scope
-    groups:
-      python-framework:
-        patterns: [fastapi, starlette, pydantic, pydantic-settings]
-        update-types: [minor, patch]
-      python-test-tools:
-        patterns: [pytest, pytest-asyncio, pytest-cov, pytest-mock]
-        update-types: [minor, patch]
-      python-libraries:
-        patterns: ["*"]
-        exclude-patterns: [fastapi, starlette, pydantic, pydantic-settings, pytest, pytest-asyncio, pytest-cov, pytest-mock]
-        update-types: [minor, patch]
-  - package-ecosystem: pip
-    directory: /etl
-    schedule:
-      interval: weekly
-      day: monday
-      time: "08:30"
-      timezone: America/Chicago
-    versioning-strategy: increase
-    open-pull-requests-limit: 2
-    commit-message:
-      prefix: build
-      include: scope
-    groups:
-      pdf-and-data-patches:
-        patterns: [pypdf, pdfplumber, camelot-py, pandas, numpy]
-        update-types: [patch]
-      etl-libraries:
-        patterns: ["*"]
-        exclude-patterns: [pypdf, pdfplumber, camelot-py, pandas, numpy]
-        update-types: [minor, patch]
-  - package-ecosystem: pip
-    directory: /tools/worker_host_fixture
-    schedule:
-      interval: weekly
-      day: monday
-      time: "08:45"
-      timezone: America/Chicago
-    versioning-strategy: increase
-    open-pull-requests-limit: 2
-    commit-message:
-      prefix: build
-      include: scope
-    groups:
-      fixture-patches:
-        patterns: ["*"]
-        update-types: [patch]
-  - package-ecosystem: pip
-    directories: [/docs/admin/batch66, /docs/admin/batch71, /docs/admin/batch80]
-    schedule:
-      interval: weekly
-      day: monday
-      time: "09:00"
-      timezone: America/Chicago
-    versioning-strategy: increase
     open-pull-requests-limit: 1
-    commit-message:
-      prefix: build
-      include: scope
+    allow:
+      - dependency-name: "*"
+        update-types: [version-update:semver-minor, version-update:semver-patch]
+    commit-message: {prefix: build, include: scope}
     groups:
-      preflight-driver-patches:
-        patterns: [psycopg2-binary]
-        update-types: [patch]
-        group-by: dependency-name
+      python-weekly:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: [minor, patch]
+      python-security:
+        applies-to: security-updates
+        patterns: ["*"]
