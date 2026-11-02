@@ -18,6 +18,6 @@ Raw npm audit retains five existing low development-only deepmerge/Jest entries;
 
 ## Release boundary and rollback
 
-Merge-only maintenance: publishing, uploads, workers and financial generation remain off. No deployment, ingestion-pin advancement, migration, paid check or new resource is included. Native worker launch gates remain separate. Authorized Vercel Git disconnection prevents automatic paid builds while preserving the current deployment and manual prebuilt releases.
+Merge-only maintenance: publishing, uploads, workers and financial generation remain off. No deployment, ingestion-pin advancement, migration, paid check or new resource is included. Native worker launch gates remain separate. Authorized Vercel Git disconnection prevents Git-triggered Vercel builds while preserving the current deployment and manual prebuilt releases.
 
 Revert the complete replacement merge to restore its parent graph and SSR sources together. The final inverse-tree proof is retained with the coordinator's final commit receipt. Close superseded proposals only after acceptance/merge and current-intent reconciliation.

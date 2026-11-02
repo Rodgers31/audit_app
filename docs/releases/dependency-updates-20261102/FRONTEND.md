@@ -12,6 +12,6 @@ Independent checks include 41 private actual-SDK/cookie/authorization controls a
 
 The raw complete npm audit still reports five existing low deepmerge/Jest entries; the production audit reports zero. The exact installed repair bytes are verified, and no advisory is ignored or dismissed. This is dependency compatibility qualification, not a whole-system security or live publishing acceptance.
 
-Publishing, uploads, workers and financial generation remain off. This merge performs no deployment or database migration. Vercel Git automation was disconnected with owner authorization before merging to avoid paid automatic builds; the current production deployment and manual prebuilt release path remain available. Render automatic deployment remains off. Reconnecting deployment automation requires a deliberate cost/release decision.
+Publishing, uploads, workers and financial generation remain off. This merge performs no deployment or database migration. Vercel Git automation was disconnected with owner authorization before merging to prevent Git-triggered Vercel builds; the current production deployment and manual prebuilt release path remain available. Render automatic deployment remains off. Reconnecting deployment automation requires a deliberate cost/release decision.
 
 Source rollback reverts this batch's manifests, lockfile and middleware together; database state is unchanged. A future production release must bind its actual built graph and accepted artifact independently of these source checks.
