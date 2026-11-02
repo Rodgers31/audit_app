@@ -1,41 +1,40 @@
-# Weekly dependency updates
+# Dependency update qualification
+
+Queue schedules, grouping, PR limits, security-update activation and migration
+are defined in the [dependency review queue policy](../operations/dependency-update-policy.md).
+That policy supersedes this document's original 31 October 2026 five-queue
+configuration. The reviewed configuration takes effect when it reaches the
+default branch; inspect that branch and the recorded settings readbacks when
+checking the live state. This document retains the dependency qualification,
+source-bound repair, wheel, worker and no-new-cost requirements.
 
 The native GitHub Dependabot configuration is `.github/dependabot.yml`.
 The owner reviews and merges PRs manually. There is no auto-merge workflow,
 custom updater, paid model/review integration, token, registry credential,
 `pull_request_target` workflow, deploy trigger or elevated permission added.
 
-## Schedule and grouping
+## Queue policy and compatibility
 
-| Ecosystem/location | Monday, America/Chicago | Concurrent version PR cap |
-|---|---|---|
-| npm `/frontend` | 08:00 | 4 |
-| pip `/backend` | 08:15 | 3 |
-| pip `/etl` | 08:30 | 2 |
-| pip `/tools/worker_host_fixture` | 08:45 | 2 |
-| pip drivers `/docs/admin/batch66`, `batch71`, `batch80` | 09:00 | 1 shared update configuration |
+Use the canonical policy for the two weekly routine queues and their separate
+security groups. Routine groups include eligible minor/patch updates; major
+migrations require deliberate review, and security fixes may require a major
+version. Security updates use GitHub's separate PR budget and are not postponed
+until the routine weekly slot. Repository alert and security-update settings
+are independent of the YAML groups; their activation sequence and dated
+observations belong to the canonical policy.
 
-These are target check times, not guaranteed PR delivery times. IANA timezone
-handling follows Chicago daylight saving time. The first Monday after preparation
-is **2 November 2026**. Backend/ETL/fixture resolution uses root `.python-version`
-3.12.16, matching the tested serving Python line. Dependabot selects its available
-supported patch in that line; the file does not pin production's floating image.
-
-Next/eslint-config-next, React/types and Jest/types each have their own minor/patch
-group. Native inference/image packages and ETL PDF/data packages group patches
-only. Other ordinary libraries group minor/patch updates. The fixture groups
-patches only; its minor and major changes remain individual. Major updates are
-never included in these routine groups or blanket-ignored. A 0.x minor change
-can break compatibility even when SemVer calls it minor: review it accordingly.
-PR caps can leave a later group queued until earlier PRs are handled.
-
-Groups apply to version updates. Advisory-triggered security updates remain
-ungrouped and visible, with GitHub's separate fixed cap of ten security PRs.
-A schedule does not postpone a security update until Monday. Security update
-settings, dependency graph and alerts must be enabled independently; the observed
-repository security-update setting is currently disabled and is unchanged here.
+Grouped updates still require every applicable qualification below. A 0.x minor
+change can break compatibility even when SemVer calls it minor. A shared PR does
+not make independently resolved Python environments interchangeable, qualify a
+new native/model/browser dependency, or bypass source-bound tooling repairs.
+Existing proposals can occupy the lowered routine limits; follow the policy's
+retained-inventory and selective-replacement procedure before retiring them.
 
 ## Authoritative files and coverage
+
+Backend/ETL/fixture resolution uses root `.python-version` 3.12.16, matching the
+tested serving Python line. Dependabot selects its available supported patch in
+that line; the file does not pin production's floating image.
 
 Backend scanning includes `requirements.txt`, `requirements-dev.txt`, and the
 referenced `security-constraints.txt`. ETL uses `requirements.txt`. The worker
@@ -120,12 +119,12 @@ Dependabot runners and adds no runner configuration. Downstream Actions, paid
 reviews and previews are separate costs; existing CI/deploy workflows stay
 `disabled_manually`. Scheduled ingestion and its approved source SHA are untouched.
 
-Activation is the owner's merge of the reviewed configuration to main, after the
-remediation PR. This will allow weekly version PR creation; no hosted job is
-started in this session. If desired, the owner can then enable dependency graph,
-alerts and Dependabot security updates in Settings → Advanced Security, preserving
-all cost/preview protections. Enabling security updates before these exclusions
-reach main could create unprotected PRs, so it is deliberately not done here.
+Follow the canonical policy's activation and settings-verification sequence.
+The configuration must reach main before its groups govern generated updates;
+security-fix PR generation is a separate setting, enabled only after the reviewed
+grouping and cost/preview protections are on the default branch. Alert enablement
+and an initial empty inventory do not prove a completed vulnerability scan.
+No paid check, extra hosted run or automatic merge follows from this policy.
 The version updater can run while ordinary repository workflows are disabled.
 Existing required checks still protect main; disabled checks do not grant a merge
 bypass. Arrange approved validation through the existing review process.
@@ -174,8 +173,9 @@ rule/config parity, caller/cache tests and source-bound repair verification.
 
 To pause routine PR creation, set the affected `open-pull-requests-limit` to zero
 in a reviewed configuration change. This does not disable advisory security
-updates; their setting is separate. Revert the bot commit to remove weekly checks.
-Existing PRs remain for manual handling. To roll back a merged dependency update,
+updates; their setting is separate. Reverting the consolidation restores its
+preceding queue configuration rather than stopping all weekly checks. Existing
+PRs remain for deliberate manual handling. To roll back a merged dependency update,
 revert its manifests/lockfiles together and reinstall/rebuild the previous reviewed
 graph; document reintroduced advisories. No application data migration is involved.
 
