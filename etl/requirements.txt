@@ -14,7 +14,7 @@ schedule==1.2.2
 PyYAML==6.0.3
 fuzzywuzzy==0.18.0
 python-Levenshtein==0.27.5
-boto3==1.43.122
+boto3==1.43.123
 playwright==1.64.1
 
 # Used directly by pending-bills extraction and the resilient source reader.
