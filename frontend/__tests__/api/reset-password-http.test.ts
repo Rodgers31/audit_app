@@ -4,6 +4,8 @@ import { POST } from '@/app/api/auth/reset-password/route';
 import { GET } from '@/app/auth/callback/route';
 const mockStore = { get: jest.fn(), getAll: jest.fn() };
 jest.mock('next/headers', () => ({ cookies: async () => mockStore }));
+const legacyPacket = require('../fixtures/supabase-ssr-0.8-pkce.json') as { ssr_version: string; cookie: { name: string; value: string }; decoded_verifier: string };
+const encodeVerifier = (value: string) => 'base64-' + Buffer.from(JSON.stringify(value)).toString('base64url');
 let server: http.Server;
 let base: string;
 let requests: {
@@ -30,7 +32,7 @@ beforeAll(async () => {
         return;
       res.setHeader('content-type', 'application/json');
       if (req.url?.startsWith('/auth/v1/token')) {
-        const pairs: Record<string, string> = { INERT_CODE: 'INERT_VERIFIER', INERT_ACCOUNT_A: 'INERT_VERIFIER_A', INERT_ACCOUNT_B: 'INERT_VERIFIER_B' };
+        const pairs: Record<string, string> = { INERT_CODE: 'INERT_VERIFIER', INERT_ACCOUNT_A: 'INERT_VERIFIER_A', INERT_ACCOUNT_B: 'INERT_VERIFIER_B', INERT_LEGACY_CODE: legacyPacket.decoded_verifier.split('/')[0] };
         if (typeof body.auth_code !== 'string' || !pairs[body.auth_code] || body.code_verifier !== pairs[body.auth_code]) {
           res.writeHead(400);
           res.end(JSON.stringify({ error: 'invalid_grant', msg: 'Invalid PKCE verifier' }));
@@ -68,10 +70,10 @@ beforeEach(() => {
   process.env.NEXT_PUBLIC_SUPABASE_URL = base;
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'INERT_ANON';
   mockStore.get.mockReturnValue({ value: staged('INERT_CODE', 'INERT_VERIFIER/PASSWORD_RECOVERY') });
-  mockStore.getAll.mockReturnValue([{ name: 'auditgava-recovery', value: 'INERT_CODE' }, { name: 'sb-127-auth-token-code-verifier', value: 'INERT_VERIFIER/PASSWORD_RECOVERY' }, { name: 'sb-127-auth-token', value: 'INERT_STALE_SESSION' }]);
+  mockStore.getAll.mockReturnValue([{ name: 'auditgava-recovery', value: 'INERT_CODE' }, { name: 'sb-127-auth-token-code-verifier', value: encodeVerifier('INERT_VERIFIER/PASSWORD_RECOVERY') }, { name: 'sb-127-auth-token', value: 'INERT_STALE_SESSION' }]);
 });
 function staged(code: string, verifier: string) {
-  return JSON.stringify({ version: 1, flow: 'a'.repeat(32), code, expiresAt: Date.now() + 300000, verifier: [{ name: 'sb-127-auth-token-code-verifier', value: verifier }] });
+  return JSON.stringify({ version: 1, flow: 'a'.repeat(32), code, expiresAt: Date.now() + 300000, verifier: [{ name: 'sb-127-auth-token-code-verifier', value: encodeVerifier(verifier) }] });
 }
 function request(signal?: AbortSignal, flow = 'a'.repeat(32), password = 'InertPass123!') {
   return new Request('https://app.test/api/auth/reset-password', { method: 'POST', headers: { origin: 'https://app.test', 'content-type': 'application/json' }, body: JSON.stringify({ flow, password }), signal });
@@ -136,20 +138,20 @@ test('whole request deadline aborts actual stalled provider HTTP', async () => {
 test('two account callbacks cannot send the older form password to the newer account', async () => {
   const verifierName = 'sb-127-auth-token-code-verifier';
   async function callback(code: string, verifier: string) {
-    mockStore.getAll.mockReturnValue([{ name: verifierName, value: verifier + '/PASSWORD_RECOVERY' }]);
+    mockStore.getAll.mockReturnValue([{ name: verifierName, value: encodeVerifier(verifier + '/PASSWORD_RECOVERY') }]);
     return GET(new Request('https://app.test/auth/callback?' + new URLSearchParams({ code, next: '/reset-password' })));
   }
   const a = await callback('INERT_ACCOUNT_A', 'INERT_VERIFIER_A');
   const b = await callback('INERT_ACCOUNT_B', 'INERT_VERIFIER_B');
   const flow = (r: Awaited<ReturnType<typeof GET>>) => new URLSearchParams(new URL(r.headers.get('location')!).hash.slice(1)).get('recovery-flow')!;
   mockStore.get.mockReturnValue({ value: b.cookies.get('auditgava-recovery')!.value });
-  mockStore.getAll.mockReturnValue([{ name: verifierName, value: 'INERT_VERIFIER_B/PASSWORD_RECOVERY' }]);
+  mockStore.getAll.mockReturnValue([{ name: verifierName, value: encodeVerifier('INERT_VERIFIER_B/PASSWORD_RECOVERY') }]);
   const stale = await POST(request(undefined, flow(a), 'InertAPass123!'));
   expect(requests.filter(r => r.method === 'PUT').map(r => ({ principal: r.principal, password: r.body.password }))).toEqual([]);
   expect(stale.status).toBe(409);
   expect(requests).toHaveLength(0);
   expect(stale.cookies.getAll()).toHaveLength(0);
-  mockStore.getAll.mockReturnValue([{ name: verifierName, value: 'INERT_VERIFIER_C/PASSWORD_RECOVERY' }]);
+  mockStore.getAll.mockReturnValue([{ name: verifierName, value: encodeVerifier('INERT_VERIFIER_C/PASSWORD_RECOVERY') }]);
   const current = await POST(request(undefined, flow(b), 'InertBPass123!'));
   expect(current.status).toBe(200);
   expect(requests).toHaveLength(2);
@@ -162,9 +164,10 @@ test('two account callbacks cannot send the older form password to the newer acc
 
 test('actual SSR client reassembles the frozen contiguous PKCE verifier chunks', async () => {
   const state = JSON.parse(staged('INERT_CODE', 'INERT_VERIFIER/PASSWORD_RECOVERY'));
+  const encoded = encodeVerifier('INERT_VERIFIER/PASSWORD_RECOVERY');
   state.verifier = [
-    { name: 'sb-127-auth-token-code-verifier.1', value: 'VERIFIER/PASSWORD_RECOVERY' },
-    { name: 'sb-127-auth-token-code-verifier.0', value: 'INERT_' },
+    { name: 'sb-127-auth-token-code-verifier.1', value: encoded.slice(17) },
+    { name: 'sb-127-auth-token-code-verifier.0', value: encoded.slice(0, 17) },
   ];
   mockStore.get.mockReturnValue({ value: JSON.stringify(state) });
   mockStore.getAll.mockReturnValue([{ name: 'sb-127-auth-token-code-verifier', value: 'INERT_OTHER' }]);
@@ -173,4 +176,27 @@ test('actual SSR client reassembles the frozen contiguous PKCE verifier chunks',
   expect(requests.map(r => r.method)).toEqual(['POST', 'PUT']);
   expect(requests[0].body.code_verifier).toBe('INERT_VERIFIER');
   expect(requests[1].principal).toBe(fixtureUser.id);
+});
+
+test('actual new SDK consumes the retained cookie written by actual SSR0.8', async () => {
+  expect(legacyPacket.ssr_version).toBe('0.8.0');
+  const state = JSON.parse(staged('INERT_LEGACY_CODE', 'unused helper value'));
+  state.verifier = [legacyPacket.cookie];
+  mockStore.get.mockReturnValue({ value: JSON.stringify(state) });
+  const response = await POST(request());
+  expect(response.status).toBe(200);
+  expect(requests.map(r => r.method)).toEqual(['POST', 'PUT']);
+  expect(requests[0].body.code_verifier).toBe(legacyPacket.decoded_verifier.split('/')[0]);
+  expect(requests[1].principal).toBe(fixtureUser.id);
+  expect(response.cookies.get('sb-127-auth-token-code-verifier')).toBeUndefined();
+});
+
+test('malformed raw verifier bytes cannot trigger an exchange or update', async () => {
+  const state = JSON.parse(staged('INERT_CODE', 'unused helper value'));
+  state.verifier[0].value = 'INERT_VERIFIER/PASSWORD_RECOVERY';
+  mockStore.get.mockReturnValue({ value: JSON.stringify(state) });
+  const response = await POST(request());
+  expect(response.status).toBe(400);
+  expect(requests).toHaveLength(0);
+  expect(response.cookies.getAll()).toHaveLength(0);
 });

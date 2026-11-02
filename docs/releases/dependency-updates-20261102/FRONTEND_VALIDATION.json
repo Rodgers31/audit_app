@@ -1,0 +1,216 @@
+{
+  "scope": "manual frontend dependency batch; supersedes four proposals after review/merge",
+  "source_pr_heads": {
+    "873": "fc7ccef548c72977c3eda2d849520a0f57adc71d",
+    "874": "4134c09e6f2b30be60f30c65a82031c02f980f0d",
+    "875": "be1df107ae46e9c53679d4aa7bfabcb8efedfb0a",
+    "880": "87c66784620b6166fbe83780090483f1faffb1f9"
+  },
+  "manifest_intents": [
+    {
+      "pr": 873,
+      "head": "fc7ccef548c72977c3eda2d849520a0f57adc71d",
+      "section": "dependencies",
+      "package": "@types/react",
+      "from": "^19.2.14",
+      "to": "^19.3.0"
+    },
+    {
+      "pr": 873,
+      "head": "fc7ccef548c72977c3eda2d849520a0f57adc71d",
+      "section": "dependencies",
+      "package": "@types/react-dom",
+      "from": "^19.2.3",
+      "to": "^19.3.0"
+    },
+    {
+      "pr": 873,
+      "head": "fc7ccef548c72977c3eda2d849520a0f57adc71d",
+      "section": "dependencies",
+      "package": "react",
+      "from": "^19.2.4",
+      "to": "^19.3.1"
+    },
+    {
+      "pr": 873,
+      "head": "fc7ccef548c72977c3eda2d849520a0f57adc71d",
+      "section": "dependencies",
+      "package": "react-dom",
+      "from": "^19.2.4",
+      "to": "^19.3.1"
+    },
+    {
+      "pr": 874,
+      "head": "4134c09e6f2b30be60f30c65a82031c02f980f0d",
+      "section": "devDependencies",
+      "package": "jest-environment-jsdom",
+      "from": "^30.3.0",
+      "to": "^30.5.2"
+    },
+    {
+      "pr": 875,
+      "head": "be1df107ae46e9c53679d4aa7bfabcb8efedfb0a",
+      "section": "devDependencies",
+      "package": "@huggingface/transformers",
+      "from": "^4.3.1",
+      "to": "^4.3.2"
+    },
+    {
+      "pr": 880,
+      "head": "87c66784620b6166fbe83780090483f1faffb1f9",
+      "section": "dependencies",
+      "package": "@supabase/ssr",
+      "from": "^0.8.0",
+      "to": "^0.12.7"
+    },
+    {
+      "pr": 880,
+      "head": "87c66784620b6166fbe83780090483f1faffb1f9",
+      "section": "dependencies",
+      "package": "@tanstack/react-query",
+      "from": "^5.85.5",
+      "to": "^5.105.0"
+    },
+    {
+      "pr": 880,
+      "head": "87c66784620b6166fbe83780090483f1faffb1f9",
+      "section": "dependencies",
+      "package": "@tanstack/react-query-devtools",
+      "from": "^5.85.5",
+      "to": "^5.105.0"
+    },
+    {
+      "pr": 880,
+      "head": "87c66784620b6166fbe83780090483f1faffb1f9",
+      "section": "dependencies",
+      "package": "axios",
+      "from": "^1.20.0",
+      "to": "^1.21.0"
+    },
+    {
+      "pr": 880,
+      "head": "87c66784620b6166fbe83780090483f1faffb1f9",
+      "section": "dependencies",
+      "package": "postcss",
+      "from": "8.5.23",
+      "to": "8.5.32"
+    },
+    {
+      "pr": 880,
+      "head": "87c66784620b6166fbe83780090483f1faffb1f9",
+      "section": "devDependencies",
+      "package": "@playwright/test",
+      "from": "^1.48.0",
+      "to": "^1.64.1"
+    },
+    {
+      "pr": 880,
+      "head": "87c66784620b6166fbe83780090483f1faffb1f9",
+      "section": "devDependencies",
+      "package": "@tailwindcss/typography",
+      "from": "^0.5.0",
+      "to": "^0.5.20"
+    },
+    {
+      "pr": 880,
+      "head": "87c66784620b6166fbe83780090483f1faffb1f9",
+      "section": "devDependencies",
+      "package": "@testing-library/dom",
+      "from": "^10.4.1",
+      "to": "^10.4.2"
+    },
+    {
+      "pr": 880,
+      "head": "87c66784620b6166fbe83780090483f1faffb1f9",
+      "section": "devDependencies",
+      "package": "@testing-library/react",
+      "from": "^16.3.2",
+      "to": "^16.3.3"
+    },
+    {
+      "pr": 880,
+      "head": "87c66784620b6166fbe83780090483f1faffb1f9",
+      "section": "devDependencies",
+      "package": "autoprefixer",
+      "from": "^10.4.0",
+      "to": "^10.6.2"
+    },
+    {
+      "pr": 880,
+      "head": "87c66784620b6166fbe83780090483f1faffb1f9",
+      "section": "overrides",
+      "package": "postcss",
+      "from": "8.5.23",
+      "to": "8.5.32"
+    },
+    {
+      "pr": 880,
+      "head": "87c66784620b6166fbe83780090483f1faffb1f9",
+      "section": "lock_only",
+      "package": "@supabase/supabase-js",
+      "from": "2.98.0",
+      "to": "2.118.0",
+      "manifest_constraint_retained": "^2.98.0"
+    }
+  ],
+  "source_sha256": {
+    "frontend/package.json": "e20fb0484c195c8b32fdeffd8c6e88b033279c47162eb10210a49d74ff63fb33",
+    "frontend/package-lock.json": "44fe95d2d38a95cb24268c2479fa2718c600ba995593a8cdd90425b63002bedd",
+    "frontend/lib/supabase/middleware.ts": "a88648f217514dda14f520f1affb3924287fbf57fdc0dd554e501ad5b96e2072",
+    "frontend/__tests__/api/reset-password-http.test.ts": "0bf44cfa264707d0a32aa7118f7026b62022b0b1017a9b2d24affc6e05234409",
+    "frontend/__tests__/auth/supabase-upgrade.test.ts": "ed5f321cc29b671058461737d9075defed91746018353371adf7ce5f4e488a5d",
+    "frontend/__tests__/fixtures/supabase-ssr-0.8-pkce.json": "5ed99042633bab3f969e8f12987dc041590ff8d82375a0f1cd7db15fb63addcf"
+  },
+  "lock_version_changes": 87,
+  "missing_or_unexpected_version_changes": 0,
+  "source_bound_repairs_changed": false,
+  "fresh_install_platforms": [
+    "darwin-arm64",
+    "linux-x64"
+  ],
+  "node": "24.22.1",
+  "dependency_boundary_cases": 217,
+  "runtime_boundary_cases": 9,
+  "jest": {
+    "suites": 220,
+    "passed": 2960,
+    "failed": 0,
+    "skipped": 0
+  },
+  "admin_chromium_cases": 14,
+  "real_browser_wasm_and_bm25": true,
+  "actual_model_sharp_zip_platforms": [
+    "darwin-arm64",
+    "linux-x64"
+  ],
+  "typescript_and_lint": true,
+  "linux_network_disabled_next_build": true,
+  "raw_npm_audit": {
+    "existing_low_entries": 5,
+    "production": 0,
+    "suppressed": false
+  },
+  "independent_review": {
+    "actual_sdk_private_cases": 41,
+    "existing_auth_cases": 52,
+    "coordinator_cookie_header_authorization_cases": 8,
+    "coordinator_old_middleware_cases_failed": 8,
+    "counts_overlap": true
+  },
+  "raw_receipt_sha256": {
+    "frontend/AUTHOR-VALIDATION.json": "50b1e735c58ae155b1f6a73a516d4905a369c2cddef7b991b87dbb8fd99eca91",
+    "frontend/SHA256SUMS.json": "7fb779f7768c04e95dd8739fb3689508c90e8154ba1509af647b1463c17dca6d",
+    "frontend-independent/REVIEW.json": "c9f1826228fa7ddedd7a12ff7ce01e5746c2899d0e030818b270b1bfafc89b02",
+    "root-frontend-independent/execution.json": "52a9f2cfb6fc142f9b92c265175c0a07ab7526b24f17671346248c5961ccc39b",
+    "root-frontend-independent/baseline-execution.json": "b3382466c5ef2fea2ea005582d2e8eb787e4b5381b2382c3fababf07cf418411"
+  },
+  "limitations": [
+    "Compilation is not live provider/API availability or deployment acceptance.",
+    "BudgetTab optional packet reader used three retained PostgreSQL HTTP captures; no new database qualification is claimed.",
+    "Five existing low registry audit entries remain visible; exact installed repair bytes and caller guards were verified."
+  ],
+  "production_controls_changed": false,
+  "deployment_performed": false,
+  "record_stage": "historical initial87-entry qualification; final155-entry graph is FRONTEND_NATIVE_ADDON.json",
+  "final_validation_record": "FRONTEND_NATIVE_ADDON.json"
+}

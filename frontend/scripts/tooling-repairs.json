@@ -2685,13 +2685,9 @@
           "original_sha256": "e9955a173d565aa7f8df3e2465536b8833c5751d1c5e7545e3d5e17c6276b0d7",
           "repaired_sha256": "e9955a173d565aa7f8df3e2465536b8833c5751d1c5e7545e3d5e17c6276b0d7"
         },
-        "node_modules/resolve/.claude/settings.local.json": {
-          "original_sha256": "f25984e6647dbf2b040fc4ef0b15fa7af175ab47d05649a314f359e7af8519ba",
-          "repaired_sha256": "f25984e6647dbf2b040fc4ef0b15fa7af175ab47d05649a314f359e7af8519ba"
-        },
         "node_modules/resolve/.editorconfig": {
-          "original_sha256": "3a116377219f0059366b625cae9544355c5e8614d347f191bb847d09adf71a25",
-          "repaired_sha256": "3a116377219f0059366b625cae9544355c5e8614d347f191bb847d09adf71a25"
+          "original_sha256": "4bfd029ea7a2917dd81b5b1486f01b3e6d4bf8e2b90c4909704bd7df8352dfb2",
+          "repaired_sha256": "4bfd029ea7a2917dd81b5b1486f01b3e6d4bf8e2b90c4909704bd7df8352dfb2"
         },
         "node_modules/resolve/.github/FUNDING.yml": {
           "original_sha256": "8782905aa6bfaf730fb964ce168a0befcb012546784d4519a8342b2989aa5e0b",
@@ -2705,17 +2701,13 @@
           "original_sha256": "224d4c0a0d296f9c67daf4c4b182a3eb9586e86c6167f497856f9fac9774fb01",
           "repaired_sha256": "224d4c0a0d296f9c67daf4c4b182a3eb9586e86c6167f497856f9fac9774fb01"
         },
-        "node_modules/resolve/.gitmodules": {
-          "original_sha256": "558fef4356441816e253d717d3b8c20077791bde17a08ed5c486a419ca391454",
-          "repaired_sha256": "558fef4356441816e253d717d3b8c20077791bde17a08ed5c486a419ca391454"
-        },
         "node_modules/resolve/LICENSE": {
           "original_sha256": "60acd7711e6c138e6041836e32d922705254cc1568a30fdf16aa8f59bb87aeaa",
           "repaired_sha256": "60acd7711e6c138e6041836e32d922705254cc1568a30fdf16aa8f59bb87aeaa"
         },
         "node_modules/resolve/SECURITY.md": {
-          "original_sha256": "a119272d466d1a384bbcf6e86333fc16714d7a3ca25d19340bca597eefbfef67",
-          "repaired_sha256": "a119272d466d1a384bbcf6e86333fc16714d7a3ca25d19340bca597eefbfef67"
+          "original_sha256": "f7fef07b999aa229efae5fba0c3952b1ad815bfcca09a31b4d1e6de38af878ba",
+          "repaired_sha256": "f7fef07b999aa229efae5fba0c3952b1ad815bfcca09a31b4d1e6de38af878ba"
         },
         "node_modules/resolve/async.js": {
           "original_sha256": "30d9986bdca6c456b803c4577913bc27b93b110aa7300bffb85254452067708d",
@@ -2747,8 +2739,8 @@
           "repaired_sha256": "bc2c8e8581f1c5bff5a7ac7b7d3b41e190c44b112f210f2a838d75f0c62aaada"
         },
         "node_modules/resolve/lib/async.js": {
-          "original_sha256": "bc6dbe3dc429257b98b5fe2f772d48d7ebb84eb7c726a536af2188a77344a9e0",
-          "repaired_sha256": "bc6dbe3dc429257b98b5fe2f772d48d7ebb84eb7c726a536af2188a77344a9e0"
+          "original_sha256": "b5cc8ca6cb969f393552d028b4842bc2303b8bdf407e6493c88a05b9d48cb6fe",
+          "repaired_sha256": "b5cc8ca6cb969f393552d028b4842bc2303b8bdf407e6493c88a05b9d48cb6fe"
         },
         "node_modules/resolve/lib/caller.js": {
           "original_sha256": "1faea7ab3ce8c3eee7a5d647dfd6b7f0c91022a00e62cec54c948b7845f75004",
@@ -2763,8 +2755,8 @@
           "repaired_sha256": "5a079d799057687d572608e9d59114a1db05401cb360a983c591bb37ae4b4dae"
         },
         "node_modules/resolve/lib/homedir.js": {
-          "original_sha256": "db74430e4efbf687ad7a0a229c013be1b6de1c3a23795b9e23b01a162848f4d0",
-          "repaired_sha256": "db74430e4efbf687ad7a0a229c013be1b6de1c3a23795b9e23b01a162848f4d0"
+          "original_sha256": "dd92d80a95a9e9cd246e308eb44f102777e12cd85c919ccb1803c9c5d4ee4268",
+          "repaired_sha256": "dd92d80a95a9e9cd246e308eb44f102777e12cd85c919ccb1803c9c5d4ee4268"
         },
         "node_modules/resolve/lib/node-modules-paths.js": {
           "original_sha256": "5e615db3c990b5169838a5a03fe9ced6180bf5c03fe68e18b095068a0829a289",
@@ -2783,16 +2775,16 @@
           "repaired_sha256": "b6abee7918ce2f08a04f00a398255add5bb41941c6aecb5e90eb8f915a93b853"
         },
         "node_modules/resolve/lib/sync.js": {
-          "original_sha256": "ae855da320109b225b460116ed9be852305683b198663e89bf15f49167441c16",
-          "repaired_sha256": "ae855da320109b225b460116ed9be852305683b198663e89bf15f49167441c16"
+          "original_sha256": "fcb6bd91c9867e1780bddaf918421f49ddcc7b0f58c01d70a8fb68485adf87d8",
+          "repaired_sha256": "fcb6bd91c9867e1780bddaf918421f49ddcc7b0f58c01d70a8fb68485adf87d8"
         },
         "node_modules/resolve/package.json": {
-          "original_sha256": "a68496e0077d9def4b338b167dd2305b38b73cbb0102f9f64dba9d333754a3c3",
-          "repaired_sha256": "a68496e0077d9def4b338b167dd2305b38b73cbb0102f9f64dba9d333754a3c3"
+          "original_sha256": "908d5caed0017ae9c8b345f9f1f2e55cb86e379e00398175d8018dfe900a7ada",
+          "repaired_sha256": "908d5caed0017ae9c8b345f9f1f2e55cb86e379e00398175d8018dfe900a7ada"
         },
         "node_modules/resolve/readme.markdown": {
-          "original_sha256": "48df2404764486a9b3ab196e72d6164336796eab14af20c006603aec34711817",
-          "repaired_sha256": "48df2404764486a9b3ab196e72d6164336796eab14af20c006603aec34711817"
+          "original_sha256": "ff42566244e859037beef3caa7038b88f28df1fda7206c456a2f149b9dbec3d5",
+          "repaired_sha256": "ff42566244e859037beef3caa7038b88f28df1fda7206c456a2f149b9dbec3d5"
         },
         "node_modules/resolve/sync.js": {
           "original_sha256": "48bf4ce0175e835cbfb3af9f4f848d9d839f9e9997587f175629a963283598d8",
@@ -2811,12 +2803,12 @@
           "repaired_sha256": "31bb7415309643a9ddaa8d4eca81523a5bfae167cb151fc39c0a875aa158ac1d"
         },
         "node_modules/resolve/test/exports.js": {
-          "original_sha256": "cf35e84921e5458a6f112cb614496679860a2605af01644936bb4722d09940ea",
-          "repaired_sha256": "cf35e84921e5458a6f112cb614496679860a2605af01644936bb4722d09940ea"
+          "original_sha256": "6fb0b5f2f0163014d41a08590740a837f48e005afaba0b8ee516a8aea630629a",
+          "repaired_sha256": "6fb0b5f2f0163014d41a08590740a837f48e005afaba0b8ee516a8aea630629a"
         },
         "node_modules/resolve/test/exports_sync.js": {
-          "original_sha256": "7ca6f57792dc5b289e9bd536a0c3e3325ecf3c3bab4552d85b3c36dfc6496660",
-          "repaired_sha256": "7ca6f57792dc5b289e9bd536a0c3e3325ecf3c3bab4552d85b3c36dfc6496660"
+          "original_sha256": "8d5c3a9cf230f933ad66f34641776e28404b9919343f69fed228eb863cc7916e",
+          "repaired_sha256": "8d5c3a9cf230f933ad66f34641776e28404b9919343f69fed228eb863cc7916e"
         },
         "node_modules/resolve/test/faulty_basedir.js": {
           "original_sha256": "6dc6c2ebbfbc2c09388ef24ae6fdc3a99cadfff6a5cfb7cb90e6e47df6659616",
@@ -2839,12 +2831,12 @@
           "repaired_sha256": "a1b8fd06f59a85c2c35b9bd110994d454cb126ab3891bf45bf56d3f8c11ddf0b"
         },
         "node_modules/resolve/test/mock.js": {
-          "original_sha256": "05e36909d4f5cc32bb2e65c48d24b22d89e8f588680fab30b834536b1247d706",
-          "repaired_sha256": "05e36909d4f5cc32bb2e65c48d24b22d89e8f588680fab30b834536b1247d706"
+          "original_sha256": "1fedae270b2fa18a3ca5f769b19d37897bc7f7eddeda98999f671006df5fc534",
+          "repaired_sha256": "1fedae270b2fa18a3ca5f769b19d37897bc7f7eddeda98999f671006df5fc534"
         },
         "node_modules/resolve/test/mock_sync.js": {
-          "original_sha256": "fbaa7c6d1039da7b391bfd8c9521382f565bad84acf8948990429b258301f7db",
-          "repaired_sha256": "fbaa7c6d1039da7b391bfd8c9521382f565bad84acf8948990429b258301f7db"
+          "original_sha256": "d977ce9fa11029aadd0d4e248b75a66a81d2c06392dfc5e8cca1bc0b8f8a1b8e",
+          "repaired_sha256": "d977ce9fa11029aadd0d4e248b75a66a81d2c06392dfc5e8cca1bc0b8f8a1b8e"
         },
         "node_modules/resolve/test/module_dir/xmodules/aaa/index.js": {
           "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -3133,6 +3125,50 @@
         "node_modules/resolve/test/symlinks.js": {
           "original_sha256": "347b64bdd13972011b40d6db640a53726b6642f4bec1badf69e67fa3dc4cec67",
           "repaired_sha256": "347b64bdd13972011b40d6db640a53726b6642f4bec1badf69e67fa3dc4cec67"
+        },
+        "node_modules/resolve/.nycrc": {
+          "original_sha256": "f21c68b3b976d44291206b0207ce396d89e0f2a18d23744a06dcd93ccdc6039c",
+          "repaired_sha256": "f21c68b3b976d44291206b0207ce396d89e0f2a18d23744a06dcd93ccdc6039c"
+        },
+        "node_modules/resolve/async.d.ts": {
+          "original_sha256": "f6e25368998c2c31304df9976ac4b96b6620de671cf21904a394e8f6d02537c4",
+          "repaired_sha256": "f6e25368998c2c31304df9976ac4b96b6620de671cf21904a394e8f6d02537c4"
+        },
+        "node_modules/resolve/index.d.mts": {
+          "original_sha256": "329ad19a9927ae9ffe4fe36e4f5bdb5e291962f5c2e42868ec7c1a1d6d73d5d6",
+          "repaired_sha256": "329ad19a9927ae9ffe4fe36e4f5bdb5e291962f5c2e42868ec7c1a1d6d73d5d6"
+        },
+        "node_modules/resolve/index.d.ts": {
+          "original_sha256": "e65f0a22cb88e822255e7459cdb6d8d2bf439f7b0fc6cca57a4a495ab741c11a",
+          "repaired_sha256": "e65f0a22cb88e822255e7459cdb6d8d2bf439f7b0fc6cca57a4a495ab741c11a"
+        },
+        "node_modules/resolve/lib/async.d.ts": {
+          "original_sha256": "bb3c3b6c4fe3ec8b38306d9ec199e40427209bebf39108eb05ad898e0dc12654",
+          "repaired_sha256": "bb3c3b6c4fe3ec8b38306d9ec199e40427209bebf39108eb05ad898e0dc12654"
+        },
+        "node_modules/resolve/lib/sync.d.ts": {
+          "original_sha256": "b69cc0b526724d28773169257a695c075c9613c94256f29bc6a5ad8f001a7c89",
+          "repaired_sha256": "b69cc0b526724d28773169257a695c075c9613c94256f29bc6a5ad8f001a7c89"
+        },
+        "node_modules/resolve/npm-debug.log.357d1f5f60a5f00f2e0c325cef16bbd4": {
+          "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "repaired_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "node_modules/resolve/sync.d.ts": {
+          "original_sha256": "a1dcad9bd20e5b5d5de19e136c451f369895cf2d92cc7297e17a9627eb895a6d",
+          "repaired_sha256": "a1dcad9bd20e5b5d5de19e136c451f369895cf2d92cc7297e17a9627eb895a6d"
+        },
+        "node_modules/resolve/test/default_paths.js": {
+          "original_sha256": "a5f8b66bd73caf39b59186ea82e14a3e5b66693f9cc2714633851c79816579ec",
+          "repaired_sha256": "a5f8b66bd73caf39b59186ea82e14a3e5b66693f9cc2714633851c79816579ec"
+        },
+        "node_modules/resolve/test/homedir.js": {
+          "original_sha256": "4632ff172892f0089ac04c8439df8f4b36d624d34d0d936f0a692d0e66687b9c",
+          "repaired_sha256": "4632ff172892f0089ac04c8439df8f4b36d624d34d0d936f0a692d0e66687b9c"
+        },
+        "node_modules/resolve/tsconfig.json": {
+          "original_sha256": "147a5d0298822713e48283902d87a953897a6b7bdc3797da51c6befb31de3ae9",
+          "repaired_sha256": "147a5d0298822713e48283902d87a953897a6b7bdc3797da51c6befb31de3ae9"
         },
         "node_modules/semver/LICENSE": {
           "original_sha256": "4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b",

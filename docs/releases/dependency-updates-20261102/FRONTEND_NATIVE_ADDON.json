@@ -1,0 +1,98 @@
+{
+  "scope": "final replacement #891: original #873 #874 #875 #880 plus captured native #889",
+  "native_head": "6f848539ad1e718648ef8320936f83c2351ebba0",
+  "base_main": "bad738091cda138b2d422c8416b93aeebb9011b4",
+  "source_sha256": {
+    "frontend/package.json": "05f98e775aa24452e949c6d2a367efdeaae81124497d892fe075f9342d9ccbd7",
+    "frontend/package-lock.json": "aff1ded2fc83941cc825cafae208db24974594934952bd1b17b498afee269481",
+    "frontend/scripts/tooling-repairs.json": "88b7fefa39795e5468042f4aa7e4fdbca36fae5b8ac06c1cf947532585fc7652",
+    "frontend/lib/supabase/middleware.ts": "a88648f217514dda14f520f1affb3924287fbf57fdc0dd554e501ad5b96e2072",
+    "frontend/__tests__/api/reset-password-http.test.ts": "0bf44cfa264707d0a32aa7118f7026b62022b0b1017a9b2d24affc6e05234409",
+    "frontend/__tests__/auth/supabase-upgrade.test.ts": "ed5f321cc29b671058461737d9075defed91746018353371adf7ce5f4e488a5d",
+    "frontend/__tests__/fixtures/supabase-ssr-0.8-pkce.json": "5ed99042633bab3f969e8f12987dc041590ff8d82375a0f1cd7db15fb63addcf"
+  },
+  "native_dependency_blobs_exact": true,
+  "lock_entry_changes_vs_main": {
+    "total": 155,
+    "existing_version_changes": 95,
+    "added": 34,
+    "removed": 26
+  },
+  "original_87_version_intents": {
+    "exact": 86,
+    "solid_js_advanced": [
+      "1.9.17",
+      "1.9.18"
+    ]
+  },
+  "additional_manifest_ranges": {
+    "dependencies.@types/node": [
+      "^20.0.0",
+      "^20.19.43"
+    ],
+    "dependencies.lucide-react": [
+      "^0.575.0",
+      "^0.577.0"
+    ]
+  },
+  "resolver_inventory": {
+    "all_25_patch_objects_identical": true,
+    "all_other_inventory_metadata_identical": true,
+    "all_existing_mode_guards_preserved": true,
+    "old_react_files": 533,
+    "new_react_files": 542,
+    "changed_upstream_paths": 24,
+    "removed": 2,
+    "added": 11,
+    "changed": 11,
+    "official_tarballs_sha512_verified": 8,
+    "installed_native_packages_exact_official_bytes": 5,
+    "guard_logic_changes": false
+  },
+  "validation": {
+    "jest_suites": 220,
+    "jest_tests": 2960,
+    "jest_skipped": 0,
+    "dependency_boundary": 217,
+    "runtime_isolation": 9,
+    "admin_chromium": 14,
+    "linux_source_files_unchanged": 850,
+    "raw_full_audit_low": 5,
+    "raw_production_audit": 0
+  },
+  "fresh_scripted_install_platforms": [
+    "darwin-arm64",
+    "linux-x64"
+  ],
+  "node": "24.22.1",
+  "typescript_lint_full_peers": true,
+  "network_disabled_linux_next_build": true,
+  "actual_model_sharp_zip_both_platforms": true,
+  "browser_wasm_and_semantic_retrieval": true,
+  "independent_executable_reviews": {
+    "coordinator_inventory_controls": 17,
+    "second_sdk_controls": 41,
+    "second_caller_controls": 8,
+    "second_new_tooling_controls": 17,
+    "full_lint_rule_parity": 54,
+    "counts_overlap": true
+  },
+  "receipt_sha256": {
+    "frontend-native-addon/AUTHOR-ADDON-VALIDATION.json": "705403c4e348947f1dbf04926337488a89a005a3ea561337f8cb382a9ddfdc55",
+    "frontend-native-addon/SHA256SUMS.json": "55470030056e1386e43354befbdf23606cc7e52eff9189db52c4fb4c8b547bc4",
+    "root-native-addon-independent/REVIEW.json": "a85121a47643a64be1d6c8398ebf0c62625fd66e161acd0c8967e4742ae57f81",
+    "frontend-native-second-independent/REVIEW.json": "9fb91f04943ca3ea60260df914fac2172ce61cd697984ac181e50b4a7bf0d6c4",
+    "frontend-native-second-independent/SHA256SUMS.json": "8ae8f313f16230681107fba5b198cdec3f3313c91b275878f204c422c0272f30",
+    "native-group-reconciliation/SUMMARY.json": "a0006e7b8046cd168e80bb4fd2fe8da0771d2ec1f9b1223d0582744a28a4047c"
+  },
+  "limitations": [
+    "Five raw low deepmerge-related registry advisories remain visible. Installed repair bytes and behavior are verified; no advisory suppression.",
+    "Linux production build is network-isolated and logs expected unavailable API/DNS fallbacks; it proves compilation and source/native compatibility, not production data availability.",
+    "The BudgetTab retained HTTP regression ran using three previously captured owned PostgreSQL packets, not a new live database probe.",
+    "Existing Node/ESLint deprecation and install-script policy warnings remain captured; no policy or dependency guard was disabled."
+  ],
+  "historical_record": "FRONTEND_VALIDATION.json",
+  "controls_changed": false,
+  "deployment_performed": false,
+  "new_paid_resources": false
+}
