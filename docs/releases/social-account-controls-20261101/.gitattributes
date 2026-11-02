@@ -1,0 +1,7 @@
+# Preserve the exact captured build log bytes, including CRLF, in Git.
+coordinator/frontend-final-build.log -text
+
+# Raw captured receipts retain their original whitespace; source checks remain strict.
+*.txt -whitespace
+*.xml -whitespace
+*.log -whitespace

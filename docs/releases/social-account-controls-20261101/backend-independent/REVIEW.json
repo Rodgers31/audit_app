@@ -1,0 +1,118 @@
+{
+  "reviewer": "nightly_failure_reporting",
+  "verdict": "APPROVED_LOCAL_BACKEND_SCOPE",
+  "source_hashes": {
+    "backend/social/account_publishing.py": "6d002ebb431be620acb1f0ffd2be773c65be9baa3e546073a09607e0556f6efa",
+    "backend/social/api.py": "fb8f9d43dd054bdb3a9aeb1ff0e26ae8fc9fc136d156542bc668b037c0f8b514",
+    "backend/social/worker/materials.py": "d9b5186accde619712641dc6e7ebf793c853da6abc055d6db5bb34684cafec98",
+    "backend/social/service.py": "c2d2ca82f6befc02d1f0140e3b30ad5497f502e2e9625007374452930afd813c",
+    "backend/social/validation.py": "3a070b2e2e34b27f0ab51893eb2a038c7142a881b237ac7e0cd3741839fc99fd",
+    "backend/social/native_admission.py": "a00c13fb531ccd1414249d7922b0ded9457e156816f7765d6b288817d2302c06",
+    "backend/tests/social/test_account_publishing.py": "b97f75fee0156675de3c923a54d56eab76df655a588dc220193b06f6d17c7ed0",
+    "backend/tests/social/test_manual_media_workflow.py": "c94dc73546e03f7394c7dc8527be52c94fd54cab6f84732c9352d180581edf17",
+    "backend/tests/social/test_worker_materials.py": "da67e012fd39f87d2c11899c1fe30de05db5c393e60b6c401ad1b939e3f337fc"
+  },
+  "unchanged_during_final_execution": true,
+  "results": {
+    "normal": {
+      "tests": 147,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "by_class": {
+        "": 81,
+        "tests.social.test_account_publishing": 25,
+        "tests.social.test_manual_media_workflow": 3,
+        "tests.social.test_worker_materials": 38
+      },
+      "runtime_seconds": 5.984
+    },
+    "optimized": {
+      "tests": 147,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "by_class": {
+        "": 81,
+        "tests.social.test_account_publishing": 25,
+        "tests.social.test_manual_media_workflow": 3,
+        "tests.social.test_worker_materials": 38
+      },
+      "runtime_seconds": 6.361
+    }
+  },
+  "runtime": {
+    "python": "3.12.16",
+    "packages": {
+      "SQLAlchemy": "2.0.55",
+      "fastapi": "0.156.8",
+      "pydantic": "2.14.2",
+      "psycopg2-binary": "2.9.13",
+      "cryptography": "50.0.2",
+      "Pillow": "13.0.0",
+      "pytest": "9.1.1"
+    }
+  },
+  "review_fixture_hashes": {
+    "test_independent_account_boundaries.py": "ca0d9972320c0cd50a76b0baea8ce02b6ed7290cfa255d29cdbd8aa083014f74",
+    "test_independent_account_postgres.py": "899ca9ca675cbd4e0f59385eda4ba4f6488072383cb25825342e288a3d6d9b91"
+  },
+  "findings": [
+    {
+      "id": "R1",
+      "classification": "Valid, understated",
+      "description": "Deferred PostgreSQL effects on account updates or command receipt insertion could commit a positive DTO inconsistent with durable account flag, controls version or credential status.",
+      "red_receipts": [
+        "targeted-red.txt",
+        "deferred-receipt-red.txt"
+      ],
+      "resolution": "Final command postconditions run after deferred settlement and exact receipt validation; account postcondition compares complete DTO/state witness. All four trigger cases now pass."
+    },
+    {
+      "id": "R2",
+      "classification": "Valid",
+      "description": "Suppressed audit insertion could leave accepted account consent and a command receipt without an audit event.",
+      "red_receipts": [
+        "audit-probe.txt",
+        "postcondition-green-audit-probe.txt"
+      ],
+      "resolution": "Account postcondition reads exact generated audit event and compares identity, actor, action, state transition, reason, request and canonical details. SQLite and migrated PostgreSQL rejection/rollback probes pass."
+    },
+    {
+      "id": "R3",
+      "classification": "Valid, availability",
+      "description": "Non-object TikTok capability JSON caused status evaluation to throw before a token could be obtained to pause an unhealthy account.",
+      "red_receipts": [
+        "malformed-pause-probe.txt"
+      ],
+      "resolution": "Typed context guard reports admission unavailable and allows explicit pause; all five malformed persisted shapes now pass."
+    },
+    {
+      "id": "R0",
+      "classification": "Retracted reviewer-fixture defect; no product fix",
+      "description": "Initial numeric eligible=1 probe did not persist its proposed JSON because ORM equality treats True==1. Original raw captures retained but do not prove a product defect.",
+      "correction_receipts": [
+        "corrected-local-boundaries.txt",
+        "test_independent_account_boundaries_initial_fixture.py.capture"
+      ],
+      "resolution": "Force dirty JSON write, commit, refresh and assert actual stored integer type. Existing strict admission rejects it. Native admission source unchanged."
+    }
+  ],
+  "postgresql_scope": "Cached PostgreSQL 17, owned random schemas, actual domain/current migrations. Two distinct-key/same-key concurrency cases plus five deferred/audit fault cases. Disposable container used network none, no published ports, tmpfs database; client shared its namespace. Container removed after final executions.",
+  "other_coverage": [
+    "Direct and mounted HTTP strict fields, bool versions, null/NaN/infinity, malformed hashes and extra properties",
+    "Mounted authorization 401/403 and malformed admin UUID, unknown accounts and missing schema",
+    "Credential/account metadata fences, stale/ABA conflicts, same-key payload conflicts, historical replay after disconnect",
+    "Parent access expiry separated from Page access expiry; Page/parent data expiry, revocation and unresolved refresh ownership remain rejected",
+    "Pause preserves unresolved publication ownership and all local global automation ceilings remain off"
+  ],
+  "limits": [
+    "Local controlled tests and code review only; no live database, provider, upload, publishing or worker activation",
+    "No claim of full backend suite, deployed behavior or current production readiness",
+    "Historical replay deliberately returns original receipt; it does not reapply consent or certify current connection state"
+  ],
+  "mutations_by_reviewer": [
+    "Evidence and independent test files only; no runtime source, branch, index, GitHub or production changes",
+    "Owned disposable local PostgreSQL fixture created and removed under coordinator authority"
+  ]
+}

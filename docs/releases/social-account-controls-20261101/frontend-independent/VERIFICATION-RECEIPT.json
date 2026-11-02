@@ -1,0 +1,29 @@
+{
+  "schema": "independent-existing-grant-verification-ui/v1",
+  "base_commit": "9bbdde51d6ebe9e38bf0aa86f4d0f086c5cdffeb",
+  "reviewed_frontend_sha256": {
+    "frontend/lib/api/social.ts": "dda817012080ab3839d0eb9bcabb4ed2a25fe0669142352d01022e151615222b",
+    "frontend/lib/api/socialConnections.ts": "15559cb509703767339d7c02b3a6761736b9bee615a3ee47cb651c34a6d92cbb",
+    "frontend/components/admin/social/connections/AccountPublishingControl.tsx": "7e2295665c018bacfad951f569719eb9636700a28041db3f5a778d10904e7dac",
+    "frontend/components/admin/social/connections/MetaAccounts.tsx": "df9736c4f788578cdc4c6dd20229f497c9e88ce20608e6a9f56f43bd6ee167b2",
+    "frontend/components/admin/social/connections/PlatformAccounts.tsx": "fcc8cd3c93a71233d7d84ae21984b1d1cd23b4b283773c8f5ae4fbcf73035698"
+  },
+  "new_verification_cases": 25,
+  "retained_account_cases": 19,
+  "all44_pass": true,
+  "mocked_boundaries": [
+    "auth context",
+    "axios transport"
+  ],
+  "real_component_and_api_decode": true,
+  "no_auto_enable_and_distinct_consent_key": true,
+  "retry_preserves_verification_body_and_key": true,
+  "source_scope_and_concurrent_action_refusals": true,
+  "manual_activation_doc_sha256": "45df18375dfcb71672490d71da103757d99ddc6d65f3934c79a20bd8cd2f617d",
+  "production_capability_metadata_sha256": "648fafd7453aaf0f80bf530eef725dfc5fed12041d1889d3302669885f98a374",
+  "readonly_provider_checks_are_not_claimed_readonly_local_database_operations": true,
+  "no_checkout_edits_or_installs": true,
+  "provider_production_database_browser_actions_by_reviewer": 0,
+  "backend_provider_proof_behavior_reviewed_by_other_agent": true,
+  "verdict": "clear_existing_grant_ui_and_api_client_scope"
+}

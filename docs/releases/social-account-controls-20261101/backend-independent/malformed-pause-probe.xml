@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="5" time="1.112" timestamp="2026-11-02T00:54:41.995585+00:00" hostname="a426201454f8"><testcase classname="test_independent_account_boundaries" name="test_tiktok_malformed_admission_still_allows_explicit_pause[None]" time="0.053"><failure message="AttributeError: 'NoneType' object has no attribute 'get'">/review/test_independent_account_boundaries.py:127: in test_tiktok_malformed_admission_still_allows_explicit_pause
+    state=account_publishing(SocialService(db,available_adapters=registry),row.id)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:140: in account_publishing
+    return _view(svc, account_id)[2]
+           ^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:92: in _view
+    caps = capability_for(account, svc.available_adapters, capability_context(svc.db, account))
+                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/validation.py:29: in capability_context
+    return {'tiktok_product_approved': account.capability_snapshot.get('eligible') is True}
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'NoneType' object has no attribute 'get'</failure></testcase><testcase classname="test_independent_account_boundaries" name="test_tiktok_malformed_admission_still_allows_explicit_pause[malformed1]" time="0.015"><failure message="AttributeError: 'list' object has no attribute 'get'">/review/test_independent_account_boundaries.py:127: in test_tiktok_malformed_admission_still_allows_explicit_pause
+    state=account_publishing(SocialService(db,available_adapters=registry),row.id)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:140: in account_publishing
+    return _view(svc, account_id)[2]
+           ^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:92: in _view
+    caps = capability_for(account, svc.available_adapters, capability_context(svc.db, account))
+                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/validation.py:29: in capability_context
+    return {'tiktok_product_approved': account.capability_snapshot.get('eligible') is True}
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'list' object has no attribute 'get'</failure></testcase><testcase classname="test_independent_account_boundaries" name="test_tiktok_malformed_admission_still_allows_explicit_pause[True]" time="0.014"><failure message="AttributeError: 'bool' object has no attribute 'get'">/review/test_independent_account_boundaries.py:127: in test_tiktok_malformed_admission_still_allows_explicit_pause
+    state=account_publishing(SocialService(db,available_adapters=registry),row.id)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:140: in account_publishing
+    return _view(svc, account_id)[2]
+           ^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:92: in _view
+    caps = capability_for(account, svc.available_adapters, capability_context(svc.db, account))
+                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/validation.py:29: in capability_context
+    return {'tiktok_product_approved': account.capability_snapshot.get('eligible') is True}
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'bool' object has no attribute 'get'</failure></testcase><testcase classname="test_independent_account_boundaries" name="test_tiktok_malformed_admission_still_allows_explicit_pause[1]" time="0.015"><failure message="AttributeError: 'int' object has no attribute 'get'">/review/test_independent_account_boundaries.py:127: in test_tiktok_malformed_admission_still_allows_explicit_pause
+    state=account_publishing(SocialService(db,available_adapters=registry),row.id)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:140: in account_publishing
+    return _view(svc, account_id)[2]
+           ^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:92: in _view
+    caps = capability_for(account, svc.available_adapters, capability_context(svc.db, account))
+                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/validation.py:29: in capability_context
+    return {'tiktok_product_approved': account.capability_snapshot.get('eligible') is True}
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'int' object has no attribute 'get'</failure></testcase><testcase classname="test_independent_account_boundaries" name="test_tiktok_malformed_admission_still_allows_explicit_pause[unknown]" time="0.015"><failure message="AttributeError: 'str' object has no attribute 'get'">/review/test_independent_account_boundaries.py:127: in test_tiktok_malformed_admission_still_allows_explicit_pause
+    state=account_publishing(SocialService(db,available_adapters=registry),row.id)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:140: in account_publishing
+    return _view(svc, account_id)[2]
+           ^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:92: in _view
+    caps = capability_for(account, svc.available_adapters, capability_context(svc.db, account))
+                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/validation.py:29: in capability_context
+    return {'tiktok_product_approved': account.capability_snapshot.get('eligible') is True}
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'str' object has no attribute 'get'</failure></testcase></testsuite></testsuites>

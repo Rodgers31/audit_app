@@ -1,0 +1,15 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______ test_legacy_proof_mismatch_is_distinct_from_absent_native_runtime _______
+backend/tests/social/test_account_publishing.py:226: in test_legacy_proof_mismatch_is_distinct_from_absent_native_runtime
+    assert 'NATIVE_RUNTIME_UNAVAILABLE' not in observed['delivery_holds']
+E   AssertionError: assert 'NATIVE_RUNTIME_UNAVAILABLE' not in ['GLOBAL_PUBLISHING_DISABLED', 'NATIVE_RUNTIME_UNAVAILABLE']
+=============================== warnings summary ===============================
+backend/models.py:29
+  /app/backend/models.py:29: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/social/test_account_publishing.py::test_legacy_proof_mismatch_is_distinct_from_absent_native_runtime
+1 failed, 1 warning in 0.46s

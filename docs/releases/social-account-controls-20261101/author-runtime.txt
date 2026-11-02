@@ -1,0 +1,2 @@
+3.12.16 (main, Oct 28 2026, 02:07:05) [GCC 14.2.0]
+{'pytest': '9.1.1', 'SQLAlchemy': '2.0.55', 'pydantic': '2.14.2', 'fastapi': '0.156.8', 'Pillow': '13.0.0'}

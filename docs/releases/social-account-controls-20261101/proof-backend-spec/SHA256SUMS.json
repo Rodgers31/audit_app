@@ -1,0 +1,22 @@
+{
+  "REVIEW-RECEIPT.json": "4b60f1ba86e9645ebf8cfbfb0f6b44a40f3cc688a60285889608ba6534570a2a",
+  "REVIEW.md": "99404c28450e4c46611dc68490e8b0358fece007220e79c280f3d1978421b426",
+  "corrected-normal-command.json": "6332b8ae08ed6a272b6a1bb31263b6cc0f03da0e51aa0bbbf77a5db82b2468d0",
+  "corrected-normal.txt": "b8fd9e4d93e26845cca417adf10c4fa6a22faad220dab2bc180a580fba7752ae",
+  "corrected-normal.xml": "baf2acf30bbc6fcbc501241aec182d61b2248ccffb48c878a039ce379fb35fa0",
+  "final-normal-command.json": "f3ee7cbffb159b5e4c32d7551a8f5bfe6f6b2f30a8a648987ada5ed51018e32b",
+  "final-normal.txt": "cbf37e4888347c17bf4298d30f138560b147f8f58a77092b7278164efeb256d5",
+  "frozen-normal-command.json": "58baa1a8e190d0cc7e4321d340e49c810eb16eabc4e65baeed5f8a714561335b",
+  "frozen-normal.txt": "94e7340af3ea7fc944bb7ae961b514de5ea98c5039885187436008df99519995",
+  "frozen-normal.xml": "a466b1421d7e9e970936a5375bc93a7f66536c21ebaab502d4a63bc28cb46942",
+  "frozen-optimized-command.json": "f0fe3bc26f99c32e3ea2e7d4af658a5de1b845071c8a143b47d80a818ce4884e",
+  "frozen-optimized.txt": "541e19adf5bb40c9f5e91b3a4ef6cb91c39bde5cf85498bc596063110df9d513",
+  "frozen-optimized.xml": "7f11788ea2d3703c587f57d9603b7bb609318e58edaffbe7681b32463b788775",
+  "initial-normal-command.json": "0d0fea919332c76952e8207a75c9ccd4a9d558f12db36df1ca80a82e11a3f17b",
+  "initial-normal.txt": "7515061e5feb2845fb421f9118c8ab31cc6ebf9f96b00363f269cabcbb65ff26",
+  "initial-normal.xml": "1cca4fda30c42f3689a457b24f1721babbabc20e4227496babfa5c5cc3f05ddb",
+  "supplement-red-command.json": "ae506dff33992fc453682c6c92dfd4f525c85dac2f9cb0ea825c7517ca23da70",
+  "supplement-red.txt": "3a610ba168148e3c5b8b37057563f88f4473c53bdd5565d19997c2873095ec8d",
+  "supplement-red.xml": "fefb5c4b1a30f97080f5750f4ac0f2f98f42c2b188c382cec2254492f114938d",
+  "test_proof_independent.py": "56da8ae981d4f6797716ebad019cb239ff11c98494db9b7c1b528ea2701cd13e"
+}

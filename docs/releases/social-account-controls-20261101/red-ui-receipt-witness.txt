@@ -1,0 +1,176 @@
+FAIL __tests__/social-connections/account-publishing.test.tsx
+  ● rejects incoherent mutation witness 0
+
+    Unable to find role="alert"
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33maria-label[39m=[32m"Publishing controls for Fixture Page"[39m
+          [33mclass[39m=[32m"fields"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33maria-expanded[39m=[32m"true"[39m
+            [33mclass[39m=[32m"button"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mRefresh account publishing controls[0m
+          [36m</button>[39m
+          [36m<p>[39m
+            [0mAccount publishing is [0m
+            [0menabled[0m
+            [0m. This setting permits manually approved posts for this account; global controls and delivery readiness still apply.[0m
+          [36m</p>[39m
+          [36m<p>[39m
+            [0mGlobal publishing is off. Enabling this account will not change it.[0m
+          [36m</p>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"muted"[39m
+          [36m>[39m
+            [0mDelivery also requires a current worker heartbeat. Pausing preserves any in-flight or uncertain operation; it does not recall a post already sent.[0m
+          [36m</p>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"button"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mPause publishing for Fixture Page[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</body>[39m
+
+      31 |  const refresh=jest.fn();send.mockImplementation((_path,_body,_key,decode)=>Promise.resolve(decode({...state,publishing_enabled:true,...change})));
+      32 |  render(<AccountPublishingControl accountId={id} name='Fixture Page' refresh={refresh}/>);await open();fireEvent.click(screen.getByRole('button',{name:'Enable publishing for Fixture Page'}));
+    > 33 |  await waitFor(()=>expect(screen.getByRole('alert')).toBeVisible());expect(refresh).not.toHaveBeenCalled();expect(screen.queryByRole('button',{name:'Pause publishing for Fixture Page'})).not.toBeInTheDocument();
+         |               ^
+      34 | });
+      35 | test('rejects omitted global-off hold',()=>{expect(()=>decodeAccountPublishing({...state,delivery_holds:[]})).toThrow();});
+      36 |
+
+      at waitForWrapper (../../../dependency-security-weekly/audit_app/frontend/node_modules/@testing-library/dom/dist/wait-for.js:163:27)
+      at __tests__/social-connections/account-publishing.test.tsx:33:15
+
+  ● rejects incoherent mutation witness 1
+
+    Unable to find role="alert"
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33maria-label[39m=[32m"Publishing controls for Fixture Page"[39m
+          [33mclass[39m=[32m"fields"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33maria-expanded[39m=[32m"true"[39m
+            [33mclass[39m=[32m"button"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mRefresh account publishing controls[0m
+          [36m</button>[39m
+          [36m<p>[39m
+            [0mAccount publishing is [0m
+            [0menabled[0m
+            [0m. This setting permits manually approved posts for this account; global controls and delivery readiness still apply.[0m
+          [36m</p>[39m
+          [36m<p>[39m
+            [0mGlobal publishing is off. Enabling this account will not change it.[0m
+          [36m</p>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"muted"[39m
+          [36m>[39m
+            [0mDelivery also requires a current worker heartbeat. Pausing preserves any in-flight or uncertain operation; it does not recall a post already sent.[0m
+          [36m</p>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"button"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mPause publishing for Fixture Page[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</body>[39m
+
+      31 |  const refresh=jest.fn();send.mockImplementation((_path,_body,_key,decode)=>Promise.resolve(decode({...state,publishing_enabled:true,...change})));
+      32 |  render(<AccountPublishingControl accountId={id} name='Fixture Page' refresh={refresh}/>);await open();fireEvent.click(screen.getByRole('button',{name:'Enable publishing for Fixture Page'}));
+    > 33 |  await waitFor(()=>expect(screen.getByRole('alert')).toBeVisible());expect(refresh).not.toHaveBeenCalled();expect(screen.queryByRole('button',{name:'Pause publishing for Fixture Page'})).not.toBeInTheDocument();
+         |               ^
+      34 | });
+      35 | test('rejects omitted global-off hold',()=>{expect(()=>decodeAccountPublishing({...state,delivery_holds:[]})).toThrow();});
+      36 |
+
+      at waitForWrapper (../../../dependency-security-weekly/audit_app/frontend/node_modules/@testing-library/dom/dist/wait-for.js:163:27)
+      at __tests__/social-connections/account-publishing.test.tsx:33:15
+
+  ● rejects incoherent mutation witness 2
+
+    Unable to find role="alert"
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33maria-label[39m=[32m"Publishing controls for Fixture Page"[39m
+          [33mclass[39m=[32m"fields"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33maria-expanded[39m=[32m"true"[39m
+            [33mclass[39m=[32m"button"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mRefresh account publishing controls[0m
+          [36m</button>[39m
+          [36m<p>[39m
+            [0mAccount publishing is [0m
+            [0menabled[0m
+            [0m. This setting permits manually approved posts for this account; global controls and delivery readiness still apply.[0m
+          [36m</p>[39m
+          [36m<p>[39m
+            [0mGlobal publishing is off. Enabling this account will not change it.[0m
+          [36m</p>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"muted"[39m
+          [36m>[39m
+            [0mDelivery also requires a current worker heartbeat. Pausing preserves any in-flight or uncertain operation; it does not recall a post already sent.[0m
+          [36m</p>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"button"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mPause publishing for Fixture Page[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</body>[39m
+
+      31 |  const refresh=jest.fn();send.mockImplementation((_path,_body,_key,decode)=>Promise.resolve(decode({...state,publishing_enabled:true,...change})));
+      32 |  render(<AccountPublishingControl accountId={id} name='Fixture Page' refresh={refresh}/>);await open();fireEvent.click(screen.getByRole('button',{name:'Enable publishing for Fixture Page'}));
+    > 33 |  await waitFor(()=>expect(screen.getByRole('alert')).toBeVisible());expect(refresh).not.toHaveBeenCalled();expect(screen.queryByRole('button',{name:'Pause publishing for Fixture Page'})).not.toBeInTheDocument();
+         |               ^
+      34 | });
+      35 | test('rejects omitted global-off hold',()=>{expect(()=>decodeAccountPublishing({...state,delivery_holds:[]})).toThrow();});
+      36 |
+
+      at waitForWrapper (../../../dependency-security-weekly/audit_app/frontend/node_modules/@testing-library/dom/dist/wait-for.js:163:27)
+      at __tests__/social-connections/account-publishing.test.tsx:33:15
+
+  ● rejects omitted global-off hold
+
+    expect(received).toThrow()
+
+    Received function did not throw
+
+      33 |  await waitFor(()=>expect(screen.getByRole('alert')).toBeVisible());expect(refresh).not.toHaveBeenCalled();expect(screen.queryByRole('button',{name:'Pause publishing for Fixture Page'})).not.toBeInTheDocument();
+      34 | });
+    > 35 | test('rejects omitted global-off hold',()=>{expect(()=>decodeAccountPublishing({...state,delivery_holds:[]})).toThrow();});
+         |                                                                                                               ^
+      36 |
+
+      at Object.toThrow (__tests__/social-connections/account-publishing.test.tsx:35:111)
+
+Test Suites: 1 failed, 1 total
+Tests:       4 failed, 12 passed, 16 total
+Snapshots:   0 total
+Time:        3.374 s
+Ran all test suites matching __tests__/social-connections/account-publishing.test.tsx.

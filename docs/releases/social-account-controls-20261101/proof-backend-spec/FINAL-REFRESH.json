@@ -1,0 +1,65 @@
+{
+  "schema": "independent-account-controls-final-refresh/v1",
+  "verdict": "clear_scoped_final_source",
+  "backend_source_sha256": {
+    "backend/social/connections/provider.py": "58b6f734de0b83618502cd626b46707d8f536acb865db09d25e1c9ff31822146",
+    "backend/social/connections/service.py": "0b2cc947dccf40f5ff584af7bc2a0678b5c75efea5187951b3f762bba2e9395a",
+    "backend/social/connections/contracts.py": "d7fea687e2769f3b126e86a7b9f157103facd2f819092cc6c45be9259b28c7fc",
+    "backend/social/connections/api.py": "6b130a77f0db3cec60d61f17ab9fc2d3f7f918108a724332f86f9b5a81455372",
+    "backend/social/account_publishing.py": "94e5777c94a86e09c89839da010fa0a14e0c83fb75c87dfd7bc84fb4b566c333",
+    "backend/social/service.py": "3e4f78acf0d004e8ba54c685245b2d9f02c81969782b6a7e3087d8924aecadd4",
+    "backend/social/validation.py": "3a070b2e2e34b27f0ab51893eb2a038c7142a881b237ac7e0cd3741839fc99fd",
+    "backend/tests/social/test_existing_grant_verification.py": "db0d02cd66bdb564d5a955eab3546a35e777de70e078de6e5f8ecbd912903b44",
+    "backend/tests/social/test_connections_support.py": "bd0468d1fde42f24f6c183c2d2548df22b9d614e00670d4fa969650b56560ca2"
+  },
+  "backend": {
+    "normal": {
+      "counts": {
+        "tests": 130,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "command_receipt": "final-refresh-normal-command.json"
+    },
+    "optimized": {
+      "counts": {
+        "tests": 130,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "command_receipt": "final-refresh-optimized-command.json"
+    }
+  },
+  "independent_backend_cases": 64,
+  "new_source_verification_cases": 43,
+  "compatibility_cases": 23,
+  "frontend_cases_pass": 44,
+  "frontend_source_sha256": {
+    "frontend/lib/api/social.ts": "dda817012080ab3839d0eb9bcabb4ed2a25fe0669142352d01022e151615222b",
+    "frontend/lib/api/socialConnections.ts": "cb568723dd6bf2717384dbd1146902c509246c807132706fb07790fd539a279e",
+    "frontend/components/admin/social/connections/AccountPublishingControl.tsx": "049db4301ccd6c23c133cf8b8a26e8dee635eb46525a4feea5c7002a32b8e565",
+    "frontend/components/admin/social/connections/MetaAccounts.tsx": "df9736c4f788578cdc4c6dd20229f497c9e88ce20608e6a9f56f43bd6ee167b2",
+    "frontend/components/admin/social/connections/PlatformAccounts.tsx": "fcc8cd3c93a71233d7d84ae21984b1d1cd23b4b283773c8f5ae4fbcf73035698"
+  },
+  "frontend_command_receipt": "../frontend-independent/final-copy-privacy-command.json",
+  "manual_activation_doc_sha256": "0058e0d570c75e17e8b67f58d6e0b577d9338c5a9221feffe7fa183f831c53d8",
+  "retained_readonly_role_receipt_sha256": "eadba3f85a881e59daafc8c28494742d62aef7f3d5d4f2bf7a8bbb345000f80b",
+  "delta_review": [
+    "ConnectionService initializer injects public app ID into generic SocialService; verification methods retain prior behavior",
+    "Generic consent privacy guard inspects only current-version ownership and bounded receipt metadata, returns unavailable on ownership or receipt overflow before empty-history acceptance, and includes witness in stale-state digest",
+    "Known unrelated-subject positive now supplies complete current User/Page ownership index; the old no-index positive is superseded by conservative unavailable",
+    "Same-app retained privacy evidence blocks verification or consent before provider reads; receipt-time evidence is rechecked before commit",
+    "Privacy holds preserve explicit pause; missing privacy schema refuses rather than claiming no history",
+    "Frontend changes only action-specific verification failure text and two human privacy explanations; 44 cases replayed unchanged",
+    "Activation document distinguishes readonly role-contract observation from capacity/custody/storage/provider launch acceptance"
+  ],
+  "provider_or_production_or_browser_mutations": 0,
+  "source_edits": 0,
+  "dependency_installs": 0,
+  "limitations": [
+    "SQLite and intercepted HTTP fixture qualification; independent PostgreSQL cases are owned by Nightly reviewer",
+    "No live Meta or production launch acceptance by this reviewer"
+  ]
+}

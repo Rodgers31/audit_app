@@ -157,3 +157,16 @@ def test_fresh_scoped_fetch_url_has_ephemeral_material(final_media):
     result=asyncio.run(access.provider_fetch_url(asset,120))
     assert result.asset_id==asset.asset_id and result.sha256==asset.sha256
     assert 'sensitive' not in repr(result)
+
+
+def test_expired_parent_user_access_does_not_expire_page_material(db, admitted):
+    loader, request, _, credential_id = admitted
+    page=db.get(SocialCredential,credential_id)
+    parent=db.get(SocialCredential,page.parent_credential_id)
+    parent.access_expires_at=datetime.now(timezone.utc)-timedelta(seconds=1)
+    page.access_expires_at=datetime.now(timezone.utc)+timedelta(days=1)
+    expected=page.access_expires_at
+    db.commit()
+    material=asyncio.run(loader(request))
+    assert material.page_access_token==PAGE
+    assert material.access_expires_at==expected

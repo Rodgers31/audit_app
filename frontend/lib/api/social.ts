@@ -95,6 +95,19 @@ export interface PublishInput extends ApprovalInput { acknowledged_warning_codes
 export interface ScheduleEditInput extends VersionInput { publication_id: string; expected_publication_version: number; reason: string; acknowledged_warning_codes: string[] }
 export interface ScheduleInput extends PublishInput { schedule: { local_time: string; timezone: string; utc_offset: string } }
 
+export interface AccountPublishingStatus {
+  account_id: string; publishing_enabled: boolean; controls_version: number; state_token: string;
+  enable_available: boolean; enable_blockers: string[]; global_publishing_enabled: boolean; delivery_holds: string[];
+}
+export function decodeAccountPublishing(v: unknown): AccountPublishingStatus {
+  const o = exactObject(v, ['account_id','publishing_enabled','controls_version','state_token','enable_available','enable_blockers','global_publishing_enabled','delivery_holds']);
+  const result = { account_id: uuid(o.account_id), publishing_enabled: bool(o.publishing_enabled), controls_version: integer(o.controls_version), state_token: hash(o.state_token),
+    enable_available: bool(o.enable_available), enable_blockers: arr(o.enable_blockers).map(str), global_publishing_enabled: bool(o.global_publishing_enabled), delivery_holds: arr(o.delivery_holds).map(str) };
+  if (result.enable_available !== (result.enable_blockers.length === 0)
+      || result.delivery_holds.includes('GLOBAL_PUBLISHING_DISABLED') === result.global_publishing_enabled) throw contractError();
+  return result;
+}
+
 export class SocialApiError extends Error {
   constructor(public code: string, message: string, public fieldErrors: SocialIssue[] = [], public targetErrors: SocialIssue[] = [], public retryable = false, public requestId?: string) {
     super(message); this.name = 'SocialApiError';
@@ -271,6 +284,7 @@ export async function sendSocialCommand<T>(path: string, body: object, key: stri
   try { return decode((await api[method](`/admin/social${path}`, body, { headers: { 'Idempotency-Key': key } })).data); } catch (e) { throw toSocialError(e); }
 }
 export const socialApi = {
+  accountPublishing: (id: string, signal?: AbortSignal) => read(`/accounts/${encodeURIComponent(id)}/publishing`, v => { const result = decodeAccountPublishing(v); if (result.account_id !== id) throw contractError(); return result; }, signal),
   posts: (page: number, editorial_state?: EditorialState, signal?: AbortSignal, delivery_filter: DeliveryFilter = 'all', origin_type?: string, content_type?: string) => read('/posts', v => { const o = obj(v); return { posts: arr(o.posts).map(decodeSummary), total: integer(o.total, 0), page: integer(o.page), page_size: integer(o.page_size), has_more: bool(o.has_more) }; }, signal, { page, page_size: 20, delivery_filter, ...(origin_type ? { origin_type } : {}), ...(content_type ? { content_type } : {}), ...(editorial_state ? { editorial_state } : {}) }),
   post: (id: string, signal?: AbortSignal) => read(`/posts/${encodeURIComponent(id)}`, v => { const post = decodePost(v); if (post.id !== id) throw contractError(); return post; }, signal),
   postStatus: (id: string, signal?: AbortSignal) => read(`/posts/${encodeURIComponent(id)}/status`, v => { const post = decodeSummary(v); if (post.id !== id) throw contractError(); return post; }, signal),
