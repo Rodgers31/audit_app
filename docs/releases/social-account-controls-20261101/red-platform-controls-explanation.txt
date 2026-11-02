@@ -1,0 +1,61 @@
+FAIL __tests__/social-connections/account-publishing.test.tsx
+  ● unreadable platform controls explain blocked enable while pause remains available
+
+    Unable to find an element with the text: Platform publishing controls are unreadable. An administrator must repair them before enabling publishing.. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33maria-label[39m=[32m"Publishing controls for Fixture Page"[39m
+          [33mclass[39m=[32m"fields"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33maria-expanded[39m=[32m"true"[39m
+            [33mclass[39m=[32m"button"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mRefresh account publishing controls[0m
+          [36m</button>[39m
+          [36m<p>[39m
+            [0mAccount publishing is [0m
+            [0menabled[0m
+            [0m. This setting permits manually approved posts for this account; global controls and delivery readiness still apply.[0m
+          [36m</p>[39m
+          [36m<p>[39m
+            [0mPublishing readiness requires attention (PLATFORM_CONTROLS_UNAVAILABLE).[0m
+          [36m</p>[39m
+          [36m<p>[39m
+            [0mGlobal publishing is off. Enabling this account will not change it.[0m
+          [36m</p>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"muted"[39m
+          [36m>[39m
+            [0mDelivery also requires a current worker heartbeat. Pausing preserves any in-flight or uncertain operation; it does not recall a post already sent.[0m
+          [36m</p>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"button"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mPause publishing for Fixture Page[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</body>[39m
+
+      45 |  load.mockResolvedValue({...state,publishing_enabled:true,enable_available:false,enable_blockers:['PLATFORM_CONTROLS_UNAVAILABLE'],delivery_holds:[...state.delivery_holds,'PLATFORM_CONTROLS_UNAVAILABLE']});
+      46 |  render(<AccountPublishingControl accountId={id} name='Fixture Page' refresh={jest.fn()}/>);fireEvent.click(screen.getByRole('button',{name:'Refresh account publishing controls'}));
+    > 47 |  expect(await screen.findByText('Platform publishing controls are unreadable. An administrator must repair them before enabling publishing.')).toBeVisible();expect(screen.getByRole('button',{name:'Pause publishing for Fixture Page'})).toBeEnabled();
+         |                      ^
+      48 | });
+      49 |
+
+      at waitForWrapper (../../../dependency-security-weekly/audit_app/frontend/node_modules/@testing-library/dom/dist/wait-for.js:163:27)
+      at ../../../dependency-security-weekly/audit_app/frontend/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+      at Object.findByText (__tests__/social-connections/account-publishing.test.tsx:47:22)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 17 skipped, 18 total
+Snapshots:   0 total
+Time:        3.725 s
+Ran all test suites matching __tests__/social-connections/account-publishing.test.tsx with tests matching "unreadable platform".

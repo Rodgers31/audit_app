@@ -1,0 +1,113 @@
+import React from 'react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import AccountPublishingControl from '@/components/admin/social/connections/AccountPublishingControl';
+import { connectionApi } from '@/lib/api/socialConnections';
+import api from '@/lib/api/axios';
+
+jest.mock('@/lib/auth/AuthProvider', () => ({ useAuth: jest.fn(() => ({ user: { id: 'admin-a' } })) }));
+jest.mock('@/lib/api/axios', () => ({ __esModule: true, default: { get: jest.fn(), patch: jest.fn(), post: jest.fn() } }));
+const { useAuth } = jest.requireMock('@/lib/auth/AuthProvider');
+const get = api.get as jest.Mock, post = api.post as jest.Mock, patch = api.patch as jest.Mock;
+const id = '4aadebe9-11ce-4207-afce-836cd86cc9da';
+const other = '00000000-0000-4000-8000-000000000002';
+const state = { account_id: id, publishing_enabled: false, controls_version: 1, state_token: 'a'.repeat(64), enable_available: false, enable_blockers: ['NATIVE_ADMISSION_UNAVAILABLE'], global_publishing_enabled: false, delivery_holds: ['GLOBAL_PUBLISHING_DISABLED', 'NATIVE_RUNTIME_UNAVAILABLE'] };
+const verified = { ...state, controls_version: 2, state_token: 'b'.repeat(64), enable_available: true, enable_blockers: [], delivery_holds: ['GLOBAL_PUBLISHING_DISABLED'] };
+const verifyLabel = 'Verify existing publishing access for Fixture Page';
+beforeEach(() => {
+  jest.clearAllMocks(); useAuth.mockReturnValue({ user: { id: 'admin-a' } });
+  get.mockResolvedValue({ data: state }); post.mockResolvedValue({ data: verified });
+  patch.mockResolvedValue({ data: { ...verified, publishing_enabled: true, controls_version: 3, state_token: 'c'.repeat(64) } });
+});
+async function open(refresh = jest.fn()) {
+  const view = render(<AccountPublishingControl accountId={id} name='Fixture Page' refresh={refresh} canVerifyMeta />);
+  expect(get).not.toHaveBeenCalled(); expect(post).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Refresh account publishing controls' }));
+  await screen.findByRole('button', { name: verifyLabel });
+  return { ...view, refresh };
+}
+test('actual request verifies only, then separate consent uses a distinct key and fresh snapshot', async () => {
+  const { refresh } = await open();
+  expect(screen.getByRole('button', { name: 'Enable publishing for Fixture Page' })).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: verifyLabel }));
+  await screen.findByText('Publishing access verified. Account publishing is still paused.');
+  expect(post).toHaveBeenCalledTimes(1); expect(patch).not.toHaveBeenCalled();
+  const [path, body, options] = post.mock.calls[0];
+  expect(path).toBe(`/admin/social/accounts/${id}/verify-publishing-access`);
+  expect(Object.keys(body).sort()).toEqual(['expected_controls_version', 'expected_state', 'reason']);
+  expect(body.expected_controls_version).toBe(1); expect(body.expected_state).toBe(state.state_token);
+  expect(options.headers['Idempotency-Key']).toMatch(/^[0-9a-f-]{36}$/);
+  expect(screen.getByText(/Global publishing is off/)).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: 'Enable publishing for Fixture Page' }));
+  await screen.findByRole('button', { name: 'Pause publishing for Fixture Page' });
+  expect(patch.mock.calls[0][1]).toMatchObject({ expected_controls_version: 2, expected_state: verified.state_token, publishing_enabled: true });
+  expect(patch.mock.calls[0][2].headers['Idempotency-Key']).not.toBe(options.headers['Idempotency-Key']);
+  expect(refresh).toHaveBeenCalledTimes(2);
+});
+
+test.each([
+  { account_id: other }, { account_id: 'bad' }, { publishing_enabled: true }, { publishing_enabled: 0 },
+  { controls_version: 1 }, { controls_version: 4 }, { controls_version: 0 }, { controls_version: 2.5 }, { controls_version: true }, { controls_version: NaN },
+  { state_token: state.state_token }, { state_token: 'bad' }, { enable_available: false, enable_blockers: ['CREDENTIAL_UNAVAILABLE'] },
+  { global_publishing_enabled: undefined }, { delivery_holds: [] }, { enable_available: true, enable_blockers: ['ACCOUNT_HELD'] },
+  { access_token: 'inert-secret-shaped-unexpected-field' },
+])('malformed verification receipt cannot claim proof or enable account: %o', async changes => {
+  post.mockResolvedValue({ data: { ...verified, ...changes } });
+  const { refresh } = await open(); fireEvent.click(screen.getByRole('button', { name: verifyLabel }));
+  await screen.findByRole('alert');
+  expect(screen.queryByText('Publishing access verified. Account publishing is still paused.')).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Enable publishing for Fixture Page' })).toBeDisabled();
+  expect(patch).not.toHaveBeenCalled(); expect(refresh).not.toHaveBeenCalled();
+});
+
+test('ambiguous and malformed responses preserve exact verification key/body until explicit successful retry', async () => {
+  post.mockRejectedValueOnce(new Error('owned response interrupted')).mockResolvedValueOnce({ data: { ...verified, publishing_enabled: true } }).mockResolvedValueOnce({ data: verified });
+  await open();
+  for (let i = 0; i < 2; ++i) {
+    fireEvent.click(screen.getByRole('button', { name: verifyLabel })); await screen.findByRole('alert');
+    expect(patch).not.toHaveBeenCalled();
+  }
+  fireEvent.click(screen.getByRole('button', { name: verifyLabel }));
+  await screen.findByText('Publishing access verified. Account publishing is still paused.');
+  expect(post.mock.calls[0]).toEqual(post.mock.calls[1]); expect(post.mock.calls[1]).toEqual(post.mock.calls[2]);
+  expect(patch).not.toHaveBeenCalled();
+});
+
+test('same-frame verify/verify/consent/read operations perform only one verification', async () => {
+  get.mockResolvedValue({ data: verified }); // account already eligible but paused
+  let finish!: (value: unknown) => void; post.mockReturnValue(new Promise(r => { finish = r; }));
+  await open();
+  const verify = screen.getByRole('button', { name: verifyLabel });
+  const enable = screen.getByRole('button', { name: 'Enable publishing for Fixture Page' });
+  const read = screen.getByRole('button', { name: 'Refresh account publishing controls' });
+  act(() => { fireEvent.click(verify); fireEvent.click(verify); fireEvent.click(enable); fireEvent.click(read); });
+  expect(post).toHaveBeenCalledTimes(1); expect(patch).not.toHaveBeenCalled(); expect(get).toHaveBeenCalledTimes(1);
+  await act(async () => { finish({ data: { ...verified, controls_version: 3, state_token: 'c'.repeat(64) } }); });
+  expect(screen.getByText('Publishing access verified. Account publishing is still paused.')).toBeVisible();
+  expect(patch).not.toHaveBeenCalled();
+});
+
+test.each(['signout', 'actor', 'account'])('expired %s scope discards late successful proof and its parent refresh', async transition => {
+  let finish!: (value: unknown) => void; post.mockReturnValue(new Promise(r => { finish = r; }));
+  const { rerender, refresh } = await open(); fireEvent.click(screen.getByRole('button', { name: verifyLabel }));
+  await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
+  if (transition === 'signout') useAuth.mockReturnValue({ user: null });
+  if (transition === 'actor') useAuth.mockReturnValue({ user: { id: 'admin-b' } });
+  rerender(<AccountPublishingControl accountId={transition === 'account' ? other : id} name='Fixture Page' refresh={refresh} canVerifyMeta />);
+  await act(async () => { finish({ data: verified }); });
+  expect(refresh).not.toHaveBeenCalled(); expect(patch).not.toHaveBeenCalled();
+  expect(screen.queryByText('Publishing access verified. Account publishing is still paused.')).not.toBeInTheDocument();
+});
+
+test('enabled accounts refuse verification until paused; non-Meta component exposes no verification', async () => {
+  get.mockResolvedValue({ data: { ...verified, publishing_enabled: true } });
+  const { rerender, refresh } = await open();
+  expect(screen.getByRole('button', { name: verifyLabel })).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: verifyLabel })); expect(post).not.toHaveBeenCalled();
+  rerender(<AccountPublishingControl accountId={id} name='Fixture Page' refresh={refresh} />);
+  expect(screen.queryByRole('button', { name: verifyLabel })).not.toBeInTheDocument(); expect(post).not.toHaveBeenCalled();
+});
+
+test('direct client call rejects malformed input account before any transport', () => {
+  expect(() => connectionApi.verifyPublishingAccess('bad', { expected_controls_version: 1, expected_state: state.state_token, reason: 'owned reason' }, '00000000-0000-4000-8000-000000000001')).toThrow();
+  expect(post).not.toHaveBeenCalled();
+});

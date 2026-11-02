@@ -1,0 +1,163 @@
+"""Local admin account consent. Never calls a provider or changes global ceilings.
+
+The controls row serializes toggles with connection/dispatch commands. Its existing
+monotonic version prevents ABA without adding a second account version column.
+The state digest additionally fences connection, credential and recovery changes.
+"""
+from collections.abc import Mapping
+from uuid import UUID
+from types import SimpleNamespace
+
+from pydantic import StrictBool
+from sqlalchemy import select, text
+
+from .contracts import Hash, PositiveVersion, Reason, StrictModel, canonical_hash
+from .models import SocialAccount, SocialControls
+from .service import SocialError, iso, utc
+from .validation import capability_context, capability_for
+
+
+class AccountPublishingCommand(StrictModel):
+    expected_controls_version: PositiveVersion
+    expected_state: Hash
+    publishing_enabled: StrictBool
+    reason: Reason
+
+
+class AccountPublishingDTO(StrictModel):
+    account_id: UUID
+    publishing_enabled: StrictBool
+    controls_version: PositiveVersion
+    state_token: Hash
+    enable_available: StrictBool
+    enable_blockers: tuple[str, ...]
+    global_publishing_enabled: StrictBool
+    delivery_holds: tuple[str, ...]
+
+
+def _controls(svc, lock):
+    query = select(SocialControls).where(SocialControls.id == 1)
+    row = svc.db.scalar((query.with_for_update() if lock else query).execution_options(populate_existing=True))
+    if row is None and lock:
+        if svc.db.bind.dialect.name == 'postgresql':
+            svc.db.execute(text('SELECT pg_advisory_xact_lock(6384952001)'))
+            row = svc.db.scalar(query.with_for_update().execution_options(populate_existing=True))
+        if row is None:
+            row = SocialControls(id=1, version=1)
+            svc.db.add(row)
+            svc.db.flush()
+    return row
+
+
+CREDENTIAL_METADATA = ('id','version','updated_at','parent_credential_id','credential_kind','provider','platform',
+    'revoked_at','access_expires_at','data_access_expires_at','refresh_lease_token','refresh_lease_expires_at','refresh_claim')
+
+
+def _credential_rows(svc, account, lock):
+    from .connections.models import SocialCredential
+    from .platform_connections.models import PlatformCredential
+    model = SocialCredential if account.platform in ('facebook', 'instagram') else PlatformCredential
+    predicate = model.id == account.credential_id if model is SocialCredential else model.account_id == account.id
+    def compact(model, predicate):
+        query = select(*(getattr(model,name) for name in CREDENTIAL_METADATA if hasattr(model,name))).where(predicate)
+        value = svc.db.execute(query.with_for_update() if lock else query).mappings().first()
+        return SimpleNamespace(**value) if value else None
+    credential = compact(model, predicate)
+    parent = None
+    if credential is not None and model is SocialCredential and credential.parent_credential_id:
+        parent = compact(SocialCredential, SocialCredential.id == credential.parent_credential_id)
+    return credential, parent
+
+
+def _snapshot(row):
+    if row is None:
+        return None
+    # Excludes ciphertext and keys. A digest binds metadata, not secret material.
+    fields = CREDENTIAL_METADATA
+    return {name: iso(value) if hasattr(value, 'tzinfo') else str(value) if isinstance(value, UUID) else value
+            for name in fields if hasattr(row, name) for value in (getattr(row, name),)}
+
+
+def _view(svc, account_id, lock=False):
+    controls = _controls(svc, lock)
+    query = select(SocialAccount).where(SocialAccount.id == account_id)
+    account = svc.db.scalar((query.with_for_update() if lock else query).execution_options(populate_existing=True))
+    if account is None:
+        raise SocialError('NOT_FOUND', 'This social account was not found.', 404)
+    credential, parent = _credential_rows(svc, account, lock)
+    now = svc.now()
+    blockers = []
+    if account.connection_state != 'connected':
+        blockers.append('ACCOUNT_DISCONNECTED')
+    caps = capability_for(account, svc.available_adapters, capability_context(svc.db, account))
+    if (not isinstance(svc.available_adapters, Mapping) or not caps.eligible or not caps.adapter_available
+            or caps.feature_states.get('publishing') not in ('supported', 'restricted', 'paid')
+            or not set(caps.required_scopes) <= set(account.granted_scopes or ())):
+        blockers.append('NATIVE_ADMISSION_UNAVAILABLE')
+    if account.hold_reason:
+        blockers.append('ACCOUNT_HELD')
+    if account.publish_lease_token is not None or account.publish_lease_target_id is not None:
+        blockers.append('DELIVERY_UNRESOLVED')
+    credential_bad = credential is None
+    if credential is not None:
+        credential_bad = bool(credential.revoked_at or getattr(credential,'refresh_lease_token',None)
+                              or getattr(credential,'refresh_claim',None))
+        credential_bad |= any(value is not None and utc(value) <= now for value in
+                              (credential.access_expires_at, credential.data_access_expires_at))
+        if account.platform in ('facebook','instagram'):
+            credential_bad |= credential.provider != 'meta' or credential.credential_kind != 'facebook_page'
+            # Parent User access expiry affects discovery; it does not invent a
+            # timed Page-token expiry. Revocation and unresolved ownership do.
+            credential_bad |= parent is None or bool(parent and (parent.revoked_at or parent.refresh_lease_token
+                                    or parent.provider != 'meta' or parent.credential_kind != 'facebook_user'
+                                    or parent.data_access_expires_at is not None and utc(parent.data_access_expires_at) <= now))
+        else:
+            credential_bad |= credential.platform != account.platform
+    if credential_bad:
+        blockers.append('CREDENTIAL_UNAVAILABLE')
+    state = {name: iso(value) if hasattr(value, 'tzinfo') else str(value) if isinstance(value, UUID) else value
+             for name in ('id','platform','api_product','external_account_id','connection_state','publishing_enabled',
+                          'updated_at','credential_id','granted_scopes','capability_snapshot','hold_reason',
+                          'publish_lease_target_id','publish_lease_token','publish_lease_expires_at')
+             for value in (getattr(account,name),)}
+    state['credential'], state['parent'] = _snapshot(credential), _snapshot(parent)
+    holds = []
+    if not controls or not controls.publishing_enabled:
+        holds.append('GLOBAL_PUBLISHING_DISABLED')
+    if controls and controls.platform_controls.get(account.platform,{}).get('publishing_enabled') is False:
+        holds.append('PLATFORM_PUBLISHING_DISABLED')
+    if 'NATIVE_ADMISSION_UNAVAILABLE' in blockers:
+        holds.append('NATIVE_RUNTIME_UNAVAILABLE')
+    # Queue acceptance is separate from a live worker. The existing system
+    # status endpoint reports heartbeat readiness at the moment of publication.
+    return account, controls, {'account_id':str(account.id), 'publishing_enabled':bool(account.publishing_enabled),
+        'controls_version':controls.version if controls else 1, 'state_token':canonical_hash(state),
+        'enable_available':not blockers, 'enable_blockers':blockers,
+        'global_publishing_enabled':bool(controls and controls.publishing_enabled), 'delivery_holds':holds}
+
+
+def account_publishing(svc, account_id):
+    return _view(svc, account_id)[2]
+
+
+def set_account_publishing(svc, account_id, body):
+    # Internal callers receive the same strict shape checks as HTTP callers.
+    body = AccountPublishingCommand.model_validate(body.model_dump() if isinstance(body, AccountPublishingCommand) else body)
+    account, controls, current = _view(svc, account_id, lock=True)
+    if controls.version != body.expected_controls_version or current['state_token'] != body.expected_state:
+        raise SocialError('VERSION_CONFLICT', 'Account publishing state changed. Refresh before updating.')
+    if body.publishing_enabled and current['enable_blockers']:
+        raise SocialError(current['enable_blockers'][0], 'This account is not ready to enable publishing. Refresh account readiness and resolve its reported blockers.')
+    previous = account.publishing_enabled
+    account.publishing_enabled = body.publishing_enabled
+    account.updated_at = svc.now()
+    controls.version += 1
+    controls.updated_by, controls.updated_at = svc.actor, account.updated_at
+    event = svc.audit('account.publishing_updated', previous=str(bool(previous)).lower(), new=str(body.publishing_enabled).lower(), reason=body.reason,
+                     details={'publishing_enabled':body.publishing_enabled,'controls_version':controls.version})
+    event.account_id = account.id
+    svc.db.flush()
+    observed = _view(svc, account_id)[2]
+    if observed['publishing_enabled'] is not body.publishing_enabled or observed['controls_version'] != body.expected_controls_version + 1:
+        raise SocialError('ACCOUNT_CONTROL_FAILED', 'The durable account publishing change could not be confirmed. The transaction was rolled back; retry the same command.', 503)
+    return observed

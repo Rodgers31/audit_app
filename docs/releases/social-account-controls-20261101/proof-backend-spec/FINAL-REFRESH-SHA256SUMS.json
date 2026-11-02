@@ -1,0 +1,12 @@
+{
+  "FINAL-REFRESH.json": "c9a408dc6ab08e224bf83fc8ad20f2997f605512fa80977cc2fa803973e994c3",
+  "test_proof_final_refresh.py": "ad37ce9c1eb50e59d020a247f735b5d0033309ec6f963c5d839d827f86e6c9cb",
+  "final-refresh-normal.txt": "333139fa646bdaf6d7035f5119be8ed4badebfd200cd9ae227cdb017e08263a6",
+  "final-refresh-normal.xml": "c26a17f8e444e18249a00036a6178b29287c85c9186dad20938d444295aed882",
+  "final-refresh-normal-command.json": "cb39b66dc87fb12764e8ae0bb071f9f92873cb196cab2161544c678f865456d0",
+  "final-refresh-optimized.txt": "255301d56e7266eb9db07f946d61ddfae4bea6fbdb287931108ff47177360ac3",
+  "final-refresh-optimized.xml": "c40101164966afefe9f9d5c64c82aa9619f9dd7e94563f2dc83c03ab89a9371c",
+  "final-refresh-optimized-command.json": "bc21d71841d56b9673c4ce3d78d2d2ea5bc293a3f5a03829975e2215a0a381de",
+  "../frontend-independent/final-copy-privacy.txt": "bc893bd58bf97c815c4385583d745b09ce1d10a93040f9593ebaaa7da627b251",
+  "../frontend-independent/final-copy-privacy-command.json": "230f446744bfadb77898214c42e143137704af7f5c34f2b9d5b108054bdcc720"
+}

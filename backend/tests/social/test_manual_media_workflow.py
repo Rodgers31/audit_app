@@ -20,7 +20,7 @@ from social.media.runtime import MediaRuntime
 from social.media.service import MediaService
 from social.models import SocialControls, SocialPostTarget, SocialPublication, SocialPublishAttempt
 from social.service import SocialService
-from test_domain_support import account
+from test_account_publishing import connected as account, REGISTRY
 from test_media_support import ACTOR, intent, media, media_db, png
 
 BASE = '/api/v1/admin/social'
@@ -43,7 +43,7 @@ def mounted_client(media):
     app.dependency_overrides[get_db] = database
     app.dependency_overrides[require_admin] = lambda: AdminUser(id=str(ACTOR), email=None, roles=['admin'])
     app.dependency_overrides[social_api.service] = lambda db=Depends(get_db): SocialService(
-        db, available_adapters=('facebook',), media_runtime=svc.runtime)
+        db, available_adapters=REGISTRY, media_runtime=svc.runtime)
     app.dependency_overrides[media_api.service] = lambda db=Depends(get_db): MediaService(db, svc.runtime)
     return TestClient(app, raise_server_exceptions=False)
 
@@ -63,6 +63,17 @@ def test_add_media_review_then_explicit_publish_works_without_automation(media, 
     destination = account(svc.db)
     client = mounted_client(media)
     assert automated_flags_are_off(client)['publishing_enabled'] is False
+    readiness=client.get(BASE+'/accounts/'+str(destination.id)+'/publishing')
+    assert readiness.status_code==200, readiness.text
+    observed=readiness.json()
+    account_key=headers()
+    enabled=client.patch(BASE+'/accounts/'+str(destination.id)+'/publishing', json={
+        'expected_controls_version':observed['controls_version'], 'expected_state':observed['state_token'],
+        'publishing_enabled':True, 'reason':'Synthetic human account consent'}, headers=account_key)
+    assert enabled.status_code==200, enabled.text
+    assert enabled.json()['publishing_enabled'] is True
+    assert enabled.json()['global_publishing_enabled'] is False
+
 
     upload_key = headers()
     grant = client.post(BASE + '/media/uploads', json=intent(), headers=upload_key)
@@ -125,7 +136,7 @@ def test_add_media_review_then_explicit_publish_works_without_automation(media, 
     svc.db.rollback()
 
     # Explicit test-local operator action; no environment/default activation.
-    enabled = client.patch(BASE + '/controls', json={'expected_version': 1,
+    enabled = client.patch(BASE + '/controls', json={'expected_version': automated_flags_are_off(client)['controls_version'],
                            'publishing_enabled': True, 'reason': 'Inert mounted-API fixture only'}, headers=headers())
     assert enabled.status_code == 200, enabled.text
     publish_key = headers()

@@ -26,7 +26,7 @@ def capability_context(db, account):
     if account.platform == 'tiktok':
         # Approval is established by the explicit registered product, and the
         # provider-verified persisted admission must still match it below.
-        return {'tiktok_product_approved': account.capability_snapshot.get('eligible') is True}
+        return {'tiktok_product_approved': isinstance(account.capability_snapshot, dict) and account.capability_snapshot.get('eligible') is True}
     return {}
 
 

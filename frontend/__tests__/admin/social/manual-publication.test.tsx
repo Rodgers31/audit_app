@@ -48,7 +48,7 @@ test.each(['stale', 'stopped', 'unavailable'])('%s worker blocks immediate deliv
   fireEvent.click(screen.getByRole('button', { name: 'Save & validate' }));
   await screen.findByText(/All selected destinations passed/);
   expect(screen.getByRole('button', { name: 'Publish now' })).toBeDisabled();
-  fireEvent.click(screen.getByRole('button', { name: 'Schedule', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: 'Schedule' }));
   fireEvent.change(screen.getByLabelText('Local publish time'), { target: { value: '2099-01-05T10:00' } });
   expect(screen.getByRole('button', { name: 'Confirm schedule' })).toBeEnabled();
   expect(send.mock.calls.every(([path]) => path.endsWith('/validate'))).toBe(true);

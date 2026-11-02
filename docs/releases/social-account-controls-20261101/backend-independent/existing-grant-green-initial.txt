@@ -1,0 +1,25 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____ test_missing_existing_grant_path_cannot_promote_without_provider_proof ____
+backend/tests/social/test_existing_grant_verification.py:52: in test_missing_existing_grant_path_cannot_promote_without_provider_proof
+    assert response.status_code==200,response.text
+E   AssertionError: {"detail":{"code":"SOCIAL_INTERNAL_ERROR","message":"The social request failed. Use the request ID when contacting an administrator.","field_errors":[],"target_errors":[],"retryable":false,"request_id":"11a464e9-ec3f-4e5b-b481-96b10969e4ff"}}
+E   assert 500 == 200
+E    +  where 500 = <Response [500 Internal Server Error]>.status_code
+=============================== warnings summary ===============================
+../evidence/docker-prod-test-env/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /evidence/docker-prod-test-env/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+backend/models.py:29
+  /app/backend/models.py:29: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/database.py:79
+  /app/backend/database.py:79: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/social/test_existing_grant_verification.py::test_missing_existing_grant_path_cannot_promote_without_provider_proof
+1 failed, 3 warnings in 0.82s

@@ -42,7 +42,8 @@ class ConnectionService:
         self.ownership_recorder = ownership_recorder
         if ownership_recorder is not None and ownership_recorder.app_id != config.app_id:
             raise SocialError('PRIVACY_CONFIGURATION_INVALID', 'The privacy namespace differs from the connection app.', 503)
-        self.base = SocialService(db, available_adapters=available_adapters)
+        self.base = SocialService(db, available_adapters=available_adapters,
+                                  privacy_app_id=getattr(config, 'app_id', None))
 
     @property
     def cipher(self):
@@ -377,6 +378,212 @@ class ConnectionService:
             return self.health(account_id)
         _, result = self.base.command(actor=actor, route=route, key=key, body=self._body(body, binding), request_id=request_id, action=action)
         return result
+
+    def _verification_adapter(self, account=None):
+        """Only the actual server-injected, operationally accepted Meta port."""
+        from collections.abc import Mapping
+        from ..adapters import FacebookPageAdapter, InstagramFacebookLoginAdapter, MetaAdapterConfig
+        from ..adapters.config import native_app_material_valid
+        registry = self.base.available_adapters
+        candidates = [registry.get((account.platform, account.api_product))] if account is not None and isinstance(registry, Mapping) else list(registry.values()) if isinstance(registry, Mapping) else []
+        for adapter in candidates:
+            config = getattr(adapter, 'config', None)
+            expected = FacebookPageAdapter if account is not None and account.platform == 'facebook' else InstagramFacebookLoginAdapter if account is not None else (FacebookPageAdapter, InstagramFacebookLoginAdapter)
+            if (isinstance(adapter, expected) and isinstance(config, MetaAdapterConfig)
+                    and config.ready is True and native_app_material_valid(config)
+                    and config.graph_version == self.config.graph_version
+                    and hmac.compare_digest(config.app_secret, self.config.app_secret)):
+                return adapter
+        raise SocialError('NATIVE_ADMISSION_UNAVAILABLE', 'Native Meta publishing and its operator gates must be accepted by server configuration before verifying saved grants.', 503)
+
+    def _verification_snapshot(self, account_id, body=None, *, lock=False):
+        from ..account_publishing import account_publishing
+        if lock:
+            self._controls_lock()
+        row = self.db.scalar(select(SocialAccount).where(SocialAccount.id == account_id).execution_options(populate_existing=True))
+        products = {'facebook': 'facebook_pages', 'instagram': 'instagram_graph_facebook_login'}
+        if row is None or row.connection_method != 'facebook_login' or products.get(row.platform) != row.api_product:
+            raise SocialError('NOT_FOUND', 'This connected Meta API product was not found.', 404)
+        self._verification_adapter(row)
+        query = select(SocialAccount).where(SocialAccount.credential_id == row.credential_id).order_by(SocialAccount.id)
+        siblings = list(self.db.scalars((query.with_for_update() if lock else query).execution_options(populate_existing=True)))
+        if row.connection_state != 'connected':
+            raise SocialError('ACCOUNT_DISCONNECTED', 'Reconnect this Meta account before verifying access.')
+        if not siblings or any(a.publishing_enabled for a in siblings):
+            raise SocialError('ACCOUNT_MUST_BE_PAUSED', 'Pause every account sharing this Page grant before verifying publishing access.')
+        if any(a.publish_lease_token is not None or a.publish_lease_target_id is not None for a in siblings):
+            raise SocialError('ACCOUNT_BUSY', 'Resolve retained publication ownership before verifying this Page grant.')
+        if any(a.hold_reason for a in siblings):
+            raise SocialError('ACCOUNT_HELD', 'Resolve the retained account hold before verifying this Page grant.')
+        def credential(identifier):
+            query = select(SocialCredential).where(SocialCredential.id == identifier)
+            return self.db.scalar((query.with_for_update() if lock else query).execution_options(populate_existing=True))
+        page = credential(row.credential_id)
+        parent = credential(page.parent_credential_id) if page is not None else None
+        now = self.base.now()
+        if (page is None or parent is None or page.provider != 'meta' or parent.provider != 'meta'
+                or page.credential_kind != 'facebook_page' or parent.credential_kind != 'facebook_user'):
+            raise SocialError('CREDENTIAL_UNAVAILABLE', 'The saved User and Page grants are incomplete. Reconnect this account.')
+        for item in (page, parent):
+            if item.revoked_at is not None or item.refresh_lease_token is not None:
+                raise SocialError('CREDENTIAL_UNAVAILABLE', 'The saved grant is revoked or has unresolved renewal ownership. Reconnect after resolving its state.')
+            # User access is needed for this explicit discovery read. Its expiry
+            # never becomes a Page-token expiry or disables existing Page use.
+            if any(value is not None and utc(value) <= now for value in (item.access_expires_at, item.data_access_expires_at)):
+                raise SocialError('GRANT_REVOKED', 'The grant needed for verification expired. Reconnect to verify fresh access.')
+        status = account_publishing(self.base, row.id)
+        non_proof_blockers = [code for code in status['enable_blockers'] if code != 'NATIVE_ADMISSION_UNAVAILABLE']
+        if non_proof_blockers:
+            raise SocialError(non_proof_blockers[0], 'Resolve the account readiness blocker before verifying native access.', 503)
+        if body is not None and (status['controls_version'] != body.expected_controls_version or status['state_token'] != body.expected_state):
+            raise SocialError('VERSION_CONFLICT', 'Account or credential state changed. Refresh before verifying access.')
+        account_fields = ('id','platform','api_product','external_account_id','connection_method','connection_state','publishing_enabled',
+                          'granted_scopes','capability_snapshot','hold_reason','publish_lease_target_id','publish_lease_token','publish_lease_expires_at','updated_at')
+        credential_fields = ('id','parent_credential_id','provider','credential_kind','version','key_version','access_expires_at',
+                             'data_access_expires_at','revoked_at','refresh_lease_token','refresh_lease_expires_at','updated_at')
+        def value(v):
+            return iso(v) if hasattr(v, 'tzinfo') else str(v) if isinstance(v, UUID) else v
+        credentials = [{**{name:value(getattr(item,name)) for name in credential_fields},
+                        'envelope_hash':hashlib.sha256(item.encrypted_bundle).hexdigest()} for item in (page,parent)]
+        fence = canonical_hash({'status':status, 'accounts':[{name:value(getattr(a,name)) for name in account_fields} for a in siblings], 'credentials':credentials})
+        return row, page, parent, status, fence
+
+    def _verification_privacy(self, subject, generation):
+        from sqlalchemy import or_, func
+        from ..privacy.models import SocialPrivacyReceipt
+        if self.ownership_recorder is None:
+            # Missing injected keys cannot turn retained, unreadable ownership
+            # into evidence that this saved grant is clear. Only a known empty
+            # application namespace may proceed without a subject reader.
+            retained = self.db.scalar(select(SocialPrivacyReceipt.id).where(SocialPrivacyReceipt.app_id == self.config.app_id).limit(1))
+            if retained is not None:
+                raise SocialError('PRIVACY_GRANT_BLOCKED', 'Retained privacy requests require the configured subject reader before saved grants can be verified.')
+            return
+        digester = self.ownership_recorder.digester
+        versions = set(self.db.scalars(select(SocialPrivacyReceipt.digest_version).where(SocialPrivacyReceipt.app_id == self.config.app_id).distinct().limit(17)))
+        if not versions <= set(digester.keys):
+            raise SocialError('PRIVACY_GRANT_BLOCKED', 'Retained privacy ownership cannot be verified for this saved grant.')
+        candidates = digester.candidates(self.config.app_id, subject)
+        # SQLite receipt defaults have only second precision. Conservatively
+        # retain all receipts in the grant's creation second; PG compares exact
+        # database instants. Never sort timestamp text encodings.
+        received_after = (func.julianday(SocialPrivacyReceipt.received_at) >= func.julianday(generation.replace(microsecond=0))
+                          if self.db.bind.dialect.name == 'sqlite' else SocialPrivacyReceipt.received_at >= generation)
+        pending = self.db.scalar(select(SocialPrivacyReceipt.id).where(SocialPrivacyReceipt.app_id == self.config.app_id,
+            received_after,
+            or_(*((SocialPrivacyReceipt.digest_version == version) & (SocialPrivacyReceipt.subject_digest == value) for version,value in candidates))).limit(1))
+        if pending is not None:
+            raise SocialError('PRIVACY_GRANT_BLOCKED', 'A retained privacy request blocks fresh proof for this saved grant. Resolve its ownership before reconnecting or verifying.')
+
+    def verify_existing_grant(self, account_id, actor, binding, route, key, body, request_id):
+        """Read-only provider phase, followed by fenced paused-account admission."""
+        from .contracts import ExistingGrantVerificationCommand
+        from ..account_publishing import account_publishing
+        from ..native_admission import native_capability_matches
+        from ..validation import registered_capability
+        body = ExistingGrantVerificationCommand.model_validate(body.model_dump() if isinstance(body, ExistingGrantVerificationCommand) else body)
+        self.config.require_ready()
+        self._verification_adapter()
+        command_body = self._body(body, binding)
+        with self.db.begin():
+            receipt = self._receipt(actor, route, key, command_body)
+            if receipt:
+                return receipt.response
+            row, page, parent, _, original_fence = self._verification_snapshot(account_id, body)
+            user_bundle = self.cipher.decrypt(parent.id, 'facebook_user', parent.key_version, parent.encrypted_bundle)
+            page_bundle = self.cipher.decrypt(page.id, 'facebook_page', page.key_version, page.encrypted_bundle)
+            platform, external_id = row.platform, row.external_account_id
+            recorded_expiry = [(parent.access_expires_at,parent.data_access_expires_at), (page.access_expires_at,page.data_access_expires_at)]
+            grant_generation = parent.created_at
+            for bundle in (user_bundle, page_bundle):
+                if (type(bundle.get('access_token')) is not str or not bundle['access_token'] or len(bundle['access_token']) > 16384
+                        or type(bundle.get('external_user_id')) is not str
+                        or type(bundle.get('scopes')) is not list or any(type(scope) is not str for scope in bundle['scopes'])):
+                    raise SocialError('CREDENTIAL_UNREADABLE', 'The saved grant metadata is incomplete. Reconnect this account.', 503)
+            if (user_bundle['external_user_id'] != page_bundle['external_user_id'] or type(page_bundle.get('page_id')) is not str
+                    or platform == 'facebook' and page_bundle['page_id'] != external_id):
+                raise SocialError('RECONNECT_IDENTITY_MISMATCH', 'The saved grants do not identify this connected asset. Reconnect it.')
+            self._verification_privacy(user_bundle['external_user_id'], grant_generation)
+        # No SQL transaction or ownership lock spans any provider request.
+        provider = self.provider_factory(self.config)
+        try:
+            grant = provider.inspect_saved_grant(user_bundle['access_token'], page_bundle['access_token'], page_bundle['page_id'])
+        finally:
+            provider.close()
+        metadata, choices = grant['metadata'], grant['choices']
+        if metadata['external_user_id'] != user_bundle['external_user_id'] or len(choices) != 1:
+            raise SocialError('RECONNECT_IDENTITY_MISMATCH', 'Meta did not verify the exact saved grant owner and Page. Reconnect this account.')
+        choice = choices[0]
+        if choice['page_id'] != page_bundle['page_id'] or choice['metadata']['external_user_id'] != page_bundle['external_user_id']:
+            raise SocialError('RECONNECT_IDENTITY_MISMATCH', 'Meta returned a different saved Page identity. Reconnect this account.')
+        # Preserve credential envelopes and their privacy/version lineage. A
+        # newly shorter provider lifetime cannot be silently discarded while
+        # the material loader continues trusting the old metadata.
+        for observed, recorded in zip((metadata, choice['metadata']), recorded_expiry):
+            for field, prior in zip(('access_expires_at','data_access_expires_at'), recorded):
+                current_expiry = date(observed[field])
+                if current_expiry is not None and (prior is None or utc(current_expiry) < utc(prior)):
+                    raise SocialError('CREDENTIAL_METADATA_CHANGED', 'Meta reported a shorter grant lifetime. Reconnect to retain its current credential metadata.')
+        ig = choice['instagram']
+        if platform == 'instagram' and (not ig or ig['id'] != external_id or ig.get('professional') is not True
+                or ig.get('professional_proof') != 'facebook_page_instagram_business_account'):
+            raise SocialError('RECONNECT_IDENTITY_MISMATCH', 'Meta did not verify this exact linked professional Instagram account.')
+        required = PAGE_SCOPES if platform == 'facebook' else IG_SCOPES
+        scopes = set(choice['metadata']['scopes']) & set(user_bundle['scopes'])
+        if not set(page_bundle['scopes']) <= scopes or not required <= set(page_bundle['scopes']) or not choice['page_eligible' if platform == 'facebook' else 'instagram_eligible']:
+            raise SocialError('PERMISSIONS_REQUIRED', 'The saved grants lack the required permissions or Page content tasks. Reconnect with the intended access.')
+        def save():
+            current, _, _, _, fence = self._verification_snapshot(account_id, body, lock=True)
+            self._verification_privacy(user_bundle['external_user_id'], grant_generation)
+            if fence != original_fence:
+                raise SocialError('VERSION_CONFLICT', 'Account, sibling or credential state changed during verification. Refresh before trying again.')
+            now = self.base.now()
+            if (set(current.granted_scopes) != set(page_bundle['scopes'])
+                    or not required <= set(current.granted_scopes)):
+                raise SocialError('PERMISSIONS_REQUIRED', 'Verification cannot enlarge the saved account grant. Reconnect with the intended permissions.')
+            # This seed is admitted only after exact provider identity/permission
+            # verification, never from the old unsupported capability snapshot.
+            current.capability_snapshot = {'eligible':True}
+            caps = registered_capability(current, self.base.available_adapters)
+            if not native_capability_matches(caps, caps):
+                raise SocialError('NATIVE_ADMISSION_UNAVAILABLE', 'The native adapter cannot admit this verified account.', 503)
+            current.capability_snapshot = caps.model_dump(mode='json')
+            intended_proof = canonical_hash(current.capability_snapshot)
+            current.capabilities_checked_at = current.last_api_success_at = current.updated_at = now
+            def proof_values(account):
+                return canonical_hash({'proof':account.capability_snapshot, 'scopes':account.granted_scopes,
+                    'publishing_enabled':account.publishing_enabled, 'checked_at':iso(account.capabilities_checked_at),
+                    'last_success_at':iso(account.last_api_success_at), 'updated_at':iso(account.updated_at)})
+            intended_values = proof_values(current)
+            controls = self._controls_lock()
+            controls.version += 1
+            controls.updated_by, controls.updated_at = actor, now
+            event = self.base.audit('connection.publishing_access_verified', reason=body.reason,
+                details={'credential_id':str(current.credential_id),'provider_api_version':self.config.graph_version,'controls_version':controls.version})
+            event.account_id = current.id
+            self.db.flush()
+            result = account_publishing(self.base, current.id)
+            if (proof_values(current) != intended_values or canonical_hash(current.capability_snapshot) != intended_proof
+                    or result['enable_available'] is not True or result['publishing_enabled'] is not False or result['controls_version'] != body.expected_controls_version + 1):
+                raise SocialError('ACCOUNT_CONTROL_FAILED', 'The paused verification state could not be confirmed. Retry this command.', 503)
+            expected_status = canonical_hash(result)
+            expected_fence = self._verification_snapshot(account_id)[4]
+            audit_fields = ('id','account_id','actor_id','actor_kind','action','reason','request_id','post_id','target_id','previous_state','new_state')
+            expected_audit = {field:getattr(event,field) for field in audit_fields}
+            expected_details = canonical_hash(event.details)
+            def verify():
+                self._verification_privacy(user_bundle['external_user_id'], grant_generation)
+                stored = self.db.execute(select(SocialAuditEvent.__table__).where(SocialAuditEvent.id == event.id)).mappings().first()
+                if (stored is None or any(stored[field] != value for field,value in expected_audit.items())
+                        or canonical_hash(stored['details']) != expected_details
+                        or canonical_hash(account_publishing(self.base, account_id)) != expected_status
+                        or self._verification_snapshot(account_id)[4] != expected_fence
+                        or canonical_hash(self.db.get(SocialAccount, account_id).capability_snapshot) != intended_proof
+                        or proof_values(self.db.get(SocialAccount, account_id)) != intended_values):
+                    raise SocialError('ACCOUNT_CONTROL_FAILED', 'The durable paused account proof or audit could not be confirmed. Retry this command.', 503)
+            self.base._require_command_postcondition(verify)
+            return result
+        return self.base.command(actor=actor, route=route, key=key, body=command_body, request_id=request_id, action=save)[1]
 
     def expire_flows(self, *, limit=100):
         """Explicit maintenance hook; no scheduler/startup side effects.

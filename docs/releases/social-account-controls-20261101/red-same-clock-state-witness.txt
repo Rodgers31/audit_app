@@ -1,0 +1,15 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_____ test_same_clock_repeated_consent_has_distinct_durable_state_witness ______
+backend/tests/social/test_account_publishing.py:238: in test_same_clock_repeated_consent_has_distinct_durable_state_witness
+    assert second['state_token']!=first['state_token']
+E   AssertionError: assert '0ebddfc84d2c6f9a313026ec992ec99603781910288d300c3c7dd55271b57fab' != '0ebddfc84d2c6f9a313026ec992ec99603781910288d300c3c7dd55271b57fab'
+=============================== warnings summary ===============================
+backend/models.py:29
+  /app/backend/models.py:29: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/social/test_account_publishing.py::test_same_clock_repeated_consent_has_distinct_durable_state_witness
+1 failed, 1 warning in 1.13s

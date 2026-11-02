@@ -1,0 +1,29 @@
+{
+  "exit": 0,
+  "stdout": "[{\"shape\": \"NoneType\", \"pause\": false}, {\"shape\": \"list\", \"pause\": false}, {\"shape\": \"bool\", \"pause\": false}, {\"shape\": \"int\", \"pause\": false}, {\"shape\": \"str\", \"pause\": false}]\n",
+  "stderr": "",
+  "command": [
+    "/Applications/Docker.app/Contents/Resources/bin/docker",
+    "run",
+    "--rm",
+    "--network",
+    "none",
+    "--read-only",
+    "--tmpfs",
+    "/tmp:rw,size=128m",
+    "--mount",
+    "type=bind,src=/Users/roger/.codex/worktrees/admin-social-release-check/audit_app,dst=/repo,readonly",
+    "--mount",
+    "type=bind,src=/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/security-final-866-867-20261101/python-author,dst=/evidence,readonly",
+    "-e",
+    "PYTHONPATH=/repo/backend:/repo/backend/tests/social",
+    "-e",
+    "PYTHONDONTWRITEBYTECODE=1",
+    "pr863-python-patch-parity:local",
+    "/evidence/docker-prod-test-env/bin/python",
+    "-c",
+    "from test_media_support import media_db\nfrom test_account_publishing import connected, intent, execute\nfrom social.account_publishing import account_publishing\nfrom social.service import SocialService\nfrom social.models import SocialControls\nfrom sqlalchemy.orm.attributes import flag_modified\nimport json\nout=[]\nfor malformed in (None,[],True,3,\"bad\"):\n fixture=media_db.__wrapped__();db=next(fixture)\n try:\n  row=connected(db);controls=SocialControls(id=1,version=1);db.add(controls);db.flush()\n  controls.platform_controls=malformed;flag_modified(controls,\"platform_controls\");db.commit();db.refresh(controls)\n  try:\n   result=execute(db,row,intent(db,row,False));out.append({\"shape\":type(malformed).__name__,\"pause\":result[\"publishing_enabled\"]})\n  except Exception as exc:out.append({\"shape\":type(malformed).__name__,\"error\":type(exc).__name__,\"message\":str(exc)[:90]})\n finally:\n  try:next(fixture)\n  except StopIteration:pass\nprint(json.dumps(out))\n"
+  ],
+  "cases": 5,
+  "accepted": true
+}

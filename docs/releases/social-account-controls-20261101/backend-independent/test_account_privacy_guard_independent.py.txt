@@ -1,0 +1,84 @@
+"""Independent account consent privacy metadata probes; no decrypt in guard."""
+from uuid import uuid4
+import pytest
+from sqlalchemy import select,func,event
+from social.models import SocialAccount,SocialAuditEvent,SocialCommandReceipt
+from social.account_publishing import account_publishing,AccountPublishingCommand,set_account_publishing
+from social.connections.models import SocialCredential,SocialOAuthFlow
+from social.privacy.models import SocialPrivacyOwnership,SocialPrivacyReceipt
+from social.privacy.subjects import SubjectDigester
+from social.service import SocialError
+from test_existing_grant_verification import saved,verify
+from test_connections_support import db,config,graph,ACTOR
+
+
+def add_history(service,account_id,*,indexed=False,subject='701',app='123',version='v1'):
+ db=service.db;account=db.get(SocialAccount,account_id);page=db.get(SocialCredential,account.credential_id);parent=db.get(SocialCredential,page.parent_credential_id)
+ digester=SubjectDigester('v1',{'v1':b'i'*32});flow=db.scalar(select(SocialOAuthFlow.id).limit(1));audit_id=db.scalar(select(SocialAuditEvent.id).limit(1))
+ if indexed:
+  for credential,target in [(parent,None),(page,account_id)]:
+   db.add(SocialPrivacyOwnership(app_id='123',digest_version='v1',subject_digest=digester.digest('123','701'),reference_key='review:'+str(uuid4()),flow_id=flow,credential_id=credential.id,credential_version=credential.version,account_id=target,page_id='901' if target else None,generation_at=credential.created_at))
+ db.add(SocialPrivacyReceipt(app_id=app,kind='deauthorization',digest_version=version,subject_digest=digester.digest(app,subject),event_key=uuid4().hex*2,request_fingerprint='a'*64,affected={},resolution='independent_fixture',state='ownership_unresolved',audit_id=audit_id));db.commit()
+
+
+def consent(service,account_id,enabled=True,body=None):
+ if body is None:
+  status=account_publishing(service.base,account_id)
+  body=AccountPublishingCommand(expected_controls_version=status['controls_version'],expected_state=status['state_token'],publishing_enabled=enabled,reason='Independent explicit account decision')
+ service.db.rollback()
+ return service.base.command(actor=ACTOR,route='PATCH independent-account',key=uuid4(),body=body.model_dump(mode='json'),request_id=uuid4(),action=lambda:set_account_publishing(service.base,account_id,body))[1]
+
+
+@pytest.mark.parametrize('indexed,subject,app,version,expected',[
+ (False,'701','123','v1','PRIVACY_STATE_UNAVAILABLE'),
+ (False,'999','123','v1','PRIVACY_STATE_UNAVAILABLE'),
+ (True,'701','123','v1','PRIVACY_GRANT_BLOCKED'),
+ (True,'999','123','v1',None),
+ (True,'999','123','old','PRIVACY_STATE_UNAVAILABLE'),
+ (False,'701','456','v1',None)])
+def test_scoped_pending_receipts_cannot_enable_unknown_or_matching_grants(saved,indexed,subject,app,version,expected):
+ service,row,_=saved;account_id=row.id;verify(service,row);add_history(service,account_id,indexed=indexed,subject=subject,app=app,version=version)
+ status=account_publishing(service.base,account_id)
+ if expected:
+  assert expected in status['enable_blockers'] and not status['enable_available']
+  service.db.rollback()
+  with pytest.raises(SocialError,match=expected):consent(service,account_id)
+  assert service.db.get(SocialAccount,account_id).publishing_enabled is False
+ else:
+  assert status['enable_available'] is True
+  service.db.rollback();assert consent(service,account_id)['publishing_enabled'] is True
+
+
+def test_pending_receipt_fences_previously_fresh_native_intent(saved):
+ service,row,_=saved;account_id=row.id;verify(service,row)
+ status=account_publishing(service.base,account_id);body=AccountPublishingCommand(expected_controls_version=status['controls_version'],expected_state=status['state_token'],publishing_enabled=True,reason='Before a retained request');service.db.rollback()
+ add_history(service,account_id)
+ with pytest.raises(SocialError,match='VERSION_CONFLICT'):consent(service,account_id,body=body)
+ assert service.db.get(SocialAccount,account_id).publishing_enabled is False
+
+
+def test_pause_preserves_pending_namespace_and_guard_never_reads_ciphertext(saved,graph):
+ service,row,_=saved;account_id=row.id;verify(service,row);service.db.get(SocialAccount,account_id).publishing_enabled=True;service.db.commit();add_history(service,account_id)
+ statements=[]
+ def capture(conn,cursor,statement,parameters,context,many):statements.append(statement.lower())
+ event.listen(service.db.bind,'before_cursor_execute',capture)
+ try:result=consent(service,account_id,False)
+ finally:event.remove(service.db.bind,'before_cursor_execute',capture)
+ assert result['publishing_enabled'] is False
+ assert 'PRIVACY_STATE_UNAVAILABLE' in result['enable_blockers']
+ assert not any('encrypted_bundle' in statement for statement in statements)
+ assert service.db.scalar(select(func.count()).select_from(SocialPrivacyReceipt))==1
+ assert service.db.scalar(select(func.count()).select_from(SocialPrivacyOwnership))==0
+
+
+def test_overflowed_owner_inventory_cannot_hide_a_retained_namespace(saved):
+ from uuid import UUID
+ service,row,_=saved;account_id=row.id;verify(service,row);db=service.db;account=db.get(SocialAccount,account_id);page=db.get(SocialCredential,account.credential_id);parent=db.get(SocialCredential,page.parent_credential_id);flow=db.scalar(select(SocialOAuthFlow.id).limit(1));audit_id=db.scalar(select(SocialAuditEvent.id).limit(1))
+ digester=SubjectDigester('v1',{'v1':b'i'*32})
+ for index in range(1,1003):
+  app='456' if index==1002 else '123';credential=page if index==1 else parent
+  db.add(SocialPrivacyOwnership(id=UUID(int=index),app_id=app,digest_version='v1',subject_digest=digester.digest(app,'701'),reference_key=f'review-budget:{index}',flow_id=flow,credential_id=credential.id,credential_version=credential.version,account_id=account_id if index==1 else None,page_id='901' if index==1 else None,generation_at=credential.created_at))
+ db.add(SocialPrivacyReceipt(app_id='456',kind='deauthorization',digest_version='v1',subject_digest=digester.digest('456','701'),event_key='b'*64,request_fingerprint='a'*64,affected={},resolution='independent_fixture',state='ownership_unresolved',audit_id=audit_id));db.commit()
+ status=account_publishing(service.base,account_id)
+ assert status['enable_available'] is False, 'Truncated owner inventory hid a mapped retained application namespace'
+ assert 'PRIVACY_STATE_UNAVAILABLE' in status['enable_blockers']

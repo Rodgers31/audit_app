@@ -1,0 +1,31 @@
+PASS ../../../../visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/dependabot-manual-publish-20261102/frontend-independent/account-publishing.independent.test.tsx
+  ✓ real API read and patch decode exact success without global readiness claim (54 ms)
+  ✓ wrong mutation witness must not confirm enabled account: { controls_version: 1 } (17 ms)
+  ✓ wrong mutation witness must not confirm enabled account: { controls_version: 9 } (14 ms)
+  ✓ wrong mutation witness must not confirm enabled account: {
+  state_token: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+} (13 ms)
+  ✓ missing global hold cannot be decoded as coherent readiness (8 ms)
+  ✓ actual API rejects malformed read without rendering actions: { account_id: '00000000-0000-4000-8000-000000000002' } (7 ms)
+  ✓ actual API rejects malformed read without rendering actions: { publishing_enabled: 1 } (5 ms)
+  ✓ actual API rejects malformed read without rendering actions: { controls_version: 0 } (6 ms)
+  ✓ actual API rejects malformed read without rendering actions: { controls_version: 1.5 } (6 ms)
+  ✓ actual API rejects malformed read without rendering actions: { controls_version: NaN } (5 ms)
+  ✓ actual API rejects malformed read without rendering actions: { controls_version: Infinity } (5 ms)
+  ✓ actual API rejects malformed read without rendering actions: { state_token: 'bad' } (6 ms)
+  ✓ actual API rejects malformed read without rendering actions: { global_publishing_enabled: undefined } (5 ms)
+  ✓ actual API rejects malformed read without rendering actions: { enable_available: 'true' } (6 ms)
+  ✓ actual API rejects malformed read without rendering actions: {
+  enable_available: true,
+  enable_blockers: [ 'CREDENTIAL_UNAVAILABLE', [length]: 1 ]
+} (6 ms)
+  ✓ same command body and key survive a rejected transport result through real API wrapper (18 ms)
+  ✓ signout and account change fence a late mutation success and parent refresh (9 ms)
+  ✓ pause remains available when current credentials no longer permit enable (12 ms)
+  ✓ same-frame overlapping refresh attempts do not allow an older read to replace a newer one (6 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       19 passed, 19 total
+Snapshots:   0 total
+Time:        1.549 s
+Ran all test suites.

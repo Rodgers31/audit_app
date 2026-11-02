@@ -1,0 +1,125 @@
+import React from 'react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import AccountPublishingControl from '@/components/admin/social/connections/AccountPublishingControl';
+import { decodeAccountPublishing, socialApi } from '@/lib/api/social';
+import api from '@/lib/api/axios';
+
+jest.mock('@/lib/auth/AuthProvider', () => ({ useAuth: jest.fn(() => ({ user: { id: 'admin-a' } })) }));
+jest.mock('@/lib/api/axios', () => ({ __esModule: true, default: { get: jest.fn(), patch: jest.fn(), post: jest.fn() } }));
+const { useAuth } = jest.requireMock('@/lib/auth/AuthProvider');
+const read = api.get as jest.Mock;
+const patch = api.patch as jest.Mock;
+const id = '4aadebe9-11ce-4207-afce-836cd86cc9da';
+const other = '00000000-0000-4000-8000-000000000002';
+const initial = { account_id: id, publishing_enabled: false, controls_version: 1, state_token: 'a'.repeat(64), enable_available: true, enable_blockers: [], global_publishing_enabled: false, delivery_holds: ['GLOBAL_PUBLISHING_DISABLED'] };
+const changed = { ...initial, publishing_enabled: true, controls_version: 2, state_token: 'b'.repeat(64) };
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  useAuth.mockReturnValue({ user: { id: 'admin-a' } });
+  read.mockResolvedValue({ data: initial });
+  patch.mockResolvedValue({ data: changed });
+});
+
+async function open() {
+  fireEvent.click(screen.getByRole('button', { name: 'Refresh account publishing controls' }));
+  await screen.findByRole('button', { name: 'Enable publishing for Fixture Page' });
+}
+
+test('real API read and patch decode exact success without global readiness claim', async () => {
+  const refresh = jest.fn();
+  render(<AccountPublishingControl accountId={id} name='Fixture Page' refresh={refresh} />);
+  expect(read).not.toHaveBeenCalled(); await open();
+  fireEvent.click(screen.getByRole('button', { name: 'Enable publishing for Fixture Page' }));
+  await screen.findByRole('button', { name: 'Pause publishing for Fixture Page' });
+  expect(refresh).toHaveBeenCalledTimes(1);
+  expect(screen.getByText(/Global publishing is off/)).toBeVisible();
+  expect(patch).toHaveBeenCalledWith(`/admin/social/accounts/${id}/publishing`, expect.objectContaining({ expected_controls_version: 1, expected_state: initial.state_token, publishing_enabled: true }), { headers: { 'Idempotency-Key': expect.any(String) } });
+});
+
+test.each([
+  { controls_version: 1 },
+  { controls_version: 9 },
+  { state_token: initial.state_token },
+])('wrong mutation witness must not confirm enabled account: %o', async receipt => {
+  patch.mockResolvedValue({ data: { ...changed, ...receipt } });
+  const refresh = jest.fn();
+  render(<AccountPublishingControl accountId={id} name='Fixture Page' refresh={refresh} />); await open();
+  fireEvent.click(screen.getByRole('button', { name: 'Enable publishing for Fixture Page' }));
+  await waitFor(() => expect(patch).toHaveBeenCalledTimes(1));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Refresh account publishing controls' })).toBeEnabled());
+  expect(refresh).not.toHaveBeenCalled();
+  expect(screen.queryByRole('button', { name: 'Pause publishing for Fixture Page' })).not.toBeInTheDocument();
+  expect(screen.getByRole('alert')).toBeVisible();
+});
+
+test('missing global hold cannot be decoded as coherent readiness', () => {
+  expect(() => decodeAccountPublishing({ ...initial, delivery_holds: [] })).toThrow();
+});
+
+test.each([
+  { account_id: other }, { publishing_enabled: 1 }, { controls_version: 0 },
+  { controls_version: 1.5 }, { controls_version: NaN }, { controls_version: Infinity },
+  { state_token: 'bad' }, { global_publishing_enabled: undefined },
+  { enable_available: 'true' }, { enable_available: true, enable_blockers: ['CREDENTIAL_UNAVAILABLE'] },
+])('actual API rejects malformed read without rendering actions: %o', async changes => {
+  read.mockResolvedValue({ data: { ...initial, ...changes } });
+  render(<AccountPublishingControl accountId={id} name='Fixture Page' refresh={jest.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Refresh account publishing controls' }));
+  await screen.findByRole('alert');
+  expect(screen.queryByRole('button', { name: /Enable publishing for/ })).not.toBeInTheDocument();
+  expect(patch).not.toHaveBeenCalled();
+});
+
+test('same command body and key survive a rejected transport result through real API wrapper', async () => {
+  patch.mockRejectedValueOnce(new Error('owned interrupted transport'));
+  render(<AccountPublishingControl accountId={id} name='Fixture Page' refresh={jest.fn()} />); await open();
+  fireEvent.click(screen.getByRole('button', { name: 'Enable publishing for Fixture Page' })); await screen.findByRole('alert');
+  fireEvent.click(screen.getByRole('button', { name: 'Enable publishing for Fixture Page' })); await screen.findByRole('button', { name: 'Pause publishing for Fixture Page' });
+  expect(patch.mock.calls[0]).toEqual(patch.mock.calls[1]);
+});
+
+test('signout and account change fence a late mutation success and parent refresh', async () => {
+  let resolve!: (value: unknown) => void;
+  patch.mockReturnValue(new Promise(r => { resolve = r; }));
+  const refresh = jest.fn();
+  const { rerender } = render(<AccountPublishingControl accountId={id} name='Fixture Page' refresh={refresh} />); await open();
+  fireEvent.click(screen.getByRole('button', { name: 'Enable publishing for Fixture Page' }));
+  useAuth.mockReturnValue({ user: null });
+  rerender(<AccountPublishingControl accountId={other} name='Other Page' refresh={refresh} />);
+  await act(async () => { resolve({ data: changed }); });
+  expect(refresh).not.toHaveBeenCalled();
+  expect(screen.queryByText(/^Account publishing is enabled/)).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Refresh account publishing controls' })).toBeDisabled();
+});
+
+test('pause remains available when current credentials no longer permit enable', async () => {
+  const blocked = { ...changed, enable_available: false, enable_blockers: ['CREDENTIAL_UNAVAILABLE'] };
+  read.mockResolvedValue({ data: blocked });
+  patch.mockResolvedValue({ data: { ...blocked, publishing_enabled: false, controls_version: 3, state_token: 'c'.repeat(64) } });
+  render(<AccountPublishingControl accountId={id} name='Fixture Page' refresh={jest.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Refresh account publishing controls' }));
+  const pause = await screen.findByRole('button', { name: 'Pause publishing for Fixture Page' });
+  expect(pause).toBeEnabled(); fireEvent.click(pause);
+  expect(await screen.findByRole('button', { name: 'Enable publishing for Fixture Page' })).toBeDisabled();
+  expect(patch.mock.calls[0][1].publishing_enabled).toBe(false);
+});
+
+test('same-frame overlapping refresh attempts do not allow an older read to replace a newer one', async () => {
+  let first!: (value: unknown) => void;
+  let second!: (value: unknown) => void;
+  read.mockReturnValueOnce(new Promise(r => { first = r; })).mockReturnValueOnce(new Promise(r => { second = r; }));
+  render(<AccountPublishingControl accountId={id} name='Fixture Page' refresh={jest.fn()} />);
+  const button = screen.getByRole('button', { name: 'Refresh account publishing controls' });
+  act(() => { fireEvent.click(button); fireEvent.click(button); });
+  const held = { ...initial, enable_available: false, enable_blockers: ['CREDENTIAL_UNAVAILABLE'] };
+  if (read.mock.calls.length === 2) {
+    await act(async () => { second({ data: held }); });
+    expect(await screen.findByRole('button', { name: 'Enable publishing for Fixture Page' })).toBeDisabled();
+    await act(async () => { first({ data: initial }); });
+  } else {
+    expect(read).toHaveBeenCalledTimes(1);
+    await act(async () => { first({ data: held }); });
+  }
+  expect(await screen.findByRole('button', { name: 'Enable publishing for Fixture Page' })).toBeDisabled();
+});

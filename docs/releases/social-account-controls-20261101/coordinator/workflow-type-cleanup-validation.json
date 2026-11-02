@@ -1,0 +1,10 @@
+[
+  {
+    "name": "workflow-test-types",
+    "exit": 0
+  },
+  {
+    "name": "tsc-after",
+    "exit": 0
+  }
+]

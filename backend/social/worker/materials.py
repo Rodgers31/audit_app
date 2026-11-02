@@ -137,7 +137,10 @@ class CredentialMaterialLoader:
                 if row.refresh_lease_token is not None:
                     # Expiry alone does not establish the refresh stopped.
                     raise MaterialUnavailable('CREDENTIAL_REFRESH_UNSETTLED')
-                if any(value is not None and utc(value) <= now for value in (row.access_expires_at, row.data_access_expires_at)):
+                # Parent User access expiry requires discovery reconnection, not
+                # a timed expiry of an otherwise usable Page access token.
+                expiries = (row.access_expires_at, row.data_access_expires_at) if row is credential else (row.data_access_expires_at,)
+                if any(value is not None and utc(value) <= now for value in expiries):
                     raise MaterialUnavailable('CREDENTIAL_EXPIRED')
             try:
                 bundle = self.cipher.decrypt(credential.id, 'facebook_page', credential.key_version, credential.encrypted_bundle)
@@ -161,7 +164,7 @@ class CredentialMaterialLoader:
                     raise ValueError()
             except Exception:
                 raise MaterialUnavailable('CREDENTIAL_MATERIAL_INVALID') from None
-            access_expiry = [utc(row.access_expires_at) for row in (credential, parent) if row.access_expires_at]
+            access_expiry = [utc(credential.access_expires_at)] if credential.access_expires_at else []
             data_expiry = [utc(row.data_access_expires_at) for row in (credential, parent) if row.data_access_expires_at]
             try:
                 admission = NativeCapabilityAdmission.from_snapshot(account.capability_snapshot)

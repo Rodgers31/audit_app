@@ -20,9 +20,10 @@ else:
     from database import get_db
     from supabase_auth import AdminUser
 from ..http_boundary import IdempotencyKey, NO_STORE, SocialRoute, social_admin
+from ..account_publishing import AccountPublishingDTO
 from ..service import SocialError
 from .config import load_config
-from .contracts import AccountCommand, AccountHealth, CompleteCommand, ConnectionStatus, DiscoveredFlow, SelectCommand, SelectedAccounts, StartCommand, StartedFlow, DirectStartCommand, DirectStartedFlow, DirectCompleteCommand
+from .contracts import ExistingGrantVerificationCommand, AccountCommand, AccountHealth, CompleteCommand, ConnectionStatus, DiscoveredFlow, SelectCommand, SelectedAccounts, StartCommand, StartedFlow, DirectStartCommand, DirectStartedFlow, DirectCompleteCommand
 from .service import ConnectionService, session_binding
 
 
@@ -119,3 +120,8 @@ def disconnect(account_id: UUID, request: Request, body: AccountCommand, svc: Se
 @router.post('/accounts/{account_id}/rotate-key', response_model=AccountHealth)
 def rotate(account_id: UUID, request: Request, body: AccountCommand, svc: Service, identity: Identity, key: IdempotencyKey):
     return command_response(request, svc.account_command(account_id, *args(request, identity, key, body), rotate=True))
+
+
+@router.post('/accounts/{account_id}/verify-publishing-access', response_model=AccountPublishingDTO)
+def verify_publishing_access(account_id: UUID, request: Request, body: ExistingGrantVerificationCommand, svc: Service, identity: Identity, key: IdempotencyKey):
+    return command_response(request, svc.verify_existing_grant(account_id, *args(request, identity, key, body)))

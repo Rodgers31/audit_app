@@ -1,0 +1,17 @@
+{
+  "backend/social/account_publishing.py": "94e5777c94a86e09c89839da010fa0a14e0c83fb75c87dfd7bc84fb4b566c333",
+  "backend/social/api.py": "ee2c069956b07594c1b4be70b0b99268ec1c3036574a94b0e4fea7358d25e8dc",
+  "backend/social/service.py": "3e4f78acf0d004e8ba54c685245b2d9f02c81969782b6a7e3087d8924aecadd4",
+  "backend/social/validation.py": "3a070b2e2e34b27f0ab51893eb2a038c7142a881b237ac7e0cd3741839fc99fd",
+  "backend/social/worker/materials.py": "d9b5186accde619712641dc6e7ebf793c853da6abc055d6db5bb34684cafec98",
+  "backend/social/connections/provider.py": "58b6f734de0b83618502cd626b46707d8f536acb865db09d25e1c9ff31822146",
+  "backend/social/connections/service.py": "0b2cc947dccf40f5ff584af7bc2a0678b5c75efea5187951b3f762bba2e9395a",
+  "backend/social/connections/contracts.py": "d7fea687e2769f3b126e86a7b9f157103facd2f819092cc6c45be9259b28c7fc",
+  "backend/social/connections/api.py": "6b130a77f0db3cec60d61f17ab9fc2d3f7f918108a724332f86f9b5a81455372",
+  "backend/tests/social/test_existing_grant_verification.py": "db0d02cd66bdb564d5a955eab3546a35e777de70e078de6e5f8ecbd912903b44",
+  "backend/tests/social/test_account_publishing.py": "59dbc821d72fd07feb6eafe8f92b1b687b51b2da42415ab02904a3bcf94bf5aa",
+  "backend/tests/social/test_account_privacy_consent.py": "17fc210870ab9f77e2a48d5bb976969d54c464a9b055bd117f2314380dcb8822",
+  "backend/tests/social/test_manual_media_workflow.py": "c94dc73546e03f7394c7dc8527be52c94fd54cab6f84732c9352d180581edf17",
+  "backend/tests/social/test_worker_materials.py": "da67e012fd39f87d2c11899c1fe30de05db5c393e60b6c401ad1b939e3f337fc",
+  "docs/social-publishing/manual-publication-activation.md": "b90c0a183529dbd2c7daef0ee22eade8963c9539558edd7328ffde9d5c3d79a5"
+}
