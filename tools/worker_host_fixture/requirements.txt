@@ -24,7 +24,7 @@ Deprecated==3.0.1
 distro==1.9.0
 dnspython==2.9.1
 email-validator==2.3.0
-fastapi==0.156.8
+fastapi==0.162.0
 fuzzywuzzy==0.18.0
 greenlet==3.5.6
 gunicorn==26.2.0
@@ -63,8 +63,8 @@ Pygments==2.21.0
 PyJWT==2.15.1
 pypdfium2==5.14.0
 pytesseract==0.3.13
-pytest==9.1.1
-pytest-asyncio==1.4.0
+pytest==9.2.0
+pytest-asyncio==1.4.1
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.4
 python-json-logger==4.2.0
@@ -77,8 +77,8 @@ sentry-sdk==2.73.0
 six==1.17.0
 slowapi==0.1.10
 soupsieve==3.0.4
-SQLAlchemy==2.0.55
-starlette==1.9.0
+SQLAlchemy==2.1.6
+starlette==1.10.0
 tabula-py==2.10.0
 tenacity==9.2.1
 typing_extensions==4.16.0
