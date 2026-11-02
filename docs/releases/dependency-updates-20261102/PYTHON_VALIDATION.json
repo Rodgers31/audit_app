@@ -1,0 +1,1120 @@
+{
+  "scope": "consolidated original eight Python proposals plus captured native weekly #890; merge only",
+  "original_prs": [
+    871,
+    872,
+    876,
+    877,
+    878,
+    879,
+    881,
+    882
+  ],
+  "native_head": "e69b993cdefa6b11459f239671015e658fa8304d",
+  "native_changed_version_occurrences_covered": 25,
+  "tested_source_sha256": {
+    "backend/requirements-dev.txt": "36c3e8c71b3b6c8e561cd05fb46dcaa2937edf6bd933773bca11c7a6fafd6e7a",
+    "backend/requirements.txt": "877daa26c9dd36cd91aed1546440592be713351ed5ae55f417f587320b08d473",
+    "etl/requirements.txt": "e41d14e3c65ad432d2d07a845dc0ce266f48248e638d4775ee77fdfef73b1567",
+    "etl/database_loader.py": "7335631686632a859314273c871c227e388c09d10100dd37defe99014b469983",
+    "etl/extractor.py": "31df8a696ec9156a51a80abf4b954f1436429952a7b20abd3cd429aa4a286ee1",
+    "etl/tests/test_database_loader_dependency_boundary.py": "de441bcd64b6c85dfa278daa12f0e2b0bca357a01891f0f9c900c85cd19dad9d",
+    "etl/tests/test_pdf_dependency_boundary.py": "70d8c1750e1e64fdf85a671fcae8220b8f355f2b97e88617d25feeb36de45439",
+    "backend/tests/test_write_routes_require_auth.py": "d1bf3dc2c481297df4fac180c0289b3e9213b775175c62e887c382ed2943adad",
+    "backend/tests/test_no_manufactured_zeros_when_source_unavailable.py": "de4f0b632c94d8ec8a72ae2467669d7bd1276e0ad463481dfb05d66917d8c8d4",
+    "tools/worker_host_fixture/requirements.txt": "e2d2d0aba770efe78ebd90aebc56230bdbdcb4b1bf0bdf6b4c25cd47905bba2c",
+    "tools/worker_host_fixture/README.md": "4225fab8d76a695ac8fa123bf57ba35731dba6f0354708e3d66b631de4a81f91",
+    "docs/admin/batch66/preflight-driver-requirements.txt": "be1add4a04f08f0de49d39669fb1cbbe4c254ca8425251a24c712d3ce293949c",
+    "scripts/verification/ingestion_preflight.py": "af56a93e7a3e74a81a880ab2444c5e2db90d5b5050047f5137ce8d7cfd15afc6",
+    "tests/ingestion_preflight/test_driver_qualification.py": "09148f0b3c5d3aa9f99fc3dc8173a6530baffaf0beaedc6496151e458382f289",
+    "tests/ingestion_preflight/test_readiness_workflow.py": "14f2e353d7e8bb1e9e3fc15677e839caad6c7546a24b132227a9d00d98a136ee",
+    "tests/ingestion_preflight/test_review_regressions.py": "38af3279bfb2565614e1eadef1167213dadba654c36e44b497e7ca26af72c592",
+    "backend/tests/social/test_account_publishing.py": "5a124cb793d0de7033d86f2ce5c0820d1b7dfffa05201e503c84f0f988a89782"
+  },
+  "shipped_source_sha256": {
+    "backend/requirements-dev.txt": "36c3e8c71b3b6c8e561cd05fb46dcaa2937edf6bd933773bca11c7a6fafd6e7a",
+    "backend/requirements.txt": "877daa26c9dd36cd91aed1546440592be713351ed5ae55f417f587320b08d473",
+    "etl/requirements.txt": "e41d14e3c65ad432d2d07a845dc0ce266f48248e638d4775ee77fdfef73b1567",
+    "etl/database_loader.py": "7335631686632a859314273c871c227e388c09d10100dd37defe99014b469983",
+    "etl/extractor.py": "31df8a696ec9156a51a80abf4b954f1436429952a7b20abd3cd429aa4a286ee1",
+    "etl/tests/test_database_loader_dependency_boundary.py": "de441bcd64b6c85dfa278daa12f0e2b0bca357a01891f0f9c900c85cd19dad9d",
+    "etl/tests/test_pdf_dependency_boundary.py": "70d8c1750e1e64fdf85a671fcae8220b8f355f2b97e88617d25feeb36de45439",
+    "backend/tests/test_write_routes_require_auth.py": "d1bf3dc2c481297df4fac180c0289b3e9213b775175c62e887c382ed2943adad",
+    "backend/tests/test_no_manufactured_zeros_when_source_unavailable.py": "de4f0b632c94d8ec8a72ae2467669d7bd1276e0ad463481dfb05d66917d8c8d4",
+    "tools/worker_host_fixture/requirements.txt": "e2d2d0aba770efe78ebd90aebc56230bdbdcb4b1bf0bdf6b4c25cd47905bba2c",
+    "tools/worker_host_fixture/README.md": "212ddfb89837bb6cae6e00a4fde9c417784e9cf108e21105b3b49adef0f4fc23",
+    "docs/admin/batch66/preflight-driver-requirements.txt": "be1add4a04f08f0de49d39669fb1cbbe4c254ca8425251a24c712d3ce293949c",
+    "scripts/verification/ingestion_preflight.py": "af56a93e7a3e74a81a880ab2444c5e2db90d5b5050047f5137ce8d7cfd15afc6",
+    "tests/ingestion_preflight/test_driver_qualification.py": "09148f0b3c5d3aa9f99fc3dc8173a6530baffaf0beaedc6496151e458382f289",
+    "tests/ingestion_preflight/test_readiness_workflow.py": "14f2e353d7e8bb1e9e3fc15677e839caad6c7546a24b132227a9d00d98a136ee",
+    "tests/ingestion_preflight/test_review_regressions.py": "38af3279bfb2565614e1eadef1167213dadba654c36e44b497e7ca26af72c592",
+    "backend/tests/social/test_account_publishing.py": "5a124cb793d0de7033d86f2ce5c0820d1b7dfffa05201e503c84f0f988a89782"
+  },
+  "post_validation_documentation_only_delta": {
+    "file": "tools/worker_host_fixture/README.md",
+    "before_sha256": "4225fab8d76a695ac8fa123bf57ba35731dba6f0354708e3d66b631de4a81f91",
+    "after_sha256": "212ddfb89837bb6cae6e00a4fde9c417784e9cf108e21105b3b49adef0f4fc23",
+    "scope": "documentation only; preserve dated restoration evidence, remove stale current-baseline claim, all host launch gates and four controls remain off",
+    "independent_review_sha256": {
+      "worker-readme-historical-clarification-independent-standards.json": "f26553706e61685460837bd08a13f1bf8fc3a4fc860a97df0a026e5334eda743",
+      "worker-readme-historical-clarification-independent-nightly.json": "2a2df6f780c3e2a2eb0503cd618cb60fa7bdbfc2b9626414742d4bddcfb4d21c"
+    },
+    "all_16_other_source_files_unchanged": true,
+    "all_25_native_guard_files_unchanged": true
+  },
+  "resolved_profiles": {
+    "backend-runtime": {
+      "packages": 87,
+      "versions": {
+        "alembic": "1.20.1",
+        "amqp": "5.4.2",
+        "annotated-doc": "0.0.5",
+        "annotated-types": "0.8.0",
+        "anyio": "4.16.0",
+        "APScheduler": "3.11.3",
+        "bcrypt": "5.0.0",
+        "beautifulsoup4": "4.15.0",
+        "billiard": "4.3.2",
+        "boto3": "1.43.123",
+        "botocore": "1.43.123",
+        "celery": "5.6.3",
+        "certifi": "2026.10.23",
+        "cffi": "2.1.1",
+        "charset-normalizer": "3.5.2",
+        "click": "8.5.0",
+        "click-didyoumean": "0.3.1",
+        "click-plugins": "1.1.1.2",
+        "click-repl": "0.4.1",
+        "cryptography": "50.0.2",
+        "Deprecated": "3.0.1",
+        "distro": "1.9.0",
+        "dnspython": "2.9.1",
+        "email-validator": "2.3.0",
+        "fastapi": "0.156.8",
+        "fuzzywuzzy": "0.18.0",
+        "greenlet": "3.5.6",
+        "gunicorn": "26.2.0",
+        "h11": "0.16.0",
+        "httpcore": "1.0.9",
+        "httptools": "0.9.0",
+        "httpx": "0.28.1",
+        "idna": "3.20",
+        "jmespath": "1.1.0",
+        "kombu": "5.6.2",
+        "limits": "5.8.0",
+        "Mako": "1.4.3",
+        "MarkupSafe": "3.0.4",
+        "numpy": "2.5.4",
+        "opentelemetry-api": "1.45.2",
+        "packaging": "26.3",
+        "pandas": "3.1.0",
+        "passlib": "1.7.4",
+        "pdf2image": "1.17.0",
+        "pdfminer.six": "20260107",
+        "pdfplumber": "0.11.10",
+        "pillow": "13.0.0",
+        "pip": "26.2.2",
+        "prometheus_client": "0.26.0",
+        "prometheus-fastapi-instrumentator": "8.1.0",
+        "prompt_toolkit": "3.0.53",
+        "psycopg2-binary": "2.9.13",
+        "pycparser": "3.12",
+        "pydantic": "2.14.2",
+        "pydantic_core": "2.50.2",
+        "pydantic-settings": "2.16.2",
+        "PyJWT": "2.15.1",
+        "pypdfium2": "5.14.0",
+        "pytesseract": "0.3.13",
+        "python-dateutil": "2.9.0.post0",
+        "python-dotenv": "1.2.4",
+        "python-json-logger": "4.2.0",
+        "python-multipart": "0.0.33",
+        "PyYAML": "6.0.3",
+        "redis": "8.1.0",
+        "requests": "2.34.2",
+        "s3transfer": "0.19.3",
+        "sentry-sdk": "2.73.0",
+        "six": "1.17.0",
+        "slowapi": "0.1.10",
+        "soupsieve": "3.0.4",
+        "SQLAlchemy": "2.0.55",
+        "starlette": "1.9.0",
+        "tabula-py": "2.10.0",
+        "tenacity": "9.2.1",
+        "typing_extensions": "4.16.0",
+        "typing-inspection": "0.4.4",
+        "tzdata": "2026.6",
+        "tzlocal": "5.4.5",
+        "urllib3": "2.8.0",
+        "uvicorn": "0.54.0",
+        "uvloop": "0.23.0",
+        "vine": "5.1.0",
+        "watchfiles": "1.3.0",
+        "wcwidth": "0.9.4",
+        "websockets": "17.4",
+        "wrapt": "2.5.2"
+      },
+      "pip_check": "PASS",
+      "pip_audit": "complete exact census zero matches/skips",
+      "osv": "complete exact census zero matches",
+      "census_sha256": "1a0b8fc129bf4f5e1586c060156536e684a8ee974cd4c2ce99fdb553f8782658"
+    },
+    "backend-dev": {
+      "packages": 120,
+      "versions": {
+        "alembic": "1.20.1",
+        "amqp": "5.4.2",
+        "annotated-doc": "0.0.5",
+        "annotated-types": "0.8.0",
+        "anyio": "4.16.0",
+        "APScheduler": "3.11.3",
+        "asttokens": "3.0.2",
+        "bcrypt": "5.0.0",
+        "beautifulsoup4": "4.15.0",
+        "billiard": "4.3.2",
+        "black": "26.10.1",
+        "boto3": "1.43.123",
+        "botocore": "1.43.123",
+        "celery": "5.6.3",
+        "certifi": "2026.10.23",
+        "cffi": "2.1.1",
+        "charset-normalizer": "3.5.2",
+        "click": "8.5.0",
+        "click-didyoumean": "0.3.1",
+        "click-plugins": "1.1.1.2",
+        "click-repl": "0.4.1",
+        "coverage": "7.17.0",
+        "cryptography": "50.0.2",
+        "decorator": "5.3.1",
+        "Deprecated": "3.0.1",
+        "distro": "1.9.0",
+        "dnspython": "2.9.1",
+        "email-validator": "2.3.0",
+        "executing": "2.3.0",
+        "fastapi": "0.156.8",
+        "flake8": "6.1.0",
+        "fuzzywuzzy": "0.18.0",
+        "greenlet": "3.5.6",
+        "gunicorn": "26.2.0",
+        "h11": "0.16.0",
+        "httpcore": "1.0.9",
+        "httptools": "0.9.0",
+        "httpx": "0.28.1",
+        "idna": "3.20",
+        "iniconfig": "2.3.1",
+        "ipython": "8.39.0",
+        "isort": "5.13.2",
+        "jedi": "0.20.1",
+        "jmespath": "1.1.0",
+        "kombu": "5.6.2",
+        "librt": "0.16.0",
+        "limits": "5.8.0",
+        "Mako": "1.4.3",
+        "MarkupSafe": "3.0.4",
+        "matplotlib-inline": "0.2.2",
+        "mccabe": "0.7.0",
+        "mypy": "1.20.2",
+        "mypy_extensions": "1.1.0",
+        "numpy": "2.5.4",
+        "opentelemetry-api": "1.45.2",
+        "packaging": "26.3",
+        "pandas": "3.1.0",
+        "parso": "0.8.7",
+        "passlib": "1.7.4",
+        "pathspec": "1.1.1",
+        "pdf2image": "1.17.0",
+        "pdfminer.six": "20260107",
+        "pdfplumber": "0.11.10",
+        "pexpect": "4.9.0",
+        "pillow": "13.0.0",
+        "pip": "26.2.2",
+        "platformdirs": "4.14.3",
+        "pluggy": "1.7.0",
+        "prometheus_client": "0.26.0",
+        "prometheus-fastapi-instrumentator": "8.1.0",
+        "prompt_toolkit": "3.0.53",
+        "psycopg2-binary": "2.9.13",
+        "ptyprocess": "0.7.0",
+        "pure_eval": "0.2.4",
+        "pycodestyle": "2.11.1",
+        "pycparser": "3.12",
+        "pydantic": "2.14.2",
+        "pydantic_core": "2.50.2",
+        "pydantic-settings": "2.16.2",
+        "pyflakes": "3.1.0",
+        "Pygments": "2.21.0",
+        "PyJWT": "2.15.1",
+        "pypdfium2": "5.14.0",
+        "pytesseract": "0.3.13",
+        "pytest": "9.2.0",
+        "pytest-asyncio": "1.4.1",
+        "pytest-cov": "6.3.0",
+        "pytest-mock": "3.17.0",
+        "python-dateutil": "2.9.0.post0",
+        "python-dotenv": "1.2.4",
+        "python-json-logger": "4.2.0",
+        "python-multipart": "0.0.33",
+        "pytokens": "0.4.1",
+        "PyYAML": "6.0.3",
+        "redis": "8.1.0",
+        "requests": "2.34.2",
+        "s3transfer": "0.19.3",
+        "schedule": "1.2.2",
+        "sentry-sdk": "2.73.0",
+        "six": "1.17.0",
+        "slowapi": "0.1.10",
+        "soupsieve": "3.0.4",
+        "SQLAlchemy": "2.0.55",
+        "stack-data": "0.6.3",
+        "starlette": "1.9.0",
+        "tabula-py": "2.10.0",
+        "tenacity": "9.2.1",
+        "traitlets": "5.16.1",
+        "typing_extensions": "4.16.0",
+        "typing-inspection": "0.4.4",
+        "tzdata": "2026.6",
+        "tzlocal": "5.4.5",
+        "urllib3": "2.8.0",
+        "uvicorn": "0.54.0",
+        "uvloop": "0.23.0",
+        "vine": "5.1.0",
+        "watchfiles": "1.3.0",
+        "wcwidth": "0.9.4",
+        "websockets": "17.4",
+        "wrapt": "2.5.2"
+      },
+      "pip_check": "PASS",
+      "pip_audit": "complete exact census zero matches/skips",
+      "osv": "complete exact census zero matches",
+      "census_sha256": "c2cc317f1deefd25fe3a0ea6b748a144e889824121f6f06e935200065cbf1fcf"
+    },
+    "etl-runtime": {
+      "packages": 53,
+      "versions": {
+        "anyio": "4.16.0",
+        "beautifulsoup4": "4.15.0",
+        "boto3": "1.43.122",
+        "botocore": "1.43.123",
+        "camelot-py": "2.0.0",
+        "certifi": "2026.10.23",
+        "cffi": "2.1.1",
+        "charset-normalizer": "3.5.2",
+        "click": "8.5.0",
+        "cryptography": "50.0.2",
+        "distro": "1.9.0",
+        "et_xmlfile": "2.0.0",
+        "fuzzywuzzy": "0.18.0",
+        "greenlet": "3.5.6",
+        "h11": "0.16.0",
+        "httpcore": "1.0.9",
+        "httpx": "0.28.1",
+        "idna": "3.20",
+        "jmespath": "1.1.0",
+        "Levenshtein": "0.27.5",
+        "lxml": "6.1.3",
+        "mypy_extensions": "1.1.0",
+        "numpy": "2.5.4",
+        "opencv-python-headless": "5.0.0.93",
+        "openpyxl": "3.1.5",
+        "pandas": "3.1.0",
+        "pdfminer.six": "20260107",
+        "pdfplumber": "0.11.10",
+        "pillow": "13.0.0",
+        "pip": "26.2.2",
+        "playa-pdf": "1.1.0",
+        "playwright": "1.64.1",
+        "psycopg2-binary": "2.9.13",
+        "pycparser": "3.12",
+        "pyee": "14.0.0",
+        "pypdf": "6.21.4",
+        "pypdfium2": "5.14.0",
+        "python-dateutil": "2.9.0.post0",
+        "python-dotenv": "1.2.4",
+        "python-Levenshtein": "0.27.5",
+        "PyYAML": "6.0.3",
+        "RapidFuzz": "3.14.6",
+        "requests": "2.34.2",
+        "s3transfer": "0.19.3",
+        "schedule": "1.2.2",
+        "six": "1.17.0",
+        "soupsieve": "3.0.4",
+        "SQLAlchemy": "2.1.6",
+        "tabula-py": "2.10.0",
+        "tabulate": "0.10.0",
+        "tenacity": "9.2.1",
+        "typing_extensions": "4.16.0",
+        "urllib3": "2.8.0"
+      },
+      "pip_check": "PASS",
+      "pip_audit": "complete exact census zero matches/skips",
+      "osv": "complete exact census zero matches",
+      "census_sha256": "5b2b749c1f3c4fbc166abfa8fc6774eb6ab2c21626862e82fb17f28c9a1b4161"
+    },
+    "etl-dev": {
+      "packages": 65,
+      "versions": {
+        "alembic": "1.20.1",
+        "anyio": "4.16.0",
+        "beautifulsoup4": "4.15.0",
+        "boto3": "1.43.122",
+        "botocore": "1.43.123",
+        "camelot-py": "2.0.0",
+        "certifi": "2026.10.23",
+        "cffi": "2.1.1",
+        "charset-normalizer": "3.5.2",
+        "click": "8.5.0",
+        "coverage": "7.17.0",
+        "cryptography": "50.0.2",
+        "distro": "1.9.0",
+        "et_xmlfile": "2.0.0",
+        "fuzzywuzzy": "0.18.0",
+        "greenlet": "3.5.6",
+        "h11": "0.16.0",
+        "httpcore": "1.0.9",
+        "httpx": "0.28.1",
+        "idna": "3.20",
+        "iniconfig": "2.3.1",
+        "jmespath": "1.1.0",
+        "Levenshtein": "0.27.5",
+        "lxml": "6.1.3",
+        "Mako": "1.4.3",
+        "MarkupSafe": "3.0.4",
+        "mypy_extensions": "1.1.0",
+        "numpy": "2.5.4",
+        "opencv-python-headless": "5.0.0.93",
+        "openpyxl": "3.1.5",
+        "packaging": "26.3",
+        "pandas": "3.1.0",
+        "pdfminer.six": "20260107",
+        "pdfplumber": "0.11.10",
+        "pillow": "13.0.0",
+        "pip": "26.2.2",
+        "playa-pdf": "1.1.0",
+        "playwright": "1.64.1",
+        "pluggy": "1.7.0",
+        "psycopg2-binary": "2.9.13",
+        "pycparser": "3.12",
+        "pyee": "14.0.0",
+        "Pygments": "2.21.0",
+        "pypdf": "6.21.4",
+        "pypdfium2": "5.14.0",
+        "pytest": "9.2.0",
+        "pytest-asyncio": "1.4.1",
+        "pytest-cov": "6.3.0",
+        "pytest-mock": "3.17.0",
+        "python-dateutil": "2.9.0.post0",
+        "python-dotenv": "1.2.4",
+        "python-Levenshtein": "0.27.5",
+        "PyYAML": "6.0.3",
+        "RapidFuzz": "3.14.6",
+        "requests": "2.34.2",
+        "s3transfer": "0.19.3",
+        "schedule": "1.2.2",
+        "six": "1.17.0",
+        "soupsieve": "3.0.4",
+        "SQLAlchemy": "2.1.6",
+        "tabula-py": "2.10.0",
+        "tabulate": "0.10.0",
+        "tenacity": "9.2.1",
+        "typing_extensions": "4.16.0",
+        "urllib3": "2.8.0"
+      },
+      "pip_check": "PASS",
+      "pip_audit": "complete exact census zero matches/skips",
+      "osv": "complete exact census zero matches",
+      "census_sha256": "c9fe5ced1ad0d629cf7adec59eb6c96d88f955c8ef701c329714a25e0718aa36"
+    }
+  },
+  "resolved_profile_delta": {
+    "backend-runtime": {
+      "before_count": 87,
+      "after_count": 87,
+      "changes": {}
+    },
+    "backend-dev": {
+      "before_count": 129,
+      "after_count": 120,
+      "changes": {
+        "distlib": {
+          "before": "0.4.4",
+          "after": null
+        },
+        "docopt": {
+          "before": "0.6.2",
+          "after": null
+        },
+        "ipython": {
+          "before": "8.18.1",
+          "after": "8.39.0"
+        },
+        "isort": {
+          "before": "5.13.0",
+          "after": "5.13.2"
+        },
+        "librt": {
+          "before": null,
+          "after": "0.16.0"
+        },
+        "mypy": {
+          "before": "1.7.1",
+          "after": "1.20.2"
+        },
+        "pep517": {
+          "before": "0.13.1",
+          "after": null
+        },
+        "pip-api": {
+          "before": "0.0.35",
+          "after": null
+        },
+        "pipreqs": {
+          "before": "0.4.13",
+          "after": null
+        },
+        "plette": {
+          "before": "2.4.0",
+          "after": null
+        },
+        "pytest-cov": {
+          "before": "6.0.0",
+          "after": "6.3.0"
+        },
+        "requirementslib": {
+          "before": "3.0.0",
+          "after": null
+        },
+        "setuptools": {
+          "before": "84.2.1",
+          "after": null
+        },
+        "tomlkit": {
+          "before": "0.15.2",
+          "after": null
+        },
+        "yarg": {
+          "before": "0.1.10",
+          "after": null
+        }
+      }
+    },
+    "etl-runtime": {
+      "before_count": 53,
+      "after_count": 53,
+      "changes": {
+        "boto3": {
+          "before": "1.43.121",
+          "after": "1.43.122"
+        }
+      }
+    },
+    "etl-dev": {
+      "before_count": 63,
+      "after_count": 65,
+      "changes": {
+        "boto3": {
+          "before": "1.43.121",
+          "after": "1.43.122"
+        },
+        "coverage": {
+          "before": null,
+          "after": "7.17.0"
+        },
+        "pytest-cov": {
+          "before": null,
+          "after": "6.3.0"
+        }
+      }
+    }
+  },
+  "exact_worker_profile": [
+    {
+      "name": "alembic",
+      "version": "1.20.1"
+    },
+    {
+      "name": "amqp",
+      "version": "5.4.1"
+    },
+    {
+      "name": "annotated-doc",
+      "version": "0.0.5"
+    },
+    {
+      "name": "annotated-types",
+      "version": "0.8.0"
+    },
+    {
+      "name": "anyio",
+      "version": "4.15.1"
+    },
+    {
+      "name": "APScheduler",
+      "version": "3.11.3"
+    },
+    {
+      "name": "bcrypt",
+      "version": "5.0.0"
+    },
+    {
+      "name": "beautifulsoup4",
+      "version": "4.15.0"
+    },
+    {
+      "name": "billiard",
+      "version": "4.3.1"
+    },
+    {
+      "name": "boto3",
+      "version": "1.43.123"
+    },
+    {
+      "name": "botocore",
+      "version": "1.43.123"
+    },
+    {
+      "name": "celery",
+      "version": "5.6.3"
+    },
+    {
+      "name": "certifi",
+      "version": "2026.10.23"
+    },
+    {
+      "name": "cffi",
+      "version": "2.1.1"
+    },
+    {
+      "name": "charset-normalizer",
+      "version": "3.5.2"
+    },
+    {
+      "name": "click",
+      "version": "8.5.0"
+    },
+    {
+      "name": "click-didyoumean",
+      "version": "0.3.1"
+    },
+    {
+      "name": "click-plugins",
+      "version": "1.1.1.2"
+    },
+    {
+      "name": "click-repl",
+      "version": "0.4.1"
+    },
+    {
+      "name": "cryptography",
+      "version": "50.0.2"
+    },
+    {
+      "name": "Deprecated",
+      "version": "3.0.1"
+    },
+    {
+      "name": "distro",
+      "version": "1.9.0"
+    },
+    {
+      "name": "dnspython",
+      "version": "2.9.1"
+    },
+    {
+      "name": "email-validator",
+      "version": "2.3.0"
+    },
+    {
+      "name": "fastapi",
+      "version": "0.162.0"
+    },
+    {
+      "name": "fuzzywuzzy",
+      "version": "0.18.0"
+    },
+    {
+      "name": "greenlet",
+      "version": "3.5.6"
+    },
+    {
+      "name": "gunicorn",
+      "version": "26.2.0"
+    },
+    {
+      "name": "h11",
+      "version": "0.16.0"
+    },
+    {
+      "name": "httpcore",
+      "version": "1.0.9"
+    },
+    {
+      "name": "httptools",
+      "version": "0.9.0"
+    },
+    {
+      "name": "httpx",
+      "version": "0.28.1"
+    },
+    {
+      "name": "idna",
+      "version": "3.20"
+    },
+    {
+      "name": "iniconfig",
+      "version": "2.3.1"
+    },
+    {
+      "name": "jmespath",
+      "version": "1.1.0"
+    },
+    {
+      "name": "kombu",
+      "version": "5.6.2"
+    },
+    {
+      "name": "limits",
+      "version": "5.8.0"
+    },
+    {
+      "name": "Mako",
+      "version": "1.4.3"
+    },
+    {
+      "name": "MarkupSafe",
+      "version": "3.0.4"
+    },
+    {
+      "name": "numpy",
+      "version": "2.5.4"
+    },
+    {
+      "name": "opentelemetry-api",
+      "version": "1.45.2"
+    },
+    {
+      "name": "packaging",
+      "version": "26.3"
+    },
+    {
+      "name": "pandas",
+      "version": "3.1.0"
+    },
+    {
+      "name": "passlib",
+      "version": "1.7.4"
+    },
+    {
+      "name": "pdf2image",
+      "version": "1.17.0"
+    },
+    {
+      "name": "pdfminer.six",
+      "version": "20260107"
+    },
+    {
+      "name": "pdfplumber",
+      "version": "0.11.10"
+    },
+    {
+      "name": "pillow",
+      "version": "13.0.0"
+    },
+    {
+      "name": "pip",
+      "version": "26.2.2"
+    },
+    {
+      "name": "pluggy",
+      "version": "1.7.0"
+    },
+    {
+      "name": "prometheus-fastapi-instrumentator",
+      "version": "8.1.0"
+    },
+    {
+      "name": "prometheus_client",
+      "version": "0.26.0"
+    },
+    {
+      "name": "prompt_toolkit",
+      "version": "3.0.53"
+    },
+    {
+      "name": "psutil",
+      "version": "7.2.2"
+    },
+    {
+      "name": "psycopg2-binary",
+      "version": "2.9.13"
+    },
+    {
+      "name": "pycparser",
+      "version": "3.12"
+    },
+    {
+      "name": "pydantic",
+      "version": "2.14.2"
+    },
+    {
+      "name": "pydantic-settings",
+      "version": "2.16.2"
+    },
+    {
+      "name": "pydantic_core",
+      "version": "2.50.2"
+    },
+    {
+      "name": "Pygments",
+      "version": "2.21.0"
+    },
+    {
+      "name": "PyJWT",
+      "version": "2.15.1"
+    },
+    {
+      "name": "pypdfium2",
+      "version": "5.14.0"
+    },
+    {
+      "name": "pytesseract",
+      "version": "0.3.13"
+    },
+    {
+      "name": "pytest",
+      "version": "9.2.0"
+    },
+    {
+      "name": "pytest-asyncio",
+      "version": "1.4.1"
+    },
+    {
+      "name": "python-dateutil",
+      "version": "2.9.0.post0"
+    },
+    {
+      "name": "python-dotenv",
+      "version": "1.2.4"
+    },
+    {
+      "name": "python-json-logger",
+      "version": "4.2.0"
+    },
+    {
+      "name": "python-multipart",
+      "version": "0.0.33"
+    },
+    {
+      "name": "PyYAML",
+      "version": "6.0.3"
+    },
+    {
+      "name": "redis",
+      "version": "8.1.0"
+    },
+    {
+      "name": "requests",
+      "version": "2.34.2"
+    },
+    {
+      "name": "s3transfer",
+      "version": "0.19.3"
+    },
+    {
+      "name": "sentry-sdk",
+      "version": "2.73.0"
+    },
+    {
+      "name": "six",
+      "version": "1.17.0"
+    },
+    {
+      "name": "slowapi",
+      "version": "0.1.10"
+    },
+    {
+      "name": "soupsieve",
+      "version": "3.0.4"
+    },
+    {
+      "name": "SQLAlchemy",
+      "version": "2.1.6"
+    },
+    {
+      "name": "starlette",
+      "version": "1.10.0"
+    },
+    {
+      "name": "tabula-py",
+      "version": "2.10.0"
+    },
+    {
+      "name": "tenacity",
+      "version": "9.2.1"
+    },
+    {
+      "name": "typing-inspection",
+      "version": "0.4.4"
+    },
+    {
+      "name": "typing_extensions",
+      "version": "4.16.0"
+    },
+    {
+      "name": "tzdata",
+      "version": "2026.6"
+    },
+    {
+      "name": "tzlocal",
+      "version": "5.4.5"
+    },
+    {
+      "name": "urllib3",
+      "version": "2.8.0"
+    },
+    {
+      "name": "uvicorn",
+      "version": "0.54.0"
+    },
+    {
+      "name": "uvloop",
+      "version": "0.23.0"
+    },
+    {
+      "name": "vine",
+      "version": "5.1.0"
+    },
+    {
+      "name": "watchfiles",
+      "version": "1.3.0"
+    },
+    {
+      "name": "wcwidth",
+      "version": "0.9.4"
+    },
+    {
+      "name": "websockets",
+      "version": "17.4"
+    },
+    {
+      "name": "wrapt",
+      "version": "2.5.2"
+    }
+  ],
+  "worker_installed_count": 93,
+  "core_tests": {
+    "backend-normal": {
+      "tests": 1560,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_sha256": "d5bcc6f448309f9fd4dee7721d63d908b5fea4e88c1aa877eeb2e3da868cd400"
+    },
+    "backend-optimized": {
+      "tests": 1560,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_sha256": "536a4131b39731b6cc4bb14af10460bf0e483e90e3c1e9e52574c092a5f96ad3"
+    },
+    "health-normal": {
+      "tests": 34,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_sha256": "0f90a56d692f8f12ca01cb19f120ca89bbc1a66615251cc88a80e05966aed97f"
+    },
+    "health-optimized": {
+      "tests": 34,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_sha256": "9d5c3e5031c10bc41aca6789a0e1468c517be93614ec9c9c3867c2e4645d8bbf"
+    },
+    "postgres-normal": {
+      "tests": 76,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_sha256": "e5c158320558d372eb3c659e5daf3af98a22cc9c14c3f6d715418af394698aa4"
+    },
+    "postgres-optimized": {
+      "tests": 76,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_sha256": "1749a2d99b756e26d1eac3072b552d99cce7568ed8573011fe885c8ac2947dfe"
+    },
+    "etl-normal": {
+      "tests": 111,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_sha256": "3d44c724ef8932af8bd211727a5277354c48ecd3be886b3305729112ee86e4f9"
+    },
+    "etl-optimized": {
+      "tests": 111,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_sha256": "5b97c5b12429b3dbfb883439581183b0ede9395c25d5b70e4408bbe033fe1f6f"
+    },
+    "etl_cov-normal": {
+      "tests": 60,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_sha256": "a6cabe2e7ee9a1e8912c6b2f1813b7d62586cf2c8f9d80547432689b4e5c846c"
+    },
+    "etl_cov-optimized": {
+      "tests": 60,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_sha256": "eaf92b2a9e68511f66713eb61702ff49b0ef13b08069df08292053c3c659f8fe"
+    },
+    "cli-normal": {
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_sha256": "d8ec232632952348149daa9af4f8491ab74c2313e96f410615f85d550747ffb6"
+    },
+    "cli-optimized": {
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_sha256": "c1bce5acb7383aa8d95ee72be185a2255bd060e067cb4c09dd79335599104b67"
+    },
+    "sdk-normal": {
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_sha256": "7a890134bed859ecaa354db8b6b9a9258885fcc128727c0b3b887d8e0593ab9f"
+    },
+    "sdk-optimized": {
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_sha256": "242abf5ef31001fa7f705ea15bc479f39278a01844b8c75d95c65e51695e9ca0"
+    },
+    "account-fixture-normal": {
+      "tests": 45,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_sha256": "d2eddbec4bcbdecfd909375685b573063fa79f54563891145d054eed02c475cd"
+    },
+    "account-fixture-optimized": {
+      "tests": 45,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_sha256": "da9666b52ee39ee058f0e25252ab9e10eed57c6c9b852acfc062cc911bf7201f"
+    },
+    "etl-postgres-normal": {
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_sha256": "c0110396c8901adb6b1ae66e0ee2c5c5693c0ae76df3cc9425902659470d2f05"
+    },
+    "etl-postgres-optimized": {
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_sha256": "05ee9bd0ef99c9347eda08ea0dde936eb38eff40ab6bbfa5966c7c83d65c3c05"
+    }
+  },
+  "worker_tests": {
+    "worker-boundaries-normal": {
+      "tests": 99,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "worker-boundaries-optimized": {
+      "tests": 99,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "fixed-framework-normal": {
+      "tests": 177,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "fixed-framework-optimized": {
+      "tests": 177,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "preflight-normal": {
+      "tests": 228,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "preflight-optimized": {
+      "tests": 228,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "postgres-final-normal": {
+      "tests": 76,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "postgres-final-optimized": {
+      "tests": 76,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "counts_overlap": true,
+  "independent_review_paths": {
+    "core_first": "python-core-native-addon-independent-standards/REVIEW-RECEIPT.json",
+    "core_second": "python-core-native-second-independent/REVIEW.json",
+    "worker_first": "root-worker-addon-independent/REVIEW.json",
+    "worker_second": "python-core-native-addon/worker-independent/REVIEW.json"
+  },
+  "approved_driver_sha256": [
+    "e3861eba31f8ea8663fd876166b032fd89179e42aa63764d6feb281f13f9eb60",
+    "f04ada42bcd537adbaf8b7f3140237a204e452a88d0c1831cfce69f7d2e59f4e"
+  ],
+  "native_67_hash_expansion_admitted": false,
+  "backend_sqlalchemy_cap_preserved": "<2.1",
+  "production_parity": "UNMET",
+  "native_worker_host_qualification": "UNMET",
+  "coverage_scope": "Full selected1560 backend and selected60 ETL cases per mode; full instrumented ETL3s timeout reproduced old/new, unchanged uninstrumented111passes. Not all-repository coverage.",
+  "receipt_sha256": {
+    "python-backend-etl/AUTHOR_BACKEND_ETL.json": "c3d851e5ac63b6422ae0c7e2b24268c9261d51727c51b775b369e9284794bde3",
+    "python-worker-driver/AUTHOR_WORKER_DRIVER.json": "a7c33ebc27e10f2bafd2437d597ae0a25a8095f14fd2a15470cc0ada0a0fa48a",
+    "python-independent-standards/REVIEW-RECEIPT.json": "1c9c9b77802c017b462ff7d9a2d473bf878f87b36685237658359976f546ca10",
+    "python-second-independent/REVIEW.json": "6133e9db029adf72d679a681b5d4397c4bf0090e047f8291c261701a96e261a2",
+    "python-core-native-addon/AUTHOR_NATIVE_ADDON.json": "b233d71ed2c4dffc776788d05433b1af86312b06830d59be82aebca8a7e037d6",
+    "python-core-native-addon/AUTHOR_SHA256SUMS.json": "e821540b3ce3398501d4cb6eae20be86473ee61a01d06a4808a094e3c725f634",
+    "python-worker-native-addon/AUTHOR_NATIVE_ADDON.json": "2453d9f2c810de79dca2b23c4538ec5229086c06c0b683fe7828d4f79bff9fe3",
+    "python-core-native-addon-independent-standards/REVIEW-RECEIPT.json": "9043e7a446d97076f65487838e2071765738043de47f80daf8d992dac549e61c",
+    "python-core-native-second-independent/REVIEW.json": "8ad4b988125a779f2859bc485fae877f36065180340d85977637bf10dfb1566b",
+    "root-worker-addon-independent/REVIEW.json": "6a65d0276593a8a0b7cd8b744d9e9eb3eecfb4acb277d9fbe79ce22fa879e5ad",
+    "python-core-native-addon/worker-independent/REVIEW.json": "180b3fa7e73f27837ecdceaad98ecb2dd1ffdd61c995e05d4f21bb319db6a6e5",
+    "worker-readme-historical-clarification-independent-standards.json": "f26553706e61685460837bd08a13f1bf8fc3a4fc860a97df0a026e5334eda743",
+    "worker-readme-historical-clarification-independent-nightly.json": "2a2df6f780c3e2a2eb0503cd618cb60fa7bdbfc2b9626414742d4bddcfb4d21c",
+    "python-core-native-addon/cleanup/teardown.json": "fc9f1330bf60e1878cc713f0ed6cc77c3239fca573a940de74f927c3a50992b7",
+    "python-worker-native-addon/owned-pg-final-absence.json": "b63d07924878fb5b5d31279c47d20d5d7a59ea60dd748494ef454abf3339a964",
+    "python-native-intent-reconciliation.json": "9e2ecfa77aa3941932cc892e7d016da748e180be05e0a236d1540ad5eabc9d9a"
+  },
+  "deployment_performed": false,
+  "ingestion_pin_updated": false,
+  "production_controls_changed": false,
+  "new_paid_resources": false
+}

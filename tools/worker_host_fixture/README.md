@@ -110,18 +110,23 @@ beyond4MiB. Downloaded chunks alone are not external identity proof. An off-host
 dump/restore exercise does not prove persistence of Render's ephemeral disk.
 Missing host stop, capacity or recovery evidence remains incomplete, never inferred.
 
-The complete exact-version lock is validated before installation. Each of90 pins
+The complete exact-version profile is validated before installation. Each of 93 pins
 is installed in a fresh isolated pip process, read back, and followed by mandatory
-pip check. The84 accepted production Python package versions must match. The OS
+pip check. The accepted production Python package versions must match before host
+qualification. The OS
 package inventory and vendor resolver hash are recorded rather than assumed.
 
 ## Maintenance configuration and restoration
 
 Record the actual accepted source, configuration deployment, schema, flags and
-retained data before any host trial. Current accepted source is
+retained data before any host trial. The following values are historical
+20 October 2026 restoration evidence, not a current release or rollback target:
 e26d142dd1aa02b817f19957411b16788c356420/configuration deployment
  dep-dbbr198ae00c73aj98qg/schemaa756b20a0001 on existing service
-srv-d6hr3t5m5p6s73bomqu0. No migration or production environment edit is included.
+srv-d6hr3t5m5p6s73bomqu0. Establish a fresh accepted production baseline and exact
+rollback artifact before any newly authorized host trial. This dependency update
+includes no host-trial authorization; publishing, uploads, workers and financial
+generation remain off. No migration or production environment edit is included.
 
 Temporary build settings: rootempty, context `.`, Dockerfile
 `tools/worker_host_fixture/Dockerfile`, blank command and unchanged blank health,
@@ -161,3 +166,49 @@ capacity/confinement acceptance before use. That workload was not run or activat
 by this dependency refresh. The pinned 3.12.15 fixture base remains historical and
 needs a separately verified 3.12.16+ base/image refresh before renewed qualification.
 No historical fixture acceptance carries forward to the new package graph.
+
+## Dependency maintenance — 2 November 2026, original proposals
+
+The 93-pin profile advances pytest-asyncio 1.4.0→1.4.1 and Starlette 1.9.0→1.10.0.
+This is a default-off maintenance-image dependency change, not production worker
+or maintenance-image launch authorization. The earlier 90-pin/84-production-package
+counts describe an older corpus; they are not a current parity receipt.
+
+The retained 31 October production inventory contains 81 distributions (SHA256
+`ea09035c5e8246cfc9a044ff9c71fbdc06ec8d16b55dcb1d5fa3057c05f10c17`).
+Compared with this candidate, its shared versions differ in AnyIO 4.16.0 versus
+fixture 4.15.1 (pre-existing) and Starlette 1.9.0 versus fixture 1.10.0. This archived
+inventory is not a fresh live production readback. Production package parity is
+therefore **UNMET**; the version-match requirement above remains in force.
+
+Fresh exact installation, complete census, pip check, package advisory queries
+and normal/optimized local boundary tests do not qualify the native restricted
+host. The available local Docker host is ARM64; actual nonroot namespace admission
+under its unchanged confinement refused `unshare` with EPERM. Neither emulation
+nor relaxed container privileges substitutes for native x86 Linux acceptance.
+Before any host use, establish a newly reviewed accepted production-version
+baseline and matching fixture graph, refresh the separately pinned Python base,
+then repeat the complete unchanged native confinement/cgroup workload, resource,
+closure, recovery and actual host-stop qualification. All thresholds and activation
+holds above remain unchanged.
+
+## Captured native group addon — 2 November 2026
+
+Native Dependabot #890 at `e69b993cdefa6b11459f239671015e658fa8304d`
+additionally proposes FastAPI 0.156.8→0.162.0, pytest 9.1.1→9.2.0 and
+SQLAlchemy 2.0.55→2.1.6 for this profile. The profile still has exactly 93 pins;
+these are the only additional version changes. Earlier same-day package/test
+receipts apply to the original-proposal graph, not this addon.
+
+Against the same retained 31 October 81-package inventory, the addon differs
+in four shared runtime packages: AnyIO 4.16.0 versus fixture 4.15.1,
+FastAPI 0.156.8 versus fixture 0.162.0, SQLAlchemy 2.0.55 versus fixture 2.1.6,
+and Starlette 1.9.0 versus fixture 1.10.0. The inventory is historical, not a
+fresh production observation. Production package parity remains **UNMET**.
+
+Fresh exact installation and local framework/database boundary checks must
+qualify this specific graph. They do not qualify native x86 confinement,
+resource capacity, recovery, host stop or production use. The pinned Python
+base refresh, matching accepted production graph, unchanged host workload and
+all activation/qualification requirements above remain mandatory. No worker or
+maintenance image launch is authorized by these dependency changes.

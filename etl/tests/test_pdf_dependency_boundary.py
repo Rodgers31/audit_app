@@ -75,3 +75,71 @@ def test_knbs_maintained_reader_fallback_extracts_text(monkeypatch, table_pdf, c
     assert "using pypdf" in caplog.text
     assert "pypdf failed" in caplog.text
     assert "PyPDF2" not in caplog.text
+
+
+def test_tabula_java_reader_preserves_source_numbers_and_original_bytes(table_pdf):
+    import hashlib
+    original = table_pdf.read_bytes()
+    result = DocumentExtractor()._extract_with_tabula(str(table_pdf))
+    assert 'error' not in result, result
+    assert len(result['tables']) == 1
+    table = result['tables'][0]
+    assert table['headers'] == ['County', 'Year', 'Population']
+    assert table['rows'] == [['Samburu', 2019, 310327]]
+    parsed = {'population_data': []}
+    knbs_parser.KNBSParser()._extract_population_from_table(
+        [table['headers'], *table['rows']], parsed, {'county':'Samburu', 'year':2019})
+    assert [(row['year'],row['total_population']) for row in parsed['population_data']] == [(2019,310327)]
+    assert hashlib.sha256(table_pdf.read_bytes()).digest() == hashlib.sha256(original).digest()
+
+
+def test_pandas3_string_missing_values_do_not_create_population_or_mutate_source(monkeypatch, table_pdf):
+    import pandas as pd
+    from etl import extractor
+    frame = pd.DataFrame({'County':['Samburu','Samburu'], 'Year':['2019',None], 'Population':['310327',None]})
+    original = frame.copy(deep=True)
+    assert str(frame['County'].dtype) == 'str'
+    monkeypatch.setattr(extractor.tabula, 'read_pdf', lambda *args,**kwargs:[frame])
+    result = DocumentExtractor()._extract_with_tabula(str(table_pdf))
+    assert 'error' not in result
+    table = result['tables'][0]
+    parsed = {'population_data': []}
+    knbs_parser.KNBSParser()._extract_population_from_table(
+        [table['headers'], *table['rows']], parsed, {'county':'Samburu', 'year':2019})
+    assert [(row['year'],row['total_population']) for row in parsed['population_data']] == [(2019,310327)]
+    pd.testing.assert_frame_equal(frame, original)
+
+
+@pytest.mark.parametrize("year,population", [
+    ("nan", "310327"), ("NaN", "310327"), ("130", "310327"),
+    ("2019", None), ("2019", "nan"), ("2019", "NaN"),
+    ("2019", float("inf")), ("2019", -float("inf")),
+    ({"year": 2019}, "310327"), ("2019", [310327]),
+])
+def test_pandas_missing_normalization_does_not_certify_malformed_cells(
+    monkeypatch, table_pdf, year, population
+):
+    import pandas as pd
+    from etl import extractor
+
+    frame = pd.DataFrame({"County": ["Samburu"], "Year": [year], "Population": [population]})
+    original = frame.copy(deep=True)
+    monkeypatch.setattr(extractor.tabula, "read_pdf", lambda *args, **kwargs: [frame])
+    result = DocumentExtractor()._extract_with_tabula(str(table_pdf))
+    if isinstance(year, dict) or isinstance(population, list):
+        assert result["error"] == "Tabula produced a non-scalar table cell"
+        assert result["tables"] == []
+        pd.testing.assert_frame_equal(frame, original)
+        return
+    assert "error" not in result
+    table = result["tables"][0]
+    parsed = {"population_data": []}
+    knbs_parser.KNBSParser()._extract_population_from_table(
+        [table["headers"], *table["rows"]], parsed, {"county": "Samburu", "year": 2019}
+    )
+    assert parsed["population_data"] == []
+    if isinstance(year, str) and year in {"nan", "NaN"}:
+        assert table["rows"][0][1] == year
+    if isinstance(population, str) and population in {"nan", "NaN"}:
+        assert table["rows"][0][2] == population
+    pd.testing.assert_frame_equal(frame, original)

@@ -22,10 +22,37 @@ def test_manual_only_workflow_has_no_input_execution_or_upload():
     assert set(value["on"]) == {"workflow_dispatch"}
     assert value["permissions"] == {"contents": "read"}
     assert value["concurrency"]["cancel-in-progress"] == "false"
-    assert len(value["jobs"]) == 1
+    assert value["on"]["workflow_dispatch"]["inputs"] == {
+        "purpose": {
+            "description": "Existing writer-target qualification or archived reader-contract inspection",
+            "type": "choice",
+            "default": "github-writer-target",
+            "options": ["github-writer-target", "legacy-reader-inspection"],
+        }
+    }
+    assert set(value["jobs"]) == {"qualify_github_writer", "inspect"}
+    for name, purpose in (
+        ("qualify_github_writer", "github-writer-target"),
+        ("inspect", "legacy-reader-inspection"),
+    ):
+        selected = value["jobs"][name]
+        assert selected["if"] == f"inputs.purpose == '{purpose}'"
+        assert selected["runs-on"] == "ubuntu-latest"
+        assert selected["timeout-minutes"] == "5"
+        for step in selected["steps"]:
+            assert "inputs." not in json.dumps(step)
+            action = step.get("uses")
+            if action:
+                assert len(action.rsplit("@", 1)[1]) == 40
+                assert "upload-artifact" not in action
+                if action.startswith("actions/checkout@"):
+                    ref = step["with"]["ref"]
+                    assert len(ref) == 40 or ref == "${{ github.sha }}"
+                    assert step["with"]["persist-credentials"] == "false"
     job = value["jobs"]["inspect"]
     assert job["runs-on"] == "ubuntu-latest" and job["timeout-minutes"] == "5"
-    assert "if" not in job  # Mismatched identity must REFUSE, not skip green.
+    # Purpose selects the fixed job; identity still REFUSES in its first step.
+    assert "if" not in job["steps"][0]
     steps = job["steps"]
     actions = [s["uses"] for s in steps if "uses" in s]
     assert all(len(a.rsplit("@", 1)[1]) == 40 for a in actions)

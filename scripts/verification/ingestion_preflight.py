@@ -34,6 +34,7 @@ MAX_BYTES = 65_536
 MAX_ROWS = 256
 MAX_REQUESTS = 24  # Includes BEGIN/SET; one final rollback is separately bounded.
 RUN_SECONDS = 30
+DRIVER = "2.9.13"
 OPTIONS = (
     "-c default_transaction_read_only=on -c statement_timeout=2000 "
     "-c lock_timeout=500 -c idle_in_transaction_session_timeout=3000 "
@@ -573,7 +574,7 @@ def _connection_run(config, credential, root, result):
 
         result["runtime"]["driver"] = psycopg2.__version__.split()[0]
         result["runtime"]["libpq"] = psycopg2.extensions.libpq_version()
-        require(result["runtime"]["driver"] == "2.9.12", "DRIVER_UNSUPPORTED")
+        require(result["runtime"]["driver"] == DRIVER, "DRIVER_UNSUPPORTED")
         connection = psycopg2.connect(**params)
         observation = inspect(connection, config)
         require(source_identity(config, root) == before, "SOURCE_CHANGED_DURING_RUN")
@@ -702,7 +703,7 @@ def _validate_worker_report(child, parent, config):
         code,
     )
     require(runtime["python"] == parent["runtime"]["python"], code)
-    require(runtime["driver"] is None or runtime["driver"] == "2.9.12", code)
+    require(runtime["driver"] is None or runtime["driver"] == DRIVER, code)
     if "libpq" in runtime:
         require(
             type(runtime["libpq"]) is int and 100000 <= runtime["libpq"] <= 999999, code
@@ -720,7 +721,7 @@ def _validate_worker_report(child, parent, config):
         )
         return
     require(child["errors"] == [] and type(child["errors"]) is list, code)
-    require(runtime["driver"] == "2.9.12" and "libpq" in runtime, code)
+    require(runtime["driver"] == DRIVER and "libpq" in runtime, code)
     observation = child["observation"]
     require(
         type(observation) is dict
