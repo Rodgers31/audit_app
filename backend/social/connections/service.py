@@ -37,8 +37,9 @@ def date(value):
 
 
 class ConnectionService:
-    def __init__(self, db, config, *, provider_factory=MetaProvider, available_adapters=frozenset(), ownership_recorder=None):
+    def __init__(self, db, config, *, provider_factory=MetaProvider, available_adapters=frozenset(), ownership_recorder=None, verification_authority=None):
         self.db, self.config, self.provider_factory = db, config, provider_factory
+        self.verification_authority = verification_authority
         self.ownership_recorder = ownership_recorder
         if ownership_recorder is not None and ownership_recorder.app_id != config.app_id:
             raise SocialError('PRIVACY_CONFIGURATION_INVALID', 'The privacy namespace differs from the connection app.', 503)
@@ -396,6 +397,34 @@ class ConnectionService:
                 return adapter
         raise SocialError('NATIVE_ADMISSION_UNAVAILABLE', 'Native Meta publishing and its operator gates must be accepted by server configuration before verifying saved grants.', 503)
 
+    def _require_verification_authority(self):
+        from .verification import SavedGrantVerificationAuthority
+        if type(self.verification_authority) is not SavedGrantVerificationAuthority:
+            raise SocialError('GRANT_VERIFICATION_UNAVAILABLE', 'Validated read-only Meta verification authority is unavailable.', 503)
+        self.verification_authority.require_for(self.config)
+        return self.verification_authority
+
+    def _verified_capabilities(self, account):
+        from ..adapters.config import MetaAdapterConfig
+        from ..adapters.meta_validation import FacebookPageValidation, InstagramFacebookLoginValidation
+        from ..native_admission import native_capability_matches
+        from ..validation import registered_capability
+        try:
+            self._verification_adapter(account)
+        except SocialError as error:
+            if error.code != 'NATIVE_ADMISSION_UNAVAILABLE':
+                raise
+            rule = FacebookPageValidation if account.platform == 'facebook' else InstagramFacebookLoginValidation
+            caps = rule(MetaAdapterConfig(self.config.graph_version)).capabilities({
+                'platform':account.platform, 'api_product':account.api_product,
+                'connection_state':account.connection_state, 'granted_scopes':account.granted_scopes,
+                'capability_snapshot':account.capability_snapshot})
+            return caps, False
+        caps = registered_capability(account, self.base.available_adapters)
+        if not native_capability_matches(caps, caps):
+            raise SocialError('NATIVE_ADMISSION_UNAVAILABLE', 'The native adapter cannot admit this verified account.', 503)
+        return caps, True
+
     def _verification_snapshot(self, account_id, body=None, *, lock=False):
         from ..account_publishing import account_publishing
         if lock:
@@ -404,7 +433,7 @@ class ConnectionService:
         products = {'facebook': 'facebook_pages', 'instagram': 'instagram_graph_facebook_login'}
         if row is None or row.connection_method != 'facebook_login' or products.get(row.platform) != row.api_product:
             raise SocialError('NOT_FOUND', 'This connected Meta API product was not found.', 404)
-        self._verification_adapter(row)
+        self._require_verification_authority()
         query = select(SocialAccount).where(SocialAccount.credential_id == row.credential_id).order_by(SocialAccount.id)
         siblings = list(self.db.scalars((query.with_for_update() if lock else query).execution_options(populate_existing=True)))
         if row.connection_state != 'connected':
@@ -479,11 +508,9 @@ class ConnectionService:
         """Read-only provider phase, followed by fenced paused-account admission."""
         from .contracts import ExistingGrantVerificationCommand
         from ..account_publishing import account_publishing
-        from ..native_admission import native_capability_matches
-        from ..validation import registered_capability
         body = ExistingGrantVerificationCommand.model_validate(body.model_dump() if isinstance(body, ExistingGrantVerificationCommand) else body)
         self.config.require_ready()
-        self._verification_adapter()
+        authority = self._require_verification_authority()
         command_body = self._body(body, binding)
         with self.db.begin():
             receipt = self._receipt(actor, route, key, command_body)
@@ -505,7 +532,7 @@ class ConnectionService:
                 raise SocialError('RECONNECT_IDENTITY_MISMATCH', 'The saved grants do not identify this connected asset. Reconnect it.')
             self._verification_privacy(user_bundle['external_user_id'], grant_generation)
         # No SQL transaction or ownership lock spans any provider request.
-        provider = self.provider_factory(self.config)
+        provider = authority.open_provider(self.config)
         try:
             grant = provider.inspect_saved_grant(user_bundle['access_token'], page_bundle['access_token'], page_bundle['page_id'])
         finally:
@@ -544,9 +571,7 @@ class ConnectionService:
             # This seed is admitted only after exact provider identity/permission
             # verification, never from the old unsupported capability snapshot.
             current.capability_snapshot = {'eligible':True}
-            caps = registered_capability(current, self.base.available_adapters)
-            if not native_capability_matches(caps, caps):
-                raise SocialError('NATIVE_ADMISSION_UNAVAILABLE', 'The native adapter cannot admit this verified account.', 503)
+            caps, native = self._verified_capabilities(current)
             current.capability_snapshot = caps.model_dump(mode='json')
             intended_proof = canonical_hash(current.capability_snapshot)
             current.capabilities_checked_at = current.last_api_success_at = current.updated_at = now
@@ -564,7 +589,7 @@ class ConnectionService:
             self.db.flush()
             result = account_publishing(self.base, current.id)
             if (proof_values(current) != intended_values or canonical_hash(current.capability_snapshot) != intended_proof
-                    or result['enable_available'] is not True or result['publishing_enabled'] is not False or result['controls_version'] != body.expected_controls_version + 1):
+                    or result['enable_available'] is not native or result['publishing_enabled'] is not False or result['controls_version'] != body.expected_controls_version + 1):
                 raise SocialError('ACCOUNT_CONTROL_FAILED', 'The paused verification state could not be confirmed. Retry this command.', 503)
             expected_status = canonical_hash(result)
             expected_fence = self._verification_snapshot(account_id)[4]

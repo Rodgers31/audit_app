@@ -50,8 +50,16 @@ def service(request: Request, db: Session = Depends(get_db)):
     return ConnectionService(db, load_config(), available_adapters=registered_adapters(request), ownership_recorder=registered_ownership(request))
 
 
+def verification_service(request: Request, db: Session = Depends(get_db)):
+    from .verification import SavedGrantVerificationAuthority
+    svc = service(request, db)
+    svc.verification_authority = SavedGrantVerificationAuthority(svc.config)
+    return svc
+
+
 router = APIRouter(prefix='/api/v1/admin/social', tags=['Admin Social Connections'], route_class=SocialRoute, dependencies=[Depends(social_admin)])
 Service = Annotated[ConnectionService, Depends(service)]
+VerificationService = Annotated[ConnectionService, Depends(verification_service)]
 Identity = Annotated[AdminSession, Depends(admin_session)]
 
 
@@ -123,5 +131,5 @@ def rotate(account_id: UUID, request: Request, body: AccountCommand, svc: Servic
 
 
 @router.post('/accounts/{account_id}/verify-publishing-access', response_model=AccountPublishingDTO)
-def verify_publishing_access(account_id: UUID, request: Request, body: ExistingGrantVerificationCommand, svc: Service, identity: Identity, key: IdempotencyKey):
+def verify_publishing_access(account_id: UUID, request: Request, body: ExistingGrantVerificationCommand, svc: VerificationService, identity: Identity, key: IdempotencyKey):
     return command_response(request, svc.verify_existing_grant(account_id, *args(request, identity, key, body)))

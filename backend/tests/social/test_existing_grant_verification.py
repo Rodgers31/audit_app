@@ -14,6 +14,7 @@ from social.account_publishing import account_publishing
 from social.connections import api
 from social.connections.provider import MetaProvider
 from social.connections.service import ConnectionService
+from social.connections.verification import SavedGrantVerificationAuthority
 from social.http_boundary import require_admin,AdminUser
 from social.models import SocialAccount,SocialControls,SocialAuditEvent,SocialCommandReceipt
 from social.service import SocialService,SocialError
@@ -21,12 +22,14 @@ from social.validation import capability_for
 from test_connections_support import config,db,graph,svc,start,complete,select_asset,ACTOR,BINDING,SESSION,USER,PAGE
 
 @pytest.fixture
-def saved(db,config,graph):
+def saved(db,config,graph,request):
  old=svc(db,config,graph);flow,state=start(old);complete(old,state);select_asset(old,UUID(flow['flow_id']))
  cfg=MetaAdapterConfig(graph_version='v26.0',enabled=True,operational_gates_verified=True,app_secret=config.app_secret)
  def no_send(request):raise AssertionError('Native adapter must never send during grant verification')
  adapters={('facebook','facebook_pages'):FacebookPageAdapter(cfg,transport=httpx.MockTransport(no_send)),('instagram','instagram_graph_facebook_login'):InstagramFacebookLoginAdapter(cfg,transport=httpx.MockTransport(no_send))}
- service=ConnectionService(db,config,provider_factory=lambda c:MetaProvider(c,transport=httpx.MockTransport(graph)),available_adapters=adapters)
+ service=ConnectionService(db,config,provider_factory=lambda c:MetaProvider(c,transport=httpx.MockTransport(graph)),available_adapters=adapters,
+  verification_authority=SavedGrantVerificationAuthority(config,transport=httpx.MockTransport(graph)))
+ if getattr(request,'param',None)=='verification-only':service.base.available_adapters={}
  row=db.scalar(select(SocialAccount).where(SocialAccount.platform=='facebook'));db.rollback();graph.calls.clear()
  yield service,row,adapters
  for adapter in adapters.values():asyncio.run(adapter.close())
@@ -40,6 +43,7 @@ def body_for(service,row):
 def client_for(service):
  app=FastAPI();app.include_router(api.router)
  app.dependency_overrides[api.service]=lambda:service
+ app.dependency_overrides[api.verification_service]=lambda:service
  app.dependency_overrides[require_admin]=lambda:AdminUser(id=str(ACTOR),email=None,roles=['admin'])
  app.dependency_overrides[api.admin_session]=lambda:api.AdminSession(ACTOR,BINDING)
  return TestClient(app,raise_server_exceptions=False)
@@ -70,13 +74,28 @@ def test_saved_grant_direct_positive(saved,graph):
  assert graph.calls and all(r.method=='GET' for r in graph.calls)
 
 
+@pytest.mark.parametrize('platform', ['facebook', 'instagram'])
+def test_saved_permissions_can_be_checked_without_delivery_runtime(saved,graph,platform):
+ service,row,_=saved
+ service.base.available_adapters={}
+ row=service.db.scalar(select(SocialAccount).where(SocialAccount.platform==platform));service.db.rollback()
+ result=verify(service,row)
+ assert result['publishing_enabled'] is False and result['enable_available'] is False
+ assert result['global_publishing_enabled'] is False
+ service.db.expire_all();proof=service.db.get(SocialAccount,row.id).capability_snapshot
+ assert proof['eligible'] is True and proof['adapter_available'] is False
+ assert proof['feature_states']['publishing']=='restricted'
+ assert graph.calls and all(request.method=='GET' for request in graph.calls)
+
+
+@pytest.mark.parametrize('saved',['native','verification-only'],indirect=True)
 def test_provider_reads_have_no_database_transaction_and_replay_has_no_reads(saved,graph):
  service,row,_=saved;body=body_for(service,row);account_id=row.id;service.db.rollback();key=uuid4();original=graph.__call__
  def read(request):
   assert not service.db.in_transaction()
   assert request.method=='GET'
   return original(request)
- service.provider_factory=lambda c:MetaProvider(c,transport=httpx.MockTransport(read))
+ service.verification_authority=SavedGrantVerificationAuthority(service.config,transport=httpx.MockTransport(read))
  result=verify(service,row,body,key);count=len(graph.calls)
  assert result['publishing_enabled'] is False and result['global_publishing_enabled'] is False
  assert verify(service,row,body,key)==result
@@ -88,21 +107,20 @@ def test_provider_reads_have_no_database_transaction_and_replay_has_no_reads(sav
  assert service.db.get(SocialControls,1).publishing_enabled is False
 
 
-@pytest.mark.parametrize('change',['absent','legacy_names','native_disabled','operator_unaccepted','wrong_app'])
-def test_native_server_gates_refuse_before_graph(saved,graph,change):
+@pytest.mark.parametrize('change',['absent','fake','wrong_app','wrong_secret'])
+def test_verification_authority_refuses_before_graph(saved,graph,change):
  service,row,registry=saved;body=body_for(service,row)
- if change=='absent':service.base.available_adapters={}
- elif change=='legacy_names':service.base.available_adapters=('facebook',)
+ if change=='absent':service.verification_authority=None
+ elif change=='fake':service.verification_authority=object()
  else:
-  adapter=registry[('facebook','facebook_pages')]
-  adapter.config=replace(adapter.config,**({'enabled':False} if change=='native_disabled' else {'operational_gates_verified':False} if change=='operator_unaccepted' else {'app_secret':'wrong-app'}))
-  # Both actual registrations must be disabled to prove the early global gate.
-  other=registry[('instagram','instagram_graph_facebook_login')];other.config=adapter.config
- with pytest.raises(SocialError,match='NATIVE_ADMISSION_UNAVAILABLE'):verify(service,row,body)
+  foreign=replace(service.config,**({'app_id':'456'} if change=='wrong_app' else {'app_secret':'wrong-app'}))
+  service.verification_authority=SavedGrantVerificationAuthority(foreign,transport=httpx.MockTransport(graph))
+ with pytest.raises(SocialError,match='GRANT_VERIFICATION_UNAVAILABLE'):verify(service,row,body)
  assert not graph.calls
 
 
 @pytest.mark.parametrize('change',['revoked','expired_user','permissions','tasks','page_absent','linked_identity','subject','shorter_page_expiry','shorter_data_expiry'])
+@pytest.mark.parametrize('saved',['native','verification-only'],indirect=True)
 def test_provider_evidence_failures_never_promote(saved,graph,change):
  service,row,_=saved
  if change=='linked_identity':row=service.db.scalar(select(SocialAccount).where(SocialAccount.platform=='instagram'));service.db.rollback()
@@ -123,7 +141,7 @@ def test_provider_evidence_failures_never_promote(saved,graph,change):
    if change=='shorter_data_expiry':value['data']['data_access_expires_at']=int(__import__('time').time())+60
    return httpx.Response(200,json=value)
   return result
- service.provider_factory=lambda c:MetaProvider(c,transport=httpx.MockTransport(read))
+ service.verification_authority=SavedGrantVerificationAuthority(service.config,transport=httpx.MockTransport(read))
  with pytest.raises(SocialError):verify(service,row,body)
  service.db.expire_all();assert service.db.get(SocialAccount,row.id).capability_snapshot['adapter_available'] is False
  assert not list(service.db.scalars(select(SocialAuditEvent).where(SocialAuditEvent.action=='connection.publishing_access_verified')))
@@ -139,6 +157,7 @@ def test_exact_linked_instagram_can_be_verified_without_its_sibling_promotion(sa
 
 
 @pytest.mark.parametrize('change',['credential_version','sibling_enabled','controls_version','disconnect','envelope'])
+@pytest.mark.parametrize('saved',['native','verification-only'],indirect=True)
 def test_changes_during_read_are_fenced(saved,graph,change):
  from social.connections.models import SocialCredential
  service,row,_=saved;account_id=row.id;credential_id=row.credential_id;body=body_for(service,row);seen=False;original=graph.__call__
@@ -154,7 +173,7 @@ def test_changes_during_read_are_fenced(saved,graph,change):
    elif change=='envelope':service.db.get(SocialCredential,credential_id).encrypted_bundle=b'changed-during-get'
    service.db.commit()
   return original(request)
- service.provider_factory=lambda c:MetaProvider(c,transport=httpx.MockTransport(read))
+ service.verification_authority=SavedGrantVerificationAuthority(service.config,transport=httpx.MockTransport(read))
  with pytest.raises(SocialError):verify(service,row,body)
  service.db.expire_all();assert service.db.get(SocialAccount,account_id).capability_snapshot['adapter_available'] is False
 
@@ -168,6 +187,7 @@ def test_http_strict_contract(saved,patch):
 
 
 @pytest.mark.parametrize('failure',['proof_write','audit_write'])
+@pytest.mark.parametrize('saved',['native','verification-only'],indirect=True)
 def test_suppressed_proof_or_audit_cannot_commit_receipt(saved,failure):
  from sqlalchemy import text
  service,row,_=saved;body=body_for(service,row)
@@ -180,6 +200,7 @@ def test_suppressed_proof_or_audit_cannot_commit_receipt(saved,failure):
 
 @pytest.mark.parametrize('during_read',[False,True])
 @pytest.mark.parametrize('reader_present',[False,True])
+@pytest.mark.parametrize('saved',['native','verification-only'],indirect=True)
 def test_pending_privacy_receipt_cannot_be_bypassed(saved,graph,during_read,reader_present):
  from social.models import Base
  from social.privacy.models import PRIVACY_TABLES,SocialPrivacyReceipt
@@ -199,7 +220,7 @@ def test_pending_privacy_receipt_cannot_be_bypassed(saved,graph,during_read,read
   nonlocal seen
   if during_read and not seen:seen=True;insert()
   return original(request)
- service.provider_factory=lambda c:MetaProvider(c,transport=httpx.MockTransport(read))
+ service.verification_authority=SavedGrantVerificationAuthority(service.config,transport=httpx.MockTransport(read))
  with pytest.raises(SocialError,match='PRIVACY_(GRANT_BLOCKED|STATE_UNAVAILABLE)'):verify(service,row,body)
 
 
@@ -214,6 +235,7 @@ def test_verification_http_admin_boundary(saved,graph,denial):
  assert response.headers['cache-control']=='private, no-store'
 
 
+@pytest.mark.parametrize('saved',['native','verification-only'],indirect=True)
 def test_fresh_reverification_changes_monotonic_token(saved):
  service,row,_=saved
  first=verify(service,row);second=verify(service,row)
@@ -222,6 +244,7 @@ def test_fresh_reverification_changes_monotonic_token(saved):
 
 
 @pytest.mark.parametrize('malformed',[None,[],{'facebook':None},{'facebook':{'publishing_enabled':1}},{'facebook':{'publishing_enabled':'false'}}])
+@pytest.mark.parametrize('saved',['native','verification-only'],indirect=True)
 def test_malformed_platform_policy_refuses_verification_before_reads(saved,graph,malformed):
  from sqlalchemy.orm.attributes import flag_modified
  service,row,_=saved;controls=service.db.get(SocialControls,1);controls.platform_controls=malformed;flag_modified(controls,'platform_controls');service.db.commit();body=body_for(service,row)
@@ -229,6 +252,7 @@ def test_malformed_platform_policy_refuses_verification_before_reads(saved,graph
  assert not graph.calls
 
 
+@pytest.mark.parametrize('saved',['native','verification-only'],indirect=True)
 def test_suppressed_verification_timestamp_cannot_report_success(saved):
  from sqlalchemy import text
  from datetime import timedelta
