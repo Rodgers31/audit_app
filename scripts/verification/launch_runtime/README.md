@@ -7,8 +7,12 @@ Missing measurements stay unavailable; `capacity_accepted` is always false.
 
 Run only through an independently reviewed, bounded command packet on the
 intended host. Supply its exact serving commit using `--expected-source`. The
-tool requires every inventoried operational flag to be absent or exactly
-`false`, before and after observation. A literal `<unset>` environment value is
+tool requires the enabled-by-default auto-seeder and cache warmup controls to be
+explicitly `false`. Other inventoried operational flags must be absent or exactly
+`false`, before and after observation. The inventory includes the canonical
+admin qualification disabled flags and the OpenData/KNBS seed gates; an offline
+AST check reconciles that inventory without importing application code.
+A literal `<unset>` environment value is
 refused; that string appears only in the output projection of absent variables.
 
 Optional `--images --fixture-packet PATH` exercises the actual unchanged image
@@ -16,15 +20,20 @@ inspector with exactly two tiny PNG/JPEG fixtures. The packet has only
 `fixtures` and `product_sha256` fields. Each fixture has `mime`, `width`,
 `height`, `base64`, `sha256`; the source inventory pins `config.py`,
 `inspection.py` and `inspection_child.py` under `--media-root` (default
-`/app/social/media`). JSON must be bounded, unique-keyed and finite. Fixture
+`/app/social/media`). Both flags are required together. Caller hashes must match
+the independent reviewed product manifest embedded in the probe. All three
+sources are verified before execution and copied into a private temporary
+snapshot; only those verified bytes and their child are executed. Changed product
+bytes require a separately reviewed manifest update. JSON must be bounded,
+unique-keyed and finite. Fixture
 hashes, bytes and dimensions must agree with the product result. Wrong MIME,
 length and malformed bytes must all refuse. Private temporary files are removed
 on normal completion; an interrupted process cannot emit a completion receipt.
 
 The 96 MiB free-memory check is a conservative execution guard for these tiny
 fixtures. It is not an accepted worker reserve. No product inspection limit is
-weakened. The image capability inventory can advertise MP4, but this tool does
-not decode video; a separate source-bound observation is needed for that claim.
+weakened. This image-only path leaves ffprobe disabled and never executes a
+caller-selected binary. A separate source-bound observation is needed for video.
 
 `worker_started:false` and `provider_calls:0` describe this tool's actions.
 Its coarse process roles do not certify the absence of other background work.

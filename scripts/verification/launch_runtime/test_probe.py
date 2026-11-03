@@ -6,14 +6,63 @@ from io import BytesIO
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
+import ast
+import shutil
 
 spec=importlib.util.spec_from_file_location('launch_probe',Path(__file__).with_name('probe.py'))
 probe=importlib.util.module_from_spec(spec);spec.loader.exec_module(probe)
 SOURCE='f'*40
 
 class ProbeTests(unittest.TestCase):
+    def test_canonical_disabled_and_qualification_gates_are_held(self):
+        canonical=Path(__file__).resolve().parents[3]/'backend/admin_etl_qualification.py'
+        tree=ast.parse(canonical.read_text())
+        names=next(ast.literal_eval(node.value) for node in tree.body
+                   if isinstance(node,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='DISABLED_FLAGS' for t in node.targets))
+        required=set(names)|{'SEED_OPENDATA_INGESTION_ENABLED','SEED_KNBS_RELEASE_DISCOVERY_ENABLED','AUTO_WARMUP_ENABLED'}
+        for name in required:
+            with self.subTest(name=name),self.assertRaises(ValueError):
+                probe.held_flags({'RENDER_GIT_COMMIT':SOURCE,'AUTO_SEEDER_ENABLED':'false',
+                                  'AUTO_WARMUP_ENABLED':'false',name:'true'},SOURCE)
+
+    def test_enabled_defaults_need_explicit_false(self):
+        for missing in ('AUTO_SEEDER_ENABLED','AUTO_WARMUP_ENABLED'):
+            values={'RENDER_GIT_COMMIT':SOURCE,'AUTO_SEEDER_ENABLED':'false','AUTO_WARMUP_ENABLED':'false'}
+            del values[missing]
+            with self.subTest(missing=missing),self.assertRaises(ValueError):probe.held_flags(values,SOURCE)
+
+    def test_packet_without_images_refuses_before_observation(self):
+        values={'RENDER_GIT_COMMIT':SOURCE,'AUTO_SEEDER_ENABLED':'false','AUTO_WARMUP_ENABLED':'false'}
+        with patch.dict(probe.os.environ,values,clear=True),patch.object(probe,'cgroup_snapshot',return_value={}),patch.object(probe,'process_inventory',return_value=[]),patch.object(probe.signal,'alarm'),patch.object(probe.signal,'signal'),patch('builtins.print') as output:
+            with self.assertRaises((ValueError,SystemExit)):
+                probe.main(['--expected-source',SOURCE,'--fixture-packet','/absent/packet'])
+            output.assert_not_called()
+
+    def test_caller_rehashed_source_never_executes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);media=root/'media'
+            shutil.copytree(Path(__file__).resolve().parents[3]/'backend/social/media',media)
+            marker=root/'executed'
+            config=media/'config.py'
+            config.write_text('from pathlib import Path\nPath('+repr(str(marker))+').write_text("executed")\n'+config.read_text())
+            hashes={name:hashlib.sha256((media/name).read_bytes()).hexdigest() for name in probe.MEDIA_FILES}
+            try:
+                with self.assertRaises(ValueError):probe.inspect_images(media,self.image_fixtures(),hashes)
+            finally:
+                self.assertFalse(marker.exists(),'Caller-selected source executed before refusal')
+
+    def image_fixtures(self):
+        from PIL import Image
+        fixtures=[]
+        for fmt,mime in [('PNG','image/png'),('JPEG','image/jpeg')]:
+            buffer=BytesIO();Image.new('RGB',(64,32),'green').save(buffer,format=fmt)
+            raw=buffer.getvalue()
+            fixtures.append({'mime':mime,'width':64,'height':32,'base64':base64.b64encode(raw).decode(),'sha256':hashlib.sha256(raw).hexdigest()})
+        return fixtures
+
     def test_exact_source_and_every_held_flag(self):
-        valid={'RENDER_GIT_COMMIT':SOURCE}
+        valid={'RENDER_GIT_COMMIT':SOURCE,'AUTO_SEEDER_ENABLED':'false','AUTO_WARMUP_ENABLED':'false'}
         self.assertEqual(set(probe.held_flags(valid,SOURCE)),set(probe.FLAGS))
         for key in probe.FLAGS:
             for bad in ('true','False','0',0,True,None,'','<unset>'):
@@ -21,7 +70,7 @@ class ProbeTests(unittest.TestCase):
                     probe.held_flags({**valid,key:bad},SOURCE)
         for source in (None,'',True,'g'*40,'f'*39):
             with self.subTest(source=source),self.assertRaises(ValueError):probe.held_flags(valid,source)
-        with self.assertRaises(ValueError):probe.held_flags({'RENDER_GIT_COMMIT':'a'*40},SOURCE)
+        with self.assertRaises(ValueError):probe.held_flags({**valid,'RENDER_GIT_COMMIT':'a'*40},SOURCE)
 
     def test_exact_finite_counters(self):
         self.assertEqual(probe.counter('536870912'),536870912)

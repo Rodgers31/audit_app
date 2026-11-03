@@ -6,6 +6,25 @@ tool and documents scoped results. It changes no application code, schema,
 dependency, production setting, source admission, plan or ingestion pin.
 Publishing, uploads, workers and financial generation remain OFF.
 
+## Review correction — 3 November 2026
+
+The original observation tool omitted analytics, OpenData/KNBS qualification seed
+gates and enabled-by-default cache warmup. It also allowed an absent auto-seeder
+flag despite the application's production default being enabled. The corrected
+tool requires explicit `false` for auto-seeder and warmup, and reconciles its
+remaining inventory against the canonical qualification flags in an offline test.
+Original receipts remain historical observations of their enumerated flags;
+they do not prove that omitted or enabled-by-default controls were held.
+
+Caller-selected source hashes previously checked consistency without independent
+execution authority. The tool now requires its embedded reviewed product manifest,
+verifies every source before execution and uses a private verified snapshot for
+both parent modules and the child. Image checks disable ffprobe entirely. A lone
+fixture-packet argument now refuses before observation. Regression fixtures were
+executed against the original and corrected probe in normal and optimized Python.
+These examiner changes do not change application code or retrospectively upgrade
+the scope of the original production results.
+
 ## What the new observations establish
 
 The actual serving x86_64 runtime decoded one tiny PNG, one JPEG and one H.264
@@ -104,9 +123,11 @@ independent reviews. Earlier report/index versions remain historical; the curren
 formatter also validates OFF semantics before emitting an OFF summary. No raw DSN, key, token, signed URL or query text is included
 in this repository change.
 
-The new [probe](../../../scripts/verification/launch_runtime/README.md) was
-executed on the serving host. Eight offline verifier tests pass in normal and
-optimized Python; independent adversarial, Standards and Spec controls execute
+The original revision of the [probe](../../../scripts/verification/launch_runtime/README.md)
+was executed on the serving host. Its eight offline verifier tests passed in normal and
+optimized Python. The corrected revision has twelve offline verifier tests; its
+review results and any fresh host execution are recorded separately rather than
+attributed to the original receipts. Independent adversarial, Standards and Spec controls execute
 the guards and actual product child. Failed pre-fix cases and transport/setup
 failures remain preserved. Corrections reject explicit port zero, previously
 unguarded enabled controls, blank counter maps and literal-unset flags; missing process

@@ -25,11 +25,21 @@ FLAGS = ('SOCIAL_MEDIA_ENABLED', 'SOCIAL_MEDIA_RETAINED_WRITES_ENABLED',
          'SOCIAL_WORKER_SUPERVISOR_ENABLED', 'SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED',
          'SOCIAL_GENERATION_HOOK_ENABLED', 'SOCIAL_REPORT_GENERATION_ENABLED',
          'SOCIAL_POLICY_AUTOMATION_ENABLED', 'SOCIAL_STUDIO_ENABLED', 'SEED_NATIVE_FINANCIAL_SOURCE_ADMISSION_ENABLED',
-         'AUTO_SEEDER_ENABLED', 'ADMIN_ETL_DISPATCH_ENABLED')
+         'SOCIAL_ANALYTICS_ENABLED', 'SEED_OPENDATA_INGESTION_ENABLED',
+         'SEED_KNBS_RELEASE_DISCOVERY_ENABLED', 'AUTO_SEEDER_ENABLED',
+         'AUTO_WARMUP_ENABLED', 'ADMIN_ETL_DISPATCH_ENABLED')
+EXPLICIT_FALSE = ('AUTO_SEEDER_ENABLED', 'AUTO_WARMUP_ENABLED')
 CGROUP_FILES = ('memory.current', 'memory.max', 'memory.peak', 'memory.events',
                 'cpu.max', 'cpu.stat', 'pids.current', 'pids.max')
 DB_REFERENCES = ('DATABASE_URL', 'ADMIN_AUDIT_DATABASE_URL', 'SOCIAL_WORKER_DATABASE_URL')
 MEDIA_FILES = ('inspection.py', 'inspection_child.py', 'config.py')
+# Reviewed product bytes from f0f4705e9561e2e42edd93fc747e8bff24468fae.
+# A fixture packet cannot grant execution authority to different Python bytes.
+PRODUCT_SHA256 = {
+    'inspection.py': '0238a1acca5c110d322a0918f64b0d51c17e5d38a4703197b7c8b634182ac4cf',
+    'inspection_child.py': '986237eacee78643a02890c63ea79f135aa501132d382b9f720a9310f0837c16',
+    'config.py': 'd739759a2a10d6b1e6ef3b5478122f5eccf1dc1840b7cd28653da4e70a4c64ed',
+}
 
 
 def require(value, message):
@@ -52,6 +62,8 @@ def held_flags(values, expected_source):
     require(type(expected_source) is str and re.fullmatch('[a-f0-9]{40}', expected_source) is not None,
             'Exact source identity required')
     require(values.get('RENDER_GIT_COMMIT') == expected_source, 'Serving source changed')
+    require(all(values.get(name) == 'false' for name in EXPLICIT_FALSE),
+            'Enabled-by-default controls require explicit false')
     require(all(name not in values or type(values[name]) is str and values[name] == 'false'
                 for name in FLAGS),
             'Enabled or malformed operational control')
@@ -135,13 +147,22 @@ def process_inventory(root=Path('/proc')):
 
 
 def compile_product(path, name):
-    """Compile measured source bytes; do not execute a cached Python file."""
-    source = path.read_bytes()
-    require(0 < len(source) <= 65536, 'Product source bound')
+    """Execute only the independently reviewed bytes, never a cached file."""
+    source = product_source(path)
     module = type(sys)(name); module.__file__ = str(path)
     sys.modules[name] = module
     exec(compile(source, str(path), 'exec', dont_inherit=True), module.__dict__)
     return module
+
+
+def product_source(path):
+    require(path.name in PRODUCT_SHA256, 'Unreviewed product source')
+    with path.open('rb') as stream:
+        source = stream.read(65537)
+    require(0 < len(source) <= 65536, 'Product source bound')
+    require(hashlib.sha256(source).hexdigest() == PRODUCT_SHA256[path.name],
+            'Product source differs from reviewed manifest')
+    return source
 
 
 def read_packet(path):
@@ -171,17 +192,21 @@ def inspect_images(media_root, fixtures, expected_hashes):
             'Distinct PNG and JPEG fixtures required')
     require(type(expected_hashes) is dict and set(expected_hashes) == set(MEDIA_FILES),
             'Exact measured product source inventory required')
-    before = {name: hashlib.sha256((media_root/name).read_bytes()).hexdigest() for name in MEDIA_FILES}
-    require(before == expected_hashes, 'Product source differs')
-    config_module = compile_product(media_root/'config.py', '_launch_media_config')
-    inspection_module = compile_product(media_root/'inspection.py', '_launch_media_inspection')
-    config = config_module.MediaConfig(ffprobe_path=os.environ.get('SOCIAL_MEDIA_FFPROBE_PATH', ''))
-    require(config.enabled is False, 'Inspector must not enable uploads')
-    inspector = inspection_module.LocalInspector(config)
-    available = inspector.available_mimes()
-    require({'image/png', 'image/jpeg'} <= set(available), 'Image codecs unavailable')
+    require(expected_hashes == PRODUCT_SHA256, 'Caller inventory differs from reviewed manifest')
+    sources = {name: product_source(media_root/name) for name in MEDIA_FILES}
     results = []
     with tempfile.TemporaryDirectory(prefix='auditgava-local-media-probe-') as directory:
+        # The child runs from this private snapshot, not a caller-mutable path.
+        root = Path(directory)
+        for name, source in sources.items():
+            (root/name).write_bytes(source)
+        config_module = compile_product(root/'config.py', '_launch_media_config')
+        inspection_module = compile_product(root/'inspection.py', '_launch_media_inspection')
+        config = config_module.MediaConfig(ffprobe_path='')
+        require(config.enabled is False, 'Inspector must not enable uploads')
+        inspector = inspection_module.LocalInspector(config)
+        available = inspector.available_mimes()
+        require({'image/png', 'image/jpeg'} <= set(available), 'Image codecs unavailable')
         for index, fixture in enumerate(fixtures):
             require(type(fixture) is dict and set(fixture) == {'mime','width','height','base64','sha256'},
                     'Exact media fixture shape required')
@@ -213,10 +238,12 @@ def inspect_images(media_root, fixtures, expected_hashes):
             results.append({'mime_type': observed.mime_type, 'byte_size': observed.byte_size,
                             'sha256': observed.sha256, 'width':observed.width, 'height':observed.height,
                             'negative_controls_refused':refused})
-    require({name: hashlib.sha256((media_root/name).read_bytes()).hexdigest() for name in MEDIA_FILES} == before,
+        require(all(product_source(root/name) == source for name, source in sources.items()),
+                'Private product snapshot changed')
+    require(all(product_source(media_root/name) == source for name, source in sources.items()),
             'Product source changed during inspection')
     return {'scope':'Actual bounded product image inspector only; no upload/object/asset/worker/provider operation',
-            'product_sha256': before, 'images':results, 'temporary_files_removed':True,
+            'product_sha256': dict(PRODUCT_SHA256), 'images':results, 'temporary_files_removed':True,
             'available_mimes':list(available), 'video_inspection_exercised':False,
             'production_upload_or_delivery_accepted':False}
 
@@ -228,6 +255,8 @@ def main(argv=None):
     parser.add_argument('--fixture-packet', type=Path)
     parser.add_argument('--media-root', type=Path, default=Path('/app/social/media'))
     args = parser.parse_args(argv)
+    require(args.images == (args.fixture_packet is not None),
+            'Images and fixture packet must be supplied together')
     signal.signal(signal.SIGALRM, lambda *_: (_ for _ in ()).throw(TimeoutError('Probe exceeded45seconds')))
     signal.alarm(45)
     flags = held_flags(os.environ, args.expected_source)
