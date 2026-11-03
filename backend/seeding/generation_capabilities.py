@@ -52,6 +52,15 @@ def capability(domain):
     return CAPABILITIES.get(domain, DraftCapability(domain, reason='unsupported_source'))
 
 
+def validate_record_ids(values):
+    """An explicit bounded cohort is required even when the reader found none."""
+    if (type(values) not in (tuple, list) or len(values) > 1000
+            or any(type(value) is not int or not 0 < value <= 2147483647 for value in values)
+            or len(set(values)) != len(values)):
+        raise ValueError('Bounded exact record cohort required')
+    return tuple(values)
+
+
 def skipped_generation(domain, *, dry_run, source_mode, completed):
     """Cheap receipt on the ingestion transaction; no social schema access.
 

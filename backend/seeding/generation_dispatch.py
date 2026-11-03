@@ -8,7 +8,7 @@ if __package__.startswith('backend.'):
     from backend.models import IngestionJob, IngestionStatus
 else:
     from models import IngestionJob, IngestionStatus
-from .generation_capabilities import capability
+from .generation_capabilities import capability, validate_record_ids
 if __package__.startswith('backend.'):
     from backend.services.generation_outcome import refusal_counts, confirmed_counts
 else:
@@ -105,6 +105,7 @@ def dispatch_committed_generation(factory, *, domain, ingestion_id, dry_run, inc
             else:
                 from .source_observations import read_native_financial_record_ids
                 record_ids = read_native_financial_record_ids(factory, ingestion_id=ingestion_id, domain=domain)
+            record_ids = validate_record_ids(record_ids)
             if record_ids:
                 invoked = True
                 outcome = _validate_result(_invoke(factory, record_ids, ingestion_id, **({} if domain=='counties_budget' else {'domain':domain})), len(record_ids))
@@ -147,6 +148,7 @@ def dispatch_committed_report_generation(factory, *, domain, ingestion_id, dry_r
         else:
             from .source_observations import read_native_report_record_ids
             records = read_native_report_record_ids(factory, ingestion_id=ingestion_id, domain=domain)
+        records = validate_record_ids(records)
         if records:
             invoked = True
             outcome = _validate_result(_invoke_reports(factory, records, ingestion_id, **({} if domain == "counties_budget" else {"domain":domain})), len(records))
