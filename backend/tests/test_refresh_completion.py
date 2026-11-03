@@ -317,3 +317,45 @@ def test_national_outcome_count_must_match_retained_inventory(db_session, nation
     national_doc.meta = {'extracted_md5': national_doc.md5, 'extractor_version': bb.EXTRACTOR_VERSION}
     with pytest.raises(IncompleteExtraction):
         verify_outcome(db_session, national_doc, {'created': 0, 'existing': 2}, 'oag_blue_book')
+
+
+@pytest.mark.parametrize('processed', [0, 2, True], ids=['empty', 'mismatch', 'boolean'])
+def test_national_only_loader_refusal_keeps_document_diagnostic_and_rows(
+    db_session, national_doc, monkeypatch, processed
+):
+    from contextlib import nullcontext
+    from copy import deepcopy
+    from models import Audit, Extraction
+    from seeding.domains import audits
+    from seeding.domains.audits.writer import PersistenceStats
+    from seeding.extractors import oag_blue_book as bb
+    from seeding.oag_discovery import CountyAuditDiscovery
+    from seeding.types import DomainRunContext
+    from seeding.config import SeedingSettings
+    from tests.test_blue_book_national_walk import _published
+    _published(db_session, national_doc)
+    national_doc.meta = {'extracted_md5': national_doc.md5, 'extractor_version': bb.EXTRACTOR_VERSION}
+    db_session.commit()
+    def rows():
+        db_session.expire_all()
+        return ([(r.id, deepcopy(r.extracted_json)) for r in db_session.query(Extraction).order_by(Extraction.id)],
+                [(r.id, r.finding_text, r.source_hash) for r in db_session.query(Audit).order_by(Audit.id)])
+    before = rows()
+    monkeypatch.setattr(audits, 'create_http_client', lambda *args: nullcontext(object()))
+    monkeypatch.setattr(audits.fetcher, '_discover_audit_pdfs_via_wp_api', lambda *args, **kwargs: [])
+    monkeypatch.setattr('seeding.oag_discovery.discover_county_audit_documents', lambda *args, **kwargs: CountyAuditDiscovery())
+    monkeypatch.setattr('seeding.fetch_documents.fetch_document', lambda *args, **kwargs: national_doc)
+    monkeypatch.setattr('seeding.extractors.get_parser', lambda pid: (lambda *args: {
+        'created': 0, 'existing': 3, 'skipped_unchanged': True}) if pid == 'oag_blue_book' else None)
+    def invalid_loader(session, doc, settings, context, **kwargs):
+        victim = session.query(Audit).filter_by(source_document_id=doc.id).order_by(Audit.id).first()
+        victim.finding_text = 'INERT WRITE MUST ROLL BACK'
+        session.flush()
+        return PersistenceStats(processed=processed)
+    monkeypatch.setattr('seeding.domains.audits.loader.load_blue_book_extractions', invalid_loader)
+    result = audits.run(db_session, SeedingSettings(), DomainRunContext(since=None, dry_run=False))
+    db_session.commit()
+    assert any(f'audit load incomplete for doc {national_doc.id}' in error for error in result.errors)
+    assert not any('NameError' in error or 'free variable' in error for error in result.errors)
+    assert result.metadata['refresh_completion']['complete'] is False
+    assert rows() == before

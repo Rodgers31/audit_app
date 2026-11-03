@@ -778,7 +778,8 @@ def run(
                                     or stats.processed != expected_findings
                                     or not isinstance(stats.errors, list) or stats.errors or stats.skipped):
                                 raise AuditSourceScopeError(
-                                    f"audit load incomplete: {label}"
+                                    f"audit load incomplete for doc {doc.id}: "
+                                    f"expected {expected_findings} processed, got {stats.processed!r}"
                                 )
                             return stats
 
