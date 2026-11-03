@@ -15,9 +15,9 @@ The detailed dated evidence and its limitations are in [UPDATES.md](UPDATES.md).
 | R — release/pin | ACCEPTED exact8f08d85 release/pin/OFF scope | Bound parent receipts in UPDATES; no source refresh, media/worker or activation acceptance |
 | G — saved Meta proof | ACCEPTED RESTRICTED, dated checks only | Native preflight re-verification and later consent remain separate; raw provider scope/task/lifetime fields are not projected |
 | S — storage/restore | HELD | Approved policy/custody/owners/current control-plane metadata, later authorized actual asset and independent restore |
-| W — worker/reserve | HELD | Current zero-work canary/recovery/stop packet and reserve, completed worker lane report; no worker activation |
-| D — draft/source/refresh | HELD | Independent Blue Book content/OCR decision, combined serving-runtime/PostgreSQL qualification and ordinary complete scheduled publisher-backed refresh; measure-specific source gaps remain unavailable |
-| P — privacy/security | HELD | Exact retained-copy policy/inventory, unverified upstream callback boundary, outstanding local/deployed security/performance checks |
+| W — worker/reserve | HELD; offline worker follow-through received | Correct #905's post-compile self-file hash race and validate the corrected combined source; current-host reserve/recovery/stop evidence and exact later canary authority remain outstanding |
+| D — draft/source/refresh | HELD; #903's scoped serving-runtime/PostgreSQL addendum received | Independent Blue Book content/OCR decision, integrated eight-PR serving-runtime/PostgreSQL qualification and ordinary complete scheduled publisher-backed refresh; measure-specific source gaps remain unavailable |
+| P — privacy/security | HELD; 77-case serving-dependency follow-through received | Qualified bounded browser runner and foreground/performance/edge/DB evidence; applicable retained-copy policy/inventory and unverified new/reconnect callback boundary remain separate |
 | L — live pilot | NOT AUTHORIZED | Applicable preceding evidence and exact separately approved stage action; all four operational holds remain |
 
 ## Authority and freshness
@@ -71,7 +71,7 @@ No gate passes by absence of failures, empty evidence, issue state or inheritanc
 
 ## Next actions
 
-1. The parent release/pin/final-OFF and restricted Meta results are recorded in UPDATES. Privacy and saved-grant follow-through are also recorded; ingest remaining worker/security follow-through separately; retain source identities, hashes, timestamps and unresolved failures, advancing only each exact demonstrated gate.
-2. Reconcile each lane's actual scope against this ledger; propose any cross-cutting change to its owner. This documentation lane owns no application/configuration files and performs no live operation.
-3. Complete the owner decision packet for storage-only custody/restore first. Then review current-host worker/recovery evidence and, last, one human-approved post on one actually connected platform. [PILOT_PROPOSAL.md](PILOT_PROPOSAL.md) is the single proposed sequence; its limits are unapproved.
+1. The parent release/pin/final-OFF, restricted Meta, privacy and grant receipts, worker/security follow-through and nightly serving-runtime addendum are recorded in UPDATES. Correct the independently reproduced #905 source-identity defect, then qualify the actual integrated eight-PR source and obtain the usual independent reviews. Preserve historical lane results and report new source-bound results separately; no combined pass is inferred here.
+2. Engineering establishes current topology, role/client/stop-window and storage control-plane facts through existing authorized read-only access, and qualifies the bounded browser runner/fixtures. Retain a concrete access refusal before asking the person with that access for a specific observation. Independent source/content review and ordinary scheduled source/cache/page-refresh evidence remain engineering acceptance work.
+3. Complete the actual owner decisions for retention/legal holds, named people/independence, existing custody destination/classes/byte caps, positive reserves and applicable private-export inventory. Then prepare the exact storage-only packet, followed by current-host worker/recovery evidence and, last, one human-approved post on one actually connected platform. [PILOT_PROPOSAL.md](PILOT_PROPOSAL.md) is the single proposed sequence; its limits and all live stages remain unapproved.
 4. Keep incomplete evidence explicit. A restricted grant success changes G only. A synthetic restore changes its fixture boundary only. Neither can close S/W/D/P/L.
