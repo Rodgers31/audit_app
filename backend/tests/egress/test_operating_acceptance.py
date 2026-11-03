@@ -80,6 +80,18 @@ def test_synthetic_fixture_is_visibly_blocked():
     assert all(section['receipt']['synthetic'] for section in sections(packet))
 
 
+def test_current_web_auxiliary_pools_cannot_hide_connection_reserve_exhaustion(declared):
+    # Legacy web 15 + worker 2 + ETL 1 + admin 1 + reserve 5 fits at 24.
+    # The same web process also owns request 5, audit-write 1 and audit-read 1.
+    # A declared ceiling that omits those seven clients must not be reviewable.
+    declared['hosting']['capacity']['verified_limit'] = 24
+    report = evaluate(reseal(declared))
+    assert report['status'] == 'OVER_BUDGET'
+    assert report['exceeded'] == ['CONNECTION_CAPACITY_EXCEEDED']
+    assert report['measurements']['connection_demand'] == 26
+    assert report['measurements']['web_auxiliary_connection_demand'] == 7
+
+
 def test_candidate_is_unverified_owner_review_with_exact_cycle_and_deltas(declared):
     report = evaluate(declared)
     assert report['status'] == 'CANDIDATE_FOR_OWNER_REVIEW'
@@ -89,7 +101,8 @@ def test_candidate_is_unverified_owner_review_with_exact_cycle_and_deltas(declar
     assert measured['cycle_projection_upper_bytes'] == 3_100_000_000
     assert measured['social_cycle_upper_bytes'] == 124_000_000
     assert measured['accrued_cycle_upper_bytes'] == 750_000_000
-    assert measured['connection_demand'] == 19 and measured['connection_reserve'] == 5
+    assert measured['connection_demand'] == 26 and measured['connection_reserve'] == 5
+    assert measured['web_auxiliary_connection_demand'] == 7
     assert measured['query_counters_are_billed_bytes'] is False
     assert report['query_attribution']['calls_delta'] == 200
     assert report['query_attribution']['rows_delta'] == 5000
@@ -309,7 +322,8 @@ def test_connection_replica_overflow_demand_and_reserve(declared):
     declared['hosting']['processes'][0].update(replicas=2, processes_per_replica=2)
     report = evaluate(reseal(declared))
     assert report['status'] == 'OVER_BUDGET'
-    assert report['measurements']['connection_demand'] == 64
+    assert report['measurements']['connection_demand'] == 92
+    assert report['measurements']['web_auxiliary_connection_demand'] == 28
     assert 'CONNECTION_CAPACITY_EXCEEDED' in report['exceeded']
 
 

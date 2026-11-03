@@ -18,6 +18,12 @@ MAX_BYTES = 262_144
 TOTAL_DAILY_TARGET = 120_000_000
 SOCIAL_MONTHLY_TARGET = 200_000_000
 FRESHNESS = timedelta(hours=48)
+# Additional pools in each serving process, beyond database.engine's 5+10:
+# request_database request=5, audit writer=1, restricted audit reader=1.
+# Reserve the optional reader too: a missing declaration cannot remove capacity
+# needed when an already-supported admin read opens it. This is a conservative
+# same-limit planning ceiling, not measured occupancy or backend concurrency.
+WEB_AUXILIARY_POOL_CEILING = 7
 IDENTITY_KEYS = {'organization_id', 'project_id', 'deployment_sha', 'cycle_start',
                  'cycle_end', 'timezone', 'uncached_allowance_bytes', 'required_reserve_bytes',
                  'database_fingerprint_sha256'}
@@ -264,7 +270,7 @@ def _evaluate(packet, expected, as_of, report):
     require(limit > 0 and reserve > 0, 'CAPACITY_RESERVE_REQUIRED')
     processes = hosting['processes']
     require(type(processes) is list and len(processes) == 4, 'PROCESS_COVERAGE_REQUIRED')
-    roles, demand = set(), 0
+    roles, demand, web_auxiliary = set(), 0, 0
     for process in processes:
         shape(process, {'role', 'replicas', 'processes_per_replica', 'pool_size', 'overflow', 'connection_kind'})
         role = process['role']
@@ -278,7 +284,10 @@ def _evaluate(packet, expected, as_of, report):
         if role == 'web': require(pool == 5 and overflow == 10, 'WEB_POOL_MISMATCH')
         if role == 'worker': require(pool == 2 and overflow == 0, 'WORKER_POOL_MISMATCH')
         demand += replicas * count * (pool + overflow)
+        if role == 'web':
+            web_auxiliary += replicas * count * WEB_AUXILIARY_POOL_CEILING
         roles.add(role)
+    demand += web_auxiliary
     increments = packet['future_increments']
     require(type(increments) is list and len(increments) <= 16, 'INVALID_INCREMENT_COUNT')
     workloads, extra, social_extra, included, included_social = set(), Decimal(0), Decimal(0), Decimal(0), Decimal(0)
@@ -370,6 +379,7 @@ def _evaluate(packet, expected, as_of, report):
         'cycle_projection_upper_bytes': cycle_projection,
         'remaining_cycle_headroom_bytes': expected['uncached_allowance_bytes'] - cycle_projection,
         'social_cycle_upper_bytes': social_cycle, 'connection_demand': demand,
+        'web_auxiliary_connection_demand': web_auxiliary,
         'connection_reserve': reserve, 'connection_limit': limit,
         'query_counters_are_billed_bytes': False}
     exceeded = []

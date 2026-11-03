@@ -6,6 +6,25 @@ import pytest
 from sqlalchemy.exc import TimeoutError
 
 
+def test_operating_budget_covers_actual_serving_engine_capacities():
+    import importlib.util
+    from pathlib import Path
+    import database
+    from request_database import create_audit_reader_engine
+    tool = Path(__file__).resolve().parents[2] / 'scripts/verification/evaluate_social_operating_budget.py'
+    spec = importlib.util.spec_from_file_location('serving_capacity_budget', tool)
+    budget = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(budget)
+    reader = create_audit_reader_engine('postgresql+psycopg2://inert:inert@127.0.0.1:9/owned', {})
+    try:
+        engines = (database.engine, database.request_engine, database.audit_engine, reader)
+        actual = sum(engine.pool.size() + engine.pool._max_overflow for engine in engines)
+        assert actual == 22
+        assert 5 + 10 + budget.WEB_AUXILIARY_POOL_CEILING >= actual
+    finally:
+        reader.dispose()
+
+
 def test_http_dependency_uses_bounded_pool_without_premature_transaction():
     import database
     from middleware.request_resources import request_deadline
