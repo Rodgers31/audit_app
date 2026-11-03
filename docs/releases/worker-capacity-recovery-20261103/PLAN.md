@@ -45,13 +45,27 @@ calls V2; this change does not alter a historical producer's automatic verdict.
 V2 checks the exact frozen profile's keys, numeric types and values, finite
 180–900-second measured duration, monotonic sample gaps at most 15 seconds,
 distinct per-sample process IDs and distinct target IDs, then the original
-workload/API/memory/CPU/SQL/wire/operation-window checks. It binds its own source
-hash at load, refuses file drift before and after assessment, and reports the
-loaded hash. Each archive is read once, verified and compiled from those exact
+workload/API/memory/CPU/SQL/wire/operation-window checks. The public API remains
+`capacity_v2.assess`. Its small **externally trusted loader** reads the sibling
+`capacity_v2_assessor.py` once and compiles that exact captured byte buffer;
+`assessor_sha256` identifies only those executed implementation bytes. The output
+also names that implementation entry and the external-loader trust boundary.
+Direct import or execution of the implementation without the loader refuses.
+The implementation refuses disk drift before and after assessment. Each archive
+is read once, verified and compiled from those exact
 bytes; no second file open can substitute unverified code. An archived dependency changed after loading still has its original
 executed-code hash; a fresh load refuses changed archive bytes. Successful return still
 says `evidence_authenticated=false` and `production_accepted=false`. It cannot
 authenticate a runtime or detect a coherently fabricated observation packet.
+
+**2026-11-03 source-identity correction:** the earlier draft read its own file
+after Python had already compiled it. A forced compile-to-execute file swap
+reproduced a mismatched reported/executed hash in normal and optimized Python.
+That earlier self-identity claim is superseded. The replacement loader binds
+execution to one captured implementation buffer, including when a stale bytecode
+cache exists. This does not attest the loader's own execution: a future caller or
+recorder must establish its identity independently. No recursive self-hash claim,
+historical producer rewrite or production qualification follows from this repair.
 
 For an explicit reassessment, verify the original packet's source and artifact
 hashes first and select exactly one capacity result from its original receipt.
@@ -69,7 +83,8 @@ a later census, thresholds, source checkout or reconstructed event stream:
 | `thresholds` | Original predeclared packet's complete `thresholds` |
 
 Missing raw inputs leave reassessment unavailable. A future recorder must bind
-its own and both archived helper hashes, the V2 hash, exact target/source,
+its own hash, the independently verified `capacity_v2.py` loader hash, both
+archived helper hashes, the executed `capacity_v2_assessor.py` hash, exact target/source,
 original input hashes, complete output and readback in a fresh append-only
 receipt. Preserve the old verdict and attribute any changed interpretation to
 the new examiner; do not relabel a fixture as production acceptance. This
