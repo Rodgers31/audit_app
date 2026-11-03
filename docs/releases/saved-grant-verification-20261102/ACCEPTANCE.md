@@ -31,3 +31,9 @@ Raw logs, JUnit, commands, source hashes, producer scripts, initial failures and
 This change does not establish that the real saved Facebook or Instagram grants are valid. After review and deployment, run one bounded, idempotent verification command for each exact account and retain its receipt. Refusal must remain visible; a successful restricted proof does not accept native delivery, media custody/restore, worker capacity, callback privacy or operator launch gates.
 
 Publishing, uploads, workers and financial generation remain off. This work makes no production configuration change, no provider request, no media upload, no deployment, no ingestion-pin update, no hosted test dispatch and no paid review request. Existing deployment automation and branch rules are unchanged.
+
+## Client-contract review correction
+
+PR review identified a real missing client boundary: the browser required `enable_available=true` even for successful restricted verification. The client now also accepts exactly the sole `NATIVE_ADMISSION_UNAVAILABLE` blocker, while preserving paused account, exact identity, control-version increment and changed state-token requirements. Other or mixed blockers still refuse. The rendered control explains the saved permission proof, refreshes account state and keeps enabling disabled until delivery setup and explicit re-verification are complete.
+
+Two actual React/client cases reproduced the failure before the fix. The corrected source passes 986 frontend tests, full TypeScript checking and scoped lint. Two independent executable reviews pass with no findings. `CLIENT_REVIEW.json` binds these receipts separately from the earlier backend acceptance; it does not claim live provider or deployment evidence.

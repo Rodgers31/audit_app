@@ -1,0 +1,65 @@
+{
+  "comment": "https://github.com/Rodgers31/audit_app/pull/897#discussion_r4451209577",
+  "classification": "valid",
+  "source_sha256": {
+    "frontend/lib/api/socialConnections.ts": "914745ae9d6020bd572e42096192cba0e2377aeb243f8a928f77d2090e1774f6",
+    "frontend/lib/api/social.ts": "dda817012080ab3839d0eb9bcabb4ed2a25fe0669142352d01022e151615222b",
+    "frontend/components/admin/social/connections/AccountPublishingControl.tsx": "54a02b024cf0be701b95922650e69576b03c41b7272db97e5d1b2d5985a928b2",
+    "frontend/__tests__/social-connections/verify-publishing-access.test.tsx": "dcd642e381026540a85a0022d6a32f55b5d1d36a2c29ee1cad7455aa2151f18c",
+    "frontend/package.json": "05f98e775aa24452e949c6d2a367efdeaae81124497d892fe075f9342d9ccbd7",
+    "frontend/package-lock.json": "aff1ded2fc83941cc825cafae208db24974594934952bd1b17b498afee269481"
+  },
+  "red": {
+    "numPassedTests": 16,
+    "numFailedTests": 2,
+    "numPendingTests": 0,
+    "numTotalTests": 18,
+    "numPassedTestSuites": 0,
+    "numFailedTestSuites": 1
+  },
+  "green": {
+    "numPassedTests": 986,
+    "numFailedTests": 0,
+    "numPendingTests": 0,
+    "numTotalTests": 986,
+    "numPassedTestSuites": 71,
+    "numFailedTestSuites": 0
+  },
+  "author_receipt_sha256": "9fc9848db9a6bf4809f1b5bb039261cee067cffd2fafe6ad27e7e2d10f1f0b18",
+  "independent_reviews": [
+    {
+      "path": "gate-audit/frontend-review/REVIEW.json",
+      "sha256": "842331f35cfea07502ec8b446f5e4847f55e5e7e10aa1c02025962197967122e",
+      "verdict": "PASS, no actionable finding in executed frontend scope",
+      "scope": "Independent intercepted Axios/actual React execution; no live provider or production action"
+    },
+    {
+      "path": "worker-operating-review/frontend-second-independent/REVIEW.json",
+      "sha256": "f0a5c68a4bd1b6c8b8700fbfa31e8e357898db30bad8fe4cc701a6475c5c993c",
+      "verdict": "CLEAR",
+      "scope": "Independent intercepted Axios/actual React execution; no live provider or production action"
+    }
+  ],
+  "typecheck": {
+    "exit": 0,
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "command": "Node24.22.1 node_modules/typescript/bin/tsc --noEmit --incremental false"
+  },
+  "lint": {
+    "command": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "node_modules/next/dist/bin/next",
+      "lint",
+      "--no-cache",
+      "--file",
+      "lib/api/socialConnections.ts",
+      "--file",
+      "components/admin/social/connections/AccountPublishingControl.tsx",
+      "--file",
+      "__tests__/social-connections/verify-publishing-access.test.tsx"
+    ],
+    "explicit_public_api_fixture": "http://127.0.0.1:9",
+    "exit": 0
+  },
+  "scope": "Client contract and UI control fix only. Backend proof/delivery gates unchanged. No deployment or live grant verification."
+}
