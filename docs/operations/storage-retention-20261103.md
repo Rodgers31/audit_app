@@ -12,6 +12,53 @@ the prior storage lane's `2e206ed9974b254adf75b44867915e326d54487c` byte for byt
 The prior 2 November packet and producers remain historical evidence; they have
 not been edited or relabelled as observations of the newer deployment.
 
+## Accepted serving release and saved-grant scope
+
+Updated from the parent's completed release receipt at 3 November 2026,
+14:45:23Z (08:45:23 CST). PRs 893–897 serve the exact baseline commit/tree above
+on Render deployment `dep-dbkuqmd9fdbs73cdih60` and Vercel deployment
+`dpl_FRvuB6VLPPfV1XKBCfnXB8hm6r8K`. The validated ingestion pin is
+`8f08d85a1b059b83d8b8a3823f5f06fd33eb4e39`. This storage documentation PR is
+separate from that deployed release. These are accepted parent observations;
+this lane performed no deployment, pin update or fresh production sampling.
+
+Both authorized actual saved Meta grant checks succeeded through GET-only
+provider verification against the existing saved identities/credential scopes:
+
+| Saved account | Checked 3 November 2026 | HTTP | Controls version |
+| --- | --- | --- | --- |
+| Facebook | 14:32:28Z / 08:32:28 CST | 200 | 2 |
+| Instagram | 14:33:05Z / 08:33:05 CST | 200 | 3 |
+
+The checks establish their recorded saved identity/permission grant scope,
+with durable receipt/audit pairs and pinned Graph v26.0. Account/global
+publishing remains paused; adapters and enabling remain unavailable and delivery
+holds remain. Receipt/audit actors are correlated, but the signed-in browser
+actor UUID was not independently extracted. These proofs do not qualify storage,
+worker, native/source admission or publishing activation, and do not authorize a
+repeat check or new/reconnect OAuth.
+
+The parent's final observation reports publishing, uploads, background workers
+and financial generation OFF, with zero media assets/uploads, targets,
+publications and attempts. Financial, existing post/revision and source
+cursor/event fingerprints are unchanged. Only the expected account proofs,
+controls version and two audit/two idempotency receipt rows changed in the
+grant-check comparison. Retention approval, named custody/destination/independent
+restore decisions, current storage-policy metadata and real application-media
+acceptance remain separate and incomplete. The release resource lock is cleared;
+no passed fixture checks are repeated for this documentation-only update.
+
+Evidence identity: parent release directory
+`release-893-897-20261103`; `RELEASE_COMPLETE.json` SHA256
+`71370992f2abef7209ace9f1bd78af6bf0f4658ab2697523ca51e3de46474575`,
+`RELEASE_COMPLETE.md` SHA256
+`bfd1f0eba0fbc8138613efde0fc4e399c6d8602d801c473b6c289f956e257509`,
+and `META_GRANT_RESULTS.json` SHA256
+`97754dc3ddf559ef122c55e5fd87819110fb65b1ec95c9602d4a01795bf8193d`.
+The latter two match the release receipt's recorded hashes. Original producers,
+earlier storage reviews and their document hashes remain preserved as historical
+records; this dated supplement adds serving/grant facts, not a new test run.
+
 ## Decision requested
 
 Choose one retained-only pilot using the existing private social bucket and
