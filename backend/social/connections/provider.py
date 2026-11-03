@@ -234,7 +234,8 @@ class MetaProvider:
             raise SocialError('PERMISSIONS_REQUIRED', 'Page discovery permission was not granted. Reconnect and explicitly grant Page access.')
         if self.config.business_discovery_enabled and 'business_management' not in metadata['scopes']:
             raise SocialError('PERMISSIONS_REQUIRED', 'Business Page discovery permission was not granted. Reconnect and explicitly grant access to the intended business.')
-        pages = self._paged('me/accounts', 'id,name,access_token,tasks,instagram_business_account', token)
+        fields = 'id,name,tasks,instagram_business_account' if selected_page is not None else 'id,name,access_token,tasks,instagram_business_account'
+        pages = self._paged('me/accounts', fields, token)
         choices, ids = [], set()
         for page in pages:
             page_id = _identity(page.get('id'))

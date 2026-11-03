@@ -107,7 +107,9 @@ export function decodeSelectedAccounts(v: unknown): { flow_id: string; accounts:
 export const connectionApi = {
   verifyPublishingAccess: (account: string, body: { expected_controls_version: number; expected_state: string; reason: string }, key: string): Promise<AccountPublishingStatus> => request('/accounts/' + id(account) + '/verify-publishing-access', value => {
     const result = decodeAccountPublishing(value);
-    if (result.account_id !== account || result.publishing_enabled !== false || !result.enable_available
+    const restricted = !result.enable_available && result.enable_blockers.length === 1
+      && result.enable_blockers[0] === 'NATIVE_ADMISSION_UNAVAILABLE';
+    if (result.account_id !== account || result.publishing_enabled !== false || (!result.enable_available && !restricted)
         || result.controls_version !== body.expected_controls_version + 1 || result.state_token === body.expected_state) invalid();
     return result;
   }, body, key, undefined, 'Publishing access was not confirmed. Retry the same verification or refresh account controls.'),

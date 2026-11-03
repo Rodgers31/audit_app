@@ -8,7 +8,7 @@ import styles from '../social.module.css';
 
 const explanations: Record<string, string> = {
   ACCOUNT_DISCONNECTED: 'Connect this account before enabling publishing.',
-  NATIVE_ADMISSION_UNAVAILABLE: 'Refresh verified publishing permissions for this account. Reconnect only if its saved grant cannot be verified.',
+  NATIVE_ADMISSION_UNAVAILABLE: 'Publishing setup or verified permissions are not ready. Check the saved grant; once delivery setup is approved, verify again before enabling publishing.',
   CREDENTIAL_UNAVAILABLE: 'The saved credential is missing, expired, revoked or awaiting renewal reconciliation.',
   PRIVACY_GRANT_BLOCKED: 'A retained privacy request blocks this saved grant. Keep publishing paused until its ownership is resolved.',
   PRIVACY_STATE_UNAVAILABLE: 'Privacy-request ownership for this grant could not be verified. Keep publishing paused until it is resolved.',
@@ -80,7 +80,10 @@ export default function AccountPublishingControl({ accountId, name, refresh, can
     try {
       const value = await connectionApi.verifyPublishingAccess(accountId, body, pending.current.key);
       if (!current()) return;
-      setStatus(value); pending.current = undefined; setMessage('Publishing access verified. Account publishing is still paused.'); refresh();
+      setStatus(value); pending.current = undefined;
+      setMessage(value.enable_available ? 'Publishing access verified. Account publishing is still paused.'
+        : 'Saved publishing permissions verified. Account publishing is still paused. Complete delivery setup, then verify again before enabling publishing.');
+      refresh();
     } catch (e) { if (current()) setError(e instanceof Error ? e.message : 'Publishing access was not confirmed. Retry the same verification or refresh.'); }
     finally { if (current()) { inFlight.current = false; setBusy(false); setVerifying(false); } }
   }

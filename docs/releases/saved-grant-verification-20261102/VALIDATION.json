@@ -1,0 +1,127 @@
+{
+  "base_commit": "2e206ed9974b254adf75b44867915e326d54487c",
+  "source_sha256": {
+    "backend/social/connections/verification.py": "e9e2e54dbc80f822d3fb3636c0407f33274cf3f5eebbca465df0c63d64c24d3c",
+    "backend/social/connections/service.py": "56be74b84149c7518537bf1d221a8dee84433feffa36f88bdfda3871b5aa34fb",
+    "backend/social/connections/provider.py": "0d2add3c57665324e5cd82439379b40529b7411da139986d3fe63b361ba333b9",
+    "backend/social/connections/api.py": "c0b11aacbab12e22866ce6e15003049c6bf5a96f1b60c19b592489042265a57c",
+    "backend/tests/social/test_existing_grant_verification.py": "b3d67266e1a33f4db14160b3e268872c28f52f9b0c2ba68d11bea01f7752fa05",
+    "backend/tests/social/test_verification_only_authority.py": "2870d30e19dc4c7c021d741e381868585c42506675a610a39d2b75b35bd01075",
+    "backend/tests/social/test_verification_only_postgres.py": "3008e3a67410a9494419c116f7e804d118cbcbfa01b04ed87d4800f42ec72eb7",
+    "docs/social-publishing/manual-publication-activation.md": "0d4cf77c467eed5c87ac7e16a4e5d4a703662a8a95d01e394ac530553da3cb8a"
+  },
+  "author_validation": {
+    "receipt_sha256": "a835a934981c9081e70fc3793accb86bfab9a0776b8d814dc7c4bb39f48c1860",
+    "generator_sha256": "9b2946289e71f50c81f7d8e0e9b227090863c8efd60b4d4cf89cb24df3b96a2c",
+    "modes": {
+      "normal": {
+        "distinct_passed": 635,
+        "unresolved_skips": 0
+      },
+      "optimized": {
+        "distinct_passed": 635,
+        "unresolved_skips": 0
+      }
+    },
+    "lanes": [
+      {
+        "receipt": "serving-normal.json",
+        "sha256": "a83d0eda7707495689ec48f8a7b20809ab67f5a8236b9d82e5d75ed712a42938",
+        "mode": "normal",
+        "counts": {
+          "tests": 625,
+          "errors": 0,
+          "failures": 0,
+          "skipped": 13
+        }
+      },
+      {
+        "receipt": "serving-pg-normal.json",
+        "sha256": "0e6aa4487e1087ebac376e263b5d5b016d9727802943de8ddb185ef80bb802bd",
+        "mode": "normal",
+        "counts": {
+          "tests": 10,
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0
+        }
+      },
+      {
+        "receipt": "serving-role-normal.json",
+        "sha256": "8848317afefa52bd55d1ab1dfad8746c593310dbfc37c923351aaf7c4ebf42e1",
+        "mode": "normal",
+        "counts": {
+          "tests": 13,
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0
+        }
+      },
+      {
+        "receipt": "serving-optimized.json",
+        "sha256": "dbd6965e9d40f4d7f9b3bdeb91f6c93c4038d4fd2801a778e26d5aa85f5656f1",
+        "mode": "optimized",
+        "counts": {
+          "tests": 625,
+          "errors": 0,
+          "failures": 0,
+          "skipped": 13
+        }
+      },
+      {
+        "receipt": "serving-pg-optimized.json",
+        "sha256": "acaa22435d52a28705ed81a9ee6ae3d49d4c4766dd616db49d59173653f79455",
+        "mode": "optimized",
+        "counts": {
+          "tests": 10,
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0
+        }
+      },
+      {
+        "receipt": "serving-role-optimized.json",
+        "sha256": "cf87d707224c9bdfb6d1f0e6f2c24bfef1dbbe7743f1f47a0a5a1fbaad7dbbb2",
+        "mode": "optimized",
+        "counts": {
+          "tests": 13,
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0
+        }
+      }
+    ]
+  },
+  "serving_runtime": {
+    "image_id": "sha256:28a15896d429f8ad645011d98c5c406582557766f7cc2ab9b16c4ed2c1ce74b8",
+    "architecture": "amd64",
+    "python": "3.12.16 (main, Oct 28 2026, 02:01:20) [GCC 14.2.0]",
+    "installed_distributions": 81,
+    "inventory_receipt_sha256": "78c9404d9c13fc176f641e0dd6aa2cc8c01cd58a1f842d08ac299c2acb9d376b"
+  },
+  "independent_reviews": [
+    {
+      "role": "adversarial-review",
+      "verdict": "CLEAR",
+      "receipt_sha256": "18dc6054d9a75da70ba50f4425a4c3551b64ff5a1c33afd07c757e3be43b9195",
+      "manifest_sha256": "607ec2cbc79c6bc3e046bbf061dbb008d51e9a3a8d97782e03bfeced8eeed759",
+      "passed_per_mode": 197,
+      "privately_authored_per_mode": 65,
+      "scope": "Independent executable boundary and compatibility review, intercepted providers; separate cached test image, not serving image parity."
+    },
+    {
+      "role": "standards-review",
+      "verdict": "CLEAR",
+      "receipt_sha256": "1c1566937df4b6dcc74248d976ab9a82bcbc09d55d8d36125acbf344f9d08264",
+      "manifest_sha256": "0b3f882a39e3b9af3d96a238b26cb6213867024be2143f683c15b55cf9969950",
+      "passed_per_mode": 292,
+      "privately_authored_per_mode": 80,
+      "scope": "Independent executable boundary and compatibility review, intercepted providers; separate cached test image, not serving image parity."
+    }
+  ],
+  "runtime_source_change_after_reviews": false,
+  "live_grants_verified": false,
+  "production_mutations": false,
+  "deployment": false,
+  "scope": "Local engineering acceptance only. Actual saved grants and all remaining launch gates require their own production evidence. Publishing, uploads, workers and financial generation remain off."
+}

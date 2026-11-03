@@ -9,6 +9,8 @@ jest.mock('@/lib/auth/AuthProvider', () => ({ useAuth: jest.fn() }));
 const id = '00000000-0000-4000-8000-000000000021';
 const state = { account_id: id, publishing_enabled: false, controls_version: 1, state_token: 'a'.repeat(64), enable_available: false, enable_blockers: ['NATIVE_ADMISSION_UNAVAILABLE'], global_publishing_enabled: false, delivery_holds: ['GLOBAL_PUBLISHING_DISABLED', 'NATIVE_RUNTIME_UNAVAILABLE'] };
 const verified = { ...state, controls_version: 2, state_token: 'b'.repeat(64), enable_available: true, enable_blockers: [], delivery_holds: ['GLOBAL_PUBLISHING_DISABLED'] };
+const restricted = { ...state, controls_version: 2, state_token: 'b'.repeat(64) };
+const restrictedMessage = 'Saved publishing permissions verified. Account publishing is still paused. Complete delivery setup, then verify again before enabling publishing.';
 const get = api.get as jest.Mock, post = api.post as jest.Mock, patch = api.patch as jest.Mock;
 beforeEach(() => { jest.clearAllMocks(); (useAuth as jest.Mock).mockReturnValue({ user: { id: 'admin-a' } }); get.mockResolvedValue({ data: state }); post.mockResolvedValue({ data: verified }); });
 async function mount(refresh = jest.fn()) {
@@ -32,6 +34,23 @@ test('verifies the saved grant before a separate explicit enable, without enabli
   await screen.findByRole('button', { name: 'Pause publishing for Fixture Page' });
   expect(patch.mock.calls[0][1]).toMatchObject({ expected_controls_version: 2, expected_state: verified.state_token, publishing_enabled: true });
 });
+test.each([false, true])('shows verified restricted access with global publishing %s and keeps enabling blocked', async globalPublishing => {
+  post.mockResolvedValue({ data: { ...restricted, global_publishing_enabled: globalPublishing, delivery_holds: globalPublishing ? ['NATIVE_RUNTIME_UNAVAILABLE'] : restricted.delivery_holds } });
+  const refresh = await mount();
+  fireEvent.click(screen.getByRole('button', { name: 'Verify existing publishing access for Fixture Page' }));
+  expect(await screen.findByRole('status')).toHaveTextContent(restrictedMessage);
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(refresh).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole('button', { name: 'Enable publishing for Fixture Page' })).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: 'Enable publishing for Fixture Page' }));
+  expect(patch).not.toHaveBeenCalled();
+  // A second explicit verification uses the refreshed witness, not the old command.
+  post.mockResolvedValue({ data: { ...restricted, controls_version: 3, state_token: 'c'.repeat(64) } });
+  fireEvent.click(screen.getByRole('button', { name: 'Verify existing publishing access for Fixture Page' }));
+  await waitFor(() => expect(refresh).toHaveBeenCalledTimes(2));
+  expect(post.mock.calls[1][1]).toMatchObject({ expected_controls_version: 2, expected_state: restricted.state_token });
+  expect(post.mock.calls[1][2].headers['Idempotency-Key']).not.toBe(post.mock.calls[0][2].headers['Idempotency-Key']);
+});
 test('ambiguous verification retains the same command body and key for explicit retry', async () => {
   post.mockRejectedValueOnce(new Error('transport lost'));
   await mount(); fireEvent.click(screen.getByRole('button', { name: 'Verify existing publishing access for Fixture Page' }));
@@ -44,6 +63,10 @@ test.each([
   { controls_version: 1 }, { controls_version: 9 }, { state_token: state.state_token },
   { publishing_enabled: true }, { account_id: '00000000-0000-4000-8000-000000000022' },
   { enable_available: false, enable_blockers: ['CREDENTIAL_UNAVAILABLE'] },
+  { enable_available: false, enable_blockers: ['NATIVE_ADMISSION_UNAVAILABLE', 'CREDENTIAL_UNAVAILABLE'] },
+  { enable_available: false, enable_blockers: ['PRIVACY_GRANT_BLOCKED'] },
+  { enable_available: false, enable_blockers: ['NATIVE_ADMISSION_UNAVAILABLE', 'PRIVACY_GRANT_BLOCKED'] },
+  { enable_available: false, enable_blockers: ['NATIVE_ADMISSION_UNAVAILABLE', 'NATIVE_ADMISSION_UNAVAILABLE'] },
   { delivery_holds: [] },
 ])('refuses a verification reply that cannot establish the requested paused state: %j', async change => {
   post.mockResolvedValue({ data: { ...verified, ...change } }); const refresh = await mount();
@@ -61,7 +84,7 @@ test('an enabled destination must be paused before verification and other platfo
   view.rerender(<AccountPublishingControl accountId={id} name='Fixture Page' refresh={jest.fn()} />);
   expect(screen.queryByRole('button', { name: 'Verify existing publishing access for Fixture Page' })).not.toBeInTheDocument(); expect(post).not.toHaveBeenCalled();
 });
-test('a late verification result cannot update a successor administrator session', async () => {
+test.each([verified, restricted])('a late verification result cannot update a successor administrator session: %#', async response => {
   let finish!: (value: unknown) => void; post.mockImplementation(() => new Promise(resolve => { finish = resolve; }));
   const refresh = jest.fn(); const view = render(<AccountPublishingControl accountId={id} name='Fixture Page' refresh={refresh} canVerifyMeta />);
   fireEvent.click(screen.getByRole('button', { name: 'Refresh account publishing controls' }));
@@ -69,6 +92,6 @@ test('a late verification result cannot update a successor administrator session
   await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
   (useAuth as jest.Mock).mockReturnValue({ user: { id: 'admin-b' } });
   view.rerender(<AccountPublishingControl accountId={id} name='Fixture Page' refresh={refresh} canVerifyMeta />);
-  await act(async () => { finish({ data: verified }); });
-  expect(refresh).not.toHaveBeenCalled(); expect(screen.queryByText('Publishing access verified. Account publishing is still paused.')).not.toBeInTheDocument();
+  await act(async () => { finish({ data: response }); });
+  expect(refresh).not.toHaveBeenCalled(); expect(screen.queryByRole('status')).not.toBeInTheDocument();
 });
