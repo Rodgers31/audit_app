@@ -17,13 +17,15 @@ Repository paths below resolve from this checkout. External paths resolve from t
 | E09 | `backend/social/models.py:279`; `backend/social/media/config.py:9`; `backend/social/media/service.py:185`; `backend/social/media/retention.py:137`; `backend/social/worker/startup.py:24` | Static current-source receipts for named controls/defaults, retained completion call and durable pending-only release, native/private-read worker gate. Static inspection is not execution on production. |
 | E10 | Parent assignment in this chat | Required all-four-OFF/native/automatic holds; documentation-only ownership; parent-exclusive operations; historical worker180s proposal. Instruction/proposal authority, not an execution receipt. |
 
-## Pending new evidence
+## Pending new evidence at the initial cut
 
 The parent release path is `release-893-897-20261103/RELEASE_COMPLETE.json`. Its absence at this edition's first read is a pending input, not a failed release or permission to run a replacement. The parent alone owns deployment, validation, ingestion pin and the two saved Meta checks.
 
 New reports expected from Nightly refresh reconciliation, Official source transport, Saved Meta grant readiness, Storage and retention acceptance, Worker and capacity acceptance, Remaining source coverage, Privacy callback boundaries, and Security and performance acceptance. No output or successful result is inferred before it is read, identified and hash-bound. Consult their completed source-bound reports; a chat summary is discovery context only.
 
 A later ingestion entry must name the file/hash/source/time, actual commands/cases/results/refusals, fixture versus live boundary, source completeness, retained failures, owner decision and remaining blockers. A release sentinel alone cannot establish every underlying gate. A successful grant changes only its inspected grant boundary; native re-verification is still required after actual native acceptance.
+
+Subsequent received inputs and current limitations are recorded in [UPDATES.md](UPDATES.md). The initial pending list is historical discovery context, not a claim that a later received report is absent.
 
 ## Lane evidence custody
 

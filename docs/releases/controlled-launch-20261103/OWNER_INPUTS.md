@@ -10,7 +10,7 @@
 | Nightly / transport / source owners | New source-bound reports; doc2392 old/proposed rows and completeness disposition; normal TLS acquisition; OAG/native evidence; exact eligible revision/source frontier | Source-dependent draft or post; no mass retirement or invented financial coverage |
 | Storage owner and independent privacy/accountability approver | Adopt/replace each retention period and data class; legal holds/exceptions; permanent history/reference/unknown-grant protections; exact approved policy bytes/digest and real approver decision | Storage and deletion policy; a digest alone approves nothing |
 | Maintenance operator | Named person/role, attended availability, bounded report cadence, escalation/stop authority; no force settlement or quota refund | Upload operation and backlog ownership |
-| Backup custodian and independent restore reviewer | Exact existing destination/custody UUID, allowlisted data classes/IDs/byte cap, access/encryption/key-recovery custody, retention and independent reconstruction target | Any production export/copy; old credential-export approval is insufficient |
+| Backup custodian, restore operator and different independent reviewer | Exact existing destination/custody UUID, allowlisted data classes/IDs/byte cap, access/encryption/key-recovery custody, retention and independent reconstruction target | Any production export/copy; old credential-export approval is insufficient |
 | Existing authorized control-plane operator | Current private bucket/account/live-origin CORS/lifecycle/exclusive-writer/version/replication and credential expiry/rotation readback without broader app scope | Stage A |
 | Worker / capacity / security owners | Current source/package/host/role; complete client demand plus explicit reserve; resource/latency/DB/egress thresholds and cadence; current stop budget; exact canary command/config/closure custody | Stage B and C; old OFF samples and idle fixtures do not accept busy reserve |
 | Privacy/provider decision owners | Applicable retained-copy/callback decisions, including pending Render collector/copy boundary; distinguish existing-grant maintenance from new/reconnect ingress | New OAuth/reconnect remains held; unresolved applicable pilot privacy scope stays held |
@@ -30,7 +30,7 @@ A future approval must identify exactly one stage from [PILOT_PROPOSAL.md](PILOT
 | Decision identity | Owner name, approval time/timezone, unique decision ID and explicit allowed stage |
 | Evidence cut | Ledger revision plus exact release, lane, policy and command-packet hashes; unresolved findings explicitly listed |
 | Execution identity | Exact commit/tree/image/package/architecture, existing host/service/origin, DB role/schema; no source drift |
-| Attendees | Operator, stop/recovery operator, custodian, independent reviewer and escalation route |
+| Attendees | Operator, stop/recovery operator, custodian, restore operator, different independent reviewer and escalation route |
 | Window/caps | Start/end/timezone; exact asset/byte/copy/post/revision/target/attempt/provider-read/mutation/connection bounds; resource/cost/egress thresholds and sampling cadence |
 | Existing destinations | Exact bucket/account/keys and existing approved backup destination/custody/data classes; no secret values in record |
 | Controls | Before/allowed-during/required-after resolved values and version tokens for every exception; financial and automatic controls remain OFF |

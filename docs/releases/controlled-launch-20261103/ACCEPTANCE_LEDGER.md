@@ -4,7 +4,7 @@
 
 This ledger compares the original plan with demonstrated acceptance. Issue closure, merged code, a successful command, an available adapter and a green fixture each have narrower meanings than live operating acceptance. Current release, ingestion pin and saved-grant operations belong exclusively to the parent. This lane performs no production sampling or changes.
 
-Source examined: `8f08d85a1b059b83d8b8a3823f5f06fd33eb4e39`, tree `429c94692890811fcab68668c5ee1ecd19226c5e`. Owned checkout `/Users/roger/.codex/worktrees/controlled-launch-docs-20261103/audit_app`, branch `codex/controlled-launch-ledger-20261103`; edits limited to this new directory. Evidence and exact input hashes are catalogued in [EVIDENCE.md](EVIDENCE.md). New reports will receive dated addenda rather than rewrite historical observations.
+Source examined: `8f08d85a1b059b83d8b8a3823f5f06fd33eb4e39`, tree `429c94692890811fcab68668c5ee1ecd19226c5e`. Owned checkout `/Users/roger/.codex/worktrees/controlled-launch-docs-20261103/audit_app`, branch `codex/controlled-launch-ledger-20261103`; edits limited to this new directory. Evidence and exact input hashes are catalogued in [EVIDENCE.md](EVIDENCE.md). New reports receive dated addenda in [UPDATES.md](UPDATES.md); those entries identify the newest reviewed evidence and current remaining actions without rewriting historical observations.
 
 ## Authority and freshness
 
