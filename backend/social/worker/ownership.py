@@ -6,7 +6,7 @@ import threading
 from uuid import UUID
 
 from sqlalchemy import text
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, InternalError
 
 
 class AuthorityLost(RuntimeError):
@@ -107,6 +107,21 @@ def acquire_authority(engine, owner_id, deployment_version):
         return authority
     except IntegrityError:
         raise AuthorityLost('GLOBAL_WORKER_OWNED') from None
+    except InternalError as error:
+        # A volatile BEFORE trigger can see a contender's committed history
+        # after this INSERT selected its generation from an older snapshot.
+        # The failed transaction is rolled back before this fresh observation.
+        # The diagnostic alone proves no owner: never retry the acquisition.
+        if (getattr(error.orig, 'pgcode', None) == 'P0001'
+                and getattr(getattr(error.orig, 'diag', None), 'message_primary', None)
+                == 'Global worker generation mismatch'):
+            with engine.begin() as conn:
+                conn.execute(text("SET LOCAL lock_timeout='2s'"))
+                conn.execute(text("SET LOCAL statement_timeout='5s'"))
+                occupied = conn.execute(text('SELECT EXISTS(SELECT 1 FROM social_worker_runtime_ownership WHERE id=1)')).scalar_one()
+            if occupied is True:
+                raise AuthorityLost('GLOBAL_WORKER_OWNED') from None
+        raise
 
 
 def release_authority(engine, authority, proof):
