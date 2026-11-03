@@ -143,6 +143,31 @@ def _write_db(tmp_path: Path, rows, extra=()) -> str:
             list(rows) + list(extra)
         ):
             meta = {"source_mode": mode} if mode is not None else {}
+            # These are reconstructed local controls, not historical receipts
+            # or production acceptance. Populate the current explicit contract
+            # so the positive control exercises today's completion consumer.
+            complete = mode == 'live' and status == 'completed' and processed > 0
+            if domain == 'audits':
+                meta['refresh_completion'] = {'complete': complete, 'accepted_documents': 1,
+                                              'errors': 0, 'deferred': False}
+                meta['documents'] = [{'doc_id': 1, 'parser_id': 'oag_blue_book',
+                                      'extraction_outcome': 'accepted',
+                                      'extractions': {'existing': processed},
+                                      'loaded': {'processed': processed, 'created': 0, 'updated': 0, 'skipped': 0}}]
+            elif domain == 'fiscal_summary':
+                years = [f'fixture-year-{i}' for i in range(processed)]
+                meta['refresh_completion'] = {'complete': complete, 'accepted_records': processed, 'accepted_years': years}
+                meta['refresh_components'] = {
+                    'budget': {'state': mode},
+                    'revenue': {'state': mode, 'refreshed_years': years, 'missing_years': []},
+                    'framework': {'state': mode, 'unreadable_editions': {}, 'unconfirmed_years': {}},
+                }
+            elif domain == 'pending_bills':
+                meta['refresh_completion'] = {'complete': complete}
+                meta['refresh_components'] = {
+                    'national': {'complete': complete, 'records': 2, 'accepted_records': 2, 'mode': mode},
+                    'counties': {'complete': complete, 'records': processed - 2, 'accepted_records': processed - 2},
+                }
             if reason:
                 meta["source_fallback_reason"] = reason
             session.add(

@@ -746,17 +746,24 @@ def run(
                         bank()
                     continue
 
-                doc_stat = {"dataset": dataset_id, "doc_id": doc.id, "url": url}
+                doc_stat = {"dataset": dataset_id, "doc_id": doc.id, "url": url,
+                            'parser_id': dataset.parser_id,
+                            'extraction_outcome': 'pending' if parser is not None else 'not_requested'}
                 if parser is not None:
                     try:
                         from ...extractors.reconciliation import extract_and_load
+                        expected_findings = 0
 
                         def scoped_parser(session, doc, settings):
+                            nonlocal expected_findings
                             review = getattr(context, "audits_reconciliation_review", None)
                             if review is not None and doc.id == 2542:
                                 stats = parser(session, doc, settings, review=review)
                             else:
                                 stats = parser(session, doc, settings)
+                            from .refresh_outcome import verify_outcome
+                            verify_outcome(session, doc, stats, dataset.parser_id)
+                            expected_findings = sum(stats.get(key, 0) for key in ('created', 'skipped', 'existing'))
                             if selected is not None:
                                 verify_extractions(session, doc, selected[url], stats)
                             return stats
@@ -765,9 +772,13 @@ def run(
                             stats = load_blue_book_extractions(
                                 session, doc, settings, context, **kwargs
                             )
-                            if stats.errors or stats.skipped:
+                            counts = [stats.processed, stats.created, stats.updated, stats.skipped]
+                            if (any(type(n) is not int or n < 0 for n in counts)
+                                    or stats.processed <= 0 or stats.created + stats.updated > stats.processed
+                                    or stats.processed != expected_findings
+                                    or not isinstance(stats.errors, list) or stats.errors or stats.skipped):
                                 raise AuditSourceScopeError(
-                                    f"scoped load incomplete: {label}"
+                                    f"audit load incomplete: {label}"
                                 )
                             return stats
 
@@ -776,12 +787,11 @@ def run(
                             doc,
                             settings,
                             context,
-                            scoped_parser if selected is not None or getattr(context, "audits_reconciliation_review", None) else parser,
-                            scoped_loader
-                            if selected is not None
-                            else load_blue_book_extractions,
+                            scoped_parser,
+                            scoped_loader,
                         )
                         doc_stat["extractions"] = ext_stats
+                        doc_stat['extraction_outcome'] = 'partial' if ext_stats.get('partial') else 'accepted'
                         if ext_stats.get("partial"):
                             errors.append(f"document {doc.id}: partial extraction; coverage incomplete")
                     except QuarantinedDocument as exc:
@@ -798,6 +808,7 @@ def run(
                         # failure: counting it as one marks a healthy run
                         # unhealthy and buries the real errors beside it.
                         doc_stat["skipped"] = getattr(exc, "reason", str(exc))
+                        doc_stat['extraction_outcome'] = 'skipped'
                         logger.info(
                             "Skipping doc %s — parser refused it (%s)",
                             doc.id,
@@ -843,6 +854,7 @@ def run(
                     skipped += load_stats.skipped
                     errors.extend(load_stats.errors)
                     doc_stat["loaded"] = {
+                        'processed': load_stats.processed,
                         "created": load_stats.created,
                         "updated": load_stats.updated,
                         "skipped": load_stats.skipped,
@@ -922,7 +934,7 @@ def run(
     # Provenance: the audits domain is "live" only if at least one document
     # was actually fetched AND extracted this run. Registering a document
     # without extracting it is not live data.
-    from ...freshness import mark_fixture, mark_live
+    from ...freshness import mark_live, mark_partial, mark_refused
 
     if volume_report is not None:
         if observation is not None:
@@ -963,6 +975,18 @@ def run(
         d for d in metadata["documents"]
         if d.get("extractions") and d.get("extraction_outcome") != "invalid"
     ]
+    deferred = bool(metadata['deferred_documents'] or metadata['deferred_discovery']
+                    or volume_report and volume_report['deferred'])
+    metadata['refresh_completion'] = {
+        'complete': bool(extracted_docs and not errors and not deferred and not context.dry_run),
+        'accepted_documents': len(extracted_docs),
+        'errors': len(errors),
+        'deferred': deferred,
+    }
+    from ...refresh_completion import audit_inventory_complete
+    coverage_complete = audit_inventory_complete(metadata, metadata['refresh_completion'], processed)
+    metadata['refresh_completion']['complete'] = bool(
+        metadata['refresh_completion']['complete'] and coverage_complete)
     if context.dry_run:
         # The preview deliberately stopped before fetch/extract/load above.
         # Its discovery errors still reach the CLI, but absence of extraction
@@ -981,17 +1005,18 @@ def run(
                 f"{len(volume_report['deferred'])} deferred of "
                 f"{volume_report['discovered']}"
             )
-        mark_live(
-            "audits",
-            detail=(
+        detail = (
                 f"{len(extracted_docs)} document(s) extracted; "
                 f"{created} finding(s) created, {updated} updated{volumes_note}"
-            ),
-        )
+            )
+        if errors or deferred or not coverage_complete:
+            mark_partial('audits', reason='audit_refresh_incomplete', detail=detail)
+        else:
+            mark_live('audits', detail=detail)
     else:
-        mark_fixture(
+        mark_refused(
             "audits",
-            reason="no_document_extracted",
+            reason="no_document_accepted",
             detail=(
                 f"{len(metadata['documents'])} document(s) seen, none "
                 f"produced extractions"

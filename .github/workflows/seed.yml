@@ -725,7 +725,8 @@ jobs:
           raw_floor = os.environ.get('SEED_JOB_FLOOR', '')
           if not re.fullmatch('[0-9]{1,18}', raw_floor):
               raise SystemExit('Native job boundary missing or refused')
-          domains = environment_plan().domains
+          plan = environment_plan()
+          domains = plan.domains
 
           session = SessionLocal()
           # The retained pre-seed ID floor bounds this invocation's results.
@@ -817,6 +818,14 @@ jobs:
               print(f'  {finding}')
           hollow = [f for f in findings if f.level == 'FAIL']
 
+          # These domains require complete source/extraction/loading outcomes.
+          # A successful secondary series or a protected reconciliation hold
+          # must not certify the full nightly. Other PARTIAL policies stay WARN.
+          from seeding.refresh_completion import required_refresh_failures
+          incomplete = required_refresh_failures(jobs, dry_run=plan.dry_run)
+          for diagnostic in incomplete:
+              print(diagnostic)
+
           # No rows at all is the same defect one step further back: the
           # loop above prints nothing, `failed` stays 0, and the step reports
           # a success it never observed. The seed step always writes a job
@@ -830,7 +839,7 @@ jobs:
               )
 
           session.close()
-          if failed or hollow or not graded or missing:
+          if failed or hollow or incomplete or not graded or missing:
               if failed:
                   print(f'\n{failed} domain(s) failed!')
               if hollow:

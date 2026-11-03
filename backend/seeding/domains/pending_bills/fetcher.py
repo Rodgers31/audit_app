@@ -210,6 +210,7 @@ def fetch_pending_bills_payload(
     # ``None`` is defensive — older settings instances may not have
     # the field if a stale module is imported.
     brop_url = getattr(settings, "treasury_brop_url", None)
+    failure_detail = 'live BROP acquisition was not available'
     discovery: Optional[BropDiscovery] = None
     if settings.live_pdf_fetch_enabled:
         # Prefer the CURRENT edition off Treasury's listing page. The
@@ -264,7 +265,9 @@ def fetch_pending_bills_payload(
             logger.warning(
                 "BROP fetch returned no pending bills, trying fixture"
             )
+            failure_detail = 'BROP returned no attributable pending-bills payload'
         except Exception as exc:
+            failure_detail = f'{type(exc).__name__}: {exc}'[:400]
             logger.warning(
                 "BROP fetch failed, trying fixture: %s", exc
             )
@@ -272,11 +275,10 @@ def fetch_pending_bills_payload(
         logger.info(
             "treasury_brop_url not configured; skipping live BROP fetch"
         )
-    from ...freshness import get as _fresh_get
     from ...freshness import mark_fixture
 
-    if _fresh_get("pending_bills").get("mode") != "live":
-        mark_fixture("pending_bills", reason="brop_unavailable")
+    # A previous embedded invocation's LIVE mark is not this fetch's evidence.
+    mark_fixture('pending_bills', reason='brop_unavailable', detail=failure_detail)
 
     # Strategy 2: Configured fixture / API URL. Its payload declares no
     # publication, so the writer writes none of it (#238 counties, #265
