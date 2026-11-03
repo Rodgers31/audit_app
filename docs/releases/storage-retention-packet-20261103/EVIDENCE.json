@@ -1,0 +1,448 @@
+{
+  "schema_version": 1,
+  "generated_by": "private_evidence/storage-retention-packet-20261103/publish_packet_v1.py",
+  "generator_sha256": "2857d54397c65be67ecee83a6a9a744e10c2731a325cc2407fe7f97222ff9ae1",
+  "generated_at": "2026-11-03T23:19:36.389508+00:00",
+  "target_commit": "1542bc5117f09b15b126e03bbd2158a54c348540",
+  "target_tree": "2fa98d95754e9dde3f1407e315dd0317733c4d3a",
+  "evidence_cut": "2026-11-03T22:55:13.844054+00:00",
+  "classification": "engineering_decision_preparation_only",
+  "live_authority": false,
+  "policy_approved": false,
+  "policy_digest_installed": false,
+  "application_media_accepted": false,
+  "writer_exclusivity_proven": false,
+  "owner_inputs_pending": [
+    "D1",
+    "D2",
+    "D3",
+    "D4",
+    "D5",
+    "R1"
+  ],
+  "path_roots": {
+    "private_evidence": "Existing operator-controlled admin-redesign evidence root; raw witnesses remain private. Archival producer is retained there, not a supported production/replay entry point.",
+    "repository": "Repository at target_commit; historical paths remain bound to that source."
+  },
+  "sources": [
+    {
+      "id": "E01",
+      "classification": "accepted_dated_observation",
+      "scope": "Latest supplied production cut; not a fresh observation by this lane.",
+      "inputs": [
+        {
+          "location": "private_evidence",
+          "path": "launch-gates-after906-20261103/production-current.json",
+          "sha256": "fffaa2ef80f3f9fd0a97ed8988098d7029ee835404cc0b1c4dad0c68854af0d0"
+        },
+        {
+          "location": "private_evidence",
+          "path": "launch-gates-after906-20261103/STATUS-v1.json",
+          "sha256": "a5423fb959d72781772a9620684432337744ecef04340a5a300adce66fde4d12"
+        },
+        {
+          "location": "private_evidence",
+          "path": "launch-gates-after906-20261103/REPORT.md",
+          "sha256": "8f458e2eb5ad93a7559cc6a6c4a41da62b06609cf806b97193c4da00f598a0ca"
+        },
+        {
+          "location": "private_evidence",
+          "path": "launch-gates-after906-20261103/capture_status_v1.py",
+          "sha256": "c7cb9c6628fd8e727279d15a9cafe19ca0e7765d1fe893ebc0b404b38c5e92aa"
+        },
+        {
+          "location": "private_evidence",
+          "path": "pr906-review-release-20261103/production-readback-v2.py",
+          "sha256": "6528c8ba95a97658041f17c0ae6f59f76edf0dbbde743e13b0a54342bca1fccb"
+        },
+        {
+          "location": "private_evidence",
+          "path": "pr906-review-release-20261103/production-command-v2.txt",
+          "sha256": "702ab58be59d9c6591520630593cb3ea03687c4e5bc9e979dd0b51525de91357"
+        }
+      ],
+      "provenance": {
+        "observed_at": "2026-11-03T22:55:13.844054+00:00",
+        "capture": "Parent visible-terminal readback; not an authenticated portable provider export",
+        "snapshot_producer_sha256": "6528c8ba95a97658041f17c0ae6f59f76edf0dbbde743e13b0a54342bca1fccb",
+        "status_producer_sha256": "c7cb9c6628fd8e727279d15a9cafe19ca0e7765d1fe893ebc0b404b38c5e92aa"
+      }
+    },
+    {
+      "id": "E02",
+      "classification": "accepted_scoped_release",
+      "scope": "PR906 operator-tool release, unchanged application; independent results remain original scope.",
+      "inputs": [
+        {
+          "location": "private_evidence",
+          "path": "pr906-review-release-20261103/RELEASE_REPORT.md",
+          "sha256": "6d7a08248f344e526c7fab7f3c330daf7b2e1c879a6d7990cd2477495a049b0f"
+        },
+        {
+          "location": "private_evidence",
+          "path": "pr906-review-release-20261103/RELEASE_INDEX-v1.json",
+          "sha256": "a691d912c4013b5a25bb8d9c4ca62de967308635079e90d76648c0172c504882"
+        },
+        {
+          "location": "private_evidence",
+          "path": "pr906-review-release-20261103/publish_release_index_v1.py",
+          "sha256": "2f66963ccd5d56318adc80675ab7f3751a32fa1f9064c39084a45d12e0f2c526"
+        },
+        {
+          "location": "private_evidence",
+          "path": "pr906-review-release-20261103/render-settings-before.txt",
+          "sha256": "04f949dbe78fdc4da319040642ba5d46649f1ee211a94385b64b55b9a3b75a33"
+        },
+        {
+          "location": "private_evidence",
+          "path": "pr906-review-release-20261103/standards/STANDARDS_FINAL_v3.md",
+          "sha256": "af9c5de8dd9b4d60c2c4def63480e7cd33d2bb09404fd5e341c83aca35bb7c0c"
+        },
+        {
+          "location": "private_evidence",
+          "path": "pr906-review-release-20261103/standards/MANIFEST_FINAL_v3.json",
+          "sha256": "3c8c34d3e2051f054c929d28d01eb7c7ec32c65a766cbf8321a72ea454505a3d"
+        },
+        {
+          "location": "private_evidence",
+          "path": "pr906-review-release-20261103/spec/SPEC_FINAL-v1.md",
+          "sha256": "5f0229116a3e1f175ca5425292d725207572a83e8f48cabdf4283ee8bbc46f9e"
+        },
+        {
+          "location": "private_evidence",
+          "path": "pr906-review-release-20261103/spec/SPEC_FINAL-MANIFEST-v1.json",
+          "sha256": "43225c7d873fce87741a03bc2563a918ce1f576453f692d62b6229f1a96e26fb"
+        },
+        {
+          "location": "private_evidence",
+          "path": "pr906-review-release-20261103/spec/OPERATOR_SPEC_FINAL-v1.md",
+          "sha256": "a244dee00f4afbc22af4b2cc90ac2a76d97742536e71aeed893ab559b3ebce43"
+        },
+        {
+          "location": "private_evidence",
+          "path": "pr906-review-release-20261103/spec/OPERATOR_SPEC_FINAL-MANIFEST-v1.json",
+          "sha256": "59b118ec716ad643ab10df6af029078f944245e18159c46b5f2a930c16905039"
+        }
+      ],
+      "provenance": {
+        "generated_at": "2026-11-03T22:50:03.961300+00:00",
+        "producer_sha256": "2f66963ccd5d56318adc80675ab7f3751a32fa1f9064c39084a45d12e0f2c526"
+      }
+    },
+    {
+      "id": "E03",
+      "classification": "accepted_dated_observation",
+      "scope": "Post-release production witness; corroborates E01 protected posture.",
+      "inputs": [
+        {
+          "location": "private_evidence",
+          "path": "pr906-review-release-20261103/production-post-release.json",
+          "sha256": "7cafada7a5e10dd4a2d2c3a917de54ffeae0973ca45bd6ae82e5f3b7f73e68c4"
+        },
+        {
+          "location": "private_evidence",
+          "path": "pr906-review-release-20261103/production-readback-v2.py",
+          "sha256": "6528c8ba95a97658041f17c0ae6f59f76edf0dbbde743e13b0a54342bca1fccb"
+        }
+      ],
+      "provenance": {
+        "observed_at": "2026-11-03T22:47:41.856921+00:00",
+        "producer_sha256": "6528c8ba95a97658041f17c0ae6f59f76edf0dbbde743e13b0a54342bca1fccb"
+      }
+    },
+    {
+      "id": "E04",
+      "classification": "accepted_refusal",
+      "scope": "Operator bytes read back; unset warmup correctly refused. Full held-runtime acceptance FALSE.",
+      "inputs": [
+        {
+          "location": "private_evidence",
+          "path": "pr906-review-release-20261103/operator-release-v1.json",
+          "sha256": "d26f5bccd57046fb19e1581ed154b03eb968b5bfe35ae234cd843fb0d06fd136"
+        },
+        {
+          "location": "private_evidence",
+          "path": "pr906-review-release-20261103/operator-release-wrapper-v1.py",
+          "sha256": "5b4726d46b61199617624a8abd74cb33eb16be5569d2d05f9eafed009d5ff705"
+        },
+        {
+          "location": "private_evidence",
+          "path": "pr906-review-release-20261103/operator-release-command-v1.txt",
+          "sha256": "5d304e6e9c977b4de9a8b30cfd1171b10cc15c0ebd0f92fcddaaf812d0473e97"
+        },
+        {
+          "location": "private_evidence",
+          "path": "pr906-review-release-20261103/host-refusal-v1.json",
+          "sha256": "be567c16bb74fcf8927ad10412a7c4761eb27d862176c6831287015f1d23889c"
+        }
+      ],
+      "provenance": {
+        "observed_at": "2026-11-03T22:47:19.751839+00:00",
+        "producer_sha256": "5b4726d46b61199617624a8abd74cb33eb16be5569d2d05f9eafed009d5ff705"
+      }
+    },
+    {
+      "id": "E05",
+      "classification": "accepted_scoped_verification",
+      "scope": "Original serving codec/storage/host scope only; no app upload, custody/restore, worker or send acceptance.",
+      "inputs": [
+        {
+          "location": "private_evidence",
+          "path": "media-storage-host-verification-20261103/REPORT-v3.md",
+          "sha256": "9529da592f362001517034f370a8bc5cc26aa971b785255e72c8c089d4c7cea0"
+        },
+        {
+          "location": "private_evidence",
+          "path": "media-storage-host-verification-20261103/RECEIPT-v2.json",
+          "sha256": "a2a2ea617cf58e010962238030ed6e2fdf1d35b2564416a827c13db47907c868"
+        },
+        {
+          "location": "private_evidence",
+          "path": "media-storage-host-verification-20261103/build_report_v3.py",
+          "sha256": "0734572cb25f76307e73a81c4e08117a55f0296c62446189235d79c3bf134117"
+        },
+        {
+          "location": "private_evidence",
+          "path": "media-storage-host-verification-20261103/render-compute-current.txt",
+          "sha256": "6045843c96f9f42fe12a26b33dc229b0ff98067a4b951925fbb349f6284fd834"
+        },
+        {
+          "location": "private_evidence",
+          "path": "media-storage-host-verification-20261103/render-settings-current.txt",
+          "sha256": "037baba697fd33071db2dbbdf684abb4b050d2cb4fc2e666b3ed7be464128443"
+        },
+        {
+          "location": "private_evidence",
+          "path": "media-storage-host-verification-20261103/serving-images-final.json",
+          "sha256": "12a955d34989b2ba464ea55eef068842d06f81f732e43bb17611357a0567824c"
+        }
+      ],
+      "provenance": {
+        "generated_at": "2026-11-03T21:08:19.567404+00:00",
+        "producer_sha256": "0734572cb25f76307e73a81c4e08117a55f0296c62446189235d79c3bf134117",
+        "report_sha256": "9529da592f362001517034f370a8bc5cc26aa971b785255e72c8c089d4c7cea0"
+      }
+    },
+    {
+      "id": "E06",
+      "classification": "accepted_dated_observation",
+      "scope": "Private bucket, domains, lifecycle, lock and disabled optional services; not exclusive-writer proof.",
+      "inputs": [
+        {
+          "location": "private_evidence",
+          "path": "media-storage-host-verification-20261103/storage-settings-current.txt",
+          "sha256": "8c7977af859c37df71adbb117d81c2ba187a0258407f37c356545cb11b0152ac"
+        }
+      ],
+      "provenance": {
+        "captured_on": "2026-11-03",
+        "time_precision": "Exact UI capture time not embedded; indexed by E05 at 21:08:19Z",
+        "capture": "Retained authenticated dashboard UI transcription; private raw metadata remains external"
+      }
+    },
+    {
+      "id": "E07",
+      "classification": "accepted_dated_observation",
+      "scope": "Exact origin/method/header/ETag/max-age CORS metadata; no signed PUT performed.",
+      "inputs": [
+        {
+          "location": "private_evidence",
+          "path": "media-storage-host-verification-20261103/storage-cors-full-current.txt",
+          "sha256": "62898211d745b6bc8a7f95b96b507c32cafd4a6e4370020d2f299e8e77113881"
+        }
+      ],
+      "provenance": {
+        "captured_on": "2026-11-03",
+        "time_precision": "Exact UI capture time not embedded; indexed by E05",
+        "capture": "Dashboard UI transcription"
+      }
+    },
+    {
+      "id": "E08",
+      "classification": "accepted_dated_observation",
+      "scope": "Two 77 B diagnostics unchanged in listed key/size/mtime; 304 B display includes metadata, request counters changed.",
+      "inputs": [
+        {
+          "location": "private_evidence",
+          "path": "media-storage-host-verification-20261103/storage-objects-current.txt",
+          "sha256": "7edd5865107504253ce199b0ecea5d60fba8c8d2003e914ba8b10883155b5b61"
+        },
+        {
+          "location": "private_evidence",
+          "path": "media-storage-host-verification-20261103/storage-objects-after.txt",
+          "sha256": "e6c2d61c7d7e432de9289b52e74043f4b816880dfc68ae9502665f7a527d0628"
+        }
+      ],
+      "provenance": {
+        "captured_on": "2026-11-03",
+        "time_precision": "UI observations indexed by E05; exact capture times not embedded",
+        "capture": "Dashboard UI transcriptions; no object-content or application acceptance inferred"
+      }
+    },
+    {
+      "id": "E09",
+      "classification": "accepted_metadata_custody_pending",
+      "scope": "Account API token, bucket-only Object Read & Write; displayed expiry 2026-11-14; not secret validity or exclusive writers.",
+      "inputs": [
+        {
+          "location": "private_evidence",
+          "path": "media-storage-host-verification-20261103/storage-token-metadata-current.txt",
+          "sha256": "36684300cdf0ebd8a5a00487d9e51e23d1b73e5cdb7d2e37c9540626f293473f"
+        },
+        {
+          "location": "private_evidence",
+          "path": "media-storage-host-verification-20261103/storage-token-detail-current.txt",
+          "sha256": "bef52b42d625974c9d42b08cbb6f68a23e78f09d221f58e814094205d3358875"
+        }
+      ],
+      "provenance": {
+        "captured_on": "2026-11-03",
+        "time_precision": "Expiry time/timezone not established; UI observations indexed by E05",
+        "capture": "Dashboard token list/detail transcription; no credential value exported"
+      }
+    },
+    {
+      "id": "E10",
+      "classification": "accepted_identifier_binding",
+      "scope": "Exact deployed nonsecret identifier/bucket/endpoint matched dashboard token record; no secret-key/signature/write proof.",
+      "inputs": [
+        {
+          "location": "private_evidence",
+          "path": "media-storage-host-verification-20261103/storage-binding-final.json",
+          "sha256": "a12bde3648f63fffb83fcb30a264509da72749e710c395254d61aa4d82390f7e"
+        },
+        {
+          "location": "private_evidence",
+          "path": "media-storage-host-verification-20261103/storage_binding_v1.py",
+          "sha256": "0b5170b66277a980f37c311877a4d3e08039048aeed40cf62377f6ad8be31773"
+        },
+        {
+          "location": "private_evidence",
+          "path": "media-storage-host-verification-20261103/storage-binding-command-v1.txt",
+          "sha256": "f92b5d91ad2c8f6a992994ac30bdf3d0ae0c7c0ca9dc53bed7ddbdfbb930f8c5"
+        }
+      ],
+      "provenance": {
+        "observed_at": "2026-11-03T20:53:19.383569+00:00",
+        "producer_sha256": "0b5170b66277a980f37c311877a4d3e08039048aeed40cf62377f6ad8be31773",
+        "capture": "Parent terminal observation; no provider calls by binding command"
+      }
+    },
+    {
+      "id": "E11",
+      "classification": "accepted_owner_decision_limited",
+      "scope": "Roger; seven-day rolling retention for private local DATABASE EXPORTS ONLY. No expanded access/classes/destinations.",
+      "inputs": [
+        {
+          "location": "private_evidence",
+          "path": "storage-retention-packet-20261103/owner-comment-6330295479.json",
+          "sha256": "454dd1640a13ffab886a94e5fdc7a97494906fb526bc0a10d95bb89436077466"
+        }
+      ],
+      "provenance": {
+        "source_url": "https://github.com/Rodgers31/audit_app/issues/488#issuecomment-6330295479",
+        "capture": "Read-only gh api issue comment; selected id/url/times/body retained privately",
+        "source_updated_at": "2026-10-22T01:16:08Z"
+      }
+    },
+    {
+      "id": "E12",
+      "classification": "historical_accepted_operation",
+      "scope": "B42 full logical restore in original scope; archive deadline 2026-10-29T02:45:54Z is past. Current inventory/enforcement not attested.",
+      "inputs": [
+        {
+          "location": "private_evidence",
+          "path": "storage-retention-packet-20261103/owner-comment-6332208730.json",
+          "sha256": "09cc9da78fb376418242645f9157f1520b0d7601c12d7ee51cdd5029c982751e"
+        }
+      ],
+      "provenance": {
+        "source_url": "https://github.com/Rodgers31/audit_app/issues/488#issuecomment-6332208730",
+        "capture": "Read-only gh api issue comment, not archive inspection",
+        "source_updated_at": "2026-10-22T03:48:41Z"
+      }
+    },
+    {
+      "id": "E13",
+      "classification": "documented_pending_reconciliation",
+      "scope": "Existing copy-category/custody boundaries; reconcile present/disposed-with-evidence/unresolved without deletion.",
+      "inputs": [
+        {
+          "location": "repository",
+          "path": "docs/social-publishing/implementation/PRIVACY_CUSTODY_DECISIONS_20261103.md",
+          "sha256": "960a59edbc0dbe80b1e081ae77167d10f4637bc93000e143cda159909666c2b3"
+        }
+      ],
+      "provenance": {
+        "source_commit": "1542bc5117f09b15b126e03bbd2158a54c348540",
+        "not_evidence_of": "Current archive inventory or enforcement"
+      }
+    },
+    {
+      "id": "E14",
+      "classification": "source_contract_only",
+      "scope": "Initial conditional protocol, both-copy hash verification and retained fence release only pending slot, full byte charge; not current deployment execution.",
+      "inputs": [
+        {
+          "location": "repository",
+          "path": "backend/social/media/config.py",
+          "sha256": "d739759a2a10d6b1e6ef3b5478122f5eccf1dc1840b7cd28653da4e70a4c64ed"
+        },
+        {
+          "location": "repository",
+          "path": "backend/social/media/service.py",
+          "sha256": "b95732fbe58a01d432216b0bb42c30e67b7f764a00af794478ffa915e8708c6f"
+        },
+        {
+          "location": "repository",
+          "path": "backend/social/media/retention.py",
+          "sha256": "7e29f63eae5e4920df4ae88aedc13ed933c2b2df988192ef6b3a583085b17a1a"
+        },
+        {
+          "location": "repository",
+          "path": "backend/social/media/fencing.py",
+          "sha256": "a97b339087b7d0a771b32232691bfe13e463061082c068995b17a25b147db31d"
+        }
+      ],
+      "provenance": {
+        "source_commit": "1542bc5117f09b15b126e03bbd2158a54c348540",
+        "anchors": [
+          "service.py:97-125",
+          "service.py:187-189",
+          "retention.py:53-161",
+          "config.py:10-36"
+        ],
+        "execution_in_this_lane": false
+      }
+    },
+    {
+      "id": "E15",
+      "classification": "unapproved_proposal",
+      "scope": "Smallest Stage A scope and unapproved feasibility windows; owner fields remain pending.",
+      "inputs": [
+        {
+          "location": "repository",
+          "path": "docs/releases/controlled-launch-20261103/PILOT_PROPOSAL.md",
+          "sha256": "909dc231faa4cc907fec85483b8c021a9da11be399693959602703033720983b"
+        },
+        {
+          "location": "repository",
+          "path": "docs/releases/controlled-launch-20261103/OWNER_INPUTS.md",
+          "sha256": "e5afc334c9c9bde5bf001bc3d5d3068026c7501f00432d48a634e5915da9a5c3"
+        }
+      ],
+      "provenance": {
+        "source_commit": "1542bc5117f09b15b126e03bbd2158a54c348540",
+        "authority": false
+      }
+    }
+  ],
+  "limitations": [
+    "No new production observation or operation; evidence is dated and must be refreshed before any separately authorized action.",
+    "No current pin acceptance: parent owns correction and integration exact-match reconciliation.",
+    "UI text and parent terminal captures are not authenticated portable provider exports.",
+    "No secret-key/signed-PUT validation, exclusive-writer proof, media backup destination/restore or retention-policy acceptance.",
+    "Local fixture results do not attest serving Linux x86_64 Python 3.12.16; PR906 refusal does not upgrade older codec observations.",
+    "No new legal determination, provider guarantee, resource, paid service, hosted rerun or bot request."
+  ]
+}
