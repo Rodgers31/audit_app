@@ -44,31 +44,40 @@ def test_supervisor_flag_is_strict(flag):
     with pytest.raises(ValueError): supervisor.settings({'SOCIAL_WORKER_SUPERVISOR_ENABLED':flag})
 
 
-def launch(tmp_path, *, web_exit=False, worker_exit=False, hang=False):
+def launch(tmp_path, *, web_exit=False, worker_exit=False, hang=False, worker_start_delay=0):
     child = tmp_path / 'child.py'
     child.write_text('''import os,signal,sys,time
-name,folder,mode=sys.argv[1:]
+name,folder,mode,start_delay=sys.argv[1:]
 open(folder+'/'+name+'.pid','w').write(str(os.getpid()))
+# A PID identifies the owned process, not installed signal handlers.
+if name=='worker': time.sleep(float(start_delay))
 def stop(sig,frame):
     if mode!='hang':
         open(folder+'/'+name+'.closed','w').write('closed')
         sys.exit(0)
 signal.signal(signal.SIGTERM,stop)
 signal.signal(signal.SIGINT,stop)
-if mode=='exit': sys.exit(7)
+open(folder+'/'+name+'.ready','w').write('ready')
+if mode=='exit':
+    if name=='web':
+        deadline=time.monotonic()+3
+        while not os.path.exists(folder+'/worker.ready'):
+            if time.monotonic()>=deadline: sys.exit(8)
+            time.sleep(.005)
+    sys.exit(7)
 while True: time.sleep(.02)
 ''')
     script = '''import sys
 from social_worker_supervisor import supervise
-child,folder,wm,sm=sys.argv[1:]
-raise SystemExit(supervise([sys.executable,child,'web',folder,wm],lambda fd:[sys.executable,child,'worker',folder,sm],1))
+child,folder,wm,sm,start_delay=sys.argv[1:]
+raise SystemExit(supervise([sys.executable,child,'web',folder,wm,'0'],lambda fd:[sys.executable,child,'worker',folder,sm,start_delay],1))
 '''
     proc = subprocess.Popen([sys.executable,'-c',script,str(child),str(tmp_path), 'exit' if web_exit else 'wait',
-                             'exit' if worker_exit else 'hang' if hang else 'wait'],
+                             'exit' if worker_exit else 'hang' if hang else 'wait',str(worker_start_delay)],
                             env={**os.environ,'PYTHONPATH':str(Path(supervisor.__file__).parent)}, stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
     deadline = time.monotonic()+8
     while time.monotonic()<deadline:
-        if (tmp_path/'worker.pid').exists() and (tmp_path/'web.pid').exists(): return proc
+        if (tmp_path/'worker.ready').exists() and (tmp_path/'web.ready').exists(): return proc
         if proc.poll() is not None: break
         time.sleep(.01)
     out,err=proc.communicate(timeout=5)
@@ -106,11 +115,14 @@ def test_worker_failure_leaves_web_available_and_never_restarts(tmp_path):
         if proc.poll() is None: proc.kill();proc.wait()
 
 
-def test_web_failure_stops_worker_and_exits_nonzero(tmp_path):
-    proc=launch(tmp_path,web_exit=True)
+@pytest.mark.parametrize('worker_start_delay', [0, .4])
+def test_web_failure_stops_worker_and_exits_nonzero(tmp_path,worker_start_delay):
+    # The delayed case must also wait for readiness, rather than process creation.
+    proc=launch(tmp_path,web_exit=True,worker_start_delay=worker_start_delay)
     out,err=proc.communicate(timeout=8)
     assert proc.returncode == 1, out+err
     assert (tmp_path/'worker.closed').exists()
+    assert '"release_proof":null' in out and '"ownership_retained":true' in out
     assert_gone(tmp_path)
 
 

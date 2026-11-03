@@ -167,3 +167,20 @@ gates. The coordinator/owner supplies the final bounded pilot/stop/custody
 decision after those inputs. No fixture, empty queue, paused account or OFF-state
 sample closes #699 or waives any of those gates. Existing resources, costs,
 Vercel Git disconnection, Render Auto-Deploy and ingestion pin remain untouched.
+
+## Combined-validation fixture correction
+
+The supervisor subprocess fixture previously treated a PID file as proof that
+signal handlers were installed. A deterministic delayed worker startup reproduced
+the resulting missing-closure assertion in normal and optimized Python. The
+observed supervisor still stopped and reaped the child and retained ownership;
+this was a test initialization race, not evidence of an unsafe release.
+
+The inert children now publish readiness after installing handlers, and the web
+failure scenario waits for that readiness within a fixed bound. Zero-delay and
+400ms-delay cases preserve the nonzero exit, closure and process-absence checks,
+and explicitly require null release proof with retained ownership. Product
+supervisor code and its deadlines are unchanged. The full 23-case file passes in
+both modes on the serving image. Source-bound author and independent receipts
+are retained in the coordinator's `pr897-review-and-open-merges-20261102` packet;
+earlier invalid private harness and timed-out attempts remain uncredited.
