@@ -17,8 +17,10 @@ parsed amounts stay in ``provenance`` either way.
 from __future__ import annotations
 
 import logging
+import re
 from datetime import datetime, time, timezone
 from typing import Collection, Optional
+from urllib.parse import quote
 
 from models import (
     Audit,
@@ -37,19 +39,19 @@ from sqlalchemy.orm.attributes import flag_dirty
 from sqlalchemy.orm.exc import StaleDataError
 
 from ...config import SeedingSettings
-from ...extractors import oag_county_volume
+from ...extractors import oag_county_audit, oag_county_volume
 from ...extractors.oag_blue_book import EXTRACTOR_ID, source_hash_of
 from ...types import DomainRunContext
 from ...utils import normalize_fiscal_label, slugify_entity
 from .writer import PersistenceStats
-import re
 
 logger = logging.getLogger("seeding.audits.loader")
 
-#: Extractors whose rows share the Blue Book payload shape and load here. The
-#: county-volume extractor reuses the Blue Book's chapter walk, so its rows
-#: carry the same finding fields plus the chapter and volume they came from.
-LOADED_EXTRACTORS = (EXTRACTOR_ID, oag_county_volume.EXTRACTOR_ID)
+#: The single-report county schema has explicit county/auditee identity rather
+#: than a national vote. Its branch below must never create a ministry.
+LOADED_EXTRACTORS = (
+    EXTRACTOR_ID, oag_county_volume.EXTRACTOR_ID, oag_county_audit.EXTRACTOR_ID,
+)
 
 _SEVERITY_MAP = {
     "CRITICAL": Severity.CRITICAL,
@@ -61,7 +63,7 @@ _SEVERITY_MAP = {
 #: "County Executive of Kilifi", "County Assembly of Nairobi City" — an
 #: auditee that belongs to an EXISTING county, not a new MDA.
 _COUNTY_ENTRY_RE = re.compile(
-    r"^county\s+(?:executive|assembly|government)\s+of\s+(?P<county>.+)$", re.I
+    r"^county\s+(?P<role>executive|assembly|government)\s+of\s+(?P<county>.+)$", re.I
 )
 
 
@@ -139,6 +141,39 @@ def _ensure_entity(
     session.add(entity)
     session.flush()
     logger.info("Created entity %s (%s, vote %s)", name, etype.value, vote)
+    return entity
+
+
+def _single_county_entity(session: Session, country_id: int, payload: dict) -> Entity:
+    """Resolve both stated identities to the same existing county, or refuse.
+
+    The general Blue Book path intentionally creates new national votes. A
+    malformed county report must not reach that path and invent a ministry.
+    """
+    if payload.get("schema") != oag_county_audit.SCHEMA:
+        raise CountyEntityUnresolved("single-county extraction has an unsupported schema")
+    name, auditee, county = (payload.get(k) for k in ("entity_name", "auditee", "county_name"))
+    if (
+        not all(isinstance(v, str) and v.strip() for v in (name, auditee, county))
+        or name.strip().casefold() != auditee.strip().casefold()
+    ):
+        raise CountyEntityUnresolved("single-county extraction has inconsistent auditee identity")
+    entity = _county_entity(session, auditee)
+    stated_county = _county_entity(session, f"County Government of {county}")
+    if (
+        entity is None
+        or stated_county is None
+        or entity.id != stated_county.id
+        or entity.country_id != country_id
+    ):
+        raise CountyEntityUnresolved("single-county auditee does not match its county and country")
+    fy = payload.get("fiscal_year")
+    if (
+        not isinstance(fy, str)
+        or re.fullmatch(r"\d{4}/\d{4}", fy) is None
+        or int(fy[5:]) != int(fy[:4]) + 1
+    ):
+        raise CountyEntityUnresolved("single-county extraction has no explicit valid fiscal year")
     return entity
 
 
@@ -392,6 +427,13 @@ def load_blue_book_extractions(
     for ext in extractions:
         stats.processed += 1
         payload = ext.extracted_json or {}
+        single_county = ext.extractor == oag_county_audit.EXTRACTOR_ID
+        if not isinstance(payload, dict) or (
+            not single_county and payload.get("schema") == oag_county_audit.SCHEMA
+        ):
+            stats.errors.append(f"extraction {ext.id}: unsupported extractor/payload shape")
+            stats.skipped += 1
+            continue
         fy = payload.get("fiscal_year")
         name = payload.get("entity_name")
         text = payload.get("finding_text")
@@ -415,12 +457,20 @@ def load_blue_book_extractions(
         # is ~1,000s of lookups against a 600s domain budget — which is what
         # aborted the 2026-09-05 run, not OCR (only 4 pages of 701 qualify).
         try:
-            ekey = (name, payload.get("vote"))
+            ekey = (
+                ext.extractor, name, payload.get("vote"),
+                payload.get("auditee") if single_county else None,
+                payload.get("county_name") if single_county else None,
+                fy if single_county else None,
+                payload.get("schema") if single_county else None,
+            )
             if ekey in _entity_cache:
                 entity = _entity_cache[ekey]
             else:
-                entity = _ensure_entity(
-                    session, doc.country_id, name, payload.get("vote")
+                entity = (
+                    _single_county_entity(session, doc.country_id, payload)
+                    if single_county else
+                    _ensure_entity(session, doc.country_id, name, payload.get("vote"))
                 )
                 _entity_cache[ekey] = entity
         except CountyEntityUnresolved as exc:
@@ -441,7 +491,15 @@ def load_blue_book_extractions(
         vote = payload.get("vote")
         para = payload.get("paragraph_no")
         county_volume = payload.get("schema") == oag_county_volume.SCHEMA
-        if county_volume:
+        if single_county:
+            role = _COUNTY_ENTRY_RE.match(name.strip()).group("role")[0].upper()
+            # Numbering restarts within parts and subsections, and assembly /
+            # executive reports cover the same county. Escape each component
+            # independently so the reference cannot collapse those identities.
+            section = quote(str(payload.get("section") or ""), safe="")
+            subsection = quote(str(payload.get("sub_section") or ""), safe="")
+            reference = f"OAG-CA-{fy}-{role}-{entity.slug}/{section}/{subsection}/P{para}"
+        elif county_volume:
             # The executives and assemblies volumes BOTH number their chapters
             # 1..47, so "V1" alone names two different auditees. The FY2020/21
             # rows loaded under that form share 28 references between the two
@@ -483,6 +541,12 @@ def load_blue_book_extractions(
                 auditee=payload.get("auditee"),
                 fiscal_year_sources=payload.get("fiscal_year_sources"),
             )
+        elif single_county:
+            prov_entry.update(
+                auditee=payload.get("auditee"),
+                county_name=payload.get("county_name"),
+                section=payload.get("section"),
+            )
 
         # Read from the batch. A HIT is final — the snapshot was taken after
         # this session's own flush, and nothing else rewrites an audit's
@@ -510,6 +574,7 @@ def load_blue_book_extractions(
 
         if context.dry_run:
             stats.created += 0 if existing else 1
+            stats.unchanged += 1 if existing else 0
             continue
 
         audit_year = int(fy.split("/")[0]) + 1 if "/" in fy else None
@@ -564,6 +629,8 @@ def load_blue_book_extractions(
                 if postgres:
                     pending_updates.append((existing, data))
                 stats.updated += 1
+            else:
+                stats.unchanged += 1
 
     if postgres:
         _persist_audit_changes(session, doc.id, pending_updates, pending_inserts)

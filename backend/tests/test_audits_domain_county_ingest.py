@@ -128,7 +128,8 @@ def harness(db_session, monkeypatch, tmp_path):
         from seeding.domains.audits.writer import PersistenceStats
 
         loads.append((doc.url, list(fresh_extraction_ids)))
-        return PersistenceStats()
+        count = session.query(Extraction).filter_by(source_document_id=doc.id).count()
+        return PersistenceStats(processed=count, unchanged=count)
 
     @contextmanager
     def fake_client(_settings):
@@ -470,6 +471,20 @@ class TestNationalCandidates:
 NATIONAL = f"{UP}/2026/05/AUDITOR-GENERALS-REPORT-ON-NATIONAL-GOVERNMENT-2024-2025.pdf"
 
 
+def _current_national_fixture(session, doc, settings):
+    """A current parser control includes retained evidence, not only counters."""
+    from models import Extraction
+    from seeding.extractors.oag_blue_book import EXTRACTOR_VERSION
+    doc.meta = {**(doc.meta or {}), 'extracted_md5': doc.md5, 'extractor_version': EXTRACTOR_VERSION}
+    existing = session.query(Extraction).filter_by(source_document_id=doc.id, extractor='oag_blue_book').count()
+    if not existing:
+        session.add(Extraction(source_document_id=doc.id, page_number=1,
+                               extractor='oag_blue_book', confidence=.9, extracted_json={'schema': 'test'}))
+        session.flush()
+        return {'created': 1}
+    return {'created': 0, 'existing': existing, 'skipped_unchanged': True}
+
+
 def test_national_discovery_failure_survives_successful_known_document(
     harness, monkeypatch
 ):
@@ -491,7 +506,7 @@ def test_national_discovery_failure_survives_successful_known_document(
     ).get_parser("oag_county_audit")
     monkeypatch.setattr(
         "seeding.extractors.get_parser",
-        lambda pid: (lambda s, d, st: {"created": 0, "skipped_unchanged": True})
+        lambda pid: _current_national_fixture
         if pid == "oag_blue_book" else county_parser,
     )
 
@@ -515,7 +530,7 @@ def test_national_discovery_failure_survives_successful_known_document(
         for error in result.errors
     )
     assert result.metadata["oag_national_discovery"]["status"] == "failed"
-    assert freshness.get("audits")["mode"] == "live"
+    assert freshness.get("audits")["mode"] == "partial"
 
 
 @pytest.mark.parametrize(
@@ -871,10 +886,14 @@ class TestNationalReExtractionIsBanked:
             )
         )
         session.commit()
+        national_doc = session.query(SourceDocument).filter_by(url=NATIONAL).one()
+        _current_national_fixture(session, national_doc, None)
+        session.commit()
         harness["commits"].clear()
 
         def national_parser(session, doc, settings):
-            return {"created": 1398, "updated": 2, "removed": 329,
+            _current_national_fixture(session, doc, settings)
+            return {"created": 1, "findings": 1, "updated": 0, "removed": 0,
                     "skipped_unchanged": False, "fresh_extraction_ids": []}
 
         county = __import__("seeding.extractors", fromlist=["get_parser"]).get_parser
@@ -888,7 +907,8 @@ class TestNationalReExtractionIsBanked:
     def test_a_re_extracted_national_book_is_committed_after_the_county_pass(
         self, national
     ):
-        _run(national["session"], budget=10_000)
+        result = _run(national["session"], budget=10_000)
+        assert not result.errors
         assert national["fetched"][-1] == NATIONAL
         assert national["commits"][-1] == len(national["fetched"])
 
@@ -899,7 +919,7 @@ class TestNationalReExtractionIsBanked:
         county = __import__("seeding.extractors", fromlist=["get_parser"]).get_parser("oag_county_audit")
         monkeypatch.setattr(
             "seeding.extractors.get_parser",
-            lambda pid: (lambda s, d, st: {"created": 0, "skipped_unchanged": True})
+            lambda pid: _current_national_fixture
             if pid == "oag_blue_book" else county,
         )
         _run(national["session"], budget=10_000)

@@ -14,6 +14,9 @@ here.
 Fixture text is the real Homa Bay report (County-Assembly-of-Homa-Bay-2021-2022).
 """
 
+import hashlib
+from pathlib import Path
+
 import pytest
 
 from seeding.extractors.oag_county_audit import (
@@ -339,7 +342,7 @@ class TestWritePath:
         from seeding.extractors import oag_county_audit as mod
 
         monkeypatch.setattr(mod, "read_pages", lambda _p: pages())
-        monkeypatch.setattr(mod, "_known_counties", lambda _s: KNOWN)
+        monkeypatch.setattr(mod, "_known_counties", lambda _s, **_kw: KNOWN)
 
         country = Country(
             name="Kenya", iso_code="KEN", currency="KES",
@@ -355,6 +358,7 @@ class TestWritePath:
             doc_type=DocumentType.AUDIT,
             country_id=country.id,
             file_path=__file__,  # exists; content is stubbed above
+            md5=hashlib.md5(Path(__file__).read_bytes()).hexdigest(),
         )
         db_session.add(doc)
         db_session.flush()
@@ -383,7 +387,7 @@ class TestWritePath:
         from seeding.extractors import oag_county_audit as mod
 
         monkeypatch.setattr(mod, "read_pages", lambda _p: pages())
-        monkeypatch.setattr(mod, "_known_counties", lambda _s: KNOWN)
+        monkeypatch.setattr(mod, "_known_counties", lambda _s, **_kw: KNOWN)
 
         country = Country(
             name="Kenya", iso_code="KEN", currency="KES",
@@ -396,6 +400,7 @@ class TestWritePath:
             publisher="Office of the Auditor-General",
             fetch_date=datetime.now(timezone.utc),
             doc_type=DocumentType.AUDIT, country_id=country.id, file_path=__file__,
+            md5=hashlib.md5(Path(__file__).read_bytes()).hexdigest(),
         )
         db_session.add(doc)
         db_session.flush()

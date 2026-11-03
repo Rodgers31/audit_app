@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from ...config import SeedingSettings
 from ...http_client import create_http_client
 from ...registries import register_domain
+from ...refresh_completion import accepted_records
 from ...types import DomainRunContext, DomainRunResult
 from . import fetcher, parser, writer
 
@@ -48,9 +49,25 @@ def run(
     # Independent halves: a national failure must not cost the counties their
     # run, nor the reverse.
     processed, created, updated = _seed_national(session, settings, context, errors)
+    from ...freshness import get, mark_partial, mark_refused
+    national_source = dict(get('pending_bills'))
+    national_accepted = accepted_records(processed, created, updated)
+    national_complete = national_source.get('mode') == 'live' and national_accepted > 0 and not errors
+    national_errors = len(errors)
     county_processed, county_created, county_updated = _seed_counties(
         session, settings, context, errors
     )
+    county_accepted = accepted_records(county_processed, county_created, county_updated)
+    county_complete = county_accepted > 0 and len(errors) == national_errors
+    complete = national_complete and county_complete and not context.dry_run
+    if not context.dry_run and not complete:
+        detail = (f"national source={national_source.get('mode', 'unknown')} "
+                  f"({national_source.get('reason', 'unconfirmed')}); "
+                  f"county records={county_processed}; errors={len(errors)}")
+        if national_complete or county_complete:
+            mark_partial('pending_bills', reason='pending_bills_components_incomplete', detail=detail)
+        else:
+            mark_refused('pending_bills', reason='no_pending_bills_component_accepted', detail=detail)
 
     return DomainRunResult(
         domain="pending_bills",
@@ -60,6 +77,16 @@ def run(
         items_created=created + county_created,
         items_updated=updated + county_updated,
         errors=errors,
+        dry_run=context.dry_run,
+        metadata={
+            'refresh_completion': {'complete': complete},
+            'refresh_components': {
+                'national': {**national_source, 'records': processed, 'accepted_records': national_accepted,
+                             'complete': national_complete},
+                'counties': {'records': county_processed, 'accepted_records': county_accepted,
+                             'complete': county_complete},
+            },
+        },
     )
 
 

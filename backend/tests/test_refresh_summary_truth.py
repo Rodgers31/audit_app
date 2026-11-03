@@ -5,7 +5,7 @@ from copy import deepcopy
 from seeding.config import SeedingSettings
 from seeding.domains.fiscal_summary import fetcher
 from seeding.freshness import get, reset
-from test_hollow_run_gate import HEALTHY_NIGHT, _run_step, _write_db
+from tests.test_hollow_run_gate import HEALTHY_NIGHT, _run_step, _write_db
 
 
 def test_partial_night_never_claims_all_domains_success(tmp_path):
@@ -18,12 +18,12 @@ def test_partial_night_never_claims_all_domains_success(tmp_path):
     assert 'All domains completed successfully.' not in result.stdout
 
 
-def test_completed_with_errors_is_a_warning_in_the_final_summary(tmp_path):
+def test_required_fiscal_errors_fail_completion_even_with_live_source(tmp_path):
     rows = [('fiscal_summary', 'completed_with_errors', 0, 1, 1, 'live', None)]
     result = _run_step(_write_db(tmp_path, rows), domain='fiscal_summary')
-    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.returncode == 1, result.stdout + result.stderr
     assert '[WARN] fiscal_summary:' in result.stdout
-    assert 'Refresh completed with source gaps or ingestion warnings' in result.stdout
+    assert '[INCOMPLETE] fiscal_summary:' in result.stdout
     assert 'All domains completed successfully.' not in result.stdout
 
 
