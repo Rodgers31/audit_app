@@ -279,15 +279,31 @@ class RequestResourceMiddleware:
                     body_admitted = True
             deadline = monotonic() + self.request_timeout
             deadline_token = request_deadline.set(deadline)
+            def remaining_request_time():
+                remaining = deadline - monotonic()
+                if remaining <= 0:
+                    raise RequestRefused(504, 'REQUEST_TIME_BUDGET_EXCEEDED')
+                return remaining
             # Read once before the application sees bytes. A false/absent
             # Content-Length cannot bypass either the byte or elapsed budget.
             buffered = bytearray()
+            body_deadline = monotonic() + self.body_timeout
+            def check_body_deadline():
+                # An already-ready receive need not yield to asyncio's timer.
+                # Enforce whichever absolute budget expires first explicitly.
+                if monotonic() >= min(body_deadline, deadline):
+                    if deadline < body_deadline:
+                        raise RequestRefused(504, 'REQUEST_TIME_BUDGET_EXCEEDED')
+                    raise RequestRefused(408, 'BODY_READ_TIMEOUT')
             try:
-                async with asyncio.timeout(self.body_timeout):
+                check_body_deadline()
+                async with asyncio.timeout(min(body_deadline, deadline) - monotonic()):
                     while True:
+                        check_body_deadline()
                         event = await receive()
                         if event['type'] == 'http.disconnect':
                             return
+                        check_body_deadline()
                         chunk = event.get('body', b'')
                         if health and chunk:
                             raise RequestRefused(400, 'HEALTH_BODY_UNSUPPORTED')
@@ -306,9 +322,12 @@ class RequestResourceMiddleware:
                         if not event.get('more_body', False):
                             break
             except TimeoutError:
+                if deadline < body_deadline:
+                    raise RequestRefused(504, 'REQUEST_TIME_BUDGET_EXCEEDED') from None
                 raise RequestRefused(408, 'BODY_READ_TIMEOUT') from None
             if declared is not None and declared != len(buffered):
                 raise RequestRefused(400, 'BODY_LENGTH_MISMATCH')
+            remaining_request_time()
             if len(buffered) <= SYNC_SCAN_BYTES:
                 self.check_json_budget(buffered,scope)
             else:
@@ -340,7 +359,7 @@ class RequestResourceMiddleware:
                         finish()
                 scan_future.add_done_callback(scan_complete)
                 try:
-                    async with asyncio.timeout(max(.001,deadline-monotonic())):
+                    async with asyncio.timeout(remaining_request_time()):
                         verdict = await asyncio.shield(asyncio.wrap_future(scan_future))
                 except TimeoutError:
                     raise RequestRefused(504, 'REQUEST_TIME_BUDGET_EXCEEDED') from None
@@ -356,7 +375,7 @@ class RequestResourceMiddleware:
                     return {'type':'http.request', 'body':body, 'more_body':False}
                 return await receive()
             try:
-                async with asyncio.timeout(max(.001, deadline - monotonic())):
+                async with asyncio.timeout(remaining_request_time()):
                     await self.app(scope, replay, tracked_send)
             except TimeoutError:
                 if started:
