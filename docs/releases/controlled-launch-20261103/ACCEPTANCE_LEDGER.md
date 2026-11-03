@@ -16,13 +16,15 @@ The detailed dated evidence and its limitations are in [UPDATES.md](UPDATES.md).
 | G — saved Meta proof | ACCEPTED RESTRICTED, dated checks only | Native preflight re-verification and later consent remain separate; raw provider scope/task/lifetime fields are not projected |
 | S — storage/restore | HELD | Approved policy/custody/owners/current control-plane metadata, later authorized actual asset and independent restore |
 | W — worker/reserve | HELD; offline provenance correction implemented | #905's trusted loader binds the implementation hash to the bytes it compiles; current-host reserve/recovery/stop evidence and exact later canary authority remain outstanding |
-| D — draft/source/refresh | HELD; #903's scoped serving-runtime/PostgreSQL addendum received | Independent Blue Book content/OCR decision, integrated eight-PR serving-runtime/PostgreSQL qualification and ordinary complete scheduled publisher-backed refresh; measure-specific source gaps remain unavailable |
+| D — draft/source/refresh | HELD; qualified local integration at `968ad3e` received | Independent Blue Book content/OCR decision, full serving-media and intended-host native/source-to-draft qualification, and ordinary complete scheduled publisher-backed refresh; measure-specific source gaps remain unavailable |
 | P — privacy/security | HELD; 77-case serving-dependency follow-through received | Qualified bounded browser runner and foreground/performance/edge/DB evidence; applicable retained-copy policy/inventory and unverified new/reconnect callback boundary remain separate |
 | L — live pilot | NOT AUTHORIZED | Applicable preceding evidence and exact separately approved stage action; all four operational holds remain |
 
 ## Authority and freshness
 
 The four operational holds are **publishing OFF, uploads OFF, workers OFF, financial generation OFF**. Also keep global generation and automatic approval/scheduling/publishing OFF, all account consent paused, and native and automatic source admission held. These are required posture, not a fresh observation performed by this documentation lane. The [control matrix](PILOT_PROPOSAL.md#control-matrix) separates the additional flags from those four holds.
+
+The completed local packet at `968ad3e` qualifies 1,093 serving-dependency cases plus 11 separately identified native media cases per Python mode; its native profile differs from serving dependencies. That source-bound result does not close full serving-media or intended-host acceptance. Later review changes require their own fresh merge validation, rather than carrying these historical counts forward.
 
 Historical witness E02 reports production `2e206ed` at 2026-11-03 13:04:31Z (07:04:31 Chicago), all four holds, zero workers, Facebook/Instagram connected but paused, eight posts/ten revisions, zero assets/uploads/targets/publications/attempts. That observation predates the parent's new release. E03's 02:05:19Z witness is older still; use neither as current-release acceptance. At the initial documentary cut, the new release completion receipt had not been read and release/pin/grant gates were pending despite the five merges. Later dated inputs and current decisions are recorded above and in UPDATES; do not use this older witness as a new-release receipt.
 

@@ -1,19 +1,14 @@
-"""Implementation loaded only through the trusted capacity_v2 entry point.
+"""Internal numerical implementation; the public loader alone stamps identity.
 
-This consumes operator-supplied observations. It authenticates no runtime and
-never authorizes production. Existing run.py/bounded.py still use V1. A future
-producer or explicit offline reassessment must call this API to obtain V2 bounds.
+Direct execution exposes only unqualified calculations, never a V2 identity or
+acceptance result. Existing run.py/bounded.py still use V1. A future producer or
+explicit offline reassessment must use the externally trusted capacity_v2 API.
 """
 import hashlib
 from pathlib import Path
 from types import MappingProxyType
 
 
-if '_ASSESSOR_SOURCE_BYTES' not in globals() or type(_ASSESSOR_SOURCE_BYTES) is not bytes:
-    raise RuntimeError('Load the assessor through tools.worker_rehearsal.capacity_v2')
-_SOURCE_PATH = Path(__file__)
-_LOADED_ASSESSOR_SHA256 = hashlib.sha256(_ASSESSOR_SOURCE_BYTES).hexdigest()
-del _ASSESSOR_SOURCE_BYTES
 _ARCHIVES = MappingProxyType({
     'qualification.py': 'd2b02ce6fe9f0766d73c99a59f6b1fa21ea62c1b02615054bfd55dc7a916bacc',
     'run.py': 'e883c6b34399bbcb270d51e94e86371146583cfc6bd01a2976d731b2c5e685bf',
@@ -37,11 +32,6 @@ _PROFILE = MappingProxyType(dict(_archived('run.py')['THRESHOLDS']))
 _MAXIMUM_GAP_SECONDS = 15
 
 
-def _check_loaded_source():
-    if hashlib.sha256(_SOURCE_PATH.read_bytes()).hexdigest() != _LOADED_ASSESSOR_SHA256:
-        raise ValueError('Loaded assessor source changed')
-
-
 def assess(samples, latencies, census, wire_before, wire_after, requests, duration, thresholds):
     """Apply the frozen workload contract plus bounded observation gaps.
 
@@ -49,7 +39,6 @@ def assess(samples, latencies, census, wire_before, wire_after, requests, durati
     an unauthenticated offline interpretation, not intended-host qualification.
     No processes, database connections, network calls or receipt files are made.
     """
-    _check_loaded_source()
     require, number, integer = _LEGACY['require'], _LEGACY['number'], _LEGACY['integer']
     require(type(thresholds) is dict and set(thresholds) == set(_PROFILE),
             'Exact fixed capacity profile required')
@@ -82,12 +71,8 @@ def assess(samples, latencies, census, wire_before, wire_after, requests, durati
     require(len({row['id'] for row in targets}) == len(targets), 'Duplicate target identity')
     result = _LEGACY['assess'](samples, latencies, census, wire_before, wire_after,
                                requests, duration, dict(_PROFILE))
-    _check_loaded_source()
-    return dict(result, assessment_version=2, evidence_authenticated=False,
-                production_accepted=False, scope='operator-supplied offline telemetry',
-                maximum_sample_gap_seconds=maximum_gap,
-                maximum_allowed_sample_gap_seconds=_MAXIMUM_GAP_SECONDS,
-                assessor_sha256=_LOADED_ASSESSOR_SHA256,
-                assessor_entrypoint='capacity_v2_assessor.py',
-                source_identity_scope='implementation bytes compiled by externally trusted capacity_v2.py',
-                archived_dependency_sha256=dict(_ARCHIVES))
+    return dict(api_p95=result['api_p95'], mean_cpu=result['mean_cpu'],
+                published=result['published'], server_bytes=result['server_bytes'],
+                client_bytes=result['client_bytes'], provider_mutations=result['provider_mutations'],
+                sql_calls=result['sql_calls'], maximum_sample_gap_seconds=maximum_gap,
+                maximum_allowed_sample_gap_seconds=_MAXIMUM_GAP_SECONDS)

@@ -50,13 +50,18 @@ workload/API/memory/CPU/SQL/wire/operation-window checks. The public API remains
 `capacity_v2_assessor.py` once and compiles that exact captured byte buffer;
 `assessor_sha256` identifies only those executed implementation bytes. The output
 also names that implementation entry and the external-loader trust boundary.
-Direct import or execution of the implementation without the loader refuses.
-The implementation refuses disk drift before and after assessment. Each archive
+Only that public loader constructs the V2 identity, scope and false acceptance
+fields. Direct import or execution of the internal implementation can return
+unqualified numerical calculations; it cannot stamp those V2 fields. A caller
+must use `capacity_v2.assess` through an independently trusted loader. The public
+wrapper refuses disk drift before and after assessment. Each archive
 is read once, verified and compiled from those exact
 bytes; no second file open can substitute unverified code. An archived dependency changed after loading still has its original
 executed-code hash; a fresh load refuses changed archive bytes. Successful return still
 says `evidence_authenticated=false` and `production_accepted=false`. It cannot
 authenticate a runtime or detect a coherently fabricated observation packet.
+An arbitrary Python caller can forge a dictionary or replace code in its own
+process; no sentinel or source-bytes global is presented as authentication.
 
 **2026-11-03 source-identity correction:** the earlier draft read its own file
 after Python had already compiled it. A forced compile-to-execute file swap

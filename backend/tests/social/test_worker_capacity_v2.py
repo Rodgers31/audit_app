@@ -17,9 +17,38 @@ from unittest.mock import patch
 HERE = Path(__file__).resolve().parents[3] / 'tools/worker_rehearsal'
 assess = runpy.run_path(str(HERE / 'capacity_v2.py'))['assess']
 fixture = runpy.run_path(str(Path(__file__).with_name('test_worker_rehearsal_guards.py')))['evidence']
+IDENTITY_FIELDS = {'assessor_sha256', 'assessor_entrypoint', 'source_identity_scope',
+                   'assessment_version', 'scope', 'production_accepted',
+                   'evidence_authenticated', 'archived_dependency_sha256'}
 
 
 class CapacityV2(unittest.TestCase):
+    def test_caller_supplied_source_cannot_publish_public_identity(self):
+        implementation = HERE / 'capacity_v2_assessor.py'
+        source = implementation.read_bytes()
+        for context in (None, object(), {'verified': True}):
+            namespace = {'__file__': str(implementation), '__name__': 'unsupported_direct',
+                         '_ASSESSOR_SOURCE_BYTES': source, '_ASSESSOR_LOAD_CONTEXT': context}
+            exec(compile(source, str(implementation), 'exec', dont_inherit=True), namespace)
+            result = namespace['assess'](*fixture())
+            with self.subTest(context=type(context).__name__):
+                self.assertTrue(IDENTITY_FIELDS.isdisjoint(result),
+                                'Direct core execution stamped loader-owned provenance')
+
+    def test_altered_direct_code_cannot_claim_original_source_identity(self):
+        implementation = HERE / 'capacity_v2_assessor.py'
+        source = implementation.read_bytes()
+        altered = source.replace(b'_MAXIMUM_GAP_SECONDS = 15\n',
+                                 b'_MAXIMUM_GAP_SECONDS = 1500\n')
+        self.assertNotEqual(altered, source, 'Owned direct-exec control did not change')
+        namespace = {'__file__': str(implementation), '__name__': 'unsupported_direct',
+                     '_ASSESSOR_SOURCE_BYTES': source, '_ASSESSOR_LOAD_CONTEXT': object()}
+        exec(compile(altered, str(implementation), 'exec', dont_inherit=True), namespace)
+        result = namespace['assess'](*fixture())
+        self.assertEqual(result['maximum_allowed_sample_gap_seconds'], 1500)
+        self.assertTrue(IDENTITY_FIELDS.isdisjoint(result),
+                        'Altered direct code claimed the original source identity')
+
     def test_source_replaced_between_compile_and_exec_cannot_relabel_assessor(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
@@ -71,30 +100,31 @@ class CapacityV2(unittest.TestCase):
         spec.loader.exec_module(loaded)
         self.assertEqual(loaded.assess(*fixture()), assess(*fixture()))
 
-    def test_implementation_refuses_unsupported_direct_entry_points(self):
+    def test_internal_entry_points_return_only_unqualified_numerical_data(self):
         implementation = HERE / 'capacity_v2_assessor.py'
-        with self.assertRaisesRegex(RuntimeError, 'through tools.worker_rehearsal.capacity_v2'):
-            runpy.run_path(str(implementation))
+        entries = [runpy.run_path(str(implementation))['assess']]
         spec = importlib.util.spec_from_file_location('unsupported_capacity_implementation', implementation)
-        with self.assertRaisesRegex(RuntimeError, 'through tools.worker_rehearsal.capacity_v2'):
-            spec.loader.exec_module(importlib.util.module_from_spec(spec))
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        entries.append(module.assess)
         compiled = compile(implementation.read_bytes(), str(implementation), 'exec', dont_inherit=True)
-        for bad in (None, True, '', bytearray()):
-            with self.subTest(bad=bad), self.assertRaisesRegex(RuntimeError, 'through tools.worker_rehearsal.capacity_v2'):
-                exec(compiled, {'__file__': str(implementation), '_ASSESSOR_SOURCE_BYTES': bad})
+        for supplied in (None, True, '', bytearray(), implementation.read_bytes()):
+            namespace = {'__file__': str(implementation), '_ASSESSOR_SOURCE_BYTES': supplied}
+            exec(compiled, namespace)
+            entries.append(namespace['assess'])
+        for entry in entries:
+            result = entry(*fixture())
+            self.assertTrue(IDENTITY_FIELDS.isdisjoint(result))
+            self.assertTrue(all(type(value) in (int, float) for value in result.values()))
 
-    def test_cli_has_no_implicit_assessment_and_implementation_refuses(self):
+    def test_cli_loads_never_publish_an_implicit_assessment(self):
         flags = ['-O'] if sys.flags.optimize else []
-        for name, accepted in (('capacity_v2.py', True), ('capacity_v2_assessor.py', False)):
+        for name in ('capacity_v2.py', 'capacity_v2_assessor.py'):
             child = subprocess.run([sys.executable, *flags, str(HERE / name)],
                                    capture_output=True, text=True, timeout=10, check=False)
             self.assertEqual(child.stdout, '', 'A CLI load must not publish an assessment')
-            if accepted:
-                self.assertEqual(child.returncode, 0, child.stderr)
-                self.assertEqual(child.stderr, '')
-            else:
-                self.assertNotEqual(child.returncode, 0)
-                self.assertIn('through tools.worker_rehearsal.capacity_v2', child.stderr)
+            self.assertEqual(child.returncode, 0, child.stderr)
+            self.assertEqual(child.stderr, '')
 
     def test_missing_empty_or_malformed_implementation_cannot_return_an_assessor(self):
         for bad, error in ((None, FileNotFoundError), (b'', KeyError), (b'broken (', SyntaxError)):
@@ -132,7 +162,8 @@ class CapacityV2(unittest.TestCase):
             for name in ('capacity_v2.py', 'capacity_v2_assessor.py', 'qualification.py', 'run.py'):
                 (root / name).write_bytes((HERE / name).read_bytes())
             loaded = runpy.run_path(str(root / 'capacity_v2.py'))['assess']
-            original_assess = loaded.__globals__['_LEGACY']['assess']
+            legacy = loaded.__wrapped__.__globals__['_LEGACY']
+            original_assess = legacy['assess']
             implementation = root / 'capacity_v2_assessor.py'
 
             def drift_after_validation(*args):
@@ -140,7 +171,7 @@ class CapacityV2(unittest.TestCase):
                 implementation.write_bytes(implementation.read_bytes() + b'\n# owned drift\n')
                 return result
 
-            with patch.dict(loaded.__globals__['_LEGACY'], assess=drift_after_validation):
+            with patch.dict(legacy, assess=drift_after_validation):
                 with self.assertRaisesRegex(ValueError, 'Loaded assessor source changed'):
                     loaded(*fixture())
 
