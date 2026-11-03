@@ -153,7 +153,7 @@ def _write_db(tmp_path: Path, rows, extra=()) -> str:
                 meta['documents'] = [{'doc_id': 1, 'parser_id': 'oag_blue_book',
                                       'extraction_outcome': 'accepted',
                                       'extractions': {'existing': processed},
-                                      'loaded': {'processed': processed, 'created': 0, 'updated': 0, 'skipped': 0}}]
+                                      'loaded': {'processed': processed, 'created': 0, 'updated': 0, 'unchanged': processed, 'skipped': 0}}]
             elif domain == 'fiscal_summary':
                 years = [f'fixture-year-{i}' for i in range(processed)]
                 meta['refresh_completion'] = {'complete': complete, 'accepted_records': processed, 'accepted_years': years}

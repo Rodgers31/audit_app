@@ -762,8 +762,7 @@ def run(
                             else:
                                 stats = parser(session, doc, settings)
                             from .refresh_outcome import verify_outcome
-                            verify_outcome(session, doc, stats, dataset.parser_id)
-                            expected_findings = sum(stats.get(key, 0) for key in ('created', 'skipped', 'existing'))
+                            expected_findings = verify_outcome(session, doc, stats, dataset.parser_id)
                             if selected is not None:
                                 verify_extractions(session, doc, selected[url], stats)
                             return stats
@@ -772,11 +771,8 @@ def run(
                             stats = load_blue_book_extractions(
                                 session, doc, settings, context, **kwargs
                             )
-                            counts = [stats.processed, stats.created, stats.updated, stats.skipped]
-                            if (any(type(n) is not int or n < 0 for n in counts)
-                                    or stats.processed <= 0 or stats.created + stats.updated > stats.processed
-                                    or stats.processed != expected_findings
-                                    or not isinstance(stats.errors, list) or stats.errors or stats.skipped):
+                            from ...refresh_completion import audit_load_count
+                            if audit_load_count(vars(stats)) != expected_findings or expected_findings <= 0:
                                 raise AuditSourceScopeError(
                                     f"audit load incomplete for doc {doc.id}: "
                                     f"expected {expected_findings} processed, got {stats.processed!r}"
@@ -858,6 +854,7 @@ def run(
                         'processed': load_stats.processed,
                         "created": load_stats.created,
                         "updated": load_stats.updated,
+                        "unchanged": load_stats.unchanged,
                         "skipped": load_stats.skipped,
                     }
                 # Availability is a separate retained report scope, never an audit finding.

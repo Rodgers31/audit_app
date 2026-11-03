@@ -128,7 +128,8 @@ def harness(db_session, monkeypatch, tmp_path):
         from seeding.domains.audits.writer import PersistenceStats
 
         loads.append((doc.url, list(fresh_extraction_ids)))
-        return PersistenceStats(processed=session.query(Extraction).filter_by(source_document_id=doc.id).count())
+        count = session.query(Extraction).filter_by(source_document_id=doc.id).count()
+        return PersistenceStats(processed=count, unchanged=count)
 
     @contextmanager
     def fake_client(_settings):
@@ -892,7 +893,7 @@ class TestNationalReExtractionIsBanked:
 
         def national_parser(session, doc, settings):
             _current_national_fixture(session, doc, settings)
-            return {"created": 1, "updated": 0, "removed": 0,
+            return {"created": 1, "findings": 1, "updated": 0, "removed": 0,
                     "skipped_unchanged": False, "fresh_extraction_ids": []}
 
         county = __import__("seeding.extractors", fromlist=["get_parser"]).get_parser

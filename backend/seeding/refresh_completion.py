@@ -19,6 +19,45 @@ def accepted_records(processed, created, updated):
     return processed if created + updated == processed else 0
 
 
+def audit_extraction_count(stats):
+    """The current inventory, distinct from a parser's insertion deltas."""
+    if not isinstance(stats, dict):
+        raise ValueError('parser outcome must be an object')
+    keys = ('created', 'skipped', 'existing', 'findings', 'kept', 'updated')
+    if (any(type(stats[key]) is not int or stats[key] < 0 for key in keys if key in stats)
+            or 'partial' in stats and type(stats['partial']) is not bool):
+        raise ValueError('parser returned no valid extraction outcome')
+    if 'findings' in stats:
+        count = stats['findings']
+        if any(stats.get(key, 0) > count for key in keys):
+            raise ValueError('parser counters exceed current finding inventory')
+        if 'kept' in stats or 'updated' in stats:
+            if (sum(stats.get(key, 0) for key in ('created', 'kept', 'updated')) != count
+                    or stats.get('skipped', 0) or stats.get('existing', 0)):
+                raise ValueError('reconciliation counters disagree with current finding inventory')
+    else:
+        if 'kept' in stats or 'updated' in stats:
+            raise ValueError('reconciliation outcome requires a current finding inventory')
+        count = sum(stats.get(key, 0) for key in ('created', 'skipped', 'existing'))
+    if count <= 0:
+        raise ValueError('parser returned no valid extraction outcome')
+    return count
+
+
+def audit_load_count(loaded):
+    """Every processed row is created, changed or explicitly unchanged."""
+    if not isinstance(loaded, dict):
+        return 0
+    counts = [loaded.get(key) for key in ('processed', 'created', 'updated', 'skipped')]
+    unchanged = loaded.get('unchanged', 0)
+    if (any(type(n) is not int or n < 0 for n in (*counts, unchanged))
+            or counts[0] <= 0 or counts[3] != 0
+            or counts[1] + counts[2] + unchanged != counts[0]
+            or 'errors' in loaded and (type(loaded['errors']) is not list or loaded['errors'])):
+        return 0
+    return counts[0]
+
+
 def fiscal_components_complete(components, accepted_years):
     if (not isinstance(components, dict) or not isinstance(accepted_years, list) or not accepted_years
             or any(not isinstance(y, str) or not y.strip() for y in accepted_years)
@@ -68,18 +107,16 @@ def audit_inventory_complete(meta, completion, processed):
         stats, loaded = doc.get('extractions'), doc.get('loaded')
         if not isinstance(stats, dict) or not isinstance(loaded, dict):
             return False
-        counts = [stats.get(key, 0) for key in ('created', 'skipped', 'existing')]
-        loaded_counts = [loaded.get(key) for key in ('processed', 'created', 'updated', 'skipped')]
-        if (any(type(n) is not int or n < 0 for n in counts) or not sum(counts)
-                or 'partial' in stats and stats['partial'] is not False
-                or any(type(n) is not int or n < 0 for n in loaded_counts)
-                or not _positive(loaded.get('processed'))
-                or sum(counts) != loaded['processed']
-                or loaded['created'] + loaded['updated'] > loaded['processed']
-                or loaded['skipped'] != 0):
+        try:
+            findings = audit_extraction_count(stats)
+        except ValueError:
+            return False
+        loaded_count = audit_load_count(loaded)
+        if ('partial' in stats and stats['partial'] is not False
+                or not loaded_count or findings != loaded_count):
             return False
         accepted += 1
-        records += loaded['processed']
+        records += loaded_count
     return accepted == completion['accepted_documents'] and records == processed
 
 

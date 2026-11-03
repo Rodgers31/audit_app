@@ -59,6 +59,7 @@ from typing import Dict, List, Optional, Tuple
 logger = logging.getLogger("seeding.extractors.oag_county_audit")
 
 EXTRACTOR_ID = "oag_county_audit"  # recorded on every extractions row
+SCHEMA = "oag_county_audit/v1"
 
 #: The extractor a consolidated volume is delegated to. Its rows carry
 #: *its* id, not ours, so the early-out below has to look for both.
@@ -409,7 +410,7 @@ def finding_to_extracted_json(
     f: CountyFinding, result: CountyAuditResult
 ) -> dict:
     return {
-        "schema": "oag_county_audit/v1",
+        "schema": SCHEMA,
         "auditee": result.auditee,
         "county_name": result.county_name,
         "entity_name": result.auditee,
@@ -439,14 +440,15 @@ def source_hash_of(extracted_json: dict) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
-def _known_counties(session) -> Dict[str, str]:
+def _known_counties(session, *, country_id=None) -> Dict[str, str]:
     """{normalised county name: canonical name} for the resolution gate."""
     try:
         from models import Entity, EntityType
 
-        rows = (
-            session.query(Entity).filter(Entity.type == EntityType.COUNTY).all()
-        )
+        query = session.query(Entity).filter(Entity.type == EntityType.COUNTY)
+        if country_id is not None:
+            query = query.filter(Entity.country_id == country_id)
+        rows = query.all()
     except Exception:  # pragma: no cover - resolution then falls back to None
         return {}
     out: Dict[str, str] = {}
@@ -616,14 +618,17 @@ def extract_county_audit(session, doc, settings, *, review=None) -> dict:
     itself, so the caller records a reason rather than publishing a guess.
     """
     from models import Extraction
+    from ..pdf_artifact import extraction_artifact
+    from .reconciliation import IncompleteExtraction
 
     if not doc.file_path or not Path(doc.file_path).exists():
         raise FileNotFoundError(f"county audit file missing: {doc.file_path!r}")
 
+    artifact = extraction_artifact(doc)
+
     if review is not None:
         volume = _county_volume_dispatch(session, doc, settings, review=review)
         if volume is None:
-            from .reconciliation import IncompleteExtraction
             raise IncompleteExtraction("source-checked review requires its county volume")
         return volume
 
@@ -636,6 +641,18 @@ def extract_county_audit(session, doc, settings, *, review=None) -> dict:
         .count()
     )
     if existing:
+        if (
+            not isinstance(doc.md5, str)
+            or re.fullmatch(r"[0-9a-f]{32}", doc.md5) is None
+            or not isinstance(doc.meta, dict)
+            or doc.meta.get("extracted_md5") != doc.md5
+        ):
+            # Legacy rows do not prove which bytes produced them. Re-stamping
+            # or silently replacing them would turn retained old evidence into
+            # a claim that the current report had been read successfully.
+            raise IncompleteExtraction(
+                "retained single-county evidence is not current; review required"
+            )
         return {
             "created": 0,
             "skipped": existing,
@@ -688,7 +705,10 @@ def extract_county_audit(session, doc, settings, *, review=None) -> dict:
         stats["shape"] = "consolidated"
         return stats
 
+    source_md5 = doc.md5
     pages = read_pages(doc.file_path)
+    if extraction_artifact(doc) != artifact or doc.md5 != source_md5:
+        raise IncompleteExtraction("PDF artifact changed during extraction")
 
     if is_consolidated(pages):
         # 47 counties behind a table of contents — the Blue Book walk reads
@@ -705,22 +725,39 @@ def extract_county_audit(session, doc, settings, *, review=None) -> dict:
         stats["shape"] = "consolidated"
         return stats
 
-    result = build_result(pages, known_counties=_known_counties(session))
+    if (
+        not isinstance(source_md5, str)
+        or re.fullmatch(r"[0-9a-f]{32}", source_md5) is None
+    ):
+        raise IncompleteExtraction("single-county source digest is missing or malformed")
+
+    result = build_result(
+        pages, known_counties=_known_counties(session, country_id=doc.country_id)
+    )
+    if result.rejected_cid:
+        raise IncompleteExtraction("single-county report has rejected CID pages")
 
     created = 0
+    fresh = []
     for f in result.findings:
         payload = finding_to_extracted_json(f, result)
         payload["source_hash"] = source_hash_of(payload)
-        session.add(
-            Extraction(
-                source_document_id=doc.id,
-                page_number=f.pdf_page,
-                extracted_json=payload,
-                extractor=EXTRACTOR_ID,
-                confidence=0.90 if f.method == "pdfplumber" else 0.60,
-            )
+        row = Extraction(
+            source_document_id=doc.id,
+            page_number=f.pdf_page,
+            extracted_json=payload,
+            extractor=EXTRACTOR_ID,
+            confidence=0.90 if f.method == "pdfplumber" else 0.60,
         )
+        session.add(row)
+        fresh.append(row)
         created += 1
+
+    session.flush()
+    doc.meta = {
+        **(doc.meta if isinstance(doc.meta, dict) else {}),
+        "extracted_md5": source_md5,
+    }
 
     logger.info(
         "oag_county_audit: %s %s (%s opinion) -> %d finding(s), %d page(s) "
@@ -739,4 +776,5 @@ def extract_county_audit(session, doc, settings, *, review=None) -> dict:
         "fiscal_year": result.fiscal_year_label,
         "opinion": result.opinion,
         "shape": "single_entity",
+        "fresh_extraction_ids": [row.id for row in fresh],
     }

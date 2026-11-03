@@ -201,7 +201,7 @@ def test_completion_consumer_rejects_missing_malformed_and_contradictory_proof(c
                               'complete': True, 'accepted_documents': 1, 'errors': 0, 'deferred': False}})
     job.meta['documents'] = [{'doc_id': 2392, 'parser_id': 'oag_blue_book', 'extraction_outcome': 'accepted',
                               'extractions': {'existing': 813},
-                              'loaded': {'processed': 813, 'created': 0, 'updated': 0, 'skipped': 0}}]
+                              'loaded': {'processed': 813, 'created': 0, 'updated': 0, 'unchanged': 813, 'skipped': 0}}]
     assert required_refresh_failures([job]) == []
     proof = job.meta['refresh_completion']
     if change == 'missing':

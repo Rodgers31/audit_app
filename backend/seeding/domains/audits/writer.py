@@ -26,6 +26,7 @@ class PersistenceStats:
     updated: int = 0
     skipped: int = 0
     errors: List[str] = field(default_factory=list)
+    unchanged: int = 0
 
 
 def _ensure_source_document(
