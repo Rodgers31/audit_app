@@ -1,5 +1,8 @@
 # Remaining source acceptance — 3 November 2026
 
+Later same-day evidence is recorded separately in [POST_RELEASE.md](POST_RELEASE.md).
+The checkpoint and failures below retain their original scope.
+
 Reviewed base: `8f08d85a1b059b83d8b8a3823f5f06fd33eb4e39`, tree
 `429c94692890811fcab68668c5ee1ecd19226c5e`. This is a bounded local engineering
 checkpoint for #802, #801 and #848. All three acceptance criteria remain unmet.
