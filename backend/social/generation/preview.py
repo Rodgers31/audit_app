@@ -136,7 +136,7 @@ def preview(factory, body):
                     established_financial_source(db,value)
                 except SocialError as error:
                     status, reason = 'refused', error.code.lower()
-            if status == 'eligible_change':
+            if status != 'refused':
                 try:
                     render(value)
                 except SocialError as error:
