@@ -91,3 +91,12 @@ test.each(['write denied', 'write silently dropped'])('upload journal %s refuses
   } finally { Storage.prototype.setItem = original; }
 });
 import '../../../tests/socialRecoveryCrypto';
+
+test('a refusal after lost initiation cannot prove the original upload had no server effect', async () => {
+  initiate.mockRejectedValueOnce(failed()).mockRejectedValueOnce(new SocialApiError('UPLOAD_NOT_PENDING', 'The original upload is no longer pending.', [], [], false));
+  const first=mount(); chooseAndUpload(); await screen.findByRole('alert'); const original=initiate.mock.calls[0][1]; first.unmount();
+  const second=mount(); chooseAndUpload(); await screen.findByRole('alert');
+  const journal=JSON.parse(sessionStorage.getItem('auditgava.social.uploads.v1:'+actor)!);
+  expect(initiate.mock.calls[1][1]).toBe(original); expect(journal.entries).toHaveLength(1); expect(journal.entries[0].initiateKey).toBe(original);
+  expect(put).not.toHaveBeenCalled(); expect(complete).not.toHaveBeenCalled(); second.unmount();
+});

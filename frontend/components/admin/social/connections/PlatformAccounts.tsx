@@ -1,8 +1,10 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useAdmin } from '@/lib/auth/admin';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useSocialAccounts } from '@/lib/hooks/useSocial';
+import { recoveredSocialCommand } from '@/lib/api/socialCommandRecovery';
 import { ConnectionError } from '@/lib/api/socialConnections';
 import { ConnectionPlatform, PlatformChoice, PlatformHealth, platformConnectionApi } from '@/lib/api/socialPlatformConnections';
 import AccountPublishingControl from './AccountPublishingControl';
@@ -19,8 +21,7 @@ function ProviderAccounts({ provider, actor }: { provider: ConnectionPlatform; a
   const [busy,setBusy]=useState(false);
   const [recover,setRecover]=useState<string>();
   const pending=useRef<{popup:Window;state:string;redirect:string;key:string}|null>(null);
-  const confirmKey=useRef<string | undefined>(undefined);
-  const mounted=useRef(true);
+    const mounted=useRef(true);
   const storageKey=`auditgava-platform-flow:${actor}:${provider}`;
   const remember=useCallback((id?:string)=>{try{if(id)sessionStorage.setItem(storageKey,id);else sessionStorage.removeItem(storageKey);}catch{setError('Browser recovery storage is unavailable. Keep this page open until identity confirmation.');}},[storageKey]);
   useEffect(()=>{mounted.current=true;try{const id=sessionStorage.getItem(storageKey);if(id&&/^[0-9a-f-]{36}$/.test(id))setRecover(id);}catch{setError('Browser recovery storage is unavailable.');}return()=>{mounted.current=false;pending.current?.popup.close();pending.current=null;};},[storageKey]);
@@ -30,7 +31,7 @@ function ProviderAccounts({ provider, actor }: { provider: ConnectionPlatform; a
       if(!flow||event.source!==flow.popup||event.origin!==window.location.origin||!v||typeof v!=='object'||Array.isArray(v)||v.type!=='auditgava-platform-callback'||v.state!==flow.state||typeof v.denied!=='boolean'||Object.keys(v).some(k=>!['type','code','state','denied'].includes(k)))return;
       if(!v.denied&&(typeof v.code!=='string'||!v.code.length||v.code.length>4096))return;
       pending.current=null;flow.popup.close();setBusy(true);
-      try{if(v.denied)throw new ConnectionError('OAUTH_DENIED','Authorization was declined. Start a new connection.');const result=await platformConnectionApi.complete(provider,v.code,flow.state,flow.redirect,flow.key);if(mounted.current){setChoice(result);confirmKey.current=crypto.randomUUID();setRecover(result.flow_id);}}
+      try{if(v.denied)throw new ConnectionError('OAUTH_DENIED','Authorization was declined. Start a new connection.');const result=await platformConnectionApi.complete(provider,v.code,flow.state,flow.redirect,flow.key);if(mounted.current){setChoice(result);setRecover(result.flow_id);}}
       catch(e){if(mounted.current)setError(e instanceof Error?e.message:'Connection failed. Recover its durable identity before restarting.');}
       finally{if(mounted.current)setBusy(false);}
     };
@@ -46,10 +47,10 @@ function ProviderAccounts({ provider, actor }: { provider: ConnectionPlatform; a
     catch(e){popup.close();if(mounted.current)setError(e instanceof Error?e.message:'Connection failed.');}
     finally{if(mounted.current)setBusy(false);}
   }
-  async function recoverChoice(){if(!recover||busy)return;setBusy(true);try{const c=await platformConnectionApi.choice(provider,recover);if(mounted.current){setChoice(c);confirmKey.current??=crypto.randomUUID();}}catch(e){if(mounted.current)setError(e instanceof Error?e.message:'Recovery failed.');}finally{if(mounted.current)setBusy(false);}}
-  async function confirm(){if(!choice||busy)return;setBusy(true);try{await platformConnectionApi.confirm(provider,choice,confirmKey.current??=crypto.randomUUID());if(mounted.current){remember();setChoice(undefined);setRecover(undefined);await accounts.refetch();}}catch(e){if(mounted.current)setError(e instanceof Error?e.message:'Identity confirmation failed.');}finally{if(mounted.current)setBusy(false);}}
+  async function recoverChoice(){if(!recover||busy)return;setBusy(true);try{const c=await platformConnectionApi.choice(provider,recover);if(mounted.current){setChoice(c);}}catch(e){if(mounted.current)setError(e instanceof Error?e.message:'Recovery failed.');}finally{if(mounted.current)setBusy(false);}}
+  async function confirm(){if(!choice||busy)return;setBusy(true);try{await recoveredSocialCommand(actor,'post',`/platform-connections/${provider}/flows/${choice.flow_id}/confirm`,{external_account_id:choice.external_account_id,reason:'Confirm the exact provider account'},key=>platformConnectionApi.confirm(provider,choice,key),()=>mounted.current);if(mounted.current){remember();setChoice(undefined);setRecover(undefined);await accounts.refetch();}}catch(e){if(mounted.current)setError(e instanceof Error?e.message:'Identity confirmation failed.');}finally{if(mounted.current)setBusy(false);}}
   async function inspect(id:string){setBusy(true);setError(undefined);try{const h=await platformConnectionApi.health(provider,id);if(mounted.current)setHealth(h);}catch(e){if(mounted.current)setError(e instanceof Error?e.message:'Account health unavailable.');}finally{if(mounted.current)setBusy(false);}}
-  async function command(action:'refresh'|'disconnect'){if(!health||busy)return;setBusy(true);try{const h=await platformConnectionApi.accountCommand(provider,health.account_id,action,health,crypto.randomUUID());if(mounted.current){setHealth(h);await accounts.refetch();}}catch(e){if(mounted.current)setError(e instanceof Error?e.message:'Account command failed.');}finally{if(mounted.current)setBusy(false);}}
+  async function command(action:'refresh'|'disconnect'){if(!health||busy)return;setBusy(true);try{const h=await recoveredSocialCommand(actor,'post',`/platform-connections/${provider}/accounts/${health.account_id}/${action}`,{expected_credential_id:health.credential_id,expected_credential_version:health.credential_version,reason:action==='refresh'?'Renew the existing account grant':'Disable the local provider account'},key=>platformConnectionApi.accountCommand(provider,health.account_id,action,health,key),()=>mounted.current);if(mounted.current){setHealth(h);await accounts.refetch();}}catch(e){if(mounted.current)setError(e instanceof Error?e.message:'Account command failed.');}finally{if(mounted.current)setBusy(false);}}
   return <section className={styles.accountCard} aria-label={`${labels[provider]} accounts`}><h2>{labels[provider]}</h2>
     {provider==='threads'&&<p>Separate Threads OAuth, container processing and rolling quota checks. Public visibility needs separate confirmation for private profiles.</p>}
     {provider==='x'&&<p>Paid API access and a positive authorized budget are required for every request, including status and reconciliation. Zero budget blocks API activity.</p>}
@@ -63,4 +64,4 @@ function ProviderAccounts({ provider, actor }: { provider: ConnectionPlatform; a
     {health&&<div className={styles.notice}><p>Credential version {health.credential_version} · Expiry {new Date(health.access_expires_at).toLocaleString()}</p><p>{health.refresh_pending?'Renewal outcome needs reconciliation.':health.reconnect_required?'Reconnect required.':'Current local credential is usable; provider access remains revocable.'}</p><div className={styles.actions}><button type='button' className={styles.button} disabled={busy||health.refresh_pending||!maintenanceAvailable} onClick={()=>command('refresh')}>Renew existing grant</button><button type='button' className={styles.button} disabled={busy||health.connection_state==='disconnected'} onClick={()=>command('disconnect')}>Disable local connection</button></div></div>}
   </section>;
 }
-export default function PlatformAccounts(){const {user}=useAuth();return <div className={styles.workspace} aria-label='Additional platform accounts'>{(['threads','x','tiktok'] as const).map(provider=><ProviderAccounts key={`${user?.id}:${provider}`} provider={provider} actor={user?.id??'signed-out'} />)}</div>;}
+export default function PlatformAccounts(){const {user}=useAuth(),{isAdmin}=useAdmin();if(!isAdmin||!user?.id)return <p>Admin access required.</p>;return <div className={styles.workspace} aria-label='Additional platform accounts'>{(['threads','x','tiktok'] as const).map(provider=><ProviderAccounts key={`${user?.id}:${provider}`} provider={provider} actor={user?.id??'signed-out'} />)}</div>;}

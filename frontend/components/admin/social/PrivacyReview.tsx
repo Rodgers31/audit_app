@@ -1,13 +1,16 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAdmin } from '@/lib/auth/admin';
+import { recoveredSocialCommand } from '@/lib/api/socialCommandRecovery';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { privacyApi, PrivacyPlan } from '@/lib/api/socialPrivacy';
 import { SocialErrorBanner } from './SocialNotice';
 import styles from './social.module.css';
 
 export default function PrivacyReview(){
-  const {user}=useAuth();
+  const {user}=useAuth(),{isAdmin}=useAdmin();
+  if(!isAdmin||!user?.id)return <p>Admin access required.</p>;
   return <PrivacyWorkspace key={user?.id??'signed-out'}/>;
 }
 
@@ -29,7 +32,7 @@ function PrivacyWorkspace() {
     const plan=detail.data?.plans.find(p=>path.startsWith(`/plans/${p.id}/`));
     const allowed=path==='/plans'?workflowReady:path.endsWith('/decision')?!!plan&&decisionReady(plan):!!plan&&executionReady(plan);
     if(!allowed)return;
-setPending(true);setError(undefined);try{await privacyApi.command(path,body,crypto.randomUUID());if(!alive.current)return;setConfirm(false);await qc.invalidateQueries({queryKey:['admin','social',user?.id,'privacy']});}catch(e){if(alive.current)setError(e);}finally{if(alive.current)setPending(false);}}
+setPending(true);setError(undefined);try{await recoveredSocialCommand(user?.id,'post','/privacy'+path,body,key=>privacyApi.command(path,body,key,{actor:user!.id,plan}),()=>alive.current);if(!alive.current)return;setConfirm(false);await qc.invalidateQueries({queryKey:['admin','social',user?.id,'privacy']});}catch(e){if(alive.current)setError(e);}finally{if(alive.current)setPending(false);}}
   function choose(id:string){setSelected(id);setCredentials([]);setFlows([]);setMediaIds('');setEvidence('');setReason('');setError(undefined);setConfirm(false);}
   function toggle(value:string,items:string[],set:(v:string[])=>void){set(items.includes(value)?items.filter(i=>i!==value):[...items,value]);}
   function planActions(plan:PrivacyPlan){const execution=plan.execution;return <article className={styles.schedule} key={plan.id}>

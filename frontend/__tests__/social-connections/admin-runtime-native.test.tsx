@@ -1,3 +1,4 @@
+jest.mock('@/lib/auth/admin',()=>({useAdmin:()=>({isAdmin:true})}));
 import { decodeSelectedAccounts } from '@/lib/api/socialConnections';
 import { accounts, actorId } from '../../tests/socialFixtures';
 

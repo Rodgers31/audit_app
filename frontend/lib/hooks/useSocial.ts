@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth/AuthProvider';
 import { DeliveryFilter, EditorialState, sendSocialCommand, SocialApiError, SocialPost, socialApi, SocialSummary } from '@/lib/api/social';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
-import { confirmSocialCommand, socialCommandKey } from '@/lib/api/socialCommandRecovery';
+import { confirmSocialCommand, socialCommandKey, socialCommandIdentity, recoverGeneratedRulePath } from '@/lib/api/socialCommandRecovery';
 
 export const socialKeys = {
   root: (actor: string | undefined) => ['admin', 'social', actor] as const,
@@ -119,6 +119,8 @@ export function useSocialMutation() {
     retry: false,
     mutationFn: c => {
       if (!enabled || !c.actor) throw new SocialApiError('ACCESS_DENIED', 'An authenticated admin session is required.');
+      c.path = recoverGeneratedRulePath(c.actor, c.method, c.path, c.body);
+      c.identity = socialCommandIdentity(c.actor, c.method, c.path, c.body);
       c.key = socialCommandKey(c.actor, c.identity);
       return sendSocialCommand(c.path, c.body, c.key, c.decode, c.method);
     },
@@ -143,7 +145,7 @@ export function useSocialMutation() {
   });
   async function run<T>(path: string, body: object, decode: (value: unknown) => T, options: { method?: 'post' | 'patch'; postId?: string } = {}): Promise<T> {
     const method = options.method ?? 'post';
-    const identity = JSON.stringify([actor, method, path, body]);
+    const identity = socialCommandIdentity(actor, method, path, body);
     const result = await mutation.mutateAsync({ path, body, decode, method, identity, postId: options.postId, actor }) as T;
     // Success confirms this intent. A later intentional duplicate/retry is a new
     // command; ambiguous transport or decoder failures keep the original key.

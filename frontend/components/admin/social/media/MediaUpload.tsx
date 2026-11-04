@@ -13,41 +13,60 @@ export default function MediaUpload({ capabilities, onSelect, onClose, onBusy, c
   const title = useId(), [file, setFile] = useState<File>(), [alt, setAlt] = useState(''), [phase, setPhase] = useState(''), [error, setError] = useState(''), [retryable, setRetryable] = useState(false), [busy, setBusy] = useState(false);
   const attempt = useRef<Attempt | undefined>(undefined), { actor, enabled } = useMediaAccess(), access = useRef({ actor, enabled }); access.current = { actor, enabled };
   const mounted = useRef(false), latest = useRef({ contextKey, onSelect, onBusy }); latest.current = { contextKey, onSelect, onBusy };
-  useEffect(() => { mounted.current = true; return () => { mounted.current = false; latest.current.onBusy(false); }; }, []);
+  const scope = JSON.stringify([actor, enabled, contextKey, capabilities.upload_available]);
+  const lifetime = useRef({ scope, epoch: 0 });
+  if (lifetime.current.scope !== scope) lifetime.current = { scope, epoch: lifetime.current.epoch + 1 };
+  const active = useRef<AbortController | undefined>(undefined);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; lifetime.current.epoch += 1; active.current?.abort(); latest.current.onBusy(false); }; }, []);
+  useEffect(() => {
+    // An aborted request may already have reached the server. Its original
+    // durable recovery entry stays intact when the editor lifetime ends.
+    active.current?.abort(); active.current = undefined; attempt.current = undefined;
+    setFile(undefined); setAlt(''); setBusy(false); setError(''); setPhase(''); setRetryable(false); latest.current.onBusy(false);
+  }, [scope]);
   const qc = useQueryClient();
   const imageFormats = [capabilities.allowed_mime_types.includes('image/jpeg') && 'JPEG', capabilities.allowed_mime_types.includes('image/png') && 'PNG'].filter(Boolean).join('/');
   async function upload() {
-    if (!file || !actor || !enabled || !capabilities.upload_available || busy) return;
+    if (!file || !actor || !enabled || !capabilities.upload_available || busy || active.current) return;
     if (!capabilities.allowed_mime_types.includes(file.type as MediaMime) || file.size <= 0 || file.size > (file.type === 'video/mp4' ? capabilities.max_video_bytes : capabilities.max_image_bytes)) { setError('Choose a supported file within the displayed size limit.'); return; }
     const selected = { file, alt, contextKey, actor };
+    const epoch = lifetime.current.epoch, controller = new AbortController(); active.current = controller;
+    const currentLifetime = () => mounted.current && !controller.signal.aborted && lifetime.current.epoch === epoch && access.current.enabled && access.current.actor === selected.actor && latest.current.contextKey === selected.contextKey;
     setBusy(true); onBusy(true); setError(''); setRetryable(false);
     try {
       setPhase('Preparing private upload…');
-      const current = attempt.current ?? { ...selected, recovery: recoverUpload(selected.actor, JSON.stringify([selected.contextKey, selected.file.name, selected.file.type, selected.file.size, selected.alt, await mediaFileDigest(selected.file)])) };
+      let current = attempt.current;
+      if (!current) {
+        const digest = await mediaFileDigest(selected.file);
+        if (!currentLifetime()) return;
+        current = { ...selected, recovery: recoverUpload(selected.actor, JSON.stringify([selected.contextKey, selected.file.name, selected.file.type, selected.file.size, selected.alt, digest])) };
+      }
+      if (!currentLifetime()) return;
       attempt.current = current;
-      // Recheck session/context after reading bytes. Never initiate through an
-      // editor that has since changed actor or destination.
-      if (!mounted.current || !access.current.enabled || access.current.actor !== current.actor || latest.current.contextKey !== current.contextKey) return;
       retainUpload(current.actor, current.recovery);
       if (!current.recovery.stored) {
         if (!current.grant || Date.parse(current.grant.expires_at) <= Date.now()) {
-          current.grant = await socialMediaApi.initiate({ filename: current.file.name, declared_mime_type: current.file.type as MediaMime, declared_size: current.file.size, alt_text: current.alt }, current.recovery.initiateKey);
+          current.grant = await socialMediaApi.initiate({ filename: current.file.name, declared_mime_type: current.file.type as MediaMime, declared_size: current.file.size, alt_text: current.alt }, current.recovery.initiateKey, controller.signal);
+          if (!currentLifetime()) return;
           const progress = { ...current.recovery, assetId: current.grant.asset.id, version: current.grant.asset.version };
-          retainUpload(current.actor, progress); current.recovery = progress;
+          current.recovery = progress; retainUpload(current.actor, progress);
         }
-        setPhase('Uploading original file…'); await putMediaFile(current.grant, current.file);
+        if (!currentLifetime()) return;
+        setPhase('Uploading original file…'); await putMediaFile(current.grant, current.file, controller.signal);
+        if (!currentLifetime()) return;
         const progress = { ...current.recovery, stored: true };
-        retainUpload(current.actor, progress); current.recovery = progress;
+        current.recovery = progress; retainUpload(current.actor, progress);
       }
+      if (!currentLifetime()) return;
       setPhase('Inspecting actual media bytes…');
-      const asset = await socialMediaApi.complete(current.recovery.assetId!, current.recovery.version!, current.recovery.completeKey);
+      const asset = await socialMediaApi.complete(current.recovery.assetId!, current.recovery.version!, current.recovery.completeKey, controller.signal);
+      if (!currentLifetime()) return;
       confirmUpload(current.actor, current.recovery);
       await qc.invalidateQueries({ queryKey: mediaKeys.root(current.actor) });
-      if (!mounted.current) return;
-      if (!access.current.enabled || access.current.actor !== current.actor || latest.current.contextKey !== current.contextKey) { setPhase('Upload completed and retained in the library. Choose it in the intended editor.'); attempt.current = undefined; return; }
+      if (!currentLifetime()) return;
       latest.current.onSelect(asset); setPhase('Media inspected and added.'); attempt.current = undefined;
-    } catch (failure) { if (mounted.current) { const safe = toSocialError(failure); setError(safe.message); setRetryable(safe.retryable); setPhase(''); } }
-    finally { if (mounted.current) { setBusy(false); latest.current.onBusy(false); } }
+    } catch (failure) { if (currentLifetime()) { const safe = toSocialError(failure); setError(safe.message); setRetryable(safe.retryable); setPhase(''); } }
+    finally { if (active.current === controller) { active.current = undefined; if (currentLifetime()) { setBusy(false); latest.current.onBusy(false); } } }
   }
   function reset() { attempt.current = undefined; setFile(undefined); setError(''); setRetryable(false); setPhase(''); }
   return <section className={styles.panel} aria-labelledby={title} aria-busy={busy}>

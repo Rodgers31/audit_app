@@ -1,8 +1,10 @@
 'use client';
+import { recoveredSocialCommand } from '@/lib/api/socialCommandRecovery';
 import { connectionApi, ConnectionError, MetaDiscoveredFlow } from '@/lib/api/socialConnections';
 import type { SocialAccount } from '@/lib/api/social';
 import { useSocialAccounts } from '@/lib/hooks/useSocial';
 import { useMetaAccountHealth, useMetaConnectionStatus } from '@/lib/hooks/useSocialConnections';
+import { useAdmin } from '@/lib/auth/admin';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -33,15 +35,14 @@ function ErrorNotice({ error }: { error: unknown }) {
 function AccountCard({ account, actor, onReconnect, refresh, connectAvailable }: { account: SocialAccount; actor: string | undefined; connectAvailable: boolean; onReconnect: (id: string) => void; refresh: () => void }) {
   const [expanded, setExpanded] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState<unknown>();
   const health = useMetaAccountHealth(account.id, expanded);
-  const disconnectKey = useRef<{ credential: string; version: number; key: string } | undefined>(undefined);
-  const captureEpoch = useActorEpoch(actor);
+  const { isAdmin } = useAdmin();
+  const captureEpoch = useActorEpoch(isAdmin ? actor : undefined);
   async function disconnect() {
-    if (!health.data || busy) return;
+    if (!isAdmin || !health.data || busy) return;
     const current = captureEpoch();
     setBusy(true); setError(undefined);
     const version = health.data.credential_version, credential = health.data.credential_id;
-    if (disconnectKey.current?.version !== version || disconnectKey.current?.credential !== credential) disconnectKey.current = { credential, version, key: crypto.randomUUID() };
-    try { await connectionApi.disconnect(account.id, credential, version, disconnectKey.current.key); if (!current()) return; await health.refetch(); if (current()) refresh(); }
+    try { await recoveredSocialCommand(actor, 'post', `/accounts/${account.id}/disconnect`, { expected_credential_id: credential, expected_credential_version: version, reason: 'Administrator disabled the local connection' }, key => connectionApi.disconnect(account.id, credential, version, key), current); if (!current()) return; await health.refetch(); if (current()) refresh(); }
     catch (e) { if (current()) setError(e); }
     finally { if (current()) setBusy(false); }
   }
@@ -61,7 +62,7 @@ function AccountCard({ account, actor, onReconnect, refresh, connectAvailable }:
 }
 
 export default function MetaAccounts() {
-  const accounts = useSocialAccounts(), status = useMetaConnectionStatus(), { user } = useAuth();
+  const accounts = useSocialAccounts(), status = useMetaConnectionStatus(), { user } = useAuth(), { isAdmin } = useAdmin();
   const [busy, setBusy] = useState(false), [error, setError] = useState<unknown>(), [discovery, setDiscovery] = useState<MetaDiscoveredFlow>();
   const [page, setPage] = useState(''), [includeInstagram, setIncludeInstagram] = useState(false);
   const [confirmed, setConfirmed] = useState(false), [expired, setExpired] = useState(false);
@@ -69,8 +70,7 @@ export default function MetaAccounts() {
   const [recoveryUnavailable, setRecoveryUnavailable] = useState(false);
   const pending = useRef<{ popup: Window; state: string; redirect: string; key: string; id: string; directOrigin?: string } | null>(null);
   const openedPopup = useRef<Window | null>(null);
-  const selectionKey = useRef<{ signature: string; key: string } | null>(null);
-  const captureEpoch = useActorEpoch(user?.id);
+  const captureEpoch = useActorEpoch(isAdmin ? user?.id : undefined);
   const selected = discovery?.choices.find(c => c.page_id === page);
   const connectAvailable = !!status.data?.available && !status.error;
   useEffect(() => {
@@ -78,7 +78,7 @@ export default function MetaAccounts() {
       const flow = pending.current;
       const direct = !!flow?.directOrigin && receiveDirectMetaCallback(event, flow.directOrigin, flow.popup, flow.id);
       const payload = flow?.directOrigin ? null : receiveMetaCallback(event, window.location.origin, flow?.popup ?? null, flow?.state ?? null);
-      if (!flow || (!direct && !payload)) return;
+      if (!isAdmin || !flow || (!direct && !payload)) return;
       const current = captureEpoch();
       pending.current = null; openedPopup.current = null; flow.popup.close(); setBusy(true);
       if (payload && (payload.denied || !payload.code)) { setRecoveryUnavailable(!forgetConnectionRecovery(user!.id, flow.id)); setError(new ConnectionError('OAUTH_DENIED', 'Meta authorization was declined. Start a new connection when ready.')); setBusy(false); return; }
@@ -93,12 +93,12 @@ export default function MetaAccounts() {
     };
     window.addEventListener('message', handler);
     return () => { window.removeEventListener('message', handler); openedPopup.current?.close(); openedPopup.current = null; pending.current = null; };
-  }, [user?.id, captureEpoch]);
+  }, [user?.id, isAdmin, captureEpoch]);
   useEffect(() => {
-    setDiscovery(undefined); setPage(''); setIncludeInstagram(false); setConfirmed(false); setError(undefined); setBusy(false); selectionKey.current = null;
+    setDiscovery(undefined); setPage(''); setIncludeInstagram(false); setConfirmed(false); setError(undefined); setBusy(false);
     const recovery = readConnectionRecovery(user?.id);
     setRecoverFlow(recovery.flow); setRecoveryUnavailable(!recovery.available);
-  }, [user?.id]);
+  }, [user?.id, isAdmin]);
   useEffect(() => {
     if (!discovery) { setExpired(false); return; }
     const remaining = Date.parse(discovery.expires_at) - Date.now();
@@ -107,7 +107,7 @@ export default function MetaAccounts() {
     return () => window.clearTimeout(timer);
   }, [discovery]);
   async function start(reconnect?: string) {
-    if (busy || !connectAvailable || !user?.id) return;
+    if (!isAdmin || busy || !connectAvailable || !user?.id) return;
     const current = captureEpoch();
     openedPopup.current?.close(); openedPopup.current = null; pending.current = null;
     const popupName = 'AuditGavaMeta' + crypto.randomUUID().replaceAll('-', '');
@@ -139,7 +139,7 @@ export default function MetaAccounts() {
     finally { if (current()) setBusy(false); }
   }
   async function recover() {
-    if (!recoverFlow || busy) return;
+    if (!isAdmin || !recoverFlow || busy) return;
     const current = captureEpoch();
     setBusy(true); setError(undefined);
     try {
@@ -159,14 +159,12 @@ export default function MetaAccounts() {
     finally { if (current()) setBusy(false); }
   }
   async function confirm() {
-    if (!discovery || !selected || busy || expired) return;
+    if (!isAdmin || !discovery || !selected || busy || expired) return;
     const current = captureEpoch();
     const instagram = includeInstagram ? selected.instagram_id : null;
-    const signature = JSON.stringify([discovery.flow_id, page, instagram]);
-    if (selectionKey.current?.signature !== signature) selectionKey.current = { signature, key: crypto.randomUUID() };
     setBusy(true); setError(undefined);
     try {
-      await connectionApi.select(discovery.flow_id, page, instagram, selectionKey.current.key);
+      await recoveredSocialCommand(user?.id, 'post', `/connections/meta/flows/${discovery.flow_id}/select`, { page_id: page, instagram_id: instagram, reason: 'Administrator explicitly confirmed selected Meta identities' }, key => connectionApi.select(discovery.flow_id, page, instagram, key, selected), current);
       const forgotten = forgetConnectionRecovery(user!.id, discovery.flow_id);
       if (!current()) return;
       setRecoveryUnavailable(!forgotten); setDiscovery(undefined); setConfirmed(true); await accounts.refetch();

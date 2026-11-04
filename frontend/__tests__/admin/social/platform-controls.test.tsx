@@ -1,3 +1,4 @@
+jest.mock('@/lib/auth/admin',()=>({useAdmin:()=>({isAdmin:true})}));
 import { fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
 import TikTokControls from '@/components/admin/social/TikTokControls';
