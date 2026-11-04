@@ -166,6 +166,9 @@ jobs:
     outputs:
       domains: ${{ steps.plan.outputs.domains }}
       bootstrap: ${{ steps.plan.outputs.bootstrap }}
+      dry_run: ${{ steps.plan.outputs.dry_run }}
+      source_sha: ${{ steps.plan.outputs.source_sha }}
+      plan_sha256: ${{ steps.plan.outputs.plan_sha256 }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -179,6 +182,7 @@ jobs:
         run: |
           cd backend
           python -m seeding.source_plan --check
+          python -m seeding.current_run
 
   # ══════════════════════════════════════════════════════════════════
   # Step 0: Health-check all government data source URLs
@@ -478,6 +482,9 @@ jobs:
   migrate:
     needs: [source_plan]
     name: Verify Accepted Database
+    outputs:
+      source_sha: ${{ steps.schema.outputs.source_sha }}
+      schema_head: ${{ steps.schema.outputs.schema_head }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -530,6 +537,7 @@ jobs:
       # on `needs:` — correct: writing into a schema the code disagrees with
       # is worse than not writing.
       - name: Verify the deployed schema matches the models
+        id: schema
         run: |
           cd backend
           python -c "
@@ -543,6 +551,8 @@ jobs:
           if missing:
               sys.exit(1)
           "
+          echo "source_sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          echo 'schema_head=a756b20a0001' >> "$GITHUB_OUTPUT"
 
   # ══════════════════════════════════════════════════════════════════
   # Step 2: Bootstrap seeding (counties, national GDP, population, etc.)
@@ -592,7 +602,15 @@ jobs:
   # ══════════════════════════════════════════════════════════════════
   seed:
     name: Seed Data Domains
-    needs: [migrate]
+    needs: [source_plan, migrate]
+    outputs:
+      report: ${{ steps.results.outputs.report }}
+      report_version: ${{ steps.results.outputs.report_version }}
+      cache_eligible: ${{ steps.results.outputs.cache_eligible }}
+      classification: ${{ steps.results.outputs.classification }}
+      source_sha: ${{ steps.results.outputs.source_sha }}
+      schema_head: ${{ steps.results.outputs.schema_head }}
+      plan_sha256: ${{ steps.results.outputs.plan_sha256 }}
     runs-on: ubuntu-latest
     timeout-minutes: 50
     env:
@@ -693,173 +711,23 @@ jobs:
           PY
 
       - name: Seed planned domains
+        id: cli
         timeout-minutes: 45
         run: |
           cd backend
-          python -m seeding.source_plan --execute
-
-      - name: Check ingestion job results
-        if: always() && steps.database.outcome == 'success' && steps.native_boundary.outcome == 'success'
-        run: |
-          cd backend
-          # Quoted heredoc, NOT `python -c "..."`. With python -c the script
-          # lives inside a double-quoted shell string, so a single double quote
-          # anywhere in the Python terminates it: the shell then parsed the
-          # rest as a pipeline ("or: command not found") and Python received a
-          # truncated line ("NameError: name 'f' is not defined"). That killed
-          # every nightly from 2026-09-03, freezing production data, because
-          # the offending line was a routine f-string. <<'PY' quotes nothing.
-          python <<'PY'
-          import sys
-          import os
-          import re
-          from database import SessionLocal
-          from models import IngestionJob, IngestionStatus
-
-          from seeding.staleness import (
-              NON_PUBLISHER_DOMAINS,
-              hollow_run_findings,
-          )
-          from seeding.source_plan import environment_plan
-
-          raw_floor = os.environ.get('SEED_JOB_FLOOR', '')
-          if not re.fullmatch('[0-9]{1,18}', raw_floor):
-              raise SystemExit('Native job boundary missing or refused')
-          plan = environment_plan()
-          domains = plan.domains
-
-          session = SessionLocal()
-          # The retained pre-seed ID floor bounds this invocation's results.
-          # A fixed age window would hide early jobs in a healthy 33–40 min run.
-          jobs = session.query(IngestionJob).filter(
-              IngestionJob.id > int(raw_floor),
-              IngestionJob.domain.in_(domains),
-          ).order_by(IngestionJob.id.desc()).all()
-
-          failed = 0
-          print('\n--- Ingestion Job Results ---')
-          missing = sorted(set(domains) - {job.domain for job in jobs})
-          for domain in missing:
-              print(f'[MISSING] {domain}: no job after the native run boundary')
-          for job in jobs:
-              status = job.status.value
-              mode = (job.meta or {}).get('source_mode')
-              # A domain that served a git-tracked fixture is NOT [OK]: it
-              # published nothing from the publisher, and its 0-created count
-              # reflects a static file rather than a confirmed no-op upstream.
-              #
-              # partial and refused are named too. They used to fall through
-              # to [OK] because the chain tested `fixture` and then `status`,
-              # and both of those modes complete cleanly — so a domain whose
-              # headline figure never moved printed exactly like one that
-              # refreshed. freshness.py declares five modes; this prints five.
-              if mode == 'fixture':
-                  emoji = 'STALE'
-              elif mode == 'refused':
-                  emoji = 'REFUSED'
-              elif mode == 'partial':
-                  emoji = 'PARTIAL'
-              elif status == 'completed':
-                  emoji = 'OK'
-              elif status == 'completed_with_errors':
-                  emoji = 'WARN'
-              else:
-                  emoji = 'FAIL'
-              src = f" | source={mode or 'unrecorded'}"
-              reason = (job.meta or {}).get('source_fallback_reason')
-              if reason:
-                  src += f' ({reason})'
-              print(f'[{emoji}] {job.domain}: {status} | created={job.items_created} updated={job.items_updated} processed={job.items_processed}{src}')
-              # Numerical writes and immutable source-byte retention are separate
-              # outcomes. Preserve the observation contract without hiding gaps.
-              from services.receipt_retention import safe_retention_summary
-              retention = safe_retention_summary((job.meta or {}).get('receipt_retention'))
-              if retention['state'] == 'missing_bytes':
-                  print(f"  [RECEIPT WARNING] {job.domain}: {retention['missing']} unconfirmed source captures; numerical completion does not prove retained evidence")
-              elif retention['state'] == 'unverified':
-                  print(f'  [RECEIPT WARNING] {job.domain}: retention outcome unknown')
-              elif retention['state'] == 'not_observed':
-                  print(f'  [RECEIPT INFO] {job.domain}: no source captures observed; retention not qualified')
-              else:
-                  print(f"  [RECEIPT OK] {job.domain}: {retention['retained']} verified captures; {retention['recovered']} recovered after retry")
-              for phase, reasons in sorted(retention.get('diagnostics', {}).items()):
-                  for reason, count in sorted(reasons.items()):
-                      print(f'  [RECEIPT DIAGNOSTIC] {job.domain}: {phase} {reason}={count}')
-              if job.errors:
-                  for err in job.errors[:3]:
-                      print(f'  ERROR: {str(err)[:200]}')
-              if status not in {'completed', 'completed_with_errors'}:
-                  failed += 1
-
-          # A run that refreshed NOTHING must not report success.
-          #
-          # 2026-09-19, run 35415601792: audits processed=0 (all five OAG
-          # URLs returned HTML, not PDFs), counties_budget fell back after a
-          # COB 403, national_budget too. The table above printed [STALE] for
-          # five domains and this step then printed "All domains completed
-          # successfully." and exited 0, because it counted only
-          # status == 'failed'. The validate job, minutes later, printed
-          # "[OK] audits ingestion: reached the publisher in 13/22 recent
-          # run(s)" — it judges a 14-day window, so one hollow night is
-          # invisible to it by construction.
-          #
-          # hollow_run_findings asks the question neither of them asked: did
-          # THIS run reach the publisher? Its exemptions are the same two
-          # reason slugs the window gate already exempts (no_live_source,
-          # fixture_superseded), so learning_hub — which has no publisher —
-          # stays green (stalled_projects did too, until #230 gave it COB),
-          # and a broken fetch cannot exempt itself. The rule lives in
-          # seeding/staleness.py, tested by
-          # backend/tests/test_hollow_run_gate.py, which runs THIS step.
-          # Every finding is printed; only FAIL-level ones stop the run.
-          # partial is WARN on purpose — a secondary series did refresh, and
-          # revenue_by_source has been partial for ~20 consecutive runs, so
-          # failing on it would paint every night red and the gate would be
-          # muted along with everything beside it.
-          findings = hollow_run_findings(jobs)
-          for finding in findings:
-              print(f'  {finding}')
-          hollow = [f for f in findings if f.level == 'FAIL']
-
-          # These domains require complete source/extraction/loading outcomes.
-          # A successful secondary series or a protected reconciliation hold
-          # must not certify the full nightly. Other PARTIAL policies stay WARN.
-          from seeding.refresh_completion import required_refresh_failures
-          incomplete = required_refresh_failures(jobs, dry_run=plan.dry_run)
-          for diagnostic in incomplete:
-              print(diagnostic)
-
-          # No rows at all is the same defect one step further back: the
-          # loop above prints nothing, `failed` stays 0, and the step reports
-          # a success it never observed. The seed step always writes a job
-          # per domain it starts, so an empty table means the seeder did not
-          # get that far.
-          graded = [j for j in jobs if j.domain not in NON_PUBLISHER_DOMAINS]
-          if not graded:
-              print(
-                  '\nNo ingestion job rows after the native run boundary. The seeder '
-                  'recorded nothing, so there is nothing to call successful.'
-              )
-
-          session.close()
-          if failed or hollow or incomplete or not graded or missing:
-              if failed:
-                  print(f'\n{failed} domain(s) failed!')
-              if hollow:
-                  print(
-                      f'\n{len(hollow)} domain(s) served a fixture or recorded '
-                      'no provenance: this run refreshed nothing for them, so '
-                      'it is not a success.'
-                  )
-              sys.exit(1)
-          source_gaps = [f for f in findings if f.level == 'WARN']
-          ingestion_warnings = [j for j in jobs if j.status == IngestionStatus.COMPLETED_WITH_ERRORS or j.errors]
-          warning_count = len(source_gaps) + len(ingestion_warnings)
-          if warning_count:
-              print(f'\nRefresh completed with source gaps or ingestion warnings: {warning_count} warning(s). Review the PARTIAL, STALE and WARN results above.')
-          else:
-              print('\nAll domains completed successfully.')
-          PY
+          echo "started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+          echo "run_id=$GITHUB_RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "run_attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+          echo "job_floor=$SEED_JOB_FLOOR" >> "$GITHUB_OUTPUT"
+          if python -m seeding.source_plan --execute; then
+            cli_exit=0
+          else
+            cli_exit=$?
+          fi
+          echo 'executed=true' >> "$GITHUB_OUTPUT"
+          echo "exit_code=$cli_exit" >> "$GITHUB_OUTPUT"
+          echo "finished_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+          exit "$cli_exit"
 
       # The save key must change whenever there is PROGRESS TO BANK, and not
       # otherwise. The previous version hashed completed `*.pdf` FILENAMES
@@ -927,12 +795,191 @@ jobs:
           path: backend/data/seeding/cache/pdfs
           key: ${{ steps.pdf_cache_state.outputs.key }}
 
+      - name: Check ingestion job results
+        id: results
+        if: ${{ !cancelled() && steps.database.outcome == 'success' && steps.native_boundary.outcome == 'success' }}
+        env:
+          SEED_ADMITTED_SHA: ${{ needs.migrate.outputs.source_sha }}
+          SEED_SCHEMA_HEAD: ${{ needs.migrate.outputs.schema_head }}
+          SEED_PLANNED_SHA: ${{ needs.source_plan.outputs.source_sha }}
+          SEED_PLANNED_IDENTITY: ${{ needs.source_plan.outputs.plan_sha256 }}
+          SEED_PRIOR_SUCCESS: ${{ success() }}
+          SEED_CLI_OUTCOME: ${{ steps.cli.outcome }}
+          SEED_CLI_EXECUTED: ${{ steps.cli.outputs.executed }}
+          SEED_CLI_EXIT: ${{ steps.cli.outputs.exit_code }}
+          SEED_CLI_RUN_ID: ${{ steps.cli.outputs.run_id }}
+          SEED_CLI_RUN_ATTEMPT: ${{ steps.cli.outputs.run_attempt }}
+          SEED_CLI_FLOOR: ${{ steps.cli.outputs.job_floor }}
+          SEED_CLI_STARTED: ${{ steps.cli.outputs.started_at }}
+          SEED_CLI_FINISHED: ${{ steps.cli.outputs.finished_at }}
+        run: |
+          cd backend
+          # Quoted heredoc, NOT `python -c "..."`. With python -c the script
+          # lives inside a double-quoted shell string, so a single double quote
+          # anywhere in the Python terminates it: the shell then parsed the
+          # rest as a pipeline ("or: command not found") and Python received a
+          # truncated line ("NameError: name 'f' is not defined"). That killed
+          # every nightly from 2026-09-03, freezing production data, because
+          # the offending line was a routine f-string. <<'PY' quotes nothing.
+          python <<'PY'
+          import sys
+          import os
+          import re
+          from database import SessionLocal
+          from models import IngestionJob, IngestionStatus
+
+          from seeding.staleness import (
+              NON_PUBLISHER_DOMAINS,
+              hollow_run_findings,
+          )
+          from seeding.source_plan import environment_plan
+
+          raw_floor = os.environ.get('SEED_JOB_FLOOR', '')
+          if not re.fullmatch('[0-9]{1,18}', raw_floor):
+              raise SystemExit('Native job boundary missing or refused')
+          plan = environment_plan()
+          domains = plan.domains
+
+          session = SessionLocal()
+          # The retained pre-seed ID floor bounds this invocation's results.
+          # A fixed age window would hide early jobs in a healthy 33–40 min run.
+          jobs = session.query(IngestionJob).filter(
+              IngestionJob.id > int(raw_floor),
+          ).order_by(IngestionJob.id.desc()).limit(19).all()
+
+          from seeding.current_run import classify, environment_context, publish
+          current = classify(jobs, plan, environment_context())
+          publish(current)
+          failed = 0
+          print('\n--- Ingestion Job Results ---')
+          missing = sorted(set(domains) - {job.domain for job in jobs})
+          for domain in missing:
+              print(f'[MISSING] {domain}: no job after the native run boundary')
+          for job in jobs:
+              status = job.status.value
+              mode = (job.meta or {}).get('source_mode')
+              # A domain that served a git-tracked fixture is NOT [OK]: it
+              # published nothing from the publisher, and its 0-created count
+              # reflects a static file rather than a confirmed no-op upstream.
+              #
+              # partial and refused are named too. They used to fall through
+              # to [OK] because the chain tested `fixture` and then `status`,
+              # and both of those modes complete cleanly — so a domain whose
+              # headline figure never moved printed exactly like one that
+              # refreshed. freshness.py declares five modes; this prints five.
+              if mode == 'fixture':
+                  emoji = 'STALE'
+              elif mode == 'refused':
+                  emoji = 'REFUSED'
+              elif mode == 'partial':
+                  emoji = 'PARTIAL'
+              elif status == 'completed':
+                  emoji = 'OK'
+              elif status == 'completed_with_errors':
+                  emoji = 'WARN'
+              else:
+                  emoji = 'FAIL'
+              src = f" | source={mode or 'unrecorded'}"
+              reason = (job.meta or {}).get('source_fallback_reason')
+              if reason:
+                  src += f' ({reason})'
+              print(f'[{emoji}] {job.domain}: {status} | created={job.items_created} updated={job.items_updated} processed={job.items_processed}{src}')
+              # Numerical writes and immutable source-byte retention are separate
+              # outcomes. Preserve the observation contract without hiding gaps.
+              from services.receipt_retention import safe_retention_summary
+              retention = safe_retention_summary((job.meta or {}).get('receipt_retention'))
+              if retention['state'] == 'missing_bytes':
+                  print(f"  [RECEIPT WARNING] {job.domain}: {retention['missing']} unconfirmed source captures; numerical completion does not prove retained evidence")
+              elif retention['state'] == 'unverified':
+                  print(f'  [RECEIPT WARNING] {job.domain}: retention outcome unknown')
+              elif retention['state'] == 'not_observed':
+                  print(f'  [RECEIPT INFO] {job.domain}: no source captures observed; retention not qualified')
+              else:
+                  print(f"  [RECEIPT OK] {job.domain}: {retention['retained']} verified captures; {retention['recovered']} recovered after retry")
+              for phase, reasons in sorted(retention.get('diagnostics', {}).items()):
+                  for reason, count in sorted(reasons.items()):
+                      print(f'  [RECEIPT DIAGNOSTIC] {job.domain}: {phase} {reason}={count}')
+              if job.errors:
+                  print(f'  ERROR COUNT: {len(job.errors)}; inspect retained job evidence privately')
+              if status not in {'completed', 'completed_with_errors'}:
+                  failed += 1
+
+          # A run that refreshed NOTHING must not report success.
+          #
+          # 2026-09-19, run 35415601792: audits processed=0 (all five OAG
+          # URLs returned HTML, not PDFs), counties_budget fell back after a
+          # COB 403, national_budget too. The table above printed [STALE] for
+          # five domains and this step then printed "All domains completed
+          # successfully." and exited 0, because it counted only
+          # status == 'failed'. The validate job, minutes later, printed
+          # "[OK] audits ingestion: reached the publisher in 13/22 recent
+          # run(s)" — it judges a 14-day window, so one hollow night is
+          # invisible to it by construction.
+          #
+          # hollow_run_findings asks the question neither of them asked: did
+          # THIS run reach the publisher? Its exemptions are the same two
+          # reason slugs the window gate already exempts (no_live_source,
+          # fixture_superseded), so learning_hub — which has no publisher —
+          # stays green (stalled_projects did too, until #230 gave it COB),
+          # and a broken fetch cannot exempt itself. The rule lives in
+          # seeding/staleness.py, tested by
+          # backend/tests/test_hollow_run_gate.py, which runs THIS step.
+          # Every finding is printed; only FAIL-level ones stop the run.
+          # partial is WARN on purpose — a secondary series did refresh, and
+          # revenue_by_source has been partial for ~20 consecutive runs, so
+          # failing on it would paint every night red and the gate would be
+          # muted along with everything beside it.
+          findings = hollow_run_findings(jobs)
+          for finding in findings:
+              print(f'  {finding}')
+          hollow = [f for f in findings if f.level == 'FAIL']
+
+          # These domains require complete source/extraction/loading outcomes.
+          # A successful secondary series or a protected reconciliation hold
+          # must not certify the full nightly. Other PARTIAL policies stay WARN.
+          from seeding.refresh_completion import required_refresh_failures
+          incomplete = required_refresh_failures(jobs, dry_run=plan.dry_run)
+          for diagnostic in incomplete:
+              print(diagnostic)
+
+          # No rows at all is the same defect one step further back: the
+          # loop above prints nothing, `failed` stays 0, and the step reports
+          # a success it never observed. The seed step always writes a job
+          # per domain it starts, so an empty table means the seeder did not
+          # get that far.
+          graded = [j for j in jobs if j.domain not in NON_PUBLISHER_DOMAINS]
+          if not graded:
+              print(
+                  '\nNo ingestion job rows after the native run boundary. The seeder '
+                  'recorded nothing, so there is nothing to call successful.'
+              )
+
+          session.close()
+          if current['classification'] == 'unsafe' or failed or hollow or incomplete or not graded or missing:
+              if failed:
+                  print(f'\n{failed} domain(s) failed!')
+              if hollow:
+                  print(
+                      f'\n{len(hollow)} domain(s) served a fixture or recorded '
+                      'no provenance: this run refreshed nothing for them, so '
+                      'it is not a success.'
+                  )
+              sys.exit(1)
+          source_gaps = [f for f in findings if f.level == 'WARN']
+          ingestion_warnings = [j for j in jobs if j.status == IngestionStatus.COMPLETED_WITH_ERRORS or j.errors]
+          warning_count = len(source_gaps) + len(ingestion_warnings)
+          if warning_count:
+              print(f'\nRefresh completed with source gaps or ingestion warnings: {warning_count} warning(s). Review the PARTIAL, STALE and WARN results above.')
+          else:
+              print('\nAll domains completed successfully.')
+          PY
+
   # ══════════════════════════════════════════════════════════════════
   # Step 4: Data validation — verify tables have data and key metrics are sane
   # ══════════════════════════════════════════════════════════════════
   validate:
     name: Validate Data Integrity
-    needs: [migrate, seed]
+    needs: [migrate, seed, bootstrap]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -1176,8 +1223,8 @@ jobs:
   #      frontend/lib/revalidation/paths.json, the same file the route uses
   #      as its allowlist, so the two cannot disagree.
   # Both requests are HMAC-SHA256-signed with REVALIDATE_SECRET. Runs only
-  # after seed AND validate succeed on a non-dry run. Pages are never
-  # revalidated onto unvalidated data.
+  # after verified execution and integrity on a non-dry run. Known required
+  # source incompleteness stays red while accepted independent data can refresh.
   #
   # This job FAILS if the secret is missing, if either call does not
   # answer 200, or if any page path is rejected. Before #231 a missing
@@ -1185,8 +1232,27 @@ jobs:
   # stayed open for weeks while the run showed green.
   revalidate:
     name: Refresh API Cache and Pages
-    needs: [seed, validate]
-    if: success() && github.event.inputs.dry_run != 'true'
+    needs: [source_plan, migrate, seed, bootstrap, validate]
+    if: >-
+      ${{ !cancelled() &&
+          needs.source_plan.result == 'success' && needs.migrate.result == 'success' &&
+          needs.validate.result == 'success' &&
+          needs.source_plan.outputs.dry_run == 'false' &&
+          needs.source_plan.outputs.source_sha == github.sha &&
+          needs.migrate.outputs.source_sha == github.sha &&
+          needs.migrate.outputs.schema_head == 'a756b20a0001' &&
+          needs.seed.outputs.source_sha == github.sha &&
+          needs.seed.outputs.schema_head == needs.migrate.outputs.schema_head &&
+          needs.seed.outputs.plan_sha256 != '' &&
+          needs.seed.outputs.plan_sha256 == needs.source_plan.outputs.plan_sha256 &&
+          needs.seed.outputs.report_version == '1' && needs.seed.outputs.cache_eligible == 'true' &&
+          ((needs.seed.result == 'success' && needs.seed.outputs.classification == 'complete') ||
+           (needs.seed.result == 'failure' && needs.seed.outputs.classification == 'required_source_incomplete')) &&
+          ((needs.source_plan.outputs.bootstrap == 'true' && needs.bootstrap.result == 'success') ||
+           (needs.source_plan.outputs.bootstrap == 'false' && needs.bootstrap.result == 'skipped')) }}
+    outputs:
+      backend: ${{ steps.invalidate.outputs.acknowledged }}
+      pages: ${{ steps.pages.outputs.acknowledged }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
@@ -1196,8 +1262,45 @@ jobs:
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
-          sparse-checkout: frontend/lib/revalidation/paths.json
+          sparse-checkout: |
+            frontend/lib/revalidation/paths.json
+            .github/scripts/seed_notifications.cjs
+            backend/seeding/current_run.py
           sparse-checkout-cone-mode: false
+
+      - name: Verify exact refresh eligibility before HTTP
+        env:
+          REFRESH_NEEDS: ${{ toJSON(needs) }}
+        run: |
+          python3 <<'PY'
+          import json, os, re
+          def require(ok):
+              if not ok:
+                  raise SystemExit('Exact current-run refresh eligibility refused')
+          needs = json.loads(os.environ['REFRESH_NEEDS'])
+          require(type(needs) is dict and set(needs) == {'source_plan','migrate','seed','bootstrap','validate'})
+          require(all(needs[k].get('result') == 'success' for k in ('source_plan','migrate','validate')))
+          plan, admitted, seed = (needs[k]['outputs'] for k in ('source_plan','migrate','seed'))
+          require(plan.get('dry_run') == 'false' and seed.get('cache_eligible') == 'true' and seed.get('report_version') == '1')
+          sha, identity = os.environ['GITHUB_SHA'], plan.get('plan_sha256')
+          require(re.fullmatch('[0-9a-f]{40}',sha) is not None and type(identity) is str and re.fullmatch('[0-9a-f]{64}',identity) is not None)
+          require(all(o.get('source_sha') == sha for o in (plan,admitted,seed)))
+          require(seed.get('plan_sha256') == identity and admitted.get('schema_head') == seed.get('schema_head') == 'a756b20a0001')
+          classification = seed.get('classification')
+          require((needs['seed']['result'],classification) in (('success','complete'),('failure','required_source_incomplete')))
+          require((plan.get('bootstrap'),needs['bootstrap']['result']) in (('true','success'),('false','skipped')))
+          report = json.loads(seed['report'])
+          require(type(report) is dict and type(report.get('version')) is int and report['version'] == 1)
+          require(report.get('source_sha') == sha and report.get('plan_sha256') == identity and report.get('schema_head') == 'a756b20a0001')
+          require(report.get('run_id') == os.environ['GITHUB_RUN_ID'] and report.get('run_attempt') == os.environ['GITHUB_RUN_ATTEMPT'])
+          require(report.get('cache_eligible') is True and report.get('dry_run') is False and report.get('cli_executed') is True)
+          require(type(report.get('cli_exit')) is int and report['cli_exit'] == 0 and report.get('cli_exit_zero') is True)
+          require(report.get('classification') == classification and report.get('bootstrap_selected') is (plan['bootstrap'] == 'true'))
+          domains = json.loads(plan['domains'])
+          require(type(domains) is list and 1 <= len(domains) <= 18 and report.get('selected_domains') == domains)
+          print('Exact current-run phase identities verified; checking the typed inventory.')
+          PY
+          node .github/scripts/seed_notifications.cjs --verify-refresh
 
       - name: Require the signing secret
         run: |
@@ -1207,8 +1310,9 @@ jobs:
           fi
 
       - name: Invalidate the API's response caches
+        id: invalidate
         run: |
-          BODY=$(jq -cn --argjson ts "$(date +%s)" --arg reason "seed run ${{ github.run_id }}" '{ts: $ts, reason: $reason}')
+          BODY=$(jq -cn --argjson ts "$(date +%s)" --arg reason "seed run $GITHUB_RUN_ID" '{ts: $ts, reason: $reason}')
           SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$REVALIDATE_SECRET" -r | cut -d' ' -f1)
           # Render can be slow to answer the first request after idle, so allow retries on connection errors only.
           HTTP=$(curl -sS --retry 3 --retry-connrefused --max-time 60 \
@@ -1217,14 +1321,15 @@ jobs:
             -H "content-type: application/json" \
             -H "x-revalidate-signature: $SIG" \
             -d "$BODY")
-          cat /tmp/invalidate_response.json; echo ""
           if [ "$HTTP" != "200" ] || ! jq -se 'length == 1 and .[0].invalidated == true' /tmp/invalidate_response.json > /dev/null; then
             echo "::error::API cache invalidation failed (HTTP $HTTP). Pages revalidated now would be rebuilt from stale API responses, so stopping here."
             exit 1
           fi
-          echo "API caches cleared: $(jq -c '{redis, local: .local.cleared_entries, pid}' /tmp/invalidate_response.json)"
+          echo 'acknowledged=true' >> "$GITHUB_OUTPUT"
+          echo 'API cache invalidation acknowledged.'
 
       - name: Revalidate the prerendered pages
+        id: pages
         run: |
           BODY=$(jq -c '{paths: .paths}' frontend/lib/revalidation/paths.json)
           SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$REVALIDATE_SECRET" -r | cut -d' ' -f1)
@@ -1233,7 +1338,6 @@ jobs:
             -H "content-type: application/json" \
             -H "x-revalidate-signature: $SIG" \
             -d "$BODY")
-          cat /tmp/revalidate_response.json; echo ""
           if [ "$HTTP" != "200" ]; then
             echo "::error::Revalidation webhook returned HTTP $HTTP"
             exit 1
@@ -1248,6 +1352,7 @@ jobs:
             echo "::error::Revalidation receipt must confirm exactly the requested page paths with no rejections."
             exit 1
           fi
+          echo 'acknowledged=true' >> "$GITHUB_OUTPUT"
           echo "Revalidated $(jq '.revalidated | length' /tmp/revalidate_response.json) page paths."
 
   # ══════════════════════════════════════════════════════════════════

@@ -101,10 +101,12 @@ HOLLOW_NIGHT = [
     ("audits", "completed_with_errors", 0, 0, 0, "fixture", "no_document_extracted"),
 ]
 
-#: Run 35048000013, 2026-09-16 — every domain live except the two that have
-#: no publisher. The gate must stay green on this, or it is useless.
+#: Synthetic current-policy positive control derived from the numeric inventory
+#: of run35048000013. Unlike that historical run, stalled_projects is marked live
+#: because it now has a publisher; only learning_hub is editorial. The current
+#: explicit completion/plan fields below are fixture evidence, not old receipts.
 HEALTHY_NIGHT = [
-    ("stalled_projects", "completed_with_errors", 25, 0, 25, "fixture", "no_live_source"),
+    ("stalled_projects", "completed", 25, 0, 25, "live", None),
     ("revenue_by_source", "completed", 0, 0, 49, "live", None),
     ("population", "completed", 0, 95, 110, "live", None),
     ("pending_bills", "completed", 0, 48, 48, "live", None),
@@ -155,7 +157,7 @@ def _write_db(tmp_path: Path, rows, extra=()) -> str:
                                       'extractions': {'existing': processed},
                                       'loaded': {'processed': processed, 'created': 0, 'updated': 0, 'unchanged': processed, 'skipped': 0}}]
             elif domain == 'fiscal_summary':
-                years = [f'fixture-year-{i}' for i in range(processed)]
+                years = [f'FY {2000+i}/{(2001+i)%100:02}' for i in range(processed)]
                 meta['refresh_completion'] = {'complete': complete, 'accepted_records': processed, 'accepted_years': years}
                 meta['refresh_components'] = {
                     'budget': {'state': mode},
@@ -168,6 +170,12 @@ def _write_db(tmp_path: Path, rows, extra=()) -> str:
                     'national': {'complete': complete, 'records': 2, 'accepted_records': 2, 'mode': mode},
                     'counties': {'complete': complete, 'records': processed - 2, 'accepted_records': processed - 2},
                 }
+            # Positive current-run controls carry the native execution-plan identity.
+            selected = [r[0] for r in rows]
+            from seeding.source_plan import LEGACY_DOMAINS
+            if set(selected) == set(LEGACY_DOMAINS):
+                selected = list(LEGACY_DOMAINS)
+            meta['execution_plan'] = {'planned_domains': selected, 'execution_order': selected}
             if reason:
                 meta["source_fallback_reason"] = reason
             session.add(
@@ -180,7 +188,7 @@ def _write_db(tmp_path: Path, rows, extra=()) -> str:
                     items_processed=processed,
                     items_created=created,
                     items_updated=updated,
-                    errors=[],
+                    errors=[f'served from fixture, not the publisher (reason={reason})'] if mode == 'fixture' else [],
                     meta=meta,
                 )
             )
@@ -199,6 +207,17 @@ def _run_step(db_url: str, *, domain: str = '', floor: int = 0) -> subprocess.Co
                SEED_CRA_INGESTION_ENABLED='false',
                SEED_OPENDATA_INGESTION_ENABLED='true' if domain == 'opendata' else 'false',
                SEED_KNBS_RELEASE_DISCOVERY_ENABLED='false')
+    from seeding.source_plan import build_plan
+    from seeding.current_run import plan_identity
+    plan = build_plan(event='workflow_dispatch', schedule='', domain=domain, dry_run='false',
+                      cra='false', opendata='true' if domain == 'opendata' else 'false', discovery='false')
+    now = datetime.now(timezone.utc)
+    env.update(GITHUB_SHA='a'*40, SEED_ADMITTED_SHA='a'*40, SEED_PLANNED_SHA='a'*40,
+               SEED_SCHEMA_HEAD='a756b20a0001', SEED_PLANNED_IDENTITY=plan_identity(plan),
+               SEED_PRIOR_SUCCESS='true', SEED_CLI_OUTCOME='success', SEED_CLI_EXECUTED='true', SEED_CLI_EXIT='0',
+               GITHUB_RUN_ID='1234', GITHUB_RUN_ATTEMPT='1', SEED_CLI_RUN_ID='1234', SEED_CLI_RUN_ATTEMPT='1',
+               SEED_CLI_FLOOR=str(floor), SEED_CLI_STARTED=(now-timedelta(minutes=3)).strftime('%Y-%m-%dT%H:%M:%SZ'),
+               SEED_CLI_FINISHED=now.strftime('%Y-%m-%dT%H:%M:%SZ'))
     env.pop("DB_USER", None)
     env.pop("DB_HOST", None)
     env["PYTHONPATH"] = str(BACKEND)
@@ -282,10 +301,9 @@ class TestTheStepItself:
         assert "[FAIL] audits:" in out, f"the failed domain was not listed\n{out}"
         assert "[FAIL] audits this run" not in out
 
-    def test_bootstrap_does_not_redden_the_sunday_run(self, tmp_path):
-        """bootstrap_reference_data reads git-tracked files by definition and
-        always records source_mode=fixture. Its own vocabulary is judged by
-        the window gate; failing the Sunday nightly on it would be wrong."""
+    def test_unexpected_bootstrap_inside_seed_window_refuses_refresh(self, tmp_path):
+        """Bootstrap runs after seed; its presence inside the retained seed
+        boundary means the current invocation cannot be identified exactly."""
         result = _run_step(
             _write_db(
                 tmp_path,
@@ -304,7 +322,7 @@ class TestTheStepItself:
             )
         )
         out = result.stdout + result.stderr
-        assert result.returncode == 0, out
+        assert result.returncode == 1, out
 
     def test_a_partial_night_is_named_but_does_not_fail(self, tmp_path):
         """PARTIAL used to print [OK] and exit 0 — the gate's own defect,
@@ -382,10 +400,9 @@ class TestTheStepItself:
         )
         assert result.returncode != 0, result.stdout + result.stderr
 
-    def test_the_row_census_does_not_redden_the_run(self, tmp_path):
-        """The validate job parks its counts in this same table under
-        __row_census__ and records no source_mode. It is bookkeeping, not a
-        domain; a gate that generates its own noise gets muted."""
+    def test_unexpected_row_census_inside_seed_window_refuses_refresh(self, tmp_path):
+        """Validation runs after this seed-only snapshot. An unexpected
+        census job inside the window refuses current-run identity."""
         result = _run_step(
             _write_db(
                 tmp_path,
@@ -393,7 +410,7 @@ class TestTheStepItself:
                 extra=[("__row_census__", "completed", 0, 0, 0, None, None)],
             )
         )
-        assert result.returncode == 0, result.stdout + result.stderr
+        assert result.returncode == 1, result.stdout + result.stderr
 
 
 class TestTheRuleItself:
@@ -595,12 +612,12 @@ class TestTheRuleItself:
             )
 
 
-def test_single_domain_refresh_ignores_unrelated_recent_startup_fixture(tmp_path):
+def test_single_domain_refresh_refuses_unexpected_job_after_boundary(tmp_path):
     current = [('opendata','completed',2,0,2125,'live',None)]
     unrelated = [('national_budget','completed',0,0,20,'fixture','fixture_current')]
     result = _run_step(_write_db(tmp_path,current,extra=unrelated),domain='opendata')
-    assert result.returncode == 0, result.stdout+result.stderr
-    assert '[OK] opendata' in result.stdout and 'national_budget' not in result.stdout
+    assert result.returncode == 1, result.stdout+result.stderr
+    assert 'Current-run classification: unsafe' in result.stdout
 
 
 def test_single_domain_fixture_is_still_refused(tmp_path):

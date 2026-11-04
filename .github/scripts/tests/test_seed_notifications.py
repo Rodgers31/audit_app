@@ -21,6 +21,18 @@ def healthy(weekly=False):
     needs['source_plan']['outputs'] = {'domains': '["audits"]', 'bootstrap': str(weekly).lower()}
     needs['bootstrap']['result'] = 'success' if weekly else 'skipped'
     needs['healthcheck']['outputs'] = {'has_failures': 'false', 'unprobed': '0'}
+    sha, plan = 'a'*40, 'b'*64
+    needs['source_plan']['outputs'].update(source_sha=sha, plan_sha256=plan, dry_run='false')
+    needs['migrate']['outputs'] = {'source_sha':sha,'schema_head':'a756b20a0001'}
+    receipt = dict(version=1,generator_sha256='d'*64,refusals=[],cli_exit=0,source_sha=sha,schema_head='a756b20a0001',plan_sha256=plan,
+        dry_run=False,bootstrap_selected=weekly,job_floor=30,run_id='41268107359',run_attempt='1',
+        cli_executed=True,cli_exit_zero=True,classification='complete',cache_eligible=True,
+        selected_domains=['audits'],jobs=[dict(domain='audits',job_id=31,status='completed',source_mode='live',
+            processed=4,created=0,updated=4,error_count=0,required_completion='complete',document_count=1,
+            accepted_documents=1,held_proposals=[],retention={'state':'unverified'})])
+    needs['seed']['outputs'] = {'report':json.dumps(receipt),'source_sha':sha,'schema_head':'a756b20a0001',
+        'plan_sha256':plan,'classification':'complete','cache_eligible':'true','report_version':'1'}
+    needs['revalidate']['outputs'] = {'backend':'true','pages':'true'}
     return needs
 
 
@@ -274,6 +286,80 @@ class NotificationTests(unittest.TestCase):
         result=execute(needs)
         self.assertEqual(result['calls'][-1]['method'],'create')
         self.assertIn('unverified plan',result['summary'])
+
+
+class CurrentRunReportTests(unittest.TestCase):
+    def test_known_incomplete_run_keeps_incident_red_after_successful_refresh(self):
+        needs=healthy()
+        receipt=json.loads(needs['seed']['outputs']['report'])
+        receipt['classification']='required_source_incomplete'
+        receipt['jobs'][0]['required_completion']='incomplete'
+        receipt['jobs'][0]['source_mode']='partial'
+        receipt['jobs'][0].update(domain='fiscal_summary',document_count=None,accepted_documents=None)
+        receipt['selected_domains']=['fiscal_summary']
+        needs['source_plan']['outputs']['domains']='["fiscal_summary"]'
+        needs['seed']['outputs'].update(report=json.dumps(receipt),classification='required_source_incomplete')
+        needs['seed']['result']='failure'
+        result=execute(needs)
+        self.assertIn('not verified',result['failure'])
+        body=result['calls'][-1]['args']['body']
+        self.assertIn('required_source_incomplete',body)
+        self.assertIn('backend acknowledged; pages acknowledged',body)
+        self.assertIn('| fiscal_summary | 31 | partial |',body)
+
+    def test_successful_backend_and_failed_pages_are_reported_separately(self):
+        needs=healthy(); needs['revalidate']['result']='failure'
+        needs['revalidate']['outputs']={'backend':'true','pages':''}
+        result=execute(needs)
+        self.assertIn('backend acknowledged; pages unverified',result['summary'])
+        self.assertIn('backend acknowledged; pages unverified',result['calls'][-1]['args']['body'])
+
+    def test_report_identity_and_shape_tampering_never_certifies_completion(self):
+        for field,value in [('version',True),('source_sha','c'*40),('run_id','old'),('run_attempt','2'),
+                            ('jobs',[]),('selected_domains',[]),('cli_executed',1),('cli_exit_zero','true'),
+                            ('cache_eligible','true'),('classification','unknown')]:
+            with self.subTest(field=field,value=value):
+                needs=healthy(); receipt=json.loads(needs['seed']['outputs']['report']); receipt[field]=value
+                needs['seed']['outputs']['report']=json.dumps(receipt)
+                result=execute(needs)
+                self.assertIn('not verified',result['failure'])
+                self.assertIn('report unverified',result['summary'])
+
+    def test_unknown_aggregate_cannot_hide_inside_success_report(self):
+        for field,value in [('source_mode','unknown'),('required_completion','unknown'),('required_completion','not_required')]:
+            needs=healthy(); receipt=json.loads(needs['seed']['outputs']['report']); receipt['jobs'][0][field]=value
+            needs['seed']['outputs']['report']=json.dumps(receipt)
+            self.assertIn('not verified',execute(needs)['failure'])
+
+    def test_untrusted_provider_strings_never_render_from_report(self):
+        needs=healthy(); receipt=json.loads(needs['seed']['outputs']['report'])
+        receipt['jobs'][0]['retention']['provider_url']='https://secret.invalid/private-key'
+        receipt['jobs'][0]['provider_error']='sensitive exception body'
+        needs['seed']['outputs']['report']=json.dumps(receipt)
+        result=execute(needs)
+        self.assertNotIn('secret.invalid',json.dumps(result))
+        self.assertNotIn('sensitive exception body',json.dumps(result))
+
+    def test_http_receipts_require_literal_acknowledgements_even_on_green_job(self):
+        for field in ('backend','pages'):
+            for value in (True,1,'True','false','',None):
+                needs=healthy(); needs['revalidate']['outputs'][field]=value
+                result=execute(needs)
+                self.assertIn('not verified',result['failure'])
+
+
+class ReviewedReportContradictionTests(unittest.TestCase):
+    def test_complete_required_job_cannot_hide_errors_partial_source_or_hold(self):
+        for mutation in ('errors','source','held','retention'):
+            needs=healthy();r=json.loads(needs['seed']['outputs']['report']);j=r['jobs'][0]
+            if mutation=='errors':j.update(status='completed_with_errors',error_count=8)
+            elif mutation=='source':j['source_mode']='partial'
+            elif mutation=='held':j['held_proposals']=[dict(document_id=2392,retirements=1,revisions=1,source_sha256='a'*64,candidate_sha256='b'*64,previous_sha256='c'*64)]
+            else:j['retention']=dict(state='confirmed',observed=2,retained=1,missing=1,recovered=0,retry_requests=0)
+            needs['seed']['outputs']['report']=json.dumps(r)
+            result=execute(needs)
+            self.assertIn('not verified',result['failure'])
+            self.assertEqual(result['calls'][-1]['method'],'create')
 
 
 if __name__ == '__main__':
