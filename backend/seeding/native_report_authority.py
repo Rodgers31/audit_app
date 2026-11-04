@@ -6,6 +6,7 @@ through parsing; exported JSON cannot grant publication authority.
 """
 from copy import deepcopy
 from datetime import date, datetime
+from html.parser import HTMLParser
 import hashlib
 import json
 from pathlib import Path
@@ -18,6 +19,7 @@ else:
     from services.response_receipts import acquisition_is_intact, copy_receipt, receipt_is_sealed, seal_receipt, persist_receipt
 
 VERSION = 'native-report-authority-v1'
+KRA_PUBLICATION_CONTRACT = 'kra-visible-annual-release-v2'
 KEY = 'native_report_authority_v1'
 DOMAINS = {
     'national_budget': ('cob', ('cob.go.ke', 'www.cob.go.ke'), 'Controller of Budget', '/budget'),
@@ -44,6 +46,14 @@ def validate_catalogue(value, receipt, *, started=None, finished=None):
         return
     catalogue_contract(value['domain']).validate_stored_catalogue(
         value, receipt, started=started, finished=finished)
+
+
+def validate_publication_contract(value):
+    if (value['domain'] == 'revenue_by_source' and value.get('catalogue_authority') is None
+            and value.get('publication_contract') != KRA_PUBLICATION_CONTRACT):
+        raise ValueError('Reviewed visible KRA publication contract required')
+
+
 _TOKEN = object()
 _DATE_LABEL = re.compile(r"^(?:Publication date|Published on):[ \t]*(.+?)[ \t]*$", re.I)
 _MONTHS = {name.lower():i for i,name in enumerate(('January','February','March','April','May','June','July','August','September','October','November','December'),1)}
@@ -144,6 +154,8 @@ def _capture(receipt, *, domain, entity, scope_key, period, start, end, publishe
     value = dict(domain=domain, entity=entity, scope_key=scope_key, period=period,
         period_start=start, period_end=end, published_on=published.isoformat() if published is not None else None, locator=locator,
         document_checksum=receipt['digest'], document_md5=hashlib.md5(body, usedforsecurity=False).hexdigest(), document_url=receipt['request_url'])
+    if domain == 'revenue_by_source' and catalogue is None:
+        value['publication_contract'] = KRA_PUBLICATION_CONTRACT
     retained_publisher = None
     if publication is not None:
         retained_publisher = copy_receipt(publisher_receipt, parser_version='cob-publisher-post-v1')
@@ -164,6 +176,73 @@ def _capture(receipt, *, domain, entity, scope_key, period, start, end, publishe
     return NativeReportAuthority(value, captured, token=_TOKEN, publisher_receipt=retained_publisher)
 
 
+class _KraAttributes(HTMLParser):
+    def handle_starttag(self, tag, attrs):
+        names = [name for name, _ in attrs]
+        if len(names) != len(set(names)):
+            raise ValueError('Ambiguous publisher attributes')
+
+    def handle_comment(self, data):
+        if '<' in data or '>' in data or '--' in data:
+            raise ValueError('Unambiguous publisher comment required')
+
+    def handle_decl(self, decl):
+        if re.fullmatch(r'DOCTYPE[ \t\r\n]+html[ \t\r\n]*', decl, re.I) is None:
+            raise ValueError('Unreviewed publisher declaration')
+
+    def unknown_decl(self, data):
+        raise ValueError('Unreviewed publisher declaration')
+
+    def handle_pi(self, data):
+        raise ValueError('Unreviewed publisher processing instruction')
+
+
+_KRA_ALIGNMENT = re.compile(
+    r'[ \t\r\n]*(?:text-align[ \t\r\n]*:[ \t\r\n]*justify[ \t\r\n]*;?[ \t\r\n]*)?', re.I)
+
+
+def _validate_kra_article_markup(soup):
+    """A finite static document profile, including unrelated sibling content."""
+    tags = {'html', 'head', 'title', 'body', 'div', 'section', 'article', 'main',
+            'header', 'footer', 'aside', 'nav', 'p', 'b', 'strong', 'em', 'i', 'u',
+            'sup', 'sub', 'span', 'br', 'hr', 'ul', 'ol', 'li', 'blockquote', 'pre',
+            'code', 'small', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'table', 'caption',
+            'thead', 'tbody', 'tfoot', 'tr', 'th', 'td'}
+    for node in soup.find_all(True):
+        attrs = node.attrs
+        allowed = {'class', 'aria-hidden', 'style'} | ({'start'} if node.name == 'ol' else set())
+        if (node.name not in tags or set(attrs) - allowed
+                or 'start' in attrs and attrs['start'] not in {'1', '2', '3', '4', '5'}
+                or any(name not in {'blog-content', 'bottom-wrapper'} for name in attrs.get('class', []))
+                or str(attrs.get('aria-hidden', 'false')).lower() != 'false'
+                or 'style' in attrs and (node.name != 'p' or type(attrs['style']) is not str
+                                        or _KRA_ALIGNMENT.fullmatch(attrs['style']) is None)):
+            raise ValueError('Self-contained reviewed publisher markup required')
+
+
+def _kra_publication_text(node):
+    """Read only the reviewed visible paragraph grammar, including ancestors."""
+    if node is None or node.name != 'p':
+        raise ValueError('Publisher paragraph required')
+    # Container CSS is outside this retained HTML contract. A hidden ancestor
+    # must never supply an otherwise well-formed annual scope or publisher day.
+    for ancestor in node.parents:
+        attrs = getattr(ancestor, 'attrs', {})
+        if (ancestor.name not in {'[document]', 'html', 'body', 'div', 'section',
+                                 'article', 'main', 'header', 'footer', 'aside', 'nav'}
+                or set(attrs) - {'class', 'aria-hidden'}
+                or any(name not in {'blog-content', 'bottom-wrapper'} for name in attrs.get('class', []))
+                or str(attrs.get('aria-hidden', 'false')).lower() != 'false'):
+            raise ValueError('Publisher paragraph visibility unavailable')
+    attrs = dict(node.attrs)
+    style = attrs.pop('style', '')
+    if (attrs or type(style) is not str or _KRA_ALIGNMENT.fullmatch(style) is None
+            or any(child.name not in {'b', 'strong', 'em', 'i', 'u', 'sup'} or child.attrs
+                   for child in node.find_all(True))):
+        raise ValueError('Unreviewed publisher paragraph markup')
+    return node.get_text(' ', strip=True)
+
+
 def capture_kra_release(receipt):
     """KRA article's labelled full day and leading annual scope, not listing hints.
 
@@ -174,13 +253,31 @@ def capture_kra_release(receipt):
         body = retained_body(receipt, 'revenue_by_source', 'text/html')
         if len(body) > 2*1024*1024:
             raise ValueError('Article byte limit exceeded')
-        from bs4 import BeautifulSoup
-        soup = BeautifulSoup(body, 'html.parser')
+        content_type = re.fullmatch(
+            r'text/html(?:[ \t]*;[ \t]*charset[ \t]*=[ \t]*(?:"(?P<quoted>utf-8|us-ascii)"|(?P<bare>utf-8|us-ascii)))?[ \t]*',
+            receipt['content_type'], re.I)
+        if content_type is None:
+            raise ValueError('Reviewed publisher encoding required')
+        charset = content_type['quoted'] or content_type['bare'] or 'utf-8'
+        text = body.decode('ascii' if charset.lower() == 'us-ascii' else 'utf-8')
+        if re.search(r'<!(?!--|DOCTYPE[ \t\r\n]+html[ \t\r\n]*>)', text, re.I) or '<?' in text:
+            raise ValueError('Unreviewed publisher declaration')
+        from bs4 import BeautifulSoup, Comment
+        attributes = _KraAttributes()
+        attributes.feed(text)
+        attributes.close()
+        if attributes.rawdata:
+            raise ValueError('Incomplete publisher markup')
+        soup = BeautifulSoup(text, 'html.parser')
+        # Full site layouts need a separately reviewed source profile. Checking
+        # only scope/day ancestors misses active or overlaying sibling markup.
+        _validate_kra_article_markup(soup)
         articles = soup.select('.blog-content')
         if len(articles) != 1:
             raise ValueError('One publisher article required')
-        lead = articles[0].find('p')
-        lead = lead.get_text(' ', strip=True) if lead else ''
+        lead = next((node for node in articles[0].children
+                     if not isinstance(node, Comment) and (getattr(node, 'name', None) or str(node).strip())), None)
+        lead = _kra_publication_text(lead)
         # The reviewed publisher lead states an achieved whole-year result.
         # A bare FY mention cannot distinguish a monthly result or a target.
         annual = re.fullmatch(
@@ -192,7 +289,7 @@ def capture_kra_release(receipt):
             raise ValueError('Reviewed annual achieved-results lead unavailable')
         years = [annual[1]]
         period, start, end = _fy(years[0])
-        dates = [node.get_text(' ', strip=True) for node in soup.select('.bottom-wrapper p')
+        dates = [_kra_publication_text(node) for node in soup.select('.bottom-wrapper p')
                  if node.get_text(' ', strip=True).startswith('PRESS RELEASE')]
         if len(dates) != 1 or not re.fullmatch(r'PRESS RELEASE \d{2}/\d{2}/\d{4}', dates[0]):
             raise ValueError('Full publisher-labelled article date unavailable')
@@ -383,6 +480,7 @@ def persist_native_report(session, source, authority, *, context, domain):
             or not official_url(source.url, domain) or source.publisher != DOMAINS[domain][2]
             or type(context.job_id) is not int or context.job_id <= 0):
         raise ValueError('Intact native report/job authority required')
+    validate_publication_contract(authority.value)
     metadata = [authority.value[key] for key in ('publication_authority','catalogue_authority') if key in authority.value]
     if len(metadata) > 1 or bool(metadata) != (authority.publisher_receipt is not None):
         raise ValueError('Retained publisher metadata capability required')
