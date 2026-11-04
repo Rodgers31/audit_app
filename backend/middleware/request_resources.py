@@ -248,6 +248,11 @@ class RequestResourceMiddleware:
                 self.body_inflight -= 1
         async def tracked_send(message):
             nonlocal started
+            # An immediately-ready ASGI send need not yield to asyncio's timer.
+            # Raise through the handler timeout branch so an expired partial
+            # response is aborted, never followed by a second response start.
+            if monotonic() >= deadline:
+                raise TimeoutError('Request response time budget exceeded')
             if message['type'] == 'http.response.start':
                 started = True
             await send(message)
