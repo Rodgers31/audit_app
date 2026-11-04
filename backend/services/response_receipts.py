@@ -13,7 +13,8 @@ if __package__.startswith("backend."):
 else:
     from models import Extraction
 from .receipt_store import ReceiptStore
-from .receipt_retention import begin_capture, finish_capture, finish_recheck
+from .receipt_retention import begin_capture, finish_capture, finish_recheck, record_capture_diagnostic
+from .receipt_storage_errors import ReceiptStorageError
 
 logger = logging.getLogger(__name__)
 
@@ -192,6 +193,24 @@ def capture_local_bytes(body, store, *, url, claimed_receipt=None):
     return receipt
 
 
+_RETAINED_REFUSAL_REASONS = {
+    "Bounded native retained-source context required": "context_refused",
+    "Current READ COMMITTED acquisition context required": "context_refused",
+    "Exact running native job required": "context_refused",
+    "One retained native source required": "source_refused",
+    "Current native retained publisher required": "source_refused",
+    "Current available source required": "source_refused",
+    "No persisted original PDF acquisition": "origin_missing",
+    "Original retained HTTP acquisition required": "origin_invalid",
+    "Original acquisition is stale or unordered": "origin_stale",
+    "Original acquisition changed after retained validation": "origin_changed",
+    "Current source edition differs": "edition_changed",
+    "Retained storage destination changed": "destination_changed",
+    "Retained provider bytes differ": "readback_mismatch",
+    "Retained snapshot differs": "readback_mismatch",
+}
+
+
 def capture_retained_pdf(session, context, store, *, domain, url, body):
     """Restore only a DB-anchored acquisition after real retained-byte checking.
 
@@ -209,6 +228,19 @@ def capture_retained_pdf(session, context, store, *, domain, url, body):
         captured = CapturedReceipt(value, _capability=_CAPABILITY)
         captured._store = checked_store
         matched = value.get("byte_check", {}).get("status") == "matched"
+        record_capture_diagnostic("retained_pdf_restore", "matched" if matched else "unconfirmed")
+    except ValueError as exc:
+        # Match known internal refusals exactly; arbitrary messages never escape.
+        message = exc.args[0] if len(exc.args) == 1 and type(exc.args[0]) is str else None
+        record_capture_diagnostic("retained_pdf_restore",
+            _RETAINED_REFUSAL_REASONS.get(message, "authority_refused_unknown"))
+        raise
+    except ReceiptStorageError:
+        record_capture_diagnostic("retained_pdf_restore", "storage_failed")
+        raise
+    except Exception:
+        record_capture_diagnostic("retained_pdf_restore", "unexpected_error")
+        raise
     finally:
         outcome = finish_capture(token, matched=matched)
     captured._retention_outcome = outcome

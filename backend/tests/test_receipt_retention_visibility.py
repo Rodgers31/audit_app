@@ -179,7 +179,7 @@ def test_retained_pdf_validation_failure_is_not_an_empty_healthy_scope(monkeypat
     try:
         with pytest.raises(ValueError):
             capture_retained_pdf(None, None, None, domain='national_budget', url='https://source.example.test/report.pdf', body=b'body')
-        assert scope.summary() == MISSING
+        assert scope.summary() == {**MISSING, "diagnostics": {"retained_pdf_restore": {"authority_refused_unknown": 1}}}
     finally:
         scope.close()
 

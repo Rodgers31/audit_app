@@ -7,7 +7,7 @@ if __package__.startswith('backend.'):
     from backend.models import Extraction, SourceDocument, IngestionJob, IngestionStatus, DocumentStatus, Country
 else:
     from models import Extraction, SourceDocument, IngestionJob, IngestionStatus, DocumentStatus, Country
-from .native_report_authority import VERSION, KEY, DOMAINS, digest, official_url, lock_native_domain, source_identity, validate_catalogue
+from .native_report_authority import VERSION, KEY, DOMAINS, digest, official_url, lock_native_domain, source_identity, validate_catalogue, validate_publication_contract
 from .source_observations import SourceObservationUnavailable, _positive_id, _aware, _read_limits
 
 
@@ -124,6 +124,7 @@ def current_native_report(db, record_id, ingestion_id, *, domain, lock=False):
         _job(db, ingestion_id, domain, scope_key=value.get('scope_key'))
     try:
         from .cob_report_metadata import validate_stored_post
+        validate_publication_contract(value)
         if not (domain == 'audits' and value.get('evidence_kind') == 'publisher_catalogue'):
             validate_stored_post(value, receipt, started=started, finished=finished)
         validate_catalogue(value, receipt, started=started, finished=finished)

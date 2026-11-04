@@ -96,7 +96,11 @@ def safe_job_metadata(raw):
             result[key] = safe_generation_outcome(raw[key])
     if 'receipt_retention' in raw:
         from services.receipt_retention import safe_retention_summary
-        result['receipt_retention'] = safe_retention_summary(raw['receipt_retention'])
+        retention = safe_retention_summary(raw['receipt_retention'])
+        # Validate detailed internal telemetry, then preserve the existing
+        # six-field public contract consumed by the admin retention parser.
+        result['receipt_retention'] = {key: value for key, value in retention.items()
+                                       if key != 'diagnostics'}
     return result
 
 

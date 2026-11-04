@@ -782,6 +782,9 @@ jobs:
                   print(f'  [RECEIPT INFO] {job.domain}: no source captures observed; retention not qualified')
               else:
                   print(f"  [RECEIPT OK] {job.domain}: {retention['retained']} verified captures; {retention['recovered']} recovered after retry")
+              for phase, reasons in sorted(retention.get('diagnostics', {}).items()):
+                  for reason, count in sorted(reasons.items()):
+                      print(f'  [RECEIPT DIAGNOSTIC] {job.domain}: {phase} {reason}={count}')
               if job.errors:
                   for err in job.errors[:3]:
                       print(f'  ERROR: {str(err)[:200]}')
