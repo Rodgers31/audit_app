@@ -111,3 +111,20 @@ def test_source_completion_kra_same_decoding_and_benign_layout_control(tmp_path,
     proof, reason = capture_kra_release(receipt(tmp_path, b'<!DOCTYPE html>' + HTML + b'<!-- layout refresh -->', ctype=ctype))
     assert proof is not None and reason is None
     assert proof.value['published_on'] == '2025-07-10'
+
+
+@pytest.mark.parametrize('start', ['1', '2', '3', '4', '5'])
+def test_source_completion_kra_reviewed_section_list_start_retains_authority(tmp_path, start):
+    section = f'<ol start="{start}"><li><strong>Domestic and Customs Revenue Performance</strong></li></ol>'.encode()
+    body = HTML.replace(b'</div>', section + b'</div>', 1)
+    assert capture_kra_release(receipt(tmp_path, body))[0] is not None
+
+
+@pytest.mark.parametrize('section', [
+    b'<ol start="0"><li>Unreviewed</li></ol>', b'<ol start="6"><li>Unreviewed</li></ol>',
+    b'<ol start="-1"><li>Unreviewed</li></ol>', b'<ol start="03"><li>Unreviewed</li></ol>',
+    b'<ol start="3" reversed><li>Unreviewed</li></ol>',
+    b'<p start="3">Unreviewed</p>', b'<ol start="3" style="display:none"><li>Unreviewed</li></ol>',
+])
+def test_source_completion_kra_section_list_exception_stays_bounded(tmp_path, section):
+    assert capture_kra_release(receipt(tmp_path, HTML + section))[0] is None

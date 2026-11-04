@@ -210,7 +210,9 @@ def _validate_kra_article_markup(soup):
             'thead', 'tbody', 'tfoot', 'tr', 'th', 'td'}
     for node in soup.find_all(True):
         attrs = node.attrs
-        if (node.name not in tags or set(attrs) - {'class', 'aria-hidden', 'style'}
+        allowed = {'class', 'aria-hidden', 'style'} | ({'start'} if node.name == 'ol' else set())
+        if (node.name not in tags or set(attrs) - allowed
+                or 'start' in attrs and attrs['start'] not in {'1', '2', '3', '4', '5'}
                 or any(name not in {'blog-content', 'bottom-wrapper'} for name in attrs.get('class', []))
                 or str(attrs.get('aria-hidden', 'false')).lower() != 'false'
                 or 'style' in attrs and (node.name != 'p' or type(attrs['style']) is not str
