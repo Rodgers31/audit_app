@@ -1,0 +1,53 @@
+# Serial patch and qualification packet for the parent
+
+This lane edits documentation only. No shared source file, installed view, policy, flag or provider was changed. Root prepares source combination/testing only after immutable reviewed peer handoffs. The parent owns actual integration/release and any application of a patch outside this lane's scope. A private test-copy patch is not an applied, committed or installed production correction.
+
+## Saved-grant body observation and aggregate preflight budget
+
+**Reproduced inherited behavior at fixed baseline `e94eb980`:** actual authority/provider controls,18cases per normal/optimized Python3.13.9, OS network denied, toy transports, zero live reads/DB imports. Max successful44GETs/44,000,000 accepted body bytes; all44fake29s responses succeed at1,276s. The233-byte fake slow stream takes466s before the nominal30s body check runs. Exact receipts and source hashes are in the private `integration-ledger/spec/saved-grant-budget/` packet, indexed in [EVIDENCE.md](EVIDENCE.md#later-independent-preflight-budget-finding).
+
+Smallest demonstrated source correction for the connection owner, `backend/social/connections/provider.py:132`:
+
+```diff
+-                for chunk in response.iter_bytes(chunk_size=16384):
++                for chunk in response.iter_bytes():
+```
+
+The preceding identity-encoding guard remains mandatory. An in-memory copy with only this substitution refuses at fake32s/16bytes instead of466s/233bytes, preserving response closure/refusal. The earlier `iter_raw()` suggestion is **superseded**: it raises uncaught `StreamConsumed` on valid already-read `Response(json=...)` fixtures. Actual36variant cases per normal/optimized mode compare baseline/raw/no-chunk variants with real streaming and preloaded responses; no-argument `iter_bytes()` preserves ordinary6GET/max44GET behavior and oversized/compressed/revoked refusal. These are overlapping variant controls, not36new production successes. Source remains unchanged. The revised proposal fixes extra buffering; it does **not** prove a hard30s or aggregate deadline. It still needs a permanent observed-red/green regression and shared OAuth/discovery/saved-grant caller qualification in supported runtime before application is accepted. No real flow is needed.
+
+Before later C-preflight, separately implement the needed aggregate budget across all requests and service/DB/audit/receipt work: check remaining allowance before new requests, after headers and each raw chunk; reject exceeded read/body limits; preserve original command/uncertainty and prove interruption/closure under the actual supported transport/runtime. An HTTP response timeout or cancellation of a sync worker thread does not establish stopped socket work. The exact finite values must fit the reviewed resource envelope and later owner-approved packet; this document supplies no invented timer or policy approval. These are engineering prerequisites, not missing retention policy decisions.
+
+## Ordinary admin CLI false completion — reproduced, proposal not validated
+
+Admin's immutable `79d9a1e` packet reproduces the actual mountedAPI→PG→dispatch adapter→CLI→finish path: a fiscal handler returning `None` or an empty unknown-provenance `DomainRunResult` becomes a completed job/command. Two expected-red cases plus one passing fixture-fallback refusal execute per normal/optimized mode. This is a controlled local defect, not an assertion about an existing production job. The frontend reload/storage fixes requested in the initial reviewer note are already committed in79d9a1e; **only the shared CLI source correction remains unapplied**.
+
+Private `admin-workflow/spec/OWNER_cli_empty_guard_v1.patch`, SHA256 `ae353bb0470ce4a3aee414c467adfddc7f5c28b2156734059781b511a5b60c8d`, proposes a valid correct-domain `DomainRunResult` guard and incomplete status for zero-work/unknown results, preserving the exact audits discovery-only dry-run exception. BaselineCLI SHA256 `65f7581901ef39c1ced78823220f06c098f40a3ad724d27565b12789e6b4f2e8`; proposed bytes `5b27bbf6e589baa6077570d0d0fc1a18916b87306a80e66ff376be3b00a1f865`; proposal JSON SHA256 `86d5285f211f7cc193185a62175b8bb829fa536b167daad7d236002e6d22b52a`. It is **unapplied and unvalidated** at that handoff. Parent/CLI owner must reconcile with the actual combined source and execute red→green rather than accept the proposal from its hashes.
+
+Use retained `run_independent_empty_pg_v1.py`/`test_reviewer_dispatch_empty_v1.py` as the source of the three API/PG controls, adapting only declared source/output/runtime ownership for the final candidate. Preserve source-bound original receipts. Add complete/no-op/unchanged positive cases and hostile result/domain/counter/schema controls. Re-run the eight `test_oag_dry_run_outcome.py` controls per mode: successful **and empty** explicit discovery with zero extraction/publication counters remains a legitimate completed preview. Do not manufacture live/fixture provenance, treat every zero as failure, or accept a parser/import/DB setup error as the intended refusal. No live source handler/job dispatch is needed.
+
+## Source authority/verifier alignment — required unapplied companion
+
+Draft912 final `d1e9046436c4b2ec70808a258601064f1643d943` changes the finite KRA authority contract and both deparsed authority views. Source head alone is **not standalone integration-ready**. Its committed `docs/operations/2026-11-03-source-completion/role-contract-view-hashes.patch`, SHA256 `8025b5d1c98cf08317d2de9ec48369748494eb5223326e51e5f9ca4599fe74b5`, proposes exactly two `NATIVE_VIEW_SHA256` literal replacements in parent-owned `backend/social/worker/role_contract.py`. Baseline file SHA256 `81c67876b4897d95bcdc9394238142ff848281a4583c1ab7cdac236c41d5a245`; proposed `ec2fc649f7f472e591cfa523afa444a82056be435e137cc83bc810092e6c2e0f`. These are SHA256, not migration MD5 stamps.
+
+Private declared source snapshot differs only by that companion; successful source tests include it. Actual PostgreSQL17.11 deparsed authority SHA256 `7d1bd1b8e1e99f0a79e9988c6bf407e381dad3a7eedd674397f01ea4dd7383bb`, snapshot `12bee79f8a7477e15eaadd41f5ac23053a9ba4a5d7444f0a95df42d0d2f41471`. Parent must review/apply/retest the companion serially. An existing installed view still requires separately authorized replacement preserving ownership/private ACL/security barrier/five-column contract; no startup, migration or grant change is implied.
+
+Final source cohorts: A233pass/B109pass/C205pass+6fail **per mode** (553disjoint cases/mode,547pass/6fail). Six C failures repeat on exactE94: old OAG fixture emits incomplete parser stamps/fabricated loader counts. Separate `source-acceptance/review-standards/audit-report-editions-complete-fixture-v1.patch`, SHA256 `a3ebdf11d23921ad272c0b2ecb6b57db692d7d4c41df210609f8ca1c393ebeb6`, is unapplied to tracked source. Original test SHA256 `3b1f1fa5146d3dd11fd92cb9981a26b8d5836705eb5f2edc72049f07848be64e`. It preserves four test-function ASTs/ten cases, uses actual registered extractors/loader on explicitly synthetic three-page national/twelve-page ten-county PDFs, and passes10cases/mode in a private patched fixture. Parent/test owner must apply and rerun unchanged current guards and caller cohort. Those green controls do not erase the original six failures or prove official47-county/content acceptance.
+
+## OAG2392 content refusal
+
+Source-derived request `source-acceptance/review-oag/PATCH_REQUEST_NIGHTLY.md` binds baseline parser SHA256 `61f17532e8ad92e40fb265f542fa719f6aa387a720bef4e47df2dc1612cfda1a`. Case-insensitive prefix `_SUBREPORT_RE` treats wrapped narrative references as headings, truncating35bodies and losing98of329 historical titles. PDF423¶1347 andPDF510¶1596 are explicit source fixtures. Five actual controls/mode give3fail/2pass (two wrapped-body losses, inconsistent positive-clean filtering, two valid controls).
+
+Require a complete recognized standalone/wrapped structural-heading grammar preserving narrative punctuation/continuation and legitimate editions, not the diagnostic uppercase-only shortcut. Review14clean positive and144statutory additions according to their actual neutral meaning; correct source reading order for PDF701–702¶2199 `(2/3)` separately with retained evidence. Diagnostic335retirements/9revisions/1389additions is **not** a final proposal or general fix. Repair actual nightly-owned code, sweep four county editions/national fixtures, regenerate hash-bound full diffs and independently reconcile all removals/revisions/additions plus designated human approval. Current335/2/1389 proposal remains REFUSED; no production reconciliation/admission or live acquisition is authorized.
+
+## Security and foreground source-grounded requests
+
+The immutable911packet's private `security-performance/OWNER_PATCH_REQUESTS.md` identifies the following parent-owned paths. These are **source-grounded hypotheses/qualification requests**, not executed remote incidents or confirmed exploits; preserve that distinction until the specified red fixtures run.
+
+| Path / boundary | Smallest controlled next action under OFF |
+| --- | --- |
+| `backend/main.py:12944` search `filters` assumes an object afterJSONdecode | Mounted isolated invalid JSON/scalar/list/bool/null and valid-object cases with query-spy; reject invalid types with422 before SQL if the reproduction confirms the gap. |
+| `backend/main.py:12844` budget-line offset/provenance/response transfer | Exact10000/max+1offset red control before count/query; complete order/page/total/financial parity and oversized provenance/whole-response tests. Post-materialization JSON limits cannot be relabelled as DB-transfer bounds. |
+| `backend/main.py:9943,10603` civic/national Loan materialization | Enumerate every financial/date/category/provenance consumer, qualify projections/aggregates and explicit transfer bounds with actual ownedPG/cardinality/cold-warm/cancel/complete-financial-parity/statement-lock-checkout controls. Two register tests do not accept these sibling routes. |
+| `backend/tests/admin_audit_epoch/browser_api.py:61` upgradeshead but expects historicala611 | Pin actual migration-setupRED; introduce a current fixture version deriving/validating single descendanthead while preserving historical bytes, ancestry/roles/epoch-one/exclusive ownership/28LOCALrows/uncertain cleanup. No production row creation. |
+
+Browser prerequisites separately retain cached LinuxNode24.22.1 and Mach-O Chromium observations. Discovering an existing compatible OS-confined browser and measuring foreground LCP/CLS/natural pagination remain engineering tasks; missing them is not an owner-policy decision. No new browser download/service/resource or weaker sandbox is authorized.
