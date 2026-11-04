@@ -212,11 +212,13 @@ def _run_step(db_url: str, *, domain: str = '', floor: int = 0) -> subprocess.Co
     plan = build_plan(event='workflow_dispatch', schedule='', domain=domain, dry_run='false',
                       cra='false', opendata='true' if domain == 'opendata' else 'false', discovery='false')
     now = datetime.now(timezone.utc)
+    # Synthetic invocation spans the actual step's 45-minute ceiling; the
+    # production guard uses retained CLI timestamps, never an age lookback.
     env.update(GITHUB_SHA='a'*40, SEED_ADMITTED_SHA='a'*40, SEED_PLANNED_SHA='a'*40,
                SEED_SCHEMA_HEAD='a756b20a0001', SEED_PLANNED_IDENTITY=plan_identity(plan),
                SEED_PRIOR_SUCCESS='true', SEED_CLI_OUTCOME='success', SEED_CLI_EXECUTED='true', SEED_CLI_EXIT='0',
                GITHUB_RUN_ID='1234', GITHUB_RUN_ATTEMPT='1', SEED_CLI_RUN_ID='1234', SEED_CLI_RUN_ATTEMPT='1',
-               SEED_CLI_FLOOR=str(floor), SEED_CLI_STARTED=(now-timedelta(minutes=3)).strftime('%Y-%m-%dT%H:%M:%SZ'),
+               SEED_CLI_FLOOR=str(floor), SEED_CLI_STARTED=(now-timedelta(minutes=45)).strftime('%Y-%m-%dT%H:%M:%SZ'),
                SEED_CLI_FINISHED=now.strftime('%Y-%m-%dT%H:%M:%SZ'))
     env.pop("DB_USER", None)
     env.pop("DB_HOST", None)
