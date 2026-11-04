@@ -761,6 +761,13 @@ def _apply_fiscal_framework(payload, editions, *, refreshed_revenue_years=None):
             row["_revenue_source"] = "treasury_budget_summary_annex_live"
             if refreshed_revenue_years is not None:
                 refreshed_revenue_years.add(fy)
+        elif (fy == edition.fiscal_year and same_document
+              and row.get("revenue_basis") == "ordinary_revenue_excl_aia"):
+            # split_for_fiscal_year just rechecked the same document's revenue
+            # against its approved column. An unchanged replay is fresh evidence
+            # too; a retained value alone, another basis or another URL is not.
+            if refreshed_revenue_years is not None:
+                refreshed_revenue_years.add(fy)
         if split.tax_split_ok:
             total = row.get("total_revenue")
             if total is not None and abs(Decimal(str(total)) - ordinary) <= Decimal("0.05"):
