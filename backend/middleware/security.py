@@ -162,12 +162,16 @@ class RedisRateLimitMiddleware(_ProcessRateLimitMiddleware):
         async with asyncio.timeout(self.redis_timeout):
             pipe = self.redis_client.pipeline()
             key = f'rate_limit:{client_ip}'
+            # The transactional SET creates only an absent counter and its TTL.
+            # INCR preserves that expiry; steady traffic must not renew it.
+            pipe.set(key, 0, nx=True, ex=self.period)
             pipe.incr(key)
-            pipe.expire(key, self.period)
             result = await pipe.execute()
-        if type(result) is not list or not result or type(result[0]) is not int or result[0] < 1:
+        if (type(result) is not list or len(result) != 2
+                or result[0] is not None and result[0] is not True
+                or type(result[1]) is not int or result[1] < 1):
             raise ValueError('Invalid limiter storage counter')
-        return result[0] <= self.calls
+        return result[1] <= self.calls
 
     async def shutdown(self):
         if self.redis_client is not None and hasattr(self.redis_client, 'aclose'):
