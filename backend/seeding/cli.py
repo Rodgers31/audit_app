@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import math
 import os
 import signal
 import sys
@@ -31,6 +32,78 @@ from . import freshness
 #: locally-configured one. ``configure_logging`` attaches handlers to the
 #: "seeding" root, so records emitted here land in the same place.
 logger = logging.getLogger("seeding")
+
+
+def _validate_domain_result(result, *, domain, dry_run, started_at):
+    """Validate the returned object before it can authorize a terminal write.
+
+    Pydantic copies/constructs and later mutation bypass model validation. Do
+    not coerce their values or mistake a missing return for an empty inventory.
+    This is execution accounting; source completeness is a separate gate.
+    """
+    def refuse(reason):
+        raise ValueError(f"Invalid domain result: {reason}")
+
+    if type(result) is not DomainRunResult:
+        refuse("DomainRunResult required")
+    if result.model_extra:
+        refuse("unknown result fields")
+    if type(result.domain) is not str or result.domain != domain:
+        refuse("domain mismatch")
+    if type(result.dry_run) is not bool or result.dry_run is not dry_run:
+        refuse("dry-run intent mismatch")
+    counters = (result.items_processed, result.items_created, result.items_updated)
+    if any(type(value) is not int or not 0 <= value <= 2147483647 for value in counters):
+        refuse("bounded integer counters required")
+    if result.items_created + result.items_updated > result.items_processed:
+        refuse("changes exceed processed inventory")
+    if type(result.errors) is not list or any(type(error) is not str or not error.strip() for error in result.errors):
+        refuse("error list required")
+    if type(result.metadata) is not dict:
+        refuse("metadata object required")
+    if result.metadata.keys() & {
+        "seeding_claim_id", "dispatch_command_id", "dispatch_claim_token",
+        "execution_plan", "receipt_retention", "source_mode", "source_detail",
+        "source_fallback_reason", "publisher_edition", "since",
+    }:
+        refuse("runner-owned metadata")
+
+    def json_value(value, ancestors, depth=0):
+        if depth > 64:
+            refuse("metadata nesting exceeds 64 levels")
+        if type(value) in (str, int, bool, type(None)):
+            return
+        if type(value) is float and math.isfinite(value):
+            return
+        if type(value) not in (dict, list) or id(value) in ancestors:
+            refuse("finite JSON metadata required")
+        if type(value) is dict and any(type(key) is not str for key in value):
+            refuse("string metadata keys required")
+        children = value.values() if type(value) is dict else value
+        for child in children:
+            json_value(child, ancestors | {id(value)}, depth + 1)
+
+    json_value(result.metadata, set())
+    for stamp in (result.started_at, result.finished_at):
+        if not isinstance(stamp, datetime) or stamp.tzinfo is None or stamp.utcoffset() is None:
+            refuse("aware result timestamps required")
+    if not started_at <= result.started_at <= result.finished_at <= datetime.now(timezone.utc):
+        refuse("incoherent result timestamps")
+    discovery_only = (
+        domain == "audits" and dry_run is True and counters == (0, 0, 0)
+        and result.metadata.get("dry_run_plan") == {
+            "mode": "discovery_only", "extraction": "not_requested",
+            "publication": "not_requested",
+        }
+    )
+    if "dry_run_plan" in result.metadata and not discovery_only:
+        refuse("unsupported discovery-only plan")
+    source = freshness.get(domain)
+    fixture_failure = (source.get("mode") == freshness.FIXTURE
+                       and type(source.get("reason")) is str and bool(source["reason"].strip()))
+    if result.items_processed == 0 and not result.errors and not discovery_only and not fixture_failure:
+        refuse("no processed inventory")
+    return discovery_only
 
 
 def _parse_since(value: Optional[str]) -> Optional[datetime]:
@@ -471,6 +544,12 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
 
                     with _domain_timeout(domain_budget):
                         result = handler(session=session, settings=settings, context=context)
+                        discovery_only = _validate_domain_result(
+                            result, domain=domain, dry_run=dry_run, started_at=started_at)
+                    # Explicit zero-work failure reports remain visible as
+                    # completed_with_errors, but cannot certify CLI execution.
+                    if result.items_processed == 0 and not discovery_only:
+                        status = 1
 
                     if context.audits_source_receipt is not None:
                         receipt = context.audits_source_receipt
@@ -482,11 +561,11 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                         lock_native_domain(session, domain)
                     # Update job with results
                     job.finished_at = datetime.now(timezone.utc)
-                    job.items_processed = result.items_processed if result else 0
-                    job.items_created = result.items_created if result else 0
-                    job.items_updated = result.items_updated if result else 0
-                    job.errors = result.errors if result else []
-                    if result and result.metadata:
+                    job.items_processed = result.items_processed
+                    job.items_created = result.items_created
+                    job.items_updated = result.items_updated
+                    job.errors = result.errors
+                    if result.metadata:
                         job.meta = dict(job.meta or {})
                         job.meta.update(result.metadata)
 
@@ -513,7 +592,7 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                     if edition:
                         job.meta["publisher_edition"] = edition
 
-                    if result and result.errors:
+                    if result.errors:
                         job.status = IngestionStatus.COMPLETED_WITH_ERRORS
                     elif provenance.get("mode") == freshness.FIXTURE:
                         # Not an error, but NOT a clean success either: nothing
@@ -557,15 +636,9 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                                     if dry_job:
                                         dry_job.status = dry_status
                                         dry_job.finished_at = finished_at_dry
-                                        dry_job.items_processed = (
-                                            result.items_processed if result else 0
-                                        )
-                                        dry_job.items_created = (
-                                            result.items_created if result else 0
-                                        )
-                                        dry_job.items_updated = (
-                                            result.items_updated if result else 0
-                                        )
+                                        dry_job.items_processed = result.items_processed
+                                        dry_job.items_created = result.items_created
+                                        dry_job.items_updated = result.items_updated
                                         dry_job.errors = dry_errors
                                         dry_job.meta = dry_metadata
                                         status_session.commit()

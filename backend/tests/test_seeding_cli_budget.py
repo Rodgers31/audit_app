@@ -93,7 +93,7 @@ def _make_handler(calls, name, *, work=0.0, raise_timeout=False, clock=None):
             raise seed_cli.DomainTimeoutError(
                 "domain exceeded Ns budget; aborted by the CLI"
             )
-        return DomainRunResult(domain=name)
+        return DomainRunResult(domain=name, dry_run=context.dry_run, items_processed=1)
 
     return _handler
 
@@ -250,7 +250,7 @@ def _make_swallowing_handler(calls, swallowed, name):
             )
         except Exception:  # noqa: BLE001 - intentionally broad; mirrors fetchers
             swallowed.append(name)
-            return DomainRunResult(domain=name)  # pretend the fixture fallback won
+            return DomainRunResult(domain=name, dry_run=context.dry_run, items_processed=1)  # pretend the fixture fallback won
 
     return _handler
 
