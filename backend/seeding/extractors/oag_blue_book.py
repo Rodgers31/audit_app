@@ -55,7 +55,9 @@ EXTRACTOR_ID = "oag_blue_book"  # recorded on every extractions row
 #:    813 rows, 329 of them table rows, became 1,882 findings).
 #: 3: a standalone historical list after an unrelated finding is withheld
 #:    from that finding; a prior-year finding still retains its own table.
-EXTRACTOR_VERSION = 3
+#: 4: complete structural report headings, scoped clean statements, statutory
+#:    reporting context and lowered inline fraction glyphs.
+EXTRACTOR_VERSION = 4
 
 # ── text integrity ───────────────────────────────────────────────────
 _CID_RE = re.compile(r"\(cid:\d+\)")
@@ -80,8 +82,12 @@ _TOC_RE = re.compile(r"^(\d{4})\s+(.+?)\s*\.{3,}\s*(\d+)\s*$")
 _TOC_COUNTY_RE = re.compile(r"^(\d{1,2})\.\s+(.+?)\s*\.{3,}\s*(\d+)\s*$")
 _VOTE_RE = re.compile(r"VOTE\s*[-–]?\s*(\d{4})", re.IGNORECASE)
 _SUBREPORT_RE = re.compile(
-    r"^REPORT ON (THE FINANCIAL STATEMENTS|LAWFULNESS AND EFFECTIVENESS"
-    r"|EFFECTIVENESS OF INTERNAL CONTROLS)",
+    r"(?:REPORT ON (?:THE (?:FINANCIAL|FINACIAL|REVENUE) STATEMENTS"
+    r"|(?:THE )?LAWFULNESS AND (?:THE )?EFFECTIVENESS IN "
+    r"(?:(?:THE )?USE OF|USE THE OF) PUBLIC RESOURCES\.?"
+    r"|(?:THE )?EFFECTIVENESS OF INTERNAL CONTROLS?,? RISK MANAGEMENT"
+    r"(?:,? AND GOVERNANCE)?)"
+    r"|REPORT (?:ON|OF) OTHER LEGAL(?: AND (?:REGULATORY|REGULATIORY))? REQUIREMENTS)",
     re.IGNORECASE,
 )
 _OPINION_RE = re.compile(
@@ -91,15 +97,15 @@ _OPINION_RE = re.compile(
 _HEADING_RE = re.compile(
     r"^(Basis for (?:Qualified|Adverse|Disclaimer of) Opinion"
     r"|Basis for (?:Qualified |Adverse |Disclaimer of )?Conclusion"
-    r"|Emphasis of Matter|Other Matter|Other Information"
+    r"|E\s*mphasis of Matter|Other Matter|Other Information"
     r"|(?:Unqualified |Qualified |Adverse )?Conclusion)\s*$",
     re.IGNORECASE,
 )
 #: Four digits: OAG numbers the national book's paragraphs continuously
 #: across every vote, 1 to 2819 in FY2024/25. It does not restart them per vote.
-_FINDING_START_RE = re.compile(r"^(\d{1,4})\.\s+(\S.*)$")
-#: OAG skips a number now and then (¶215 and ¶1813 exist nowhere in the
-#: FY2024/25 national book). A step this small is a skip. A numbered list
+_FINDING_START_RE = re.compile(r"^(\d(?:\s*\d){0,3})\s*\.\s+(\S.*)$")
+#: Embedded glyph spacing may split a paragraph marker ("181 3.", "215 .").
+#: A small step also tolerates genuine numbering gaps. A numbered list
 #: inside a finding goes backwards, and a year at the start of a wrapped line
 #: ("2019. The supplementary financing ...") lands far from the running number.
 MAX_NUMBER_STEP = 3
@@ -107,8 +113,63 @@ _AMOUNT_RE = re.compile(r"Kshs?\.?\s*([\d][\d,]*(?:\.\d+)?)", re.IGNORECASE)
 # "There were no material issues ...", and OAG's typos of it: "The were no
 # material issues" (FY2024/25 p.488), "There were not material issues" (p.624).
 _NO_ISSUE_RE = re.compile(
-    r"^The(?:re)?\s+(?:was|were)\s+not?\s+material\s+issue", re.IGNORECASE
+    r"^The(?:re)?\s+(?:was|were)\s+(?:no|not)\s+(?:material\s+)?issues?\b",
+    re.IGNORECASE,
 )
+_QUALIFIED_CLEAN_RE = re.compile(
+    r"\b(?:however|except|but|although|nevertheless|unsupported|irregular"
+    r"|unconfirmed|missing|failure)\b", re.IGNORECASE
+)
+_CLEAN_STATEMENT_RE = re.compile(
+    r"The(?:re)?\s+(?:was|were)\s+(?:no|not)\s+(?:material\s+)?issues?\s+"
+    r"(?:(?:no material issues )?)(?:noted )?relating (?:to )?(?:Other Information"
+    r"|(?:effectiveness of )?lawfulness and effectiveness in (?:the )?use of public resources"
+    r"|(?:effectiveness of )?internal controls, (?:risk )?management (?:and|on) governance)\.?",
+    re.IGNORECASE,
+)
+_CLEAN_FINANCIAL_RE = re.compile(
+    r"The(?:re)?\s+(?:was|were)\s+(?:no|not)\s+(?:material\s+)?issues?\s+"
+    r"noted during the audit of (?P<prefix>[^.;!?]*?)(?:financial|revenue) statements? of "
+    r"(?P<subject>[^.;!?]+?)\.?", re.IGNORECASE,
+)
+_CLEAN_AUDITEE_NOUNS = frozenset({
+    "project", "program", "programme", "state department", "commission",
+    "scheme", "fund", "service", "services", "office", "ministry", "scheme fund",
+    "schemes fund", "agency", "authority",
+})
+
+
+def _scope_words(text: str) -> str:
+    return re.sub(r"^the(?:\s+|$)", "", " ".join(text.lower().split()))
+
+
+def _is_clean_statement(body: str, entity: str, subsection: Optional[str]) -> bool:
+    if _QUALIFIED_CLEAN_RE.search(body) or _AMOUNT_RE.search(body):
+        return False
+    # A source can leave a standalone backslash after the sentence; preserve
+    # that glyph in the evidence while classifying only the complete sentence.
+    classified = re.sub(r"\s+\\$", "", body)
+    if _CLEAN_STATEMENT_RE.fullmatch(classified):
+        return True
+    financial = _CLEAN_FINANCIAL_RE.fullmatch(classified)
+    if financial is None:
+        return False
+    # Match an auditee, never an arbitrary trailing clause after "of".
+    scopes = {_scope_words(entity), _scope_words(subsection or "")}
+    scopes.update(_scope_words(part) for part in re.split(r"\s+and\s+", entity, flags=re.IGNORECASE))
+    prefix = _scope_words(financial["prefix"])
+    subject = _scope_words(financial["subject"])
+    subject_known = (subject in scopes | _CLEAN_AUDITEE_NOUNS
+                     or any(scope.startswith(subject + " ") for scope in scopes))
+    if not subject_known and " of " in subject:
+        name, owner = subject.rsplit(" of ", 1)
+        subject_known = (_scope_words(owner) in scopes and any(
+            (" " + name + " ") in (" " + scope + " ") for scope in scopes))
+    return (subject_known and prefix in {"", "receiver of revenue", "revenue"} | scopes)
+
+
+def _paragraph_no(match) -> int:
+    return int(re.sub(r"\s+", "", match.group(1)))
 # The header of the table an "Unresolved Prior Year Matters" finding lists last
 # year's issues in: "No. Audit Issues for 2023/2024", "No. Audit Issue".
 _PRIOR_ISSUES_TABLE_RE = re.compile(r"^No\.?\s+Audit\s+Issues?\b", re.IGNORECASE)
@@ -131,7 +192,7 @@ _APPENDIX_RE = re.compile(
 )
 # An ALL-CAPS line inside a chapter marks a sub-entity (Consolidated Fund
 # Services, donor-funded projects, …). Recorded for provenance fidelity.
-_SUBSECTION_RE = re.compile(r"^[A-Z][A-Z0-9 ,'&()/.–-]{11,}$")
+_SUBSECTION_RE = re.compile(r"^[A-Z][A-Z0-9 ,'’:&()/.–-]{11,}$")
 
 # Kenya FY span in the source URL/filename: "…-2024-2025.pdf"
 _FY_SPAN_RE = re.compile(r"(20\d{2})\s*[/_–-]\s*(20\d{2}|\d{2})")
@@ -159,6 +220,7 @@ class BlueBookFinding:
     sub_section: Optional[str]
     amounts: List[float] = field(default_factory=list)
     method: str = "pdfplumber"
+    report_kind: Optional[str] = None  # complete heading, unlike wrapped source label
 
 
 @dataclass
@@ -169,6 +231,7 @@ class BlueBookResult:
     rejected_cid: int  # findings rejected for failing text integrity
     ocr_pages: int
     skipped_votes: List[int] = field(default_factory=list)
+    clean_statements: List[BlueBookFinding] = field(default_factory=list)
 
 
 # ── severity mapping (OAG structure -> app enum) ─────────────────────
@@ -255,24 +318,22 @@ def segment_chapter(
     stop_at_appendix: bool = True,
     max_number_step: int = MAX_NUMBER_STEP,
     skip_prior_issue_tables: bool = True,
+    clean_statements: Optional[List[BlueBookFinding]] = None,
 ) -> Tuple[List[BlueBookFinding], int]:
     """Findings for one vote's chapter. Returns (findings, rejected_cid).
 
-    The defaults are the national walk. Each was measured on the FY2024/25
-    national book (document 2392), whose 813 rows under the old defaults
-    became 1,882 (every paragraph number 1-2818 accounted for: 1,882 findings,
-    933 "no material issues" statements, ¶215 and ¶1813 absent from the PDF,
-    and one wrapped prose line that is correctly not a paragraph). The
-    FY2020/21 county volumes the same walk reads (documents 2395 and 2396)
-    come out byte-identical under both.
+    The defaults are the national walk. Historical row counts are not a
+    completeness oracle. Correction, 4 November 2026: paragraphs 215 and
+    1813 are present on physical PDF pages 86 and 575; embedded glyph spacing
+    previously hid their markers. Source-bound comparison must account for
+    numbered findings and separately retained scoped clean statements.
 
     * ``finding_start_re``: up to four digits. OAG numbers paragraphs
       continuously across the whole book, to 2819. The three-digit pattern
       stopped at 999 (pdf p.312), after which the only numbered lines it could
       match were the 1, 2, 3 rows of prior-year tables: 329 of the 813 rows.
-    * ``max_number_step``: OAG skips numbers. ¶1813 does not exist, and the
-      strict ``prev + 1`` rule lost the rest of vote 1152 (51 findings). A
-      numbered list inside a finding goes backwards, and a year opening a
+    * ``max_number_step``: tolerate a bounded numbering gap rather than ending
+      a chapter. A numbered list inside a finding goes backwards, and a year opening a
       wrapped line ("2019. The supplementary ...") lands hundreds away from
       the running number, so neither passes. The four such lines in the year
       band 1990-2100 are all refused, and its 83 real paragraphs kept.
@@ -311,28 +372,58 @@ def segment_chapter(
         for l in page_lines:
             lines.append((idx + 1, l.strip(), page.method))
 
-    # The table title can wrap even when the body extraction is otherwise
-    # readable. Join only the two lines that form this exact structural title.
+    # Resolve complete standalone report headings before walking state. A
+    # prefix is insufficient: wrapped narrative cites these same reports.
+    # Require the next nonempty line to introduce an opinion/section (or a
+    # numbered paragraph for the statutory report, which has no opinion).
+    # Preserve the first source line as the existing subreport label.
+    report_starts = {}
     joined_lines = []
     position = 0
     while position < len(lines):
         page, line, method = lines[position]
-        if position + 1 < len(lines):
-            candidate = f"{line} {lines[position + 1][1]}"
-            if _PRIOR_ISSUES_LIST_RE.fullmatch(candidate):
-                joined_lines.append((page, candidate, method))
-                position += 2
+        candidate = line
+        for end in range(position, min(position + 4, len(lines))):
+            if end > position:
+                candidate += " " + lines[end][1]
+            complete = " ".join(candidate.split())
+            if not _SUBREPORT_RE.fullmatch(complete):
                 continue
-        joined_lines.append((page, line, method))
-        position += 1
+            following = next((v[1] for v in lines[end + 1:] if v[1]), "")
+            numbered = finding_start_re.match(following)
+            following_heading = numbered.group(2) if numbered else following
+            statutory = bool(re.match(r"REPORT (?:ON|OF) OTHER LEGAL", complete, re.IGNORECASE))
+            preceding = next((v[1] for v in reversed(lines[:position]) if v[1]), "")
+            numbered_section = bool(numbered and complete.isupper() and (
+                not preceding or preceding.endswith(".") or preceding.isupper()))
+            if (_OPINION_RE.fullmatch(following_heading) or _HEADING_RE.fullmatch(following)
+                    or (statutory and numbered) or numbered_section):
+                report_starts[len(joined_lines)] = ("statutory_reporting" if statutory else complete.upper())
+                joined_lines.append((page, line, method))
+                position = end + 1
+                break
+        else:
+            # The historical-list heading has its own exact two-line grammar.
+            if position + 1 < len(lines):
+                candidate = f"{line} {lines[position + 1][1]}"
+                if _PRIOR_ISSUES_LIST_RE.fullmatch(candidate):
+                    joined_lines.append((page, candidate, method))
+                    position += 2
+                    continue
+            joined_lines.append((page, line, method))
+            position += 1
+            continue
     lines = joined_lines
 
     findings: List[BlueBookFinding] = []
     rejected = 0
     subreport: Optional[str] = None
+    report_kind: Optional[str] = None
     opinion: Optional[str] = None
     heading: Optional[str] = None
     sub_section: Optional[str] = None
+    scope_context = ""
+    last_subsection_index = -2
     cur: Optional[dict] = None
     prev_no: Optional[int] = None
     table_next: Optional[int] = None  # next row number while inside a table
@@ -346,8 +437,6 @@ def segment_chapter(
             return
         body = " ".join(cur["lines"]).strip()
         cur_out, cur = cur, None
-        if _NO_ISSUE_RE.match(cur_out["title"]):
-            return  # a clean statement, not a finding
         if cid_ratio(body) > CID_REJECT_RATIO:
             rejected += 1
             logger.warning(
@@ -364,7 +453,16 @@ def segment_chapter(
                 amounts.append(float(raw.replace(",", "")))
             except ValueError:
                 pass
-        findings.append(
+        # Keep scoped positive statements as source evidence, separately from
+        # findings. Never discard an adverse qualification after a clean prefix.
+        clean_body = body
+        if _OPINION_RE.fullmatch(cur_out["title"]):
+            clean_body = body[len(cur_out["title"]):].strip()
+        clean = _is_clean_statement(clean_body, entity_name, cur_out["scope_context"])
+        target = clean_statements if clean else findings
+        if target is None:
+            return
+        target.append(
             BlueBookFinding(
                 vote=vote,
                 entity_name=entity_name,
@@ -379,13 +477,15 @@ def segment_chapter(
                 sub_section=cur_out["sub_section"],
                 amounts=amounts,
                 method=cur_out["method"],
+                report_kind=cur_out["report_kind"],
             )
         )
 
     def subreport_of(c: dict) -> Optional[str]:
         return c["subreport"]
 
-    for pdf_page, line, method in lines:
+    for line_index, (pdf_page, line, method) in enumerate(lines):
+        report_start = line_index in report_starts
         if not line:
             continue
         if skip_prior_issue_tables and _PRIOR_ISSUES_LIST_RE.fullmatch(line):
@@ -406,7 +506,7 @@ def segment_chapter(
             # numbers remain ambiguous and are withheld rather than fabricated.
             row = finding_start_re.match(line)
             structural = (
-                _SUBREPORT_RE.match(line)
+                report_start
                 or _OPINION_RE.match(line)
                 or _HEADING_RE.match(line)
                 or (stop_at_appendix and _APPENDIX_RE.match(line))
@@ -415,14 +515,14 @@ def segment_chapter(
                 row is not None
                 and detached_rows > 0
                 and prev_no is not None
-                and prev_no < int(row.group(1)) <= prev_no + max_number_step
-                and int(row.group(1)) > detached_max_row + max_number_step
+                and prev_no < _paragraph_no(row) <= prev_no + max_number_step
+                and _paragraph_no(row) > detached_max_row + max_number_step
                 and prev_no - detached_max_row > max(20, 10 * max_number_step)
             )
             if not structural and not resumes_numbering:
                 if row is not None:
                     detached_rows += 1
-                    detached_max_row = max(detached_max_row, int(row.group(1)))
+                    detached_max_row = max(detached_max_row, _paragraph_no(row))
                 continue
             detached_prior_list = False
         if skip_prior_issue_tables and cur is not None:
@@ -432,14 +532,14 @@ def segment_chapter(
                 continue
             if table_next is not None:
                 row = _FINDING_START_RE.match(line) or finding_start_re.match(line)
-                if row and int(row.group(1)) == table_next:
+                if row and _paragraph_no(row) == table_next:
                     table_next += 1
                     cur["lines"].append(line)
                     continue
                 structural = (
                     row
                     or _HEADING_RE.match(line)
-                    or _SUBREPORT_RE.match(line)
+                    or report_start
                     or _OPINION_RE.match(line)
                 )
                 if not structural:
@@ -449,9 +549,10 @@ def segment_chapter(
                 table_next = None
         if stop_at_appendix and _APPENDIX_RE.match(line):
             break  # appendix tables are not findings
-        if _SUBREPORT_RE.match(line):
+        if report_start:
             flush()
             subreport, opinion, heading = line, None, None
+            report_kind = report_starts[line_index]
             continue
         if _OPINION_RE.match(line):
             flush()
@@ -463,7 +564,7 @@ def segment_chapter(
             continue
         m = finding_start_re.match(line)
         if m:
-            no = int(m.group(1))
+            no = _paragraph_no(m)
             title = m.group(2).strip()
             # Paragraph numbering is continuous within a chapter. Accepting
             # only prev+1 (or the very first number seen) rejects numbered
@@ -472,6 +573,8 @@ def segment_chapter(
             is_first = prev_no is None
             if (is_next or is_first) and title and not title[0].islower():
                 flush()
+                if _OPINION_RE.fullmatch(title):
+                    opinion = title
                 cur = {
                     "no": no,
                     "title": title,
@@ -479,22 +582,37 @@ def segment_chapter(
                     "opinion": opinion,
                     "heading": heading,
                     "subreport": subreport,
+                    "report_kind": report_kind,
                     "sub_section": sub_section,
+                    "scope_context": scope_context,
                     "lines": [title],
                     "method": method,
                 }
                 prev_no = no
                 continue
         if cur is not None:
-            if _SUBSECTION_RE.match(line) and len(line.split()) >= 3:
+            if (_SUBSECTION_RE.match(line) and len(line.split()) >= 3
+                    and not line.upper().startswith("REPORT ON ")):
                 flush()
                 sub_section = line
+                scope_context = line
+                last_subsection_index = line_index
+                subreport, report_kind, opinion, heading = None, None, None, None
                 continue
             cur["lines"].append(line)
             if method == "ocr":
                 cur["method"] = "ocr"
-        elif _SUBSECTION_RE.match(line) and len(line.split()) >= 3:
+        elif (_SUBSECTION_RE.match(line) and len(line.split()) >= 3
+                and not line.upper().startswith("REPORT ON ")):
             sub_section = line
+            scope_context = (scope_context + " " + line
+                             if last_subsection_index == line_index - 1 else line)
+            last_subsection_index = line_index
+            subreport, report_kind, opinion, heading = None, None, None, None
+        elif (cur is None and last_subsection_index == line_index - 1
+              and _SUBSECTION_RE.fullmatch(line)):
+            scope_context += " " + line
+            last_subsection_index = line_index
 
     flush()
     return findings, rejected
@@ -519,6 +637,7 @@ def parse_blue_book(pages: List[PageText], source_url: str) -> BlueBookResult:
     all_findings: List[BlueBookFinding] = []
     rejected = 0
     skipped_votes = []
+    clean_statements = []
     last_printed = len(pages) - offset
     for i, (vote, entity, start_printed) in enumerate(toc):
         end_printed = (
@@ -551,13 +670,14 @@ def parse_blue_book(pages: List[PageText], source_url: str) -> BlueBookResult:
             )
             continue
         findings, rej = segment_chapter(
-            pages, vote, entity, start_printed, end_printed, offset
+            pages, vote, entity, start_printed, end_printed, offset,
+            clean_statements=clean_statements,
         )
         all_findings.extend(findings)
         rejected += rej
 
     ocr_pages = sum(1 for p in pages if p.method == "ocr")
-    return BlueBookResult(fy, all_findings, len(toc), rejected, ocr_pages, skipped_votes)
+    return BlueBookResult(fy, all_findings, len(toc), rejected, ocr_pages, skipped_votes, clean_statements)
 
 
 # ── PDF I/O (thin, impure shell around the pure parser) ──────────────
@@ -680,6 +800,66 @@ def _is_plain_background(page) -> bool:
     return all(abs(value - edge) <= 0.5 for value, edge in zip(bounds, page.bbox))
 
 
+def _inline_fraction_chars(chars: list) -> list:
+    """Align a lowered digit only inside a geometrically contiguous fraction.
+
+    Some PDFs draw the denominator a few points below the slash's baseline.
+    pdfplumber then sorts it into the next line. Use the original glyphs and
+    their coordinates, never a guessed denominator or a text substitution.
+    Parentheses/slash must share a baseline; every digit must sit between
+    them, within half the surrounding font size. A separate line is excluded.
+    The caller's raw glyphs remain unchanged.
+    """
+    result = list(chars)
+    for start, opening in enumerate(chars):
+        if opening.get("text") != "(":
+            continue
+        for end in range(start + 4, min(start + 16, len(chars))):
+            group = chars[start:end + 1]
+            text = "".join(c["text"] for c in group)
+            if not re.fullmatch(r"\(\d+/\d+\)", text):
+                continue
+            anchors = [c for c in group if c["text"] in "(/)"]
+            if any(type(c.get(key)) not in (int, float)
+                   or not math.isfinite(c[key])
+                   for c in group for key in ("top", "bottom", "x0", "x1", "size")):
+                break
+            baseline = sum(c["top"] for c in anchors) / len(anchors)
+            size = min(c["size"] for c in anchors)
+            if (size <= 0 or any(abs(c["top"] - baseline) > 1 for c in anchors)
+                    or any(abs(c["top"] - baseline) > size / 2 for c in group)
+                    or any(not -0.5 <= b["x0"] - a["x1"] <= 1.5
+                           for a, b in zip(group, group[1:]))):
+                break
+            for index in range(start + 1, end):
+                char = chars[index]
+                delta = baseline - char["top"]
+                if char["text"].isdigit() and abs(delta) > 3:
+                    moved = dict(char)
+                    for name in ("top", "bottom", "doctop"):
+                        if name in moved:
+                            moved[name] += delta
+                    for name in ("y0", "y1"):
+                        if name in moved:
+                            moved[name] -= delta
+                    result[index] = moved
+            break
+    return result
+
+
+def _page_text(source) -> str:
+    chars = source.chars
+    aligned = _inline_fraction_chars(chars)
+    if aligned == chars:
+        return source.extract_text() or ""
+    from pdfplumber.utils import chars_to_textmap
+
+    return chars_to_textmap(
+        aligned, layout_bbox=source.bbox,
+        layout_width=source.width, layout_height=source.height,
+    ).as_string
+
+
 def read_pages(
     pdf_path: Path,
     *,
@@ -709,22 +889,33 @@ def read_pages(
     ocr_used = 0
     with pdfplumber.open(pdf_path) as pdf:
         for i, page in enumerate(pdf.pages):
-            source = page.within_bbox(page.bbox) if visible_only else page
-            text = source.extract_text() or ""
-            method = "pdfplumber"
-            if not text.strip() and _is_plain_background(page):
-                method = "blank"
-            elif not text.strip() or cid_ratio(text) > CID_REJECT_RATIO:
-                if ocr_enabled and ocr_used < ocr_max_pages:
-                    ocr_text = _ocr_page(pdf_path, i + 1)
-                    ocr_used += 1
-                    if ocr_text.strip() and cid_ratio(ocr_text) <= CID_REJECT_RATIO:
-                        text, method = ocr_text, "ocr"
+            source = page
+            try:
+                if visible_only:
+                    source = page.within_bbox(page.bbox)
+                text = _page_text(source)
+                method = "pdfplumber"
+                if not text.strip() and _is_plain_background(page):
+                    method = "blank"
+                elif not text.strip() or cid_ratio(text) > CID_REJECT_RATIO:
+                    if ocr_enabled and ocr_used < ocr_max_pages:
+                        ocr_text = _ocr_page(pdf_path, i + 1)
+                        ocr_used += 1
+                        if ocr_text.strip() and cid_ratio(ocr_text) <= CID_REJECT_RATIO:
+                            text, method = ocr_text, "ocr"
+                        else:
+                            method = "rejected"
                     else:
                         method = "rejected"
-                else:
-                    method = "rejected"
-            pages.append(PageText(page_number=i + 1, text=text, method=method))
+                pages.append(PageText(page_number=i + 1, text=text, method=method))
+            finally:
+                # Only text survives this iteration. Retaining hundreds of
+                # Page layout/glyph caches can exhaust a bounded PDF worker.
+                try:
+                    if source is not page:
+                        source.close()
+                finally:
+                    page.close()
     n_rej = sum(1 for p in pages if p.method == "rejected")
     if n_rej:
         logger.info(
@@ -757,7 +948,7 @@ def _ocr_page(pdf_path: Path, page_number: int) -> str:
 
 # ── Extraction-row writer (the Layer-3 output) ───────────────────────
 def finding_to_extracted_json(f: BlueBookFinding, fy: Optional[str]) -> dict:
-    return {
+    payload = {
         "schema": "oag_blue_book/v1",
         "vote": f.vote,
         "entity_name": f.entity_name,
@@ -775,6 +966,11 @@ def finding_to_extracted_json(f: BlueBookFinding, fy: Optional[str]) -> dict:
         "amounts": f.amounts,
         "extraction_method": f.method,
     }
+    if f.report_kind == "statutory_reporting":
+        # Statutory reporting observations are retained verbatim and labelled
+        # neutral. An earlier subreport's adverse opinion cannot leak here.
+        payload["observation_type"] = "statutory_reporting"
+    return payload
 
 
 def source_hash_of(extracted_json: dict) -> str:
@@ -1071,6 +1267,14 @@ def extract_blue_book(session, doc, settings, *, review=None) -> dict:
         "ocr_pages": result.ocr_pages,
         "fiscal_year": result.fiscal_year_label,
     }
+    # Preserve positive conclusions and their exact paragraph/page/subreport
+    # lineage without loading them as allegations. This metadata is committed
+    # only after the existing reconciliation gate has accepted the candidate.
+    doc_meta["clean_statements"] = [
+        {**finding_to_extracted_json(f, result.fiscal_year_label),
+         "observation_type": "clean_statement", "severity": "INFO"}
+        for f in result.clean_statements
+    ]
     doc.meta = doc_meta
     session.flush()
     logger.info(
