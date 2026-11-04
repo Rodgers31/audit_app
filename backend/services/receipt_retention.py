@@ -18,7 +18,7 @@ _DIAGNOSTICS = {
 }
 
 
-def _safe_diagnostics(raw, observed):
+def _safe_diagnostics(raw, observed, missing):
     if type(raw) is not dict or not raw or set(raw) - set(_DIAGNOSTICS):
         return None
     result = {}
@@ -28,7 +28,13 @@ def _safe_diagnostics(raw, observed):
                 or any(type(n) is not int or not 0 < n <= _LIMIT for n in reasons.values())):
             return None
         result[phase] = dict(reasons)
-    if sum(sum(reasons.values()) for reasons in result.values()) > observed:
+    failures = sum(count for phase, reasons in result.items()
+        for reason, count in reasons.items()
+        if reason != ('matched' if phase == 'retained_pdf_restore' else 'bytes_retained'))
+    # Failed acquisition snapshots cannot later be upgraded. A matched phase
+    # can subsequently be downgraded, so its label does not bound retained.
+    if (sum(sum(reasons.values()) for reasons in result.values()) > observed
+            or failures > missing):
         return None
     return result
 
@@ -67,7 +73,7 @@ def safe_retention_summary(raw):
         return {"state": "unverified"}
     result = {"state": state, **{key: raw[key] for key in _COUNTS}}
     if "diagnostics" in raw:
-        diagnostics = _safe_diagnostics(raw["diagnostics"], raw["observed"])
+        diagnostics = _safe_diagnostics(raw["diagnostics"], raw["observed"], raw["missing"])
         if diagnostics is None:
             return {"state": "unverified"}
         result["diagnostics"] = diagnostics

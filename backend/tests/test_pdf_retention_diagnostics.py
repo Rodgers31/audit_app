@@ -192,3 +192,13 @@ def test_admin_projection_keeps_the_existing_six_field_retention_contract():
     detailed={**counts,'diagnostics':{'retained_pdf_restore':{'origin_missing':1},
                                     'local_pdf_fallback':{'bytes_retained':1}}}
     assert safe_job_metadata({'receipt_retention': detailed})=={'receipt_retention':counts}
+
+
+@pytest.mark.parametrize('reason,missing,accepted', [
+    ('origin_missing', 0, False), ('matched', 0, True), ('matched', 1, True),
+], ids=['impossible-confirmed-failure', 'matched-confirmed', 'matched-later-downgraded'])
+def test_diagnostic_failure_counts_cannot_contradict_retention(reason, missing, accepted):
+    raw=dict(state='missing_bytes' if missing else 'confirmed', observed=1,
+             retained=1-missing, missing=missing, recovered=0, retry_requests=0,
+             diagnostics={'retained_pdf_restore': {reason: 1}})
+    assert safe_retention_summary(raw)==(raw if accepted else {'state':'unverified'})
