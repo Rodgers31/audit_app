@@ -1,4 +1,4 @@
-# Held runtime follow-through — preparation only
+# Held runtime follow-through — review-hardened preparation
 
 Base: `1542bc5117f09b15b126e03bbd2158a54c348540`, tree
 `2fa98d95754e9dde3f1407e315dd0317733c4d3a`. This additive packet changes no
@@ -81,9 +81,20 @@ under `ingestion-pin-repair-20261103`, not produced by this preparation lane.
 The durable source is `scripts/verification/launch_runtime/`. Run its
 `build_held_command.py` locally with the existing supported interpreter and retain
 the exact resulting shell command, byte count and SHA-256 in a fresh private
-external evidence directory. The preparation handoff supplies this generated
-command and its exact hash. The builder **prints only** and never runs the host
-command. Review the expanded command before parent execution.
+external evidence directory. [Qualification](QUALIFICATION.md) identifies the
+current candidate command and runner; the earlier actual host receipt remains
+bound to its old bytes in [parent result](PARENT_RESULT.md). The current candidate
+has not been rerun on that host. The builder **prints only** and never runs the
+host command. Review the expanded command before parent execution.
+
+The builder has a fixed `REVIEWED_SHA256` manifest for all four transported
+inputs, including the runner; it refuses modified input instead of generating a
+new approval digest from it. The generated transport contains the same fixed
+review pins independently of its data rows, checks exact names/order/cardinality
+and matches captured bytes before compilation. Neither side may auto-repin a
+dirty file. Any source/pin update requires independent review and a newly approved
+complete command hash. The self-contained verifier is not an authentication or
+signature system against changes to the entire command and its pins together.
 
 The command uses `python -B -I -` in the existing host session. It transports
 only the reviewed probe, new runner and three fixed synthetic codec fixtures
@@ -120,7 +131,13 @@ Retain that raw private observation locally. No credential or raw account/role
 metadata belongs in this PR.
 
 Run the exact hashed command once, attended. The inner observation must finish
-in less than 75 seconds; the transport alarm is 80 seconds including cleanup.
+in less than 75 seconds; the generated transport explicitly arms that observation
+timer even when calling `observe()` directly. The original absolute 80-second
+transport deadline is restored afterward (including refusal), leaving only its
+remaining time for source rereads and cleanup. Both initial source capture and
+private rereads are bounded to 32 KiB plus one refusal byte. The runner rechecks
+held flags/source after image resource sampling and before H264 inspection; final
+state/source guards remain required. No inner timeout refreshes the outer budget.
 Children retain the product's 20-second inspection limit, CPU/file/descriptor
 limits and file-only ffprobe protocol restrictions. The command emits exactly
 one `HELD_RUNTIME_PACKET` line only after source readback and owned temporary

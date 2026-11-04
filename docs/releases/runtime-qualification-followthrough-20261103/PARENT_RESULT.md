@@ -1,4 +1,10 @@
-# Parent serving-host result — bounded OFF-state scope
+# Historical parent serving-host result — bounded OFF-state scope
+
+This preserved observation applies to old runner `6b19e4c` and command `f76655a`
+with the complete identities below. PR review subsequently changes the runner,
+input-pinning and transport deadline guards. The [current candidate](QUALIFICATION.md)
+is locally verified only and has not been rerun on the serving host. This report
+is not relabelled as evidence of the newer command or current live state.
 
 Observed **3 November 2026, 23:57:34Z / 5:57:34 p.m. CST**, after the parent-owned
 existing-build configuration rollout. The preparation session did not execute

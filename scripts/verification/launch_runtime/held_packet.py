@@ -167,6 +167,8 @@ def observe(root, media_root):
     need(not Path(directory).exists(), 'Private image packet directory remained')
     between = probe['cgroup_snapshot']()
     check_resources(between)
+    need(probe['held_flags'](os.environ, SOURCE) == flags,
+         'Controls changed before video inspection')
     video = inspect_video(probe, media_root, inputs['tiny-h264.mp4'])
     processes_after = probe['process_inventory']()
     after = probe['cgroup_snapshot']()

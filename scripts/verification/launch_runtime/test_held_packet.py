@@ -160,6 +160,30 @@ class PacketTests(unittest.TestCase):
                 packet.main(['--packet-root', str(ROOT)])
             output.assert_not_called()
 
+    def test_controls_changed_between_codecs_refuse_before_video(self):
+        real_probe = packet.load_probe(ROOT)
+        for key, value in (('SOCIAL_MEDIA_ENABLED', 'true'),
+                           ('RENDER_GIT_COMMIT', '0' * 40)):
+            with self.subTest(key=key):
+                probe = dict(real_probe)
+                snapshots = []
+                def snapshot():
+                    snapshots.append(True)
+                    if len(snapshots) == 2:
+                        os.environ[key] = value
+                    return resources()
+                probe.update(cgroup_snapshot=snapshot,
+                             process_inventory=lambda: [{'pid': 1, 'role': 'probe'}],
+                             inspect_images=lambda *_: {'scope': 'inert fixture'})
+                with patch.dict(os.environ, held_environment(), clear=True), \
+                        patch.object(packet, 'load_probe', return_value=probe), \
+                        patch.object(packet, 'check_runtime'), \
+                        patch.object(packet, 'inspect_video', return_value={'scope': 'inert fixture'}) as video:
+                    with self.assertRaises(ValueError):
+                        packet.observe(ROOT, MEDIA)
+                    self.assertEqual(video.call_count, 0, 'Changed controls reached H264 inspection')
+                self.assertEqual(len(snapshots), 2, 'Video transition was not reached')
+
     def test_final_inventory_cannot_escape_flags_source_or_deadline_guards(self):
         real_probe = packet.load_probe(ROOT)
         for mutation in ('flags', 'source', 'deadline'):
