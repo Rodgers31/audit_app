@@ -43,8 +43,10 @@ actor UUID was not independently extracted. These proofs do not qualify storage,
 worker, native/source admission or publishing activation, and do not authorize a
 repeat check or new/reconnect OAuth.
 
-The parent's final observation reports publishing, uploads, background workers
-and financial generation OFF, with zero media assets/uploads, targets,
+The parent's historical final observation reported publishing, uploads, background workers
+and financial generation OFF; the separate generation-master limitation is corrected
+in the current decision packet. That earlier scoped witness records zero media
+assets/uploads, targets,
 publications and attempts. Financial, existing post/revision and source
 cursor/event fingerprints are unchanged. Only the expected account proofs,
 controls version and two audit/two idempotency receipt rows changed in the
@@ -274,7 +276,7 @@ are preparation only. No policy is approved, digest installed, or action run.
 | Status | Verified scope / remaining limit | Evidence |
 | --- | --- | --- |
 | Accepted dated observation | Main `1542bc5117f09b15b126e03bbd2158a54c348540`, tree `2fa98d95754e9dde3f1407e315dd0317733c4d3a`; application backend/frontend/.github trees equal serving `f0f4705e9561e2e42edd93fc747e8bff24468fae`. Render `dep-dbl3il08v5cc73ak6g90`; frontend `dpl_FRvuB6VLPPfV1XKBCfnXB8hm6r8K`; schema `a756b20a0001`. Existing Starter 512 MiB / 0.5 CPU, Linux x86_64 Python 3.12.16. | E01–E03, E05; no new live check in this lane. |
-| Accepted dated observation | At 22:55:13.844054Z / 4:55:13 p.m. CST: controls version 3, all five automatic/global controls false; uploads and financial generation OFF; Facebook/Instagram connected but publishing paused; background processes 0; posts/revisions 8/10; assets/uploads/targets/publications/attempts all 0. Render auto-deploy OFF remains parent-owned. | E01–E03. Unset flags are not evidence that enabled-by-default warmup is disabled. |
+| Accepted dated observation | At 22:55:13.844054Z / 4:55:13 p.m. CST: controls version 3, all five automatic/global controls false; uploads held; the separate draft-generation master was not sampled (see parent correction in the decision packet); Facebook/Instagram connected but publishing paused; background processes 0; posts/revisions 8/10; assets/uploads/targets/publications/attempts all 0. Render auto-deploy OFF remains parent-owned. | E01–E03. Unset flags are not evidence that enabled-by-default warmup is disabled. |
 | Accepted dated observation | Private `audit-social-media-v1`; no public r2.dev/custom domain. CORS exactly `https://www.auditgava.com`, GET/HEAD/PUT, content-type/if-none-match, exposed ETag, max age 300. Only lifecycle: abort incomplete multipart after 7 days; no completed-original expiry or bucket lock. Catalog, on-demand migration, logging and uploads off; no paid Workers event service provisioned. | E05–E07. No versioning, replication or independent backup assumed. |
 | Accepted dated observation | Two old 77-byte diagnostic PNGs retain listed keys/sizes/mtime. Displayed 304 B includes metadata; neither object is an application asset. Request counters moved during metadata reads. | E08. Neither object mutation nor literal zero-request cost is established. |
 | Accepted identifier binding; custody missing | Existing **Account API token** `auditgava-social-media-v1`: Object Read & Write only for the social bucket, displayed expiry 14 November 2026. Deployed key-identifier digest, bucket and endpoint match the exact token record. | E09–E10. No secret-key or signed-PUT validity proof; no credential value exported. App key least privilege does not establish exclusive writers or cloud control-plane authority. |

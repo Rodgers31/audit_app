@@ -12,6 +12,27 @@ and [hashed source index](EVIDENCE.json). E-numbers below resolve there. The
 index is a sanitized reconciliation of retained witnesses, not a fresh provider
 export, exclusive-writer certificate or production acceptance receipt.
 
+## Parent correction — separate generation controls
+
+The 22:55:13Z evidence cut below covers `social_controls` and sampled web
+flags; it does **not** prove the separate `social_generation_controls` master
+was OFF. A later parent read at 23:23:17Z found draft generation enabled,
+version 6, with CoB/KRA allowed. The parent disabled it through the normal admin
+command and read back version 7, drafts/shadow false at 23:36:59Z, preserving
+sources and destination fingerprint. Both nightly generation hook variables
+were also set false. Existing posts and financial fingerprints did not change;
+the command added one audit event and one command receipt. These are dated
+parent observations, not this documentation lane executing an operation.
+
+The parent verified remote `main` and ingestion pin both equal
+`1542bc5117f09b15b126e03bbd2158a54c348540` at 23:38:31Z. These facts supplement,
+not replace, E01–E03 and their retained historical producers. Every future pilot
+must separately verify both control tables and the scheduled hook variables.
+The current evidence remains private in `ingestion-pin-repair-20261103`:
+`generation-controls-before.json`, `generation-controls-after.json`,
+`production-before-draft-command.json`, `production-after-draft-command.json`,
+`hooks-disabled.json` and `pin-updated.json`. No pilot or policy is approved.
+
 ## Already filled — no repeat decision needed
 
 | Subject | Recorded fact and boundary |
