@@ -464,7 +464,7 @@ class TestTheRuleItself:
         assert "no source_mode" in findings[0].message
 
     def test_partial_is_reported_as_a_warning_not_passed_over(self):
-        """PARTIAL means the headline figure is still a fixture.
+        """PARTIAL means publisher coverage is incomplete.
 
         The first version of this gate branched on ``fixture`` and
         ``unknown`` only, so partial fell through to NO FINDING AT ALL and
@@ -485,7 +485,7 @@ class TestTheRuleItself:
         )
         assert findings, "PARTIAL produced no finding at all"
         assert findings[0].level == "WARN"
-        assert "SECONDARY" in findings[0].message
+        assert "publisher refresh incomplete" in findings[0].message
         assert "no_live_county_source" in findings[0].message
 
     def test_refused_fails_the_run(self):
