@@ -1037,8 +1037,8 @@ def check_ingestion_freshness(
                 + (f" — {'; '.join(details)}" if details else ""),
             ))
         elif "live" not in modes and "partial" in modes:
-            # Reached the publisher for a secondary series only. Not OK: the
-            # figure this domain publishes did not move. See freshness.PARTIAL.
+            # PARTIAL can include accepted primary records alongside held or
+            # unavailable sources. The mode does not identify a fixture headline.
             reasons = {
                 _job_text(j, "source_fallback_reason")
                 for j in jobs
@@ -1048,9 +1048,9 @@ def check_ingestion_freshness(
                 Finding(
                     WARN,
                     f"{domain} ingestion",
-                    f"only a SECONDARY series refreshed in all "
-                    f"{len(modes)} recent run(s); the published figure is "
-                    f"still a fixture "
+                    f"publisher refresh incomplete in recent run(s): "
+                    f"{modes.count('partial')}/{len(modes)} partial; "
+                    f"full publisher coverage remains unconfirmed "
                     f"(reasons: {', '.join(sorted(reasons)) or 'unrecorded'})",
                 )
             )
@@ -1283,12 +1283,10 @@ def hollow_run_findings(jobs: Iterable) -> List[Finding]:
     * ``fixture`` — FAIL, unless the reason is declared exempt.
     * ``refused`` — FAIL. The domain reached a verdict of "do not publish"
       and wrote nothing; the reader is on the previous seed's rows.
-    * ``partial`` — WARN, not FAIL. A secondary series DID refresh. The
-      window gate says WARN for the same state, and it must stay WARN here:
-      ``revenue_by_source`` has been partial for ~20 consecutive runs, so
-      failing on it would make the nightly red every single night, and a
-      gate that fires every night gets muted along with everything beside
-      it. WARN still prints, which is the part that was missing.
+    * ``partial`` — WARN here: some publisher coverage is incomplete, while
+      valid primary or secondary records may have committed independently.
+      The workflow separately fails required-domain completion gaps. This
+      finding preserves the established severity for other partial domains.
     * anything else — FAIL. ``unknown``, ``None``, a mode this function has
       not been taught, a non-string, a value with stray whitespace or odd
       casing. "We did not record where this came from", and "we recorded
@@ -1348,9 +1346,8 @@ def hollow_run_findings(jobs: Iterable) -> List[Finding]:
                 Finding(
                     WARN,
                     label,
-                    f"only a SECONDARY series refreshed (reason="
-                    f"{reason or 'unrecorded'}); the figure this domain "
-                    "publishes is still a fixture.",
+                    f"publisher refresh incomplete (reason={reason or 'unrecorded'}); "
+                    "full publisher coverage remains unconfirmed.",
                 )
             )
         else:
