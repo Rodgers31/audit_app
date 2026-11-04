@@ -1,5 +1,7 @@
 # Controlled launch acceptance ledger — 3 November 2026
 
+**Later 3 November evening reconciliation:** use [final integration acceptance](../final-integration-completion-20261103/ACCEPTANCE.md) for the newer `e94eb980` release boundary, scheduled41759203897 failure and current cross-lane cut. The original release/source rows below remain historical; their “current” wording is scoped to their dated editions. No live-stage acceptance follows.
+
 **Disposition: HOLD. Documentation proposal only; no activation authorized.**
 
 This ledger compares the original plan with demonstrated acceptance. Issue closure, merged code, a successful command, an available adapter and a green fixture each have narrower meanings than live operating acceptance. Current release, ingestion pin and saved-grant operations belong exclusively to the parent. This lane performs no production sampling or changes.
