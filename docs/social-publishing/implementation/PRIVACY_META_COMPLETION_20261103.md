@@ -106,7 +106,7 @@ The future parent-owned preflight must freeze all these inputs before approval:
    including User/Page inspection, permissions and exact Page/linked identity.
    No OAuth exchange, refresh, reconnect, upload or publication belongs here.
    Source anchors: `backend/social/connections/api.py:133`,
-   `service.py:507` in that directory, and `verification.py:30` (wire GET
+   `service.py:507` in that directory, and `verification.py:53` (wire GET
    allowlist). `backend/tests/social/test_existing_grant_verification.py`
    executes positive, idempotent replay, stale/concurrent state, identity,
    scopes/tasks/lifetimes, privacy and durable-write refusal controls.
