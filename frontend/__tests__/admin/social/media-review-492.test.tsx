@@ -89,3 +89,4 @@ test.each(contradictory)('contradictory capabilities fail closed in decoder and 
   expect(screen.queryByRole('heading', { name: 'Upload original media' })).not.toBeInTheDocument();
   expect(post).not.toHaveBeenCalled();
 });
+import '../../../tests/socialRecoveryCrypto';
