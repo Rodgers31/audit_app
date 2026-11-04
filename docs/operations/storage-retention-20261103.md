@@ -5,6 +5,19 @@ and the dated supplement at the end of this document first. Earlier release,
 pin, missing-metadata and procedure statements below are historical to their
 named observations. They are not fresh acceptance or execution authority.
 
+**Completion follow-through:** the additive
+[storage recovery packet](../releases/storage-recovery-completion-20261103/README.md)
+contains the later metadata-only private-copy inventory, concrete capture/
+reconstruction implementation, inclusive byte/dependency envelope and exact
+future operation sequence. The [4 November authenticated readback](../releases/storage-recovery-completion-20261103/AUTHENTICATED_READBACK.md)
+supersedes the earlier signed-out observation and fills bucket/usage/token/admin/
+Workers metadata. The unedited general account-token JSON preview later reveals exact
+expiry **2026-11-14T21:05:55Z /15:05:55 CST**. Off-system copy closure remains
+unverified. The B42 archive
+locator is still present at its historical size past its accepted cutoff;
+contents were not opened and no copy was deleted. All appointments, media-custody
+scope and live Stage A authority remain held. Earlier receipts below are preserved.
+
 Prepared 3 November 2026, America/Chicago. **PROPOSED — NOT APPROVED OR RUN.**
 This packet is for the storage portion of issues [490](https://github.com/Rodgers31/audit_app/issues/490)
 and [488](https://github.com/Rodgers31/audit_app/issues/488). Both remain open.
