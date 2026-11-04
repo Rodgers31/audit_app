@@ -1,5 +1,7 @@
 # Owner decisions and next-action packet
 
+**Later 3 November evening packet:** [final acceptance](../final-integration-completion-20261103/ACCEPTANCE.md) and [conditional operator worksheet](../final-integration-completion-20261103/OPERATOR_PACKET.md) reconcile the newer baseline and remaining technical/owner boundaries. Earlier release references below retain their historical scope. The accepted seven-day private local DB-export rule needs no repeat decision.
+
 **No approval requested or granted by this document.** The release/pin and restricted Meta proofs are received; remaining engineering, policy and custody evidence is still required. Current publishing/upload/worker/financial-generation holds and native/automatic-admission holds remain authoritative. The following fields must be completed and reviewed before a future stage-specific owner decision; blank fields refuse action.
 
 ## Inputs needed, in dependency order
