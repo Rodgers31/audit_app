@@ -10,11 +10,13 @@ provider send, OAuth reconnect, canary or added cost is authorized.
 
 ## Required configuration and identity
 
-The last supplied production witness is **3 November 2026, 4:55:13 p.m. CST**
+The original supplied preparation witness is **3 November 2026, 4:55:13 p.m. CST**
 (`2026-11-03T22:55:13.844054Z`). It records serving application
 `f0f4705e9561e2e42edd93fc747e8bff24468fae`, Render deployment
 `dep-dbl3il08v5cc73ak6g90`, Linux x86_64 Python 3.12.16, one existing 512 MiB /
-0.5 CPU instance, schema `a756b20a0001`; all four operational controls are OFF.
+0.5 CPU instance, schema `a756b20a0001`; sampled general controls are false.
+That witness did not cover the distinct draft-generation master; see the parent
+correction below.
 This preparation does not refresh that witness. A configuration rollout may
 replace the deployment/instance; record its actual identity and confirm unchanged
 application bytes instead of requiring the historical deployment identifier.
@@ -37,13 +39,42 @@ to obtain those lines. Missing startup logs remain a stated observation gap.
 held flag covered by the unchanged reviewed `probe.py` must remain absent or
 exactly `false`, except the two enabled defaults, which must be explicitly false.
 All global automation booleans must remain false and connected account publishing
-paused in the separate protected database witness.
+paused in the separate protected database witness. Also read the distinct
+`social_generation_controls` master and scheduled repository hook variables;
+`social_controls.generation_enabled=false` alone is insufficient.
 
 The source pin is the **serving application** SHA above, distinct from the
 operator repository SHA and from the ingestion admission pin. This packet never
 reads or changes the admission pin. If the serving source, OS, architecture,
 Python version, product hashes, codec binary or quota differ, stop and review the
 new identity. Do not edit pins to obtain a pass.
+
+## Parent correction — generation and configuration
+
+A separate parent read at 23:23:17Z on 3 November found draft generation enabled,
+version 6, for CoB/KRA. The normal admin OFF command produced version 7 with
+drafts/shadow false at 23:36:59Z, preserving sources and destination fingerprint.
+Both nightly generation hooks were set false. The only observed social changes
+were one audit event and one command receipt; no post or financial change was
+observed. At 23:38:31Z, remote `main` and ingestion pin matched
+`1542bc5117f09b15b126e03bbd2158a54c348540`. These supplement the incomplete
+historical general-control witness; no earlier master-OFF claim is accepted.
+
+The parent then used Render **Save and deploy** with the existing build, adding
+only `AUTO_WARMUP_ENABLED=false`. Deployment `dep-dbl74rs9v7es73b0aa50` became
+live at approximately 23:47:22Z on instance `q5j7f`, unchanged application source
+`f0f4705e9561e2e42edd93fc747e8bff24468fae`. Startup logged both seeder and warmup
+disabled. The 23:48:15Z readback passed health/private-admin contracts, unchanged
+financial/social fingerprints and zero background workers. The separate
+23:48:40Z generation observation still showed version 7 drafts/shadow false.
+The parent subsequently reconciled new bootstrap receipts 3629–3630 as
+COMPLETED, zero created/updated/error counts (20/0 processed). These are startup
+no-ops against their configured inputs, not a full nightly success.
+At 23:49:08Z all 1,506 application files and 81 installed package versions
+matched the retained serving inventory. This inventory does not itself accept codecs,
+worker capacity, uploads or publishing. The later bounded codec result is recorded
+in [parent result](PARENT_RESULT.md). Parent observations are retained privately
+under `ingestion-pin-repair-20261103`, not produced by this preparation lane.
 
 ## Concrete parent execution
 
@@ -80,7 +111,8 @@ does not attest all dynamic libraries or the complete host image.
 Before execution, the parent records a fresh version of the existing protected
 readback (producer SHA
 `6528c8ba95a97658041f17c0ae6f59f76edf0dbbde743e13b0a54342bca1fccb`)
-in its existing separately reviewed scope. Compare serving source/schema, all
+in its existing separately reviewed scope, plus the separate generation-master
+observer and repository-hook readback. Compare serving source/schema, all
 runtime/supplemental flags, controls version/booleans, account pauses, zero
 background workers, social/media/financial fingerprints, zero asset/upload/
 target/publication/attempt counts and HTTP readiness/private-admin contracts.
