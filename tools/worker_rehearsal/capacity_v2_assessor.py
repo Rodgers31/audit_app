@@ -48,27 +48,57 @@ def _operations(requests, cohort, targets, wire_before, wire_after):
         require(type(cohort.get(key)) is list and cohort[key]
                 and all(type(path) is str for path in cohort[key]),
                 'Missing operation path inventory')
-    # Confirmations must refer to saved remote identities in this same census,
-    # using the exact Graph version of the selected mutation routes.
-    graph_roots = set()
+    # The current producer binds its native cohort target to one account's
+    # Graph routes. It does not emit an account-to-route mapping for arbitrary
+    # additional accounts. Preserve that exact association; ambiguous multiple
+    # Graph scopes cannot be inferred by multiplying route roots and saved IDs.
+    graph_scopes = set()
     for path in cohort['provider_paths']:
-        match = re.fullmatch(r'(/v[0-9]+\.[0-9]+/)[0-9]+/(?:feed|photos)', path)
+        match = re.fullmatch(r'(/v[0-9]+\.[0-9]+/)([0-9]+)/(?:feed|photos)', path)
         if match:
-            graph_roots.add(match[1])
-    remote_ids = set()
+            graph_scopes.add((match[1], match[2]))
+    require(len(graph_scopes) <= 1, 'Ambiguous Graph account/version association')
+    native = [target for target in targets if target['id'] == cohort.get('target_id')]
+    require(len(native) == 1, 'Missing selected operation target')
+    selected_account = native[0].get('account_id')
+    identities = {}
     for target in targets:
         values = [target.get('primary_remote_id')]
+        by_kind = {'post_id': set(), 'photo_id': set()}
         for key in ('remote_refs', 'checkpoint'):
             saved = target.get(key)
             require(saved is None or type(saved) is dict, 'Malformed saved remote identities')
             if saved is not None:
                 values.extend(saved.get(key) for key in ('post_id', 'photo_id'))
+                for kind in by_kind:
+                    if saved.get(kind) is not None:
+                        require(type(saved[kind]) is str, 'Malformed saved remote identity')
+                        by_kind[kind].add(saved[kind])
+        require(all(len(ids) <= 1 for ids in by_kind.values()),
+                'Conflicting saved remote identities for one target')
+        if by_kind['post_id'] and target.get('primary_remote_id') is not None:
+            require(target['primary_remote_id'] in by_kind['post_id'],
+                    'Primary and saved post identities conflict')
         for value in values:
             if value is not None:
                 require(type(value) is str and re.fullmatch(r'[0-9]+(?:_[0-9]+)?', value),
                         'Malformed saved remote identity')
-                remote_ids.add(value)
-    confirmations = {root + remote_id for root in graph_roots for remote_id in remote_ids}
+                account = target.get('account_id')
+                require(type(account) is str and account, 'Saved remote account identity absent')
+                owner = (target['id'], account)
+                require(value not in identities or identities[value] == owner,
+                        'Conflicting saved remote identity ownership')
+                identities[value] = owner
+    confirmations = set()
+    if graph_scopes:
+        root, external_account = next(iter(graph_scopes))
+        require(type(selected_account) is str and selected_account,
+                'Selected Graph account identity absent')
+        for remote_id, (_, account) in identities.items():
+            if account == selected_account:
+                require('_' not in remote_id or remote_id.split('_', 1)[0] == external_account,
+                        'Saved remote identity names another Graph account')
+                confirmations.add(root + remote_id)
     starts, completions = [], []
     for row in requests:
         require(type(row) is dict, 'Malformed operation event')

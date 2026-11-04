@@ -160,6 +160,20 @@ be reused. No live credential is present. All objects are reconstructed only
 inside the private fixture storage port, never R2 or production. Both input
 payloads are read back from custody and passed to `verify_stage_a_payloads`.
 
+The target is an isolated **social schema**, not a full application schema, even
+when its non-social tables are empty. Every stored table must be recognized and
+empty, including accounts, credentials, worker/control state and histories. Only
+one exact current `alembic_version` record is permitted; that marker alone never
+qualifies DDL or ACLs. PostgreSQL must resolve all capsule tables into the owned
+target schema, hold the empty census against writers and refuse unobservable or
+RLS-filtered state. Current-session temporary relations, views, unknown/consumed
+sequences and inheritance in either direction refuse. The two expected SERIAL
+counters must remain pristine and correctly attached; no reset makes a target
+eligible. The actual social migration-subset fixture is not full-head
+application migration qualification. See the [reviewed recovery contract](../final-integration-completion-20261103/RECOVERY_REVIEW_CONTRACT.md)
+for the complete precondition and typed failure behavior. No target state may be
+deleted to make reconstruction eligible.
+
 ```python
 from sqlalchemy import text
 from social.media.recovery import restore_stage_a_rows

@@ -215,7 +215,7 @@ def test_payload_capture_refuses_recorded_identity_drift(media, monkeypatch, sid
 
 @pytest.mark.parametrize('damage', ['asset_only', 'lost_history', 'lost_inspection_event',
     'lost_completion_key', 'lost_completion_hash', 'wrong_completion_hash', 'wrong_initial_hash',
-    'wrong_receipt_response', 'lost_grant_expiry', 'wrong_bytes'])
+    'wrong_receipt_response', 'lost_grant_expiry', 'missing_quota_charge'])
 def test_rejected_restore_cannot_commit_a_usable_partial_asset(media, monkeypatch, damage):
     svc, _ = media
     io, _, asset, post = intake(media, monkeypatch)

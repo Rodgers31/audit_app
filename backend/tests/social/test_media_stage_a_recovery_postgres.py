@@ -9,7 +9,8 @@ from sqlalchemy.orm import Session
 
 from social.media.config import MediaConfig
 from social.media.inspection import InspectedMedia, LocalInspector
-from social.media.recovery import capture_stage_a_rows, encode_rows, restore_stage_a_rows, RecoveryScopeError
+from social.media.recovery import MODELS, capture_stage_a_rows, encode_rows, restore_stage_a_rows, RecoveryScopeError
+from social.models import SocialAccount
 from social.media.recovery_packet import publish_stage_a_packet, read_stage_a_packet
 from social.media.runtime import MediaRuntime
 from social.media.service import MediaService
@@ -97,3 +98,152 @@ def test_pg_packet_binds_the_actual_read_only_snapshot(packet_source, tmp_path):
     assert snapshot['dialect'] == 'postgresql' and snapshot['read_only'] is True
     assert snapshot['isolation'] == 'repeatable read' and snapshot['row_security'] == 'off'
     assert snapshot['snapshot'] and snapshot['transaction_started_at'] and snapshot['observed_at']
+
+
+@pytest.mark.parametrize('existing', ['account', 'unknown_history', 'unknown_empty'])
+def test_pg_restore_refuses_unrelated_target_state_without_losing_it(packet_source, existing):
+    svc, asset, post = packet_source
+    raw = capture(svc, asset, post)
+    with target() as engine:
+        with engine.begin() as connection:
+            if existing == 'account':
+                connection.execute(SocialAccount.__table__.insert().values(
+                    id=uuid4(), platform='facebook', api_product='facebook_pages',
+                    connection_method='manual', external_account_id='913',
+                    display_name='Inert existing account', publishing_enabled=False))
+            else:
+                connection.exec_driver_sql('CREATE TABLE unrelated_history(value TEXT)')
+                if existing == 'unknown_history':
+                    connection.exec_driver_sql("INSERT INTO unrelated_history VALUES ('preserve')")
+        with engine.begin() as connection:
+            connection.execute(text('SET LOCAL row_security=off'))
+            with pytest.raises(RecoveryScopeError):
+                restore_stage_a_rows(connection, raw)
+            # Catch then deliberately commit: even unadmitted/unknown history
+            # stays intact and not one capsule insert can escape the savepoint.
+            for model in MODELS:
+                assert connection.exec_driver_sql('SELECT count(*) FROM ' + model.__tablename__).scalar_one() == 0
+            if existing == 'account':
+                assert connection.exec_driver_sql('SELECT count(*) FROM social_accounts').scalar_one() == 1
+            else:
+                assert connection.exec_driver_sql('SELECT count(*) FROM unrelated_history').scalar_one() == (1 if existing == 'unknown_history' else 0)
+
+
+def test_pg_restore_accepts_only_current_metadata_in_empty_owned_target(packet_source):
+    svc, asset, post = packet_source
+    raw = capture(svc, asset, post)
+    with target() as engine:
+        with engine.begin() as connection:
+            connection.exec_driver_sql('CREATE TABLE alembic_version(version_num VARCHAR(32) PRIMARY KEY)')
+            connection.exec_driver_sql("INSERT INTO alembic_version VALUES ('a756b20a0001')")
+            connection.execute(text('SET LOCAL row_security=off'))
+            restore_stage_a_rows(connection, raw)
+            assert connection.exec_driver_sql('SELECT count(*) FROM social_media_assets').scalar_one() == 1
+            assert connection.exec_driver_sql('SELECT version_num FROM alembic_version').scalar_one() == 'a756b20a0001'
+
+
+@pytest.mark.parametrize('visibility', ['not_owned', 'owner_forced_rls'])
+def test_pg_restore_refuses_unproven_owner_or_rls_visibility(packet_source, visibility):
+    svc, asset, post = packet_source
+    raw = capture(svc, asset, post)
+    role = 'recovery_refusal_' + uuid4().hex
+    with svc.db.begin():
+        svc.db.execute(text('CREATE ROLE ' + role + ' NOLOGIN NOSUPERUSER NOBYPASSRLS'))
+    try:
+        with target() as engine:
+            with engine.begin() as connection:
+                schema = connection.scalar(text('SELECT current_schema()'))
+                if visibility == 'owner_forced_rls':
+                    # The non-bypass owner has complete catalog visibility, but
+                    # FORCE RLS makes even its empty-count observation unsafe.
+                    from sqlalchemy import inspect
+                    connection.exec_driver_sql('ALTER SCHEMA ' + schema + ' OWNER TO ' + role)
+                    for name in inspect(connection).get_table_names(schema=schema):
+                        connection.exec_driver_sql('ALTER TABLE ' + schema + '.' + name + ' OWNER TO ' + role)
+                    connection.exec_driver_sql('ALTER TABLE social_accounts FORCE ROW LEVEL SECURITY')
+                connection.exec_driver_sql('SET LOCAL ROLE ' + role)
+                connection.execute(text('SET LOCAL row_security=off'))
+                with pytest.raises(RecoveryScopeError):
+                    restore_stage_a_rows(connection, raw)
+                connection.exec_driver_sql('RESET ROLE')
+                for model in MODELS:
+                    assert connection.exec_driver_sql('SELECT count(*) FROM ' + model.__tablename__).scalar_one() == 0
+    finally:
+        with svc.db.begin():
+            svc.db.execute(text('DROP ROLE ' + role))
+
+
+@pytest.mark.parametrize('existing', ['temporary_history', 'temporary_view',
+    'temporary_sequence', 'external_inherited_child', 'unknown_view', 'unknown_sequence',
+    'called_expected_sequence'])
+def test_pg_restore_refuses_uninventoried_relations_and_preserves_history(packet_source, existing):
+    svc, asset, post = packet_source
+    raw = capture(svc, asset, post)
+    outside = 'recovery_relation_' + uuid4().hex
+    with target() as engine:
+        try:
+            with engine.begin() as connection:
+                if existing == 'temporary_history':
+                    connection.exec_driver_sql('CREATE TEMP TABLE private_history(value TEXT) ON COMMIT PRESERVE ROWS')
+                    connection.exec_driver_sql("INSERT INTO private_history VALUES ('preserve')")
+                elif existing == 'temporary_view':
+                    connection.exec_driver_sql('CREATE TEMP VIEW private_view AS SELECT 1 AS value')
+                elif existing == 'temporary_sequence':
+                    connection.exec_driver_sql('CREATE TEMP SEQUENCE private_sequence')
+                elif existing == 'external_inherited_child':
+                    schema = connection.scalar(text('SELECT current_schema()'))
+                    connection.exec_driver_sql('CREATE SCHEMA ' + outside)
+                    connection.exec_driver_sql('CREATE TABLE ' + outside + '.history () INHERITS (' + schema + '.social_accounts)')
+                elif existing == 'unknown_view':
+                    connection.exec_driver_sql('CREATE VIEW private_view AS SELECT 1 AS value')
+                elif existing == 'called_expected_sequence':
+                    connection.exec_driver_sql("SELECT nextval('social_generation_controls_id_seq')")
+                else:
+                    connection.exec_driver_sql('CREATE SEQUENCE private_sequence')
+            with engine.begin() as connection:
+                connection.execute(text('SET LOCAL row_security=off'))
+                with pytest.raises(RecoveryScopeError):
+                    restore_stage_a_rows(connection, raw)
+                assert connection.exec_driver_sql('SELECT count(*) FROM social_media_assets').scalar_one() == 0
+                if existing == 'temporary_history':
+                    assert connection.exec_driver_sql('SELECT value FROM pg_temp.private_history').scalar_one() == 'preserve'
+                elif existing == 'called_expected_sequence':
+                    assert connection.exec_driver_sql('SELECT last_value,is_called FROM social_generation_controls_id_seq').one() == (1, True)
+            with engine.connect() as connection:
+                assert connection.exec_driver_sql('SELECT count(*) FROM social_media_assets').scalar_one() == 0
+        finally:
+            if existing == 'external_inherited_child':
+                with engine.begin() as connection:
+                    connection.exec_driver_sql('DROP SCHEMA IF EXISTS ' + outside + ' CASCADE')
+
+
+def test_pg_restore_rechecks_inheritance_after_acquiring_target_locks(packet_source):
+    from sqlalchemy import event
+    svc, asset, post = packet_source
+    raw = capture(svc, asset, post)
+    outside = 'recovery_late_' + uuid4().hex
+    with target() as engine:
+        try:
+            with engine.begin() as connection:
+                connection.exec_driver_sql('CREATE SCHEMA ' + outside)
+                connection.exec_driver_sql('CREATE TABLE ' + outside + '.sentinel(value TEXT)')
+                connection.exec_driver_sql("INSERT INTO " + outside + ".sentinel VALUES ('preserve')")
+            with engine.begin() as connection:
+                schema = connection.scalar(text('SELECT current_schema()'))
+                changed = False
+                def interleave(conn, cursor, statement, parameters, context, executemany):
+                    nonlocal changed
+                    if statement.startswith('LOCK TABLE ONLY') and not changed:
+                        changed = True
+                        conn.exec_driver_sql('CREATE TABLE ' + outside + '.history () INHERITS (' + schema + '.social_accounts)')
+                event.listen(connection, 'before_cursor_execute', interleave)
+                connection.execute(text('SET LOCAL row_security=off'))
+                with pytest.raises(RecoveryScopeError):
+                    restore_stage_a_rows(connection, raw)
+                event.remove(connection, 'before_cursor_execute', interleave)
+                assert changed
+                assert connection.exec_driver_sql('SELECT count(*) FROM social_media_assets').scalar_one() == 0
+                assert connection.exec_driver_sql('SELECT value FROM ' + outside + '.sentinel').scalar_one() == 'preserve'
+        finally:
+            with engine.begin() as connection:
+                connection.exec_driver_sql('DROP SCHEMA IF EXISTS ' + outside + ' CASCADE')

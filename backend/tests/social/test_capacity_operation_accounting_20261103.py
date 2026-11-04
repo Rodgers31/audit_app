@@ -13,9 +13,73 @@ from unittest.mock import patch
 
 ROOT=Path(__file__).resolve().parents[3]
 assess=runpy.run_path(str(ROOT/'tools/worker_rehearsal/capacity_v2.py'))['assess']
-fixture=runpy.run_path(str(ROOT/'backend/tests/social/test_worker_rehearsal_guards.py'))['evidence']
+_legacy_fixture=runpy.run_path(str(ROOT/'backend/tests/social/test_worker_rehearsal_guards.py'))['evidence']
+
+def fixture():
+    value = _legacy_fixture()
+    # The actual census has account_id. Supply that ownership fact explicitly;
+    # the archived producer and original fixed fixture remain unchanged.
+    for target in value[2]['social_post_targets']:
+        target['account_id'] = 'fixture-account'
+    return value
 
 class UnaccountedOperations(unittest.TestCase):
+    @staticmethod
+    def graph_fixture():
+        value = fixture()
+        value[2]['cohort']['provider_paths'] = ['/v26.0/901/feed']
+        for row in value[5]:
+            if row['method'] == 'POST':
+                row['path'] = '/v26.0/901/feed'
+        return value
+
+    @staticmethod
+    def confirmation(value, path):
+        common = dict(request_id='confirmation', method='GET', path=path,
+            run_id='owned-run', case='capacity')
+        value[5].extend((dict(common, started=4), dict(common, completed=5)))
+
+    def test_foreign_account_saved_id_does_not_authorize_selected_account_read(self):
+        value = self.graph_fixture()
+        value[2]['social_post_targets'][1].update(account_id='other-account',
+            checkpoint={'photo_id': '402'})
+        self.confirmation(value, '/v26.0/402')
+        with self.assertRaises(ValueError):
+            assess(*value)
+
+    def test_distinct_graph_accounts_and_versions_cannot_be_cross_multiplied(self):
+        value = self.graph_fixture()
+        value[2]['cohort']['provider_paths'].append('/v27.0/902/feed')
+        value[2]['social_post_targets'][0]['primary_remote_id'] = '901_778'
+        value[2]['social_post_targets'][1].update(account_id='other-account',
+            primary_remote_id='902_779')
+        self.confirmation(value, '/v26.0/902_779')
+        with self.assertRaises(ValueError):
+            assess(*value)
+
+    def test_saved_remote_id_shared_by_distinct_targets_is_ambiguous(self):
+        value = self.graph_fixture()
+        value[2]['social_post_targets'][0]['primary_remote_id'] = '901_778'
+        value[2]['social_post_targets'][1]['primary_remote_id'] = '901_778'
+        self.confirmation(value, '/v26.0/901_778')
+        with self.assertRaises(ValueError):
+            assess(*value)
+
+    def test_selected_target_composite_id_cannot_name_another_account(self):
+        value = self.graph_fixture()
+        value[2]['social_post_targets'][0]['primary_remote_id'] = '902_778'
+        self.confirmation(value, '/v26.0/902_778')
+        with self.assertRaises(ValueError):
+            assess(*value)
+
+    def test_selected_target_saved_post_identity_cannot_conflict(self):
+        value = self.graph_fixture()
+        value[2]['social_post_targets'][0].update(primary_remote_id='901_778',
+            remote_refs={'post_id':'901_779'}, checkpoint={'post_id':'901_778'})
+        self.confirmation(value, '/v26.0/901_779')
+        with self.assertRaises(ValueError):
+            assess(*value)
+
     def test_complete_offline_control_remains_unauthenticated(self):
         result=assess(*fixture())
         self.assertEqual(result['provider_mutations'],6)

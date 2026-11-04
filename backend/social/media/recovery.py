@@ -7,6 +7,7 @@ not a backup certificate. Refuse broader history instead of silently omitting it
 from datetime import datetime
 from decimal import Decimal
 from dataclasses import asdict
+from functools import wraps
 import json
 import hashlib
 import re
@@ -17,6 +18,7 @@ from uuid import UUID
 from sqlalchemy import and_, func, inspect, MetaData, or_, select, Table, text
 from sqlalchemy import DateTime, Uuid
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 
 from ..contracts import canonical_hash
 from ..models import (SocialAuditEvent, SocialCommandReceipt, SocialMediaAsset,
@@ -32,6 +34,36 @@ MODELS = (SocialMediaAsset, SocialMediaUpload, SocialMediaBudget,
     SocialPost, SocialPostRevision, SocialRevisionAsset,
     SocialAuditEvent, SocialCommandReceipt)
 
+# Stage A restores into an isolated SOCIAL schema, not an existing application
+# database. This reviewed inventory is deliberately not inferred from a caller's
+# ORM registry or prefix. Every present table must be empty; only the exact
+# current migration marker may contain data. New tables/revisions need review.
+TARGET_SCHEMA_REVISION = 'a756b20a0001'
+EMPTY_TARGET_TABLES = frozenset({
+    'social_posts', 'social_post_revisions', 'social_media_assets',
+    'social_revision_assets', 'social_accounts', 'social_publications',
+    'social_post_targets', 'social_publish_attempts', 'social_audit_events',
+    'social_command_receipts', 'social_controls', 'social_worker_heartbeats',
+    'social_credentials', 'social_oauth_flows', 'social_media_uploads',
+    'social_media_budgets', 'social_media_write_owners', 'social_media_write_attempts',
+    'social_media_deletions', 'social_privacy_ownership', 'social_privacy_receipts',
+    'social_privacy_request_variants', 'social_privacy_plans', 'social_privacy_decisions',
+    'social_privacy_executions', 'social_privacy_execution_events',
+    'social_generation_controls', 'social_source_cursors', 'social_source_events',
+    'social_automation_rule_versions', 'social_shadow_decisions',
+    'social_policy_operating_evidence', 'social_authorized_policy_snapshots',
+    'social_policy_selection', 'social_policy_decisions',
+    'social_platform_oauth_flows', 'social_platform_credentials',
+    'social_platform_connection_budgets', 'social_platform_budgets',
+    'social_platform_event_inbox', 'social_render_jobs', 'social_metric_collections',
+    'social_metric_observations', 'social_worker_runtime_ownership',
+    'social_worker_runtime_history',
+})
+TARGET_SERIAL_SEQUENCES = {
+    'social_generation_controls_id_seq': 'social_generation_controls',
+    'social_policy_selection_id_seq': 'social_policy_selection',
+}
+
 
 class RecoveryScopeError(ValueError):
     def __init__(self):
@@ -43,12 +75,43 @@ def _require(condition):
         raise RecoveryScopeError()
 
 
+def _scope_input(function):
+    """Normalize malformed bounded input, without hiding DB or IO failures.
+
+    Restore's savepoint and custody readers' finally blocks unwind before this
+    outer boundary translates an ordinary parser/shape error. Interrupts and
+    operational failures retain their separate meanings.
+    """
+    @wraps(function)
+    def guarded(*args, **kwargs):
+        try:
+            return function(*args, **kwargs)
+        except (ValueError, TypeError, KeyError, IndexError, AttributeError, RecursionError):
+            raise RecoveryScopeError() from None
+    return guarded
+
+
+@_scope_input
+def _decode_json(raw):
+    """One strict decoder for rows and historical embedded JSON alike."""
+    _require(type(raw) in (str, bytes))
+    def pairs(items):
+        result = {}
+        for key, value in items:
+            _require(key not in result)
+            result[key] = value
+        return result
+    return json.loads(raw, object_pairs_hook=pairs,
+        parse_constant=lambda _: (_ for _ in ()).throw(RecoveryScopeError()))
+
+
 def _json_default(value):
     if isinstance(value, (UUID, datetime, Decimal)):
         return str(value)
     raise RecoveryScopeError()
 
 
+@_scope_input
 def encode_rows(rows):
     """Bound all DB/history bytes; payloads and outer custody manifest are extra."""
     _require(type(rows) is dict and set(rows) == {m.__tablename__ for m in MODELS})
@@ -61,6 +124,7 @@ def encode_rows(rows):
     return data
 
 
+@_scope_input
 def verify_stage_a_payloads(rows, payloads):
     """Refuse a missing/corrupt copy; ledger/fence metadata never substitutes.
 
@@ -82,6 +146,7 @@ def verify_stage_a_payloads(rows, payloads):
         and hashlib.sha256(data).hexdigest() == digest for data in payloads.values()))
 
 
+@_scope_input
 def capture_stage_a_payloads(rows, storage):
     """Read two conditionally identified copies; caller separately qualifies writers.
 
@@ -92,13 +157,34 @@ def capture_stage_a_payloads(rows, storage):
     encode_rows(rows)
     _require(len(rows['social_media_assets']) == 1 and len(rows['social_media_uploads']) == 1)
     asset, upload = rows['social_media_assets'][0], rows['social_media_uploads'][0]
+    # Validate ALL metadata used below before the first storage-port call. A
+    # typed refusal after reading the quarantine copy is already too late.
+    _require(type(asset) is dict and type(upload) is dict)
+    size, digest = asset.get('byte_size'), asset.get('sha256')
+    _require(type(size) is int and 1 <= size <= 262144
+        and type(digest) is str and re.fullmatch('[0-9a-f]{64}', digest) is not None
+        and type(asset.get('mime_type')) is str and asset['mime_type'] == 'image/jpeg')
+    codec = asset.get('codec_metadata')
+    _require(type(codec) is dict and type(codec.get('storage_etag')) is str
+        and 1 <= len(codec['storage_etag']) <= 1024
+        and (codec.get('storage_version') is None or type(codec['storage_version']) is str
+            and 1 <= len(codec['storage_version']) <= 1024))
+    keys = (upload.get('quarantine_key'), asset.get('storage_key'))
+    _require(all(type(key) is str and 1 <= len(key) <= 1024 for key in keys)
+        and len(set(keys)) == 2)
+    _require(type(asset.get('storage_provider')) is str and asset['storage_provider']
+        and type(asset.get('bucket')) is str and asset['bucket'])
+    fence = upload.get('retained_write_fence')
+    _require(type(fence) is str and 1 <= len(fence) <= 4096)
+    marker = _decode_json(fence)
+    _require(type(marker) is dict and set(marker) == {
+        'version', 'scope_hash', 'quarantine_etag', 'original_etag'})
+    _require(type(marker['version']) is int and marker['version'] == 1
+        and type(marker['scope_hash']) is str and re.fullmatch('[0-9a-f]{64}', marker['scope_hash']) is not None
+        and type(marker['quarantine_etag']) is str and 1 <= len(marker['quarantine_etag']) <= 1024
+        and marker['original_etag'] == codec['storage_etag'])
     _require(asset['storage_provider'] == storage.provider and asset['bucket'] == storage.bucket)
-    keys = (upload['quarantine_key'], asset['storage_key'])
-    try:
-        marker = json.loads(upload['retained_write_fence'])
-        quarantine_etag = marker['quarantine_etag']
-    except (KeyError, ValueError, TypeError):
-        raise RecoveryScopeError() from None
+    quarantine_etag = marker['quarantine_etag']
     snapshots, payloads = {}, {}
     with tempfile.TemporaryDirectory(prefix='media-custody-') as directory:
         for index, key in enumerate(keys):
@@ -118,11 +204,118 @@ def capture_stage_a_payloads(rows, storage):
     return payloads, {key: asdict(value) for key, value in snapshots.items()}
 
 
+def _require_pg_auxiliary_state(connection, schema):
+    """Observe only the selected schema and this connection's temporary state.
+
+    The two SERIAL counters are legitimate migration infrastructure only while
+    pristine and attached to their reviewed id columns. Never reset a counter
+    or read another session's temporary namespace to manufacture emptiness.
+    """
+    _require(not connection.scalar(text('SELECT EXISTS(SELECT 1 FROM pg_class '
+        'WHERE relnamespace=pg_my_temp_schema())')))
+    _require(not connection.scalar(text('''SELECT EXISTS(SELECT 1 FROM pg_inherits i
+        JOIN pg_class child ON child.oid=i.inhrelid
+        JOIN pg_namespace child_ns ON child_ns.oid=child.relnamespace
+        JOIN pg_class parent ON parent.oid=i.inhparent
+        JOIN pg_namespace parent_ns ON parent_ns.oid=parent.relnamespace
+        WHERE child_ns.nspname=:schema OR parent_ns.nspname=:schema)'''), {'schema': schema}))
+    _require(not connection.scalar(text('''SELECT EXISTS(SELECT 1 FROM pg_class c
+        JOIN pg_namespace n ON n.oid=c.relnamespace
+        WHERE n.nspname=:schema AND c.relkind='v')'''), {'schema': schema}))
+    sequences = list(connection.execute(text('''SELECT c.oid,c.relname,
+        c.relowner=current_user::regrole,has_sequence_privilege(c.oid,'SELECT'),
+        s.seqstart,s.seqincrement,s.seqmin,s.seqmax,s.seqcache,s.seqcycle
+        FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+        JOIN pg_sequence s ON s.seqrelid=c.oid WHERE n.nspname=:schema
+        ORDER BY c.relname LIMIT 3'''), {'schema': schema}))
+    _require(len(sequences) <= len(TARGET_SERIAL_SEQUENCES))
+    quote = connection.dialect.identifier_preparer.quote_identifier
+    for sequence in sequences:
+        oid, name = sequence[:2]
+        _require(name in TARGET_SERIAL_SEQUENCES and sequence[2:4] == (True, True)
+            and sequence[4:] == (1, 1, 1, 2147483647, 1, False))
+        relation = quote(schema) + '.' + quote(TARGET_SERIAL_SEQUENCES[name])
+        _require(connection.scalar(text("SELECT pg_get_serial_sequence(:relation,'id')::regclass::oid"),
+            {'relation': relation}) == oid)
+        _require(connection.exec_driver_sql('SELECT last_value,is_called FROM '
+            + quote(schema) + '.' + quote(name)).one() == (1, False))
+
+
+def _require_empty_target(connection):
+    """Count every stored relation in the resolved, caller-owned target schema.
+
+    No credential/history bodies are read and no rows are removed. Unknown,
+    inherited, foreign, materialized or unobservable storage is outside Stage A.
+    The caller still separately qualifies migrated DDL, ACLs and OS isolation.
+    """
+    try:
+        catalog = inspect(connection)
+        if connection.dialect.name == 'postgresql':
+            _require(connection.scalar(text('SHOW row_security')) == 'off')
+            schema = connection.scalar(text('SELECT current_schema()'))
+            _require(type(schema) is str and not schema.startswith('pg_')
+                and schema != 'information_schema')
+            _require(connection.scalar(text('SELECT nspowner=current_user::regrole '
+                'FROM pg_namespace WHERE nspname=:schema'), {'schema': schema}) is True)
+            names = list(connection.execute(text('''SELECT c.relname,c.relkind,
+                c.relispartition,c.relowner=current_user::regrole,
+                has_table_privilege(c.oid,'SELECT') FROM pg_class c
+                JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname=:schema
+                AND c.relkind IN ('r','p','f','m') ORDER BY c.relname LIMIT 257'''), {'schema': schema}))
+            _require(0 < len(names) <= 256 and all(row[1:] == ('r', False, True, True) for row in names))
+            _require_pg_auxiliary_state(connection, schema)
+            # Prove unqualified insert/readback names resolve into THIS schema;
+            # another search_path schema or temporary shadow must not be used.
+            for model in MODELS:
+                _require(connection.scalar(text('''SELECT n.nspname FROM pg_class c
+                    JOIN pg_namespace n ON n.oid=c.relnamespace
+                    WHERE c.oid=to_regclass(:name)'''), {'name': model.__tablename__}) == schema)
+            names = [row[0] for row in names]
+            _require(set(names) <= EMPTY_TARGET_TABLES | {'alembic_version'})
+            quote = connection.dialect.identifier_preparer.quote_identifier
+            # Hold the census against concurrent writers until the caller ends
+            # its transaction. Never discover emptiness then admit later rows.
+            for name in names:
+                connection.exec_driver_sql('LOCK TABLE ONLY ' + quote(schema) + '.'
+                    + quote(name) + ' IN SHARE ROW EXCLUSIVE MODE')
+            # A new inheritance edge could appear between the earlier catalog
+            # read and lock acquisition. Recheck while selected relations are
+            # held; an empty outside child must not escape the refusal.
+            _require_pg_auxiliary_state(connection, schema)
+        else:
+            schema = 'main'
+            _require({row[1] for row in connection.exec_driver_sql('PRAGMA database_list')}
+                <= {'main', 'temp'})
+            _require(connection.exec_driver_sql('SELECT count(*) FROM sqlite_temp_master').scalar_one() == 0)
+            _require(not catalog.get_view_names(schema=schema))
+            # Reflection hides sqlite_ tables by default. Imported sequence or
+            # statistics rows are also unknown target state; never ignore them.
+            names = list(connection.exec_driver_sql("SELECT name FROM main.sqlite_master "
+                "WHERE type='table' ORDER BY name").scalars())
+        _require(0 < len(names) <= 256 and {m.__tablename__ for m in MODELS} <= set(names))
+        _require(set(names) <= EMPTY_TARGET_TABLES | {'alembic_version'})
+        metadata = MetaData()
+        for name in names:
+            table = Table(name, metadata, schema=schema, autoload_with=connection, resolve_fks=False)
+            if name == 'alembic_version':
+                _require(set(table.columns.keys()) == {'version_num'})
+                _require(list(connection.scalars(select(table.c.version_num))) == [TARGET_SCHEMA_REVISION])
+            else:
+                _require(connection.scalar(select(func.count()).select_from(table)) == 0)
+    except SQLAlchemyError:
+        # Permission, reflection and RLS errors mean the target was not proven
+        # empty. The restore savepoint will roll back even when the caller
+        # catches this typed refusal and commits its enclosing transaction.
+        raise RecoveryScopeError() from None
+
+
+@_scope_input
 def restore_stage_a_rows(connection, raw):
-    """Insert only into an empty, caller-owned isolated target transaction.
+    """Insert only into an empty, caller-owned isolated social schema.
 
     Never creates a connection or schema, truncates/replaces rows, or reads
     credentials. Caller must enforce OS network isolation and custody authority.
+    Full application schemas are outside the explicit Stage A table inventory.
     A logical insert is not full PostgreSQL schema/ACL or remote-R2 recovery.
     """
     _require(connection.in_transaction() and connection.dialect.name in {'sqlite', 'postgresql'})
@@ -138,22 +331,11 @@ def _restore_stage_a_rows(connection, raw):
     if connection.dialect.name == 'postgresql':
         _require(connection.scalar(text('SHOW row_security')) == 'off')
     _require(type(raw) is bytes and 1 <= len(raw) <= MAX_ROWS_BYTES)
-    def pairs(values):
-        result = {}
-        for key, value in values:
-            _require(key not in result)
-            result[key] = value
-        return result
-    try:
-        rows = json.loads(raw, object_pairs_hook=pairs,
-            parse_constant=lambda _: (_ for _ in ()).throw(RecoveryScopeError()))
-    except (ValueError, TypeError, UnicodeError):
-        raise RecoveryScopeError() from None
+    rows = _decode_json(raw)
     encode_rows(rows)
     _require(len(rows['social_media_assets']) == 1 and len(rows['social_media_uploads']) == 1
         and len(rows['social_posts']) == 1)
-    for model in MODELS:
-        _require(connection.scalar(select(func.count()).select_from(model.__table__)) == 0)
+    _require_empty_target(connection)
     if connection.dialect.name == 'sqlite':
         connection.exec_driver_sql('PRAGMA defer_foreign_keys=ON')
     else:
@@ -237,6 +419,7 @@ def _require_incoming_closure(db, rows):
             _require(actual == expected)
 
 
+@_scope_input
 def capture_stage_a_rows(db, actor_id, asset_id, post_id):
     """Read the dependency-closed *first* intake inside caller's stable snapshot.
 
@@ -264,6 +447,7 @@ def _stage_a_rows(db, actor_id, asset_id, post_id):
     upload = db.get(SocialMediaUpload, asset_id, populate_existing=True)
     post = db.get(SocialPost, post_id, populate_existing=True)
     _require(asset is not None and upload is not None and post is not None)
+    _require(type(asset.codec_metadata) is dict)
     _require(db.scalar(select(func.count()).select_from(SocialMediaAsset)) == 1)
     _require(db.scalar(select(func.count()).select_from(SocialMediaUpload)) == 1)
     _require(asset.created_by == actor_id == upload.actor_id == post.created_by)
@@ -289,10 +473,8 @@ def _stage_a_rows(db, actor_id, asset_id, post_id):
             'declared_size': upload.declared_size, 'alt_text': asset.default_alt_text}))
     _require(asset.storage_key == f'ready/{asset_id}/original'
         and upload.quarantine_key == f'quarantine/{actor_id}/{asset_id}/source')
-    try:
-        marker = json.loads(upload.retained_write_fence)
-    except (ValueError, TypeError):
-        raise RecoveryScopeError() from None
+    _require(type(upload.retained_write_fence) is str and 1 <= len(upload.retained_write_fence) <= 4096)
+    marker = _decode_json(upload.retained_write_fence)
     _require(type(marker) is dict and set(marker) == {
         'version', 'scope_hash', 'quarantine_etag', 'original_etag'})
     _require(type(marker['version']) is int and marker['version'] == 1
@@ -306,6 +488,10 @@ def _stage_a_rows(db, actor_id, asset_id, post_id):
     revisions = list(db.scalars(select(SocialPostRevision).where(SocialPostRevision.post_id == post_id)))
     _require(len(revisions) == 1)
     revision = revisions[0]
+    _require(type(revision.document) is dict
+        and type(revision.document.get('master')) is dict
+        and type(revision.document['master'].get('media')) is list
+        and all(type(item) is dict for item in revision.document['master']['media']))
     _require(revision.id == post.current_revision_id and revision.revision_no == 1
         and revision.created_by == actor_id and revision.generator_metadata is None
         and revision.evidence_snapshot == {'references': []} and revision.document.get('targets') == []

@@ -14,7 +14,7 @@ import stat
 from uuid import UUID
 from sqlalchemy import text
 
-from .recovery import (RecoveryScopeError, _require, capture_stage_a_payloads,
+from .recovery import (RecoveryScopeError, _require, _scope_input, _decode_json, capture_stage_a_payloads,
     capture_stage_a_rows, encode_rows, verify_stage_a_payloads)
 
 MAX_MANIFEST = 65536
@@ -28,6 +28,7 @@ def _hash(data):
     return hashlib.sha256(data).hexdigest()
 
 
+@_scope_input
 def _canonical(value):
     return json.dumps(value, sort_keys=True, separators=(',', ':'),
         ensure_ascii=True, allow_nan=False).encode('ascii')
@@ -106,20 +107,12 @@ def _read(directory, name, maximum):
         return data
 
 
+@_scope_input
 def _load(raw):
-    def pairs(items):
-        result = {}
-        for key, value in items:
-            _require(key not in result)
-            result[key] = value
-        return result
-    try:
-        return json.loads(raw, object_pairs_hook=pairs,
-            parse_constant=lambda _: (_ for _ in ()).throw(RecoveryScopeError()))
-    except (ValueError, TypeError, UnicodeError):
-        raise RecoveryScopeError() from None
+    return _decode_json(raw)
 
 
+@_scope_input
 def read_stage_a_packet(root, custody_id, expected_manifest_sha256):
     """Read original custody bytes; expected outer hash comes from another record."""
     _require(type(custody_id) is UUID and type(expected_manifest_sha256) is str
@@ -168,10 +161,15 @@ def read_stage_a_packet(root, custody_id, expected_manifest_sha256):
                 and len(rows['social_posts']) == 1)
             _require(type(manifest['objects']) is dict and set(manifest['objects']) == {'quarantine.bin', 'original.bin'})
             asset, upload = rows['social_media_assets'][0], rows['social_media_uploads'][0]
+            _require(type(asset) is dict and type(upload) is dict
+                and type(rows['social_posts'][0]) is dict
+                and type(asset.get('codec_metadata')) is dict)
             _require(str(asset['id']) == manifest['asset_id'] and str(asset['created_by']) == manifest['actor_id']
                 and str(rows['social_posts'][0]['id']) == manifest['post_id'])
             keys = {'quarantine.bin': upload['quarantine_key'], 'original.bin': asset['storage_key']}
             fence = _load(upload['retained_write_fence'])
+            _require(type(fence) is dict and set(fence) == {
+                'version', 'scope_hash', 'quarantine_etag', 'original_etag'})
             payloads = {}
             for name, key in keys.items():
                 record = manifest['objects'][name]
@@ -202,6 +200,7 @@ def read_stage_a_packet(root, custody_id, expected_manifest_sha256):
         os.close(parent)
 
 
+@_scope_input
 def publish_stage_a_packet(db, storage, actor_id, asset_id, post_id, root, custody_id, context):
     """Future authorized capture to one fresh child of an existing private root.
 
