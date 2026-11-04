@@ -1,13 +1,14 @@
+jest.mock('@/lib/auth/admin',()=>({useAdmin:()=>({isAdmin:true})}));
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import PrivacyReview from '@/components/admin/social/PrivacyReview';
 import { privacyApi, decodePrivacyQueue, decodePrivacyPlan } from '@/lib/api/socialPrivacy';
-jest.mock('@/lib/auth/AuthProvider',()=>({useAuth:()=>({user:{id:'human-proposer'}})}));
+jest.mock('@/lib/auth/AuthProvider',()=>({useAuth:()=>({user:{id:'00000000-0000-4000-8000-000000000001'}})}));
 jest.mock('@/lib/api/socialPrivacy',()=>({...jest.requireActual('@/lib/api/socialPrivacy'),privacyApi:{queue:jest.fn(),detail:jest.fn(),command:jest.fn()}}));
 const queue={requests:[{id:'receipt',kind:'data_deletion',state:'pending_retention_review',resolution:'indexed_partial',affected_count:1}],page:1,page_size:20,total:1,has_more:false,workflow_enabled:false,execution_enabled:false,policies:{}};
-const plan={id:'plan',receipt_id:'receipt',proposed_by:'human-proposer',policy_key:'reviewed',policy_hash:'a'.repeat(64),plan_hash:'b'.repeat(64),evidence:'Exact policy review evidence.',scope:{credentials:[{id:'credential',version:2}],flows:[],media_assets:[]},decision:'pending_review',approved_by:null,execution:null};
+const plan={id:'plan',receipt_id:'receipt',proposed_by:'00000000-0000-4000-8000-000000000001',policy_key:'reviewed',policy_hash:'a'.repeat(64),plan_hash:'b'.repeat(64),evidence:'Exact policy review evidence.',scope:{credentials:[{id:'credential',version:2}],flows:[],media_assets:[]},decision:'pending_review',approved_by:null,execution:null};
 function mount(){const client=new QueryClient({defaultOptions:{queries:{retry:false},mutations:{retry:false}}});return render(<QueryClientProvider client={client}><PrivacyReview/></QueryClientProvider>);}
-beforeEach(()=>jest.clearAllMocks());
+beforeEach(()=>{jest.clearAllMocks();sessionStorage.clear();});
 test('disabled controls give no execution promise and expose receipt review',async()=>{(privacyApi.queue as jest.Mock).mockResolvedValue(queue);(privacyApi.detail as jest.Mock).mockResolvedValue({...queue.requests[0],credentials:['credential'],flows:[],plans:[]});mount();expect(await screen.findByText(/Privacy approval is disabled/)).toBeVisible();fireEvent.click(screen.getByRole('button',{name:/data deletion/}));expect(await screen.findByRole('heading',{name:'Request review'})).toBeVisible();expect(screen.queryByRole('button',{name:'Submit scope for independent review'})).not.toBeInTheDocument();expect(privacyApi.command).not.toHaveBeenCalled();});
 test('proposer cannot approve their own request',async()=>{(privacyApi.queue as jest.Mock).mockResolvedValue({...queue,workflow_enabled:true,policies:{reviewed:'a'.repeat(64)}});(privacyApi.detail as jest.Mock).mockResolvedValue({...queue.requests[0],credentials:['credential'],flows:[],plans:[plan]});mount();fireEvent.click(await screen.findByRole('button',{name:/data deletion/}));const reason=await screen.findByLabelText('Independent review reason');fireEvent.change(reason,{target:{value:'Checked independent evidence.'}});expect(screen.getByRole('button',{name:'Approve exact scope'})).toBeDisabled();expect(privacyApi.command).not.toHaveBeenCalled();});
 test('completed scope leaves overall request pending',async()=>{(privacyApi.queue as jest.Mock).mockResolvedValue(queue);(privacyApi.detail as jest.Mock).mockResolvedValue({...queue.requests[0],credentials:[],flows:[],plans:[{...plan,decision:'approved',execution:{id:'operation',state:'completed',version:3,result:{}}}]});mount();fireEvent.click(await screen.findByRole('button',{name:/data deletion/}));expect(await screen.findByText(/overall request remains open/)).toBeVisible();});
@@ -37,4 +38,12 @@ test('fresh current policy permits independent review, then a failed refresh hol
  expect(screen.getByRole('button',{name:'Approve exact scope'})).toBeDisabled();
  expect(screen.getByRole('button',{name:'Reject scope'})).toBeDisabled();
  expect(privacyApi.command).not.toHaveBeenCalled();
+});
+
+test('an ambiguous independent privacy decision recovers the same body and key after remount',async()=>{
+ (privacyApi.queue as jest.Mock).mockResolvedValue({...queue,workflow_enabled:true,policies:{reviewed:plan.policy_hash}});
+ (privacyApi.detail as jest.Mock).mockResolvedValue({...queue.requests[0],credentials:[],flows:[],plans:[{...plan,proposed_by:'another-human'}]});
+ (privacyApi.command as jest.Mock).mockRejectedValue(new Error('Unconfirmed privacy decision'));
+ async function submit(){const view=mount();fireEvent.click(await screen.findByRole('button',{name:/data deletion/}));fireEvent.change(await screen.findByLabelText('Independent review reason'),{target:{value:'Checked independent evidence.'}});await waitFor(()=>expect(screen.getByRole('button',{name:'Approve exact scope'})).toBeEnabled());fireEvent.click(screen.getByRole('button',{name:'Approve exact scope'}));await screen.findByRole('alert');return view;}
+ const first=await submit(), original=(privacyApi.command as jest.Mock).mock.calls[0];first.unmount();const next=await submit();expect((privacyApi.command as jest.Mock).mock.calls[1]).toEqual(original);next.unmount();
 });

@@ -228,3 +228,27 @@ test('create-only 412 permits inspection of an ambiguous previously completed up
   fetchMock.mockResolvedValueOnce({ ok: false, status: 412 });
   await expect(putMediaFile(grant(), new File(['data'], pending.filename, { type: 'image/png' }))).resolves.toBeUndefined();
 });
+
+test('a locally invalidated upload refuses fetch and retains an uncertain outcome', async () => {
+  const controller = new AbortController(); controller.abort();
+  await expect(putMediaFile(grant(), new File(['data'], pending.filename, { type: 'image/png' }), controller.signal)).rejects.toMatchObject({ code: 'MEDIA_UPLOAD_UNCONFIRMED', retryable: true });
+  expect(fetchMock).not.toHaveBeenCalled();
+});
+test('in-flight storage PUT observes external cancellation without claiming remote cancellation', async () => {
+  const controller = new AbortController(); let uploadSignal: AbortSignal | undefined;
+  fetchMock.mockImplementation((_url, init) => new Promise((_resolve, reject) => {
+    uploadSignal = init.signal; init.signal.addEventListener('abort', () => reject(new Error('aborted locally')));
+  }));
+  const upload = putMediaFile(grant(), new File(['data'], pending.filename, { type: 'image/png' }), controller.signal);
+  controller.abort();
+  await expect(upload).rejects.toMatchObject({ code: 'MEDIA_UPLOAD_UNCONFIRMED', retryable: true });
+  expect(uploadSignal?.aborted).toBe(true);
+});
+test('initiation and completion preserve the exact API key/body while passing the editor signal', async () => {
+  const controller = new AbortController(), body = { filename: pending.filename, declared_mime_type: 'image/png' as const, declared_size: 4, alt_text: null };
+  apiPost.mockResolvedValueOnce({ data: grant() }).mockResolvedValueOnce({ data: ready });
+  await socialMediaApi.initiate(body, actorId, controller.signal);
+  await socialMediaApi.complete(assetId, 1, otherId, controller.signal);
+  expect(apiPost.mock.calls[0]).toEqual(['/admin/social/media/uploads', body, { headers: { 'Idempotency-Key': actorId }, signal: controller.signal }]);
+  expect(apiPost.mock.calls[1]).toEqual([`/admin/social/media/uploads/${assetId}/complete`, { expected_version: 1 }, { headers: { 'Idempotency-Key': otherId }, signal: controller.signal }]);
+});

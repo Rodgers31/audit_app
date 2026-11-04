@@ -1,0 +1,14 @@
+import SocialAutomation from '@/components/admin/social/SocialAutomation';
+import api from '@/lib/api/axios';
+import { generationApi } from '@/lib/api/socialGeneration';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { fireEvent, render, screen } from '@testing-library/react';
+jest.mock('@/lib/auth/AuthProvider',()=>({useAuth:()=>({user:{id:'00000000-0000-4000-8000-000000000001'}})}));
+jest.mock('@/lib/auth/admin',()=>({useAdmin:()=>({isAdmin:true})}));
+jest.mock('@/lib/api/axios',()=>({__esModule:true,default:{get:jest.fn(),post:jest.fn(),patch:jest.fn()}}));
+jest.mock('@/lib/api/socialGeneration',()=>({...jest.requireActual('@/lib/api/socialGeneration'),generationApi:{capabilities:jest.fn().mockResolvedValue([]),controls:jest.fn().mockResolvedValue({version:1,drafts_enabled:false,shadow_enabled:false,source_allowlist:[],targets:[]}),rules:jest.fn().mockResolvedValue({items:[],total:0,page:1,has_more:false}),decisions:jest.fn().mockResolvedValue({items:[],total:0,page:1,has_more:false})}}));
+const get=api.get as jest.Mock,send=api.post as jest.Mock;
+function mount(){const qc=new QueryClient({defaultOptions:{queries:{retry:false},mutations:{retry:false}}});return render(<QueryClientProvider client={qc}><SocialAutomation/></QueryClientProvider>);}
+async function fillAndSubmit(){fireEvent.click(screen.getByText('Advisory rules · create or revise a rule'));fireEvent.change(screen.getByLabelText('Rule name'),{target:{value:'Fixture report rule'}});fireEvent.click(screen.getByRole('checkbox',{name:'Rule source: COB'}));fireEvent.click(await screen.findByRole('checkbox',{name:'Rule account: facebook · Fixture Page'}));fireEvent.change(screen.getByLabelText('Rule reason'),{target:{value:'Reviewed fixture'}});fireEvent.click(screen.getByRole('button',{name:'Save immutable rule version'}));await screen.findByRole('alert');}
+beforeEach(()=>{jest.clearAllMocks();sessionStorage.clear();get.mockResolvedValue({data:{accounts:[{id:'00000000-0000-4000-8000-000000000002',platform:'facebook',display_name:'Fixture Page',handle:null,profile_url:null,connection_state:'connected',publishing_enabled:false,capabilities:{rules_version:'v1',provider_api_version:'v24.0',eligible:false,supported_formats:['text'],feature_states:{},limits:{},granted_scopes:[],required_scopes:[],price_class:'free',source_links:[],verified_at:null,adapter_available:false}}]}});send.mockRejectedValue({isAxiosError:true});});
+test('the actual new-rule form recovers the original generated rule path/body/key after remount',async()=>{const first=mount();await fillAndSubmit();const original=send.mock.calls[0];first.unmount();const next=mount();await fillAndSubmit();expect(send.mock.calls[1][0]).toEqual(original[0]);expect(send.mock.calls[1][1]).toEqual(original[1]);expect(send.mock.calls[1][2].headers).toEqual(original[2].headers);next.unmount();});

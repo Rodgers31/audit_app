@@ -1,3 +1,4 @@
+jest.mock('@/lib/auth/admin',()=>({useAdmin:()=>({isAdmin:true})}));
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { decodeDirectStartedFlow, decodeConnectionStatus, connectionApi, ConnectionError } from '@/lib/api/socialConnections';
 import { receiveDirectMetaCallback, launchDirectMeta } from '@/components/admin/social/connections/callbackSecurity';
@@ -6,7 +7,7 @@ import { saveConnectionRecovery, readConnectionRecovery } from '@/components/adm
 jest.mock('@/lib/api/axios', () => ({ __esModule:true, default:{get:jest.fn(),post:jest.fn()} }));
 jest.mock('@/lib/hooks/useSocial', () => ({useSocialAccounts:jest.fn()}));
 jest.mock('@/lib/hooks/useSocialConnections', () => ({useMetaAccountHealth:jest.fn(),useMetaConnectionStatus:jest.fn()}));
-jest.mock('@/lib/auth/AuthProvider', () => ({useAuth:()=>({user:{id:'actor'}})}));
+jest.mock('@/lib/auth/AuthProvider', () => ({useAuth:()=>({user:{id:'00000000-0000-4000-8000-000000000001'}})}));
 const hooks=jest.requireMock('@/lib/hooks/useSocialConnections'), social=jest.requireMock('@/lib/hooks/useSocial');
 const id='4aadebe9-11ce-4207-afce-836cd86cc9da', callback='https://api.example.test/api/v1/social/oauth/meta/callback';
 const flow={flow_id:id,launch_url:'https://api.example.test/api/v1/social/oauth/meta/launch',launch_token:'x'.repeat(43),expires_at:new Date(Date.now()+600000).toISOString()};
@@ -49,7 +50,7 @@ test('Accounts uses direct transport and ignores credential-bearing messages',as
   await screen.findByRole('heading',{name:'Confirm account identities'});expect(finish).toHaveBeenCalledTimes(1);expect(finish).toHaveBeenCalledWith(id,expect.any(String));
 });
 test('explicit recovery recovers already exchanged choices without code replay',async()=>{
-  saveConnectionRecovery('actor',id,flow.expires_at);
+  saveConnectionRecovery('00000000-0000-4000-8000-000000000001',id,flow.expires_at);
   const finish=jest.spyOn(connectionApi,'completeDirect').mockRejectedValue(new ConnectionError('OAUTH_STATE_USED','Used'));
   const choices=jest.spyOn(connectionApi,'choices').mockResolvedValue(discovery);
   render(<MetaAccounts/>);fireEvent.click(await screen.findByRole('button',{name:'Recover account choices'}));
@@ -62,21 +63,21 @@ test('direct denial clears the reference and offers a new connection',async()=>{
   const finish=jest.spyOn(connectionApi,'completeDirect').mockRejectedValue(new ConnectionError('OAUTH_DENIED','Declined; start a new connection.'));
   const choices=jest.spyOn(connectionApi,'choices');
   const view=render(<MetaAccounts/>);fireEvent.click(screen.getByRole('button',{name:'Connect owned Meta accounts'}));
-  await waitFor(()=>expect(readConnectionRecovery('actor').flow).toBe(id));
+  await waitFor(()=>expect(readConnectionRecovery('00000000-0000-4000-8000-000000000001').flow).toBe(id));
   await act(async()=>{window.dispatchEvent(new MessageEvent('message',{origin:'https://api.example.test',source:popup,data:{type:'auditgava-meta-ready',flow_id:id}}));});
   await screen.findByRole('alert');expect(finish).toHaveBeenCalledTimes(1);
   expect(screen.queryByRole('button',{name:'Recover account choices'})).toBeNull();
-  expect(readConnectionRecovery('actor').flow).toBeUndefined();expect(choices).not.toHaveBeenCalled();
+  expect(readConnectionRecovery('00000000-0000-4000-8000-000000000001').flow).toBeUndefined();expect(choices).not.toHaveBeenCalled();
   expect(screen.getByRole('button',{name:'Connect owned Meta accounts'})).toBeEnabled();
   view.unmount();render(<MetaAccounts/>);expect(screen.queryByRole('button',{name:'Recover account choices'})).toBeNull();
 });
 test('denial during explicit completion recovery is also terminal',async()=>{
-  saveConnectionRecovery('actor',id,flow.expires_at);
+  saveConnectionRecovery('00000000-0000-4000-8000-000000000001',id,flow.expires_at);
   jest.spyOn(connectionApi,'completeDirect').mockRejectedValue(new ConnectionError('OAUTH_DENIED','Declined; start a new connection.'));
   render(<MetaAccounts/>);fireEvent.click(await screen.findByRole('button',{name:'Recover account choices'}));
   await screen.findByRole('alert');
   expect(screen.queryByRole('button',{name:'Recover account choices'})).toBeNull();
-  expect(readConnectionRecovery('actor').flow).toBeUndefined();
+  expect(readConnectionRecovery('00000000-0000-4000-8000-000000000001').flow).toBeUndefined();
 });
 test('unknown completion effect retains explicit recovery',async()=>{
   const popup={close:jest.fn()} as unknown as Window; jest.spyOn(window,'open').mockReturnValue(popup);
@@ -84,8 +85,8 @@ test('unknown completion effect retains explicit recovery',async()=>{
   jest.spyOn(connectionApi,'startDirect').mockResolvedValue(flow);
   jest.spyOn(connectionApi,'completeDirect').mockRejectedValue(new Error('Inert lost completion response'));
   render(<MetaAccounts/>);fireEvent.click(screen.getByRole('button',{name:'Connect owned Meta accounts'}));
-  await waitFor(()=>expect(readConnectionRecovery('actor').flow).toBe(id));
+  await waitFor(()=>expect(readConnectionRecovery('00000000-0000-4000-8000-000000000001').flow).toBe(id));
   await act(async()=>{window.dispatchEvent(new MessageEvent('message',{origin:'https://api.example.test',source:popup,data:{type:'auditgava-meta-ready',flow_id:id}}));});
   expect(await screen.findByRole('button',{name:'Recover account choices'})).toBeEnabled();
-  expect(readConnectionRecovery('actor').flow).toBe(id);
+  expect(readConnectionRecovery('00000000-0000-4000-8000-000000000001').flow).toBe(id);
 });

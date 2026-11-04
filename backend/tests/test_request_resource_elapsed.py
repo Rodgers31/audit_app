@@ -129,3 +129,55 @@ def test_ready_healthy_chunks_preserve_bytes_and_release_capacity(monkeypatch):
     assert asyncio.run(exchange(guard, receive))[0]['status'] == 200
     assert seen == [b' {"x":"\xc3\xa9"} ']
     assert guard.inflight == guard.body_inflight == guard.buffered == 0
+
+
+@pytest.mark.parametrize('elapsed', [1.0, 2.0], ids=['at-deadline', 'after-deadline'])
+def test_ready_handler_cannot_start_success_after_request_deadline(monkeypatch, elapsed):
+    clock = [0.0]
+    monkeypatch.setattr(resources, 'monotonic', lambda: clock[0])
+
+    async def receive():
+        return {'type': 'http.request', 'body': b'', 'more_body': False}
+
+    async def endpoint(scope, receive, send):
+        clock[0] = elapsed
+        await JSONResponse({'ok': True})(scope, receive, send)
+
+    guard = resources.RequestResourceMiddleware(endpoint, request_timeout=1)
+    messages = asyncio.run(exchange(guard, receive))
+    assert [message['status'] for message in messages if message['type'] == 'http.response.start'] == [504]
+    assert b'REQUEST_TIME_BUDGET_EXCEEDED' in messages[-1]['body']
+    assert guard.inflight == guard.body_inflight == guard.buffered == 0
+    assert resources.request_deadline.get() is None
+
+
+@pytest.mark.parametrize('partial', [False, True], ids=['first-body', 'stream-final-body'])
+def test_ready_handler_cannot_finish_success_after_request_deadline(monkeypatch, partial):
+    clock = [0.0]
+    monkeypatch.setattr(resources, 'monotonic', lambda: clock[0])
+    messages = []
+
+    async def receive():
+        return {'type': 'http.request', 'body': b'', 'more_body': False}
+
+    async def endpoint(scope, receive, send):
+        await send({'type': 'http.response.start', 'status': 200, 'headers': []})
+        if partial:
+            await send({'type': 'http.response.body', 'body': b'prefix', 'more_body': True})
+        clock[0] = 2
+        await send({'type': 'http.response.body', 'body': b'late-success', 'more_body': False})
+
+    async def send(message):
+        messages.append(message)
+
+    async def exercise():
+        with pytest.raises(TimeoutError):
+            await guard({'type': 'http', 'method': 'GET', 'path': '/fixture',
+                         'headers': [], 'query_string': b''}, receive, send)
+        assert resources.request_deadline.get() is None
+
+    guard = resources.RequestResourceMiddleware(endpoint, request_timeout=1)
+    asyncio.run(exercise())
+    assert [message['status'] for message in messages if message['type'] == 'http.response.start'] == [200]
+    assert [message['body'] for message in messages if message['type'] == 'http.response.body'] == ([b'prefix'] if partial else [])
+    assert guard.inflight == guard.body_inflight == guard.buffered == 0

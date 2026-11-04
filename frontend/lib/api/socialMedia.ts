@@ -87,26 +87,28 @@ export function decodeMediaPreview(v: unknown): MediaPreview {
 async function get<T>(path: string, decode: (v: unknown) => T, signal?: AbortSignal, params?: object): Promise<T> {
   try { return decode((await api.get(`/admin/social/media${path}`, { signal, params })).data); } catch (error) { throw toSocialError(error); }
 }
-async function post<T>(path: string, body: object, key: string, decode: (v: unknown) => T): Promise<T> {
-  try { return decode((await api.post(`/admin/social/media${path}`, body, { headers: { 'Idempotency-Key': key } })).data); } catch (error) { throw toSocialError(error); }
+async function post<T>(path: string, body: object, key: string, decode: (v: unknown) => T, signal?: AbortSignal): Promise<T> {
+  try { return decode((await api.post(`/admin/social/media${path}`, body, { headers: { 'Idempotency-Key': key }, ...(signal ? { signal } : {}) })).data); } catch (error) { throw toSocialError(error); }
 }
 export const socialMediaApi = {
   capabilities: (signal?: AbortSignal) => get('/capabilities', decodeMediaCapabilities, signal),
   library: (page: number, q: string, kind: '' | 'image' | 'video', signal?: AbortSignal) => get('/assets', v => { const result = decodeMediaLibrary(v); if (result.page !== page || result.page_size !== 20) throw bad(); return result; }, signal, { page, page_size: 20, q, ...(kind ? { kind } : {}) }),
   preview: (id: string, signal?: AbortSignal) => get(`/assets/${encodeURIComponent(id)}/preview`, v => { const result = decodeMediaPreview(v); if (result.asset.id !== id.toLowerCase()) throw bad(); return result; }, signal),
   usage: (id: string, page: number, signal?: AbortSignal) => get(`/assets/${encodeURIComponent(id)}/usage`, v => { const result = decodeMediaUsage(v); if (result.asset.id !== id.toLowerCase() || result.page !== page || result.page_size !== 20) throw bad(); return result; }, signal, { page, page_size: 20 }),
-  initiate: (body: UploadIntent, key: string) => post('/uploads', body, key, v => { const grant = decodeUploadGrant(v); if (grant.asset.filename !== body.filename || grant.headers['Content-Type'] !== body.declared_mime_type) throw bad(); return grant; }),
-  complete: (id: string, version: number, key: string) => post(`/uploads/${encodeURIComponent(id)}/complete`, { expected_version: version }, key, v => { const asset = decodeMediaAsset(v); if (asset.id !== id || asset.state !== 'ready' || asset.version !== version + 1) throw bad(); return asset; }),
+  initiate: (body: UploadIntent, key: string, signal?: AbortSignal) => post('/uploads', body, key, v => { const grant = decodeUploadGrant(v); if (grant.asset.filename !== body.filename || grant.headers['Content-Type'] !== body.declared_mime_type) throw bad(); return grant; }, signal),
+  complete: (id: string, version: number, key: string, signal?: AbortSignal) => post(`/uploads/${encodeURIComponent(id)}/complete`, { expected_version: version }, key, v => { const asset = decodeMediaAsset(v); if (asset.id !== id || asset.state !== 'ready' || asset.version !== version + 1) throw bad(); return asset; }, signal),
 };
-export async function putMediaFile(grant: UploadGrant, file: File): Promise<void> {
+export async function putMediaFile(grant: UploadGrant, file: File, signal?: AbortSignal): Promise<void> {
   const checked = decodeUploadGrant(grant);
   if (!(file instanceof File) || file.type !== checked.headers['Content-Type'] || !Number.isSafeInteger(file.size) || file.size <= 0 || file.size > (file.type === 'video/mp4' ? 50 : 10) * 1024 * 1024) throw bad();
   const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 120000);
+  const abort = () => controller.abort(); signal?.addEventListener('abort', abort, { once: true });
   try {
+    if (signal?.aborted) throw new Error('upload lifetime ended');
     const response = await fetch(checked.url, { method: 'PUT', body: file, headers: checked.headers, credentials: 'omit', redirect: 'error', cache: 'no-store', mode: 'cors', signal: controller.signal });
     // A lost successful response can leave the create-only object in place.
     // Completion still inspects its actual bytes before admitting readiness.
     if (!response.ok && response.status !== 412) throw new Error('storage unavailable');
   } catch { throw new SocialApiError('MEDIA_UPLOAD_UNCONFIRMED', 'The upload could not be confirmed. Retry this file to inspect any completed upload.', [], [], true); }
-  finally { clearTimeout(timeout); }
+  finally { clearTimeout(timeout); signal?.removeEventListener('abort', abort); }
 }

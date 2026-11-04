@@ -89,3 +89,4 @@ test('a same-revision status refresh cannot reconcile over a pending media opera
   expect(screen.getByRole('button', { name: 'Load current revision' })).toBeDisabled();
   expect(patch).not.toHaveBeenCalled();
 });
+import '../../../tests/socialRecoveryCrypto';

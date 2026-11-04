@@ -9,7 +9,7 @@ import PrivacyReview from '@/components/admin/social/PrivacyReview';
 import {socialApi} from '@/lib/api/social';
 import {studioApi} from '@/lib/api/socialStudio';
 import {privacyApi} from '@/lib/api/socialPrivacy';
-let mockActor='actor-one',mockRoles=['admin'];
+let mockActor='00000000-0000-4000-8000-000000000001',mockRoles=['admin'];
 const mockRouter={push:jest.fn(),replace:jest.fn()};
 jest.mock('next/navigation',()=>({useRouter:()=>mockRouter,usePathname:()=>'/admin/social/studio'}));
 jest.mock('@/lib/auth/AuthProvider',()=>({useAuth:()=>({user:{id:mockActor,roles:mockRoles},authUser:{id:mockActor},isLoading:false,isAuthenticated:true})}));
@@ -19,7 +19,7 @@ jest.mock('@/lib/api/socialPrivacy',()=>({...jest.requireActual('@/lib/api/socia
 const clients:QueryClient[]=[];
 function mount(node:React.ReactNode){const qc=new QueryClient({defaultOptions:{queries:{retry:false,gcTime:0},mutations:{retry:false}}});clients.push(qc);return render(<QueryClientProvider client={qc}><AdminLayout>{node}</AdminLayout></QueryClientProvider>);}
 beforeEach(()=>{
- jest.clearAllMocks();mockActor='actor-one';mockRoles=['admin'];
+ jest.clearAllMocks(); sessionStorage.clear();mockActor='00000000-0000-4000-8000-000000000001';mockRoles=['admin'];
  (socialApi.posts as jest.Mock).mockImplementation(async()=>({posts:[{id:'post-'+mockActor,title:'PRIVATE '+mockActor+' draft'}],total:1,page:1,page_size:25,has_more:false}));
  (studioApi.capabilities as jest.Mock).mockResolvedValue({rendering_available:false,unavailable_reason:'Owned renderer unavailable',analytics_reason:'Collection unavailable',uploads_enabled:false});
  (studioApi.jobs as jest.Mock).mockResolvedValue({jobs:[],page:1,has_more:false});
@@ -28,15 +28,15 @@ beforeEach(()=>{
 });
 afterEach(()=>{cleanup();clients.splice(0).forEach(q=>q.clear());});
 test('actual shared layout and Studio do not retain previous actor private source posts',async()=>{
- const view=mount(<SocialStudio/>);await screen.findByRole('option',{name:'PRIVATE actor-one draft'});
- mockActor='actor-two';view.rerender(<QueryClientProvider client={clients[0]}><AdminLayout><SocialStudio/></AdminLayout></QueryClientProvider>);
- await waitFor(()=>expect(screen.queryByRole('option',{name:'PRIVATE actor-one draft'})).not.toBeInTheDocument());
- expect(await screen.findByRole('option',{name:'PRIVATE actor-two draft'})).toBeInTheDocument();
+ const view=mount(<SocialStudio/>);await screen.findByRole('option',{name:'PRIVATE 00000000-0000-4000-8000-000000000001 draft'});
+ mockActor='00000000-0000-4000-8000-000000000002';view.rerender(<QueryClientProvider client={clients[0]}><AdminLayout><SocialStudio/></AdminLayout></QueryClientProvider>);
+ await waitFor(()=>expect(screen.queryByRole('option',{name:'PRIVATE 00000000-0000-4000-8000-000000000001 draft'})).not.toBeInTheDocument());
+ expect(await screen.findByRole('option',{name:'PRIVATE 00000000-0000-4000-8000-000000000002 draft'})).toBeInTheDocument();
 });
 test('role loss removes the Studio source workflow through actual shared guard',async()=>{
- const view=mount(<SocialStudio/>);await screen.findByRole('option',{name:'PRIVATE actor-one draft'});mockRoles=['viewer'];
+ const view=mount(<SocialStudio/>);await screen.findByRole('option',{name:'PRIVATE 00000000-0000-4000-8000-000000000001 draft'});mockRoles=['viewer'];
  view.rerender(<QueryClientProvider client={clients[0]}><AdminLayout><SocialStudio/></AdminLayout></QueryClientProvider>);
- expect(await screen.findByText('Access Restricted')).toBeInTheDocument();expect(screen.queryByRole('option',{name:'PRIVATE actor-one draft'})).not.toBeInTheDocument();
+ expect(await screen.findByText('Access Restricted')).toBeInTheDocument();expect(screen.queryByRole('option',{name:'PRIVATE 00000000-0000-4000-8000-000000000001 draft'})).not.toBeInTheDocument();
 });
 test('unavailable Studio cannot queue media and calendar task performs reads only',async()=>{
  mount(<SocialStudio/>);await screen.findByText('Owned renderer unavailable');expect(screen.getByRole('button',{name:'Queue local render'})).toBeDisabled();
@@ -55,18 +55,18 @@ test('privacy read failure never presents an empty queue or leaks transport diag
 
 test('a late old Studio source read is aborted and cannot replace the next actor',async()=>{
  let resolve!:(value:unknown)=>void,signal:AbortSignal|undefined;
- (socialApi.posts as jest.Mock).mockImplementation((_page,_state,readSignal)=>mockActor==='actor-one'?(signal=readSignal,new Promise(r=>{resolve=r;})):Promise.resolve({posts:[{id:'post-two',title:'PRIVATE actor-two draft'}],has_more:false}));
+ (socialApi.posts as jest.Mock).mockImplementation((_page,_state,readSignal)=>mockActor==='00000000-0000-4000-8000-000000000001'?(signal=readSignal,new Promise(r=>{resolve=r;})):Promise.resolve({posts:[{id:'post-two',title:'PRIVATE 00000000-0000-4000-8000-000000000002 draft'}],has_more:false}));
  const view=mount(<SocialStudio/>);await waitFor(()=>expect(signal).toBeDefined());
- mockActor='actor-two';view.rerender(<QueryClientProvider client={clients[0]}><AdminLayout><SocialStudio/></AdminLayout></QueryClientProvider>);
- expect(await screen.findByRole('option',{name:'PRIVATE actor-two draft'})).toBeInTheDocument();
+ mockActor='00000000-0000-4000-8000-000000000002';view.rerender(<QueryClientProvider client={clients[0]}><AdminLayout><SocialStudio/></AdminLayout></QueryClientProvider>);
+ expect(await screen.findByRole('option',{name:'PRIVATE 00000000-0000-4000-8000-000000000002 draft'})).toBeInTheDocument();
  expect(signal!.aborted).toBe(true);
- await act(async()=>resolve({posts:[{id:'old',title:'LATE actor-one source'}],has_more:false}));
- expect(screen.queryByRole('option',{name:'LATE actor-one source'})).not.toBeInTheDocument();
- expect(clients[0].getQueryCache().getAll().some(q=>q.queryKey[2]==='actor-one')).toBe(false);
+ await act(async()=>resolve({posts:[{id:'old',title:'LATE 00000000-0000-4000-8000-000000000001 source'}],has_more:false}));
+ expect(screen.queryByRole('option',{name:'LATE 00000000-0000-4000-8000-000000000001 source'})).not.toBeInTheDocument();
+ expect(clients[0].getQueryCache().getAll().some(q=>q.queryKey[2]==='00000000-0000-4000-8000-000000000001')).toBe(false);
 });
 
 test('late render acceptance cannot restore previous actor local notices or selection',async()=>{
- const source=sourcePost({title:'PRIVATE actor-one draft',references:[{url:'https://example.invalid/source',label:'Owned source'}]});
+ const source=sourcePost({title:'PRIVATE 00000000-0000-4000-8000-000000000001 draft',references:[{url:'https://example.invalid/source',label:'Owned source'}]});
  (socialApi.posts as jest.Mock).mockResolvedValue({posts:[source],has_more:false});
  (socialApi.post as jest.Mock).mockResolvedValue(source);
  (studioApi.capabilities as jest.Mock).mockResolvedValue({rendering_available:true});
@@ -77,7 +77,7 @@ test('late render acceptance cannot restore previous actor local notices or sele
  for(const role of ['report','publisher','publication date'])fireEvent.change(screen.getByLabelText(`Verified ${role} · 180 characters`),{target:{value:'Owned verified fixture text'}});
  const queue=screen.getByRole('button',{name:'Queue local render'});await waitFor(()=>expect(queue).toBeEnabled());fireEvent.click(queue);
  await waitFor(()=>expect(studioApi.create).toHaveBeenCalledTimes(1));
- mockActor='actor-two';view.rerender(<QueryClientProvider client={clients[0]}><AdminLayout><SocialStudio/></AdminLayout></QueryClientProvider>);
+ mockActor='00000000-0000-4000-8000-000000000002';view.rerender(<QueryClientProvider client={clients[0]}><AdminLayout><SocialStudio/></AdminLayout></QueryClientProvider>);
  await act(async()=>resolve({id:'OLD-RENDER-ACCEPTANCE'}));
  expect(screen.queryByText(/Render queued/)).not.toBeInTheDocument();
  expect(screen.getByLabelText('Source post')).toHaveValue('');
@@ -86,13 +86,13 @@ test('late render acceptance cannot restore previous actor local notices or sele
 
 test('privacy actor transition retires the selected request and local review reason',async()=>{
  (privacyApi.queue as jest.Mock).mockImplementation(async()=>({requests:[{id:'request-'+mockActor,kind:'data_deletion',state:'received'}],total:1,page:1,has_more:false,policies:{},workflow_enabled:false,execution_enabled:false}));
- (privacyApi.detail as jest.Mock).mockResolvedValue({kind:'data_deletion',resolution:'resolved',plans:[{id:'old-plan',policy_key:'owned',decision:'pending_review',evidence:'PRIVATE actor-one evidence',scope:{credentials:[],flows:[],media_assets:[]},proposed_by:'other',execution:null}]});
- const view=mount(<PrivacyReview/>);fireEvent.click(await screen.findByRole('button',{name:/request-actor-one/}));
- fireEvent.change(await screen.findByLabelText('Independent review reason'),{target:{value:'PRIVATE actor-one review reason'}});
- mockActor='actor-two';view.rerender(<QueryClientProvider client={clients[0]}><AdminLayout><PrivacyReview/></AdminLayout></QueryClientProvider>);
- await screen.findByRole('button',{name:/request-actor-two/});
+ (privacyApi.detail as jest.Mock).mockResolvedValue({kind:'data_deletion',resolution:'resolved',plans:[{id:'old-plan',policy_key:'owned',decision:'pending_review',evidence:'PRIVATE 00000000-0000-4000-8000-000000000001 evidence',scope:{credentials:[],flows:[],media_assets:[]},proposed_by:'other',execution:null}]});
+ const view=mount(<PrivacyReview/>);fireEvent.click(await screen.findByRole('button',{name:/request-00000000-0000-4000-8000-000000000001/}));
+ fireEvent.change(await screen.findByLabelText('Independent review reason'),{target:{value:'PRIVATE 00000000-0000-4000-8000-000000000001 review reason'}});
+ mockActor='00000000-0000-4000-8000-000000000002';view.rerender(<QueryClientProvider client={clients[0]}><AdminLayout><PrivacyReview/></AdminLayout></QueryClientProvider>);
+ await screen.findByRole('button',{name:/request-00000000-0000-4000-8000-000000000002/});
  expect(screen.queryByLabelText('Independent review reason')).not.toBeInTheDocument();
- expect(screen.queryByText('PRIVATE actor-one evidence')).not.toBeInTheDocument();
+ expect(screen.queryByText('PRIVATE 00000000-0000-4000-8000-000000000001 evidence')).not.toBeInTheDocument();
  expect(privacyApi.detail).toHaveBeenCalledTimes(1);
  expect(privacyApi.command).not.toHaveBeenCalled();
 });

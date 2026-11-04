@@ -1,3 +1,4 @@
+jest.mock('@/lib/auth/admin',()=>({useAdmin:()=>({isAdmin:true})}));
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import PlatformAccounts from '@/components/admin/social/connections/PlatformAccounts';
 import { platformConnectionApi } from '@/lib/api/socialPlatformConnections';
@@ -23,4 +24,11 @@ test.each([false,true])('privacy hold preserves grant maintenance without bypass
   if(extra)expect(renewal).toBeDisabled();else expect(renewal).toBeEnabled();
   expect(panel.getByRole('button',{name:'Disable local connection'})).toBeEnabled();
   expect(start).not.toHaveBeenCalled();
+});
+
+test.each(['refresh','disconnect'] as const)('platform %s retains its original key and credential version after remount',async action=>{
+ sessionStorage.clear();mockBlockers=['CALLBACK_INGRESS_UNVERIFIED'];const h={account_id:id,platform:'threads' as const,connection_state:'connected',credential_id:id,credential_version:1,access_expires_at:'2099-01-01T00:00:00Z',refresh_pending:false,reconnect_required:false,publishing_enabled:false as const};
+ jest.spyOn(platformConnectionApi,'health').mockResolvedValue(h);const send=jest.spyOn(platformConnectionApi,'accountCommand').mockRejectedValue(new Error('Unconfirmed grant maintenance'));
+ async function submit(){const view=render(<PlatformAccounts/>);const panel=within(screen.getByRole('region',{name:'Threads accounts'}));fireEvent.click(panel.getByRole('button',{name:'Inspect Inert Threads connection'}));fireEvent.click(await panel.findByRole('button',{name:action==='refresh'?'Renew existing grant':'Disable local connection'}));await panel.findByRole('alert');return view;}
+ const first=await submit();const original=send.mock.calls[0];first.unmount();const next=await submit();expect(send.mock.calls[1]).toEqual(original);next.unmount();
 });

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import api from '@/lib/api/axios';
@@ -10,7 +10,7 @@ import { useEtlAccess, type EtlAccess } from './useEtlAccess';
 import { CommandReceipt, etlButton } from './CommandReceipt';
 import { CommandHistory } from './CommandHistory';
 import { useCommandReceipt } from './useCommandReceipt';
-import { clearSubmittedIntent, rememberSubmittedIntent, submittedIntent } from './submittedIntent';
+import { clearSubmittedIntent, IntentRecoveryError, rememberSubmittedIntent, submittedIntent } from './submittedIntent';
 
 interface Intent {source:DispatchSource;dry_run:boolean;key:string;lifetime:number;generation:string;ambiguous:boolean}
 export default function DispatchPanel() {
@@ -27,24 +27,31 @@ export default function DispatchPanel() {
   const [result,setResult]=useState<{lifetime:number;value:CommandAcceptance}|null>(null);
   const [error,setError]=useState<{lifetime:number;ambiguous:boolean}|null>(null);
   const [busy,setBusy]=useState(false);
+  const [recoveryUnavailable,setRecoveryUnavailable]=useState(false);
   const lock=useRef(false);
   const dialog=useRef<HTMLDialogElement>(null);
   const opener=useRef<HTMLButtonElement|null>(null);
   const validIntent=intent?.lifetime===access.lifetime ? intent : null;
   const data=access.enabled && !capability.isError ? capability.data : undefined;
   const ready=dispatchCurrent(data,clock);
+  const checkRecovery=useCallback(() => {
+    try {
+      const pending=submittedIntent(access.authActorId);
+      setRecoveryUnavailable(false);
+      if(pending) {
+        setIntent({...pending,lifetime:access.lifetime,ambiguous:true});
+        setError({lifetime:access.lifetime,ambiguous:true});
+      } else {setIntent(null);setError(null);}
+    } catch {setRecoveryUnavailable(true);setIntent(null);setError(null);}
+  },[access.authActorId,access.lifetime]);
   useEffect(() => {
     const timer=setInterval(()=>setClock(Date.now()),1000);
     return ()=>clearInterval(timer);
   },[]);
   useEffect(() => {
-    const pending=submittedIntent(access.authActorId);
-    if(pending) {
-      const recovery={...pending,lifetime:access.lifetime,ambiguous:true};
-      setIntent(recovery);setError({lifetime:access.lifetime,ambiguous:true});
-    } else {setIntent(null);setError(null);}
+    checkRecovery();
     setResult(null);setBusy(false);lock.current=false;setConfirmation(false);
-  },[access.lifetime]);
+  },[access.lifetime,checkRecovery]);
   useEffect(() => {
     const element=dialog.current;
     if (confirmation && validIntent && access.enabled && ready) {
@@ -56,18 +63,21 @@ export default function DispatchPanel() {
   const recoveryPermitted=(selected:Intent) => data !== undefined &&
     (data.execution_mode !== 'qualification' || selected.source === 'opendata' && selected.dry_run === true);
   const execute=async (selected:Intent, recovery=false) => {
-    if (!access.current(selected.lifetime) || lock.current || !recoveryPermitted(selected) || (!recovery && !dispatchPermits(data,selected.source,selected.dry_run))) return;
+    if (!access.current(selected.lifetime) || recoveryUnavailable || lock.current || !recoveryPermitted(selected) || (!recovery && !dispatchPermits(data,selected.source,selected.dry_run))) return;
     lock.current=true;setBusy(true);setResult(null);setError(null);setConfirmation(false);
-    rememberSubmittedIntent(access.authActorId!,selected);
     const controller=access.controller();
     try {
+      rememberSubmittedIntent(access.authActorId!,selected);
       const response=await api.post('/admin/etl/trigger/'+selected.source,
         {dry_run:selected.dry_run,dispatch_generation:selected.generation},
         {signal:controller.signal,headers:{'Idempotency-Key':selected.key}});
       if (!access.current(selected.lifetime) || controller.signal.aborted) return;
       const accepted=parseCommandAcceptance(response.data,selected,response.status);
-      clearSubmittedIntent(access.authActorId,selected.key);
       setResult({lifetime:selected.lifetime,value:accepted});setIntent(null);
+      // A validated receipt is a durable fact even if browser cleanup fails.
+      // Keep it visible and block fresh submissions until recovery is checked.
+      try {clearSubmittedIntent(access.authActorId,selected.key);}
+      catch {setRecoveryUnavailable(true);}
       void qc.invalidateQueries({queryKey:['admin','etl-commands',access.actorId,access.lifetime]});
     } catch (failure) {
       if (!access.current(selected.lifetime) || controller.signal.aborted) return;
@@ -75,8 +85,9 @@ export default function DispatchPanel() {
       // Refusing recovery cannot prove the original ambiguous POST was absent.
       // Missing/invalid acknowledgment or server failures can follow a commit.
       const status=dispatchHttpStatus(failure);
-      const ambiguous=recovery || status===undefined || status>=500;
-      if(!ambiguous) clearSubmittedIntent(access.authActorId,selected.key);
+      let ambiguous=recovery || status===undefined || status>=500;
+      if(failure instanceof IntentRecoveryError)setRecoveryUnavailable(true);
+      if(!ambiguous)try {clearSubmittedIntent(access.authActorId,selected.key);}catch {setRecoveryUnavailable(true);ambiguous=true;}
       access.rejectAccess(failure);
       if (!access.current(selected.lifetime)) return;
       setIntent(ambiguous ? {...selected,ambiguous:true} : null);
@@ -88,12 +99,14 @@ export default function DispatchPanel() {
     }
   };
   const begin=(source:DispatchSource,dry_run:boolean,button:HTMLButtonElement) => {
-    if(!access.current() || lock.current || !data?.generation || !dispatchPermits(data,source,dry_run)) return;
+    if(!access.current() || recoveryUnavailable || lock.current || !data?.generation || !dispatchPermits(data,source,dry_run)) return;
     opener.current=button;
-    const same=validIntent?.ambiguous && validIntent.source===source && validIntent.dry_run===dry_run;
-    const selected:Intent=same ? validIntent : {source,dry_run,key:crypto.randomUUID(),lifetime:access.lifetime,generation:data.generation!,ambiguous:false};
+    let retained;
+    try {retained=submittedIntent(access.authActorId,{source,dry_run});}
+    catch {setRecoveryUnavailable(true);return;}
+    const selected:Intent=retained ? {...retained,lifetime:access.lifetime,ambiguous:true} : {source,dry_run,key:crypto.randomUUID(),lifetime:access.lifetime,generation:data.generation!,ambiguous:false};
     setIntent(selected);setResult(null);setError(null);
-    if(dry_run) void execute(selected,!!same);
+    if(dry_run) void execute(selected,!!retained);
     else setConfirmation(true);
   };
   const receipt=access.enabled && !capability.isError && result?.lifetime===access.lifetime && !error ? result.value : null;
@@ -117,8 +130,8 @@ export default function DispatchPanel() {
         {DISPATCH_SOURCES.map(source=><li key={source} className='flex flex-wrap items-center gap-3 py-3'>
           <div className='min-w-0 flex-1 basis-48'><p className='text-base font-semibold text-neutral-text'>{sourceLabel(source)}</p><p className='text-sm text-neutral-muted'>{data?.sources[source].reason ?? 'Validated worker capability required.'}</p></div>
           <div className='flex flex-wrap gap-2'>
-            <button className={etlButton} aria-label={'Dry Run · '+source} disabled={!dispatchPermits(data,source,true,clock) || busy} onClick={event=>begin(source,true,event.currentTarget)}>Dry Run</button>
-            <button className={etlButton+' bg-gov-forest !text-white'} aria-label={'Run Now · '+source} disabled={!dispatchPermits(data,source,false,clock) || busy} onClick={event=>begin(source,false,event.currentTarget)}>Run Now</button>
+            <button className={etlButton} aria-label={'Dry Run · '+source} disabled={recoveryUnavailable || !dispatchPermits(data,source,true,clock) || busy} onClick={event=>begin(source,true,event.currentTarget)}>Dry Run</button>
+            <button className={etlButton+' bg-gov-forest !text-white'} aria-label={'Run Now · '+source} disabled={recoveryUnavailable || !dispatchPermits(data,source,false,clock) || busy} onClick={event=>begin(source,false,event.currentTarget)}>Run Now</button>
           </div>
         </li>)}
       </ul>
@@ -134,9 +147,11 @@ export default function DispatchPanel() {
         <div className='flex flex-wrap gap-3'><button autoFocus className={etlButton} onClick={cancel}>Cancel</button><button className={etlButton+' bg-gov-forest !text-white'} disabled={!validIntent || !dispatchPermits(data,validIntent.source,false,clock) || !access.enabled || busy} onClick={()=>{if(validIntent) void execute(validIntent,validIntent.ambiguous);}}>Confirm Run Now</button></div>
       </dialog>
       {busy && access.enabled && <p role='status' className='mt-4 text-sm'>Requesting durable acceptance…</p>}
+      <button type='button' className={etlButton} disabled={!access.enabled || busy} onClick={checkRecovery}>Check unconfirmed commands</button>
+      {recoveryUnavailable && <p role='alert' className='mt-4 text-sm'>{receipt ? 'Command accepted. Browser recovery cleanup could not be confirmed; the accepted receipt below is preserved. Check unconfirmed commands before starting another.' : 'Browser command recovery is unavailable. Keep this tab open and reconcile the unconfirmed command before starting another.'}</p>}
       {failure && <div role='alert' className='mt-4 space-y-2 text-sm text-neutral-text'>
         <p>{failure.ambiguous ? 'Acceptance is uncertain. Recover the same intent to look up its original receipt. This is not an execution retry.' : 'Command was not acknowledged. Refresh worker evidence before a new intent.'}</p>
-        {failure.ambiguous && validIntent && <button className={etlButton} disabled={!access.enabled || busy || !recoveryPermitted(validIntent)} onClick={()=>void execute(validIntent,true)}>Recover same intent</button>}
+        {failure.ambiguous && validIntent && <button className={etlButton} disabled={recoveryUnavailable || !access.enabled || busy || !recoveryPermitted(validIntent)} onClick={()=>void execute(validIntent,true)}>Recover same intent</button>}
       </div>}
       {receipt && <div role='status' className='mt-4 space-y-3 border-t border-neutral-border pt-4'>
         <p>Command accepted. Queued acceptance is not completed work.</p>

@@ -1,0 +1,1995 @@
+{
+  "runtime": {
+    "python": "3.12.16 (main, Oct 28 2026, 02:01:20) [GCC 14.2.0]",
+    "pydantic": "2.14.2",
+    "python_binary_sha256": "0e6475dfda68a9b2d93501449fc47593ca169010e8f4881577b97463fd0c1263"
+  },
+  "sources": {
+    "social/contracts.py": "498160ce4cfc1efa461d403b2f8d67e9bde68037799d6b45ee89f6c3a987e6cc",
+    "social/studio/contracts.py": "7780babc23b77e40885f9f56af71ee4e7166e82d77d13a0cb31ff179f9402dd5",
+    "social/privacy/workflow_contracts.py": "5f62d18db1caaef64cc4d093556020de1bce6688da84d96ae10f1aa5d8bf05db"
+  },
+  "cases": [
+    {
+      "name": "studio-unmodified",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "studio-title-space",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": " Fixture ",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "studio-fact-space",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": " Fact ",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": " Context ",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "privacy-lowercase",
+      "raw": {
+        "receipt_id": "00000000-0000-4000-8000-000000000012",
+        "policy_key": "fixture",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence": "Independently reviewed scope.",
+        "erase_credentials": [],
+        "erase_flows": [],
+        "media_assets": [
+          "abcdefab-cdef-4abc-8def-abcdefabcdef"
+        ]
+      },
+      "normalized": {
+        "receipt_id": "00000000-0000-4000-8000-000000000012",
+        "policy_key": "fixture",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence": "Independently reviewed scope.",
+        "erase_credentials": [],
+        "erase_flows": [],
+        "media_assets": [
+          "abcdefab-cdef-4abc-8def-abcdefabcdef"
+        ]
+      }
+    },
+    {
+      "name": "privacy-uppercase",
+      "raw": {
+        "receipt_id": "00000000-0000-4000-8000-000000000012",
+        "policy_key": "fixture",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence": "Independently reviewed scope.",
+        "erase_credentials": [],
+        "erase_flows": [],
+        "media_assets": [
+          "ABCDEFAB-CDEF-4ABC-8DEF-ABCDEFABCDEF"
+        ]
+      },
+      "normalized": {
+        "receipt_id": "00000000-0000-4000-8000-000000000012",
+        "policy_key": "fixture",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence": "Independently reviewed scope.",
+        "erase_credentials": [],
+        "erase_flows": [],
+        "media_assets": [
+          "abcdefab-cdef-4abc-8def-abcdefabcdef"
+        ]
+      }
+    },
+    {
+      "name": "unicode-0009",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\tFixture\t",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode-000a",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\nFixture\n",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode-000b",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\u000bFixture\u000b",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode-000c",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\fFixture\f",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode-000d",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\rFixture\r",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode-0020",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": " Fixture ",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode-0085",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\u0085Fixture\u0085",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode-00a0",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\u00a0Fixture\u00a0",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode-1680",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\u1680Fixture\u1680",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode-2000",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\u2000Fixture\u2000",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode-2001",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\u2001Fixture\u2001",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode-2002",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\u2002Fixture\u2002",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode-2003",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\u2003Fixture\u2003",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode-2004",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\u2004Fixture\u2004",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode-2005",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\u2005Fixture\u2005",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode-2006",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\u2006Fixture\u2006",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode-2007",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\u2007Fixture\u2007",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode-2008",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\u2008Fixture\u2008",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode-2009",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\u2009Fixture\u2009",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode-200a",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\u200aFixture\u200a",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode-2028",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\u2028Fixture\u2028",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode-2029",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\u2029Fixture\u2029",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode-202f",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\u202fFixture\u202f",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode-205f",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\u205fFixture\u205f",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode-3000",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\u3000Fixture\u3000",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode-feff",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\ufeffFixture\ufeff",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": null
+    },
+    {
+      "name": "unicode-001c",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\u001cFixture\u001c",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": null
+    },
+    {
+      "name": "unicode-001d",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\u001dFixture\u001d",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": null
+    },
+    {
+      "name": "unicode-001e",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\u001eFixture\u001e",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": null
+    },
+    {
+      "name": "unicode-001f",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\u001fFixture\u001f",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": null
+    },
+    {
+      "name": "unicode-200b",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "\u200bFixture\u200b",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": null
+    },
+    {
+      "name": "uuid-hex",
+      "raw": {
+        "receipt_id": "00000000-0000-4000-8000-000000000012",
+        "policy_key": "fixture",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence": "Independently reviewed scope.",
+        "erase_credentials": [],
+        "erase_flows": [],
+        "media_assets": [
+          "abcdefabcdef4abc8defabcdefabcdef"
+        ]
+      },
+      "normalized": {
+        "receipt_id": "00000000-0000-4000-8000-000000000012",
+        "policy_key": "fixture",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence": "Independently reviewed scope.",
+        "erase_credentials": [],
+        "erase_flows": [],
+        "media_assets": [
+          "abcdefab-cdef-4abc-8def-abcdefabcdef"
+        ]
+      }
+    },
+    {
+      "name": "uuid-hex-upper",
+      "raw": {
+        "receipt_id": "00000000-0000-4000-8000-000000000012",
+        "policy_key": "fixture",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence": "Independently reviewed scope.",
+        "erase_credentials": [],
+        "erase_flows": [],
+        "media_assets": [
+          "ABCDEFABCDEF4ABC8DEFABCDEFABCDEF"
+        ]
+      },
+      "normalized": {
+        "receipt_id": "00000000-0000-4000-8000-000000000012",
+        "policy_key": "fixture",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence": "Independently reviewed scope.",
+        "erase_credentials": [],
+        "erase_flows": [],
+        "media_assets": [
+          "abcdefab-cdef-4abc-8def-abcdefabcdef"
+        ]
+      }
+    },
+    {
+      "name": "uuid-braced",
+      "raw": {
+        "receipt_id": "00000000-0000-4000-8000-000000000012",
+        "policy_key": "fixture",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence": "Independently reviewed scope.",
+        "erase_credentials": [],
+        "erase_flows": [],
+        "media_assets": [
+          "{abcdefab-cdef-4abc-8def-abcdefabcdef}"
+        ]
+      },
+      "normalized": {
+        "receipt_id": "00000000-0000-4000-8000-000000000012",
+        "policy_key": "fixture",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence": "Independently reviewed scope.",
+        "erase_credentials": [],
+        "erase_flows": [],
+        "media_assets": [
+          "abcdefab-cdef-4abc-8def-abcdefabcdef"
+        ]
+      }
+    },
+    {
+      "name": "uuid-braced-upper",
+      "raw": {
+        "receipt_id": "00000000-0000-4000-8000-000000000012",
+        "policy_key": "fixture",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence": "Independently reviewed scope.",
+        "erase_credentials": [],
+        "erase_flows": [],
+        "media_assets": [
+          "{ABCDEFAB-CDEF-4ABC-8DEF-ABCDEFABCDEF}"
+        ]
+      },
+      "normalized": {
+        "receipt_id": "00000000-0000-4000-8000-000000000012",
+        "policy_key": "fixture",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence": "Independently reviewed scope.",
+        "erase_credentials": [],
+        "erase_flows": [],
+        "media_assets": [
+          "abcdefab-cdef-4abc-8def-abcdefabcdef"
+        ]
+      }
+    },
+    {
+      "name": "uuid-urn",
+      "raw": {
+        "receipt_id": "00000000-0000-4000-8000-000000000012",
+        "policy_key": "fixture",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence": "Independently reviewed scope.",
+        "erase_credentials": [],
+        "erase_flows": [],
+        "media_assets": [
+          "urn:uuid:abcdefab-cdef-4abc-8def-abcdefabcdef"
+        ]
+      },
+      "normalized": {
+        "receipt_id": "00000000-0000-4000-8000-000000000012",
+        "policy_key": "fixture",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence": "Independently reviewed scope.",
+        "erase_credentials": [],
+        "erase_flows": [],
+        "media_assets": [
+          "abcdefab-cdef-4abc-8def-abcdefabcdef"
+        ]
+      }
+    },
+    {
+      "name": "uuid-urn-hex-upper",
+      "raw": {
+        "receipt_id": "00000000-0000-4000-8000-000000000012",
+        "policy_key": "fixture",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence": "Independently reviewed scope.",
+        "erase_credentials": [],
+        "erase_flows": [],
+        "media_assets": [
+          "urn:uuid:ABCDEFAB-CDEF-4ABC-8DEF-ABCDEFABCDEF"
+        ]
+      },
+      "normalized": {
+        "receipt_id": "00000000-0000-4000-8000-000000000012",
+        "policy_key": "fixture",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence": "Independently reviewed scope.",
+        "erase_credentials": [],
+        "erase_flows": [],
+        "media_assets": [
+          "abcdefab-cdef-4abc-8def-abcdefabcdef"
+        ]
+      }
+    },
+    {
+      "name": "uuid-urn-prefix-upper",
+      "raw": {
+        "receipt_id": "00000000-0000-4000-8000-000000000012",
+        "policy_key": "fixture",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence": "Independently reviewed scope.",
+        "erase_credentials": [],
+        "erase_flows": [],
+        "media_assets": [
+          "URN:UUID:abcdefab-cdef-4abc-8def-abcdefabcdef"
+        ]
+      },
+      "normalized": null
+    },
+    {
+      "name": "uuid-urn-compact",
+      "raw": {
+        "receipt_id": "00000000-0000-4000-8000-000000000012",
+        "policy_key": "fixture",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence": "Independently reviewed scope.",
+        "erase_credentials": [],
+        "erase_flows": [],
+        "media_assets": [
+          "urn:uuid:abcdefabcdef4abc8defabcdefabcdef"
+        ]
+      },
+      "normalized": null
+    },
+    {
+      "name": "uuid-braced-compact",
+      "raw": {
+        "receipt_id": "00000000-0000-4000-8000-000000000012",
+        "policy_key": "fixture",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence": "Independently reviewed scope.",
+        "erase_credentials": [],
+        "erase_flows": [],
+        "media_assets": [
+          "{abcdefabcdef4abc8defabcdefabcdef}"
+        ]
+      },
+      "normalized": null
+    },
+    {
+      "name": "uuid-space",
+      "raw": {
+        "receipt_id": "00000000-0000-4000-8000-000000000012",
+        "policy_key": "fixture",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence": "Independently reviewed scope.",
+        "erase_credentials": [],
+        "erase_flows": [],
+        "media_assets": [
+          " abcdefab-cdef-4abc-8def-abcdefabcdef "
+        ]
+      },
+      "normalized": null
+    }
+  ],
+  "image_id": "sha256:bc6b9576f5d8c1b4b1797fd72a629c244499c220686d1aa433a40db55a93da9a"
+}

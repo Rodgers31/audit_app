@@ -1,0 +1,230 @@
+{
+  "runtime": {
+    "python": "3.12.16 (main, Oct 28 2026, 02:01:20) [GCC 14.2.0]",
+    "pydantic": "2.14.2",
+    "python_binary_sha256": "0e6475dfda68a9b2d93501449fc47593ca169010e8f4881577b97463fd0c1263"
+  },
+  "sources": {
+    "social/contracts.py": "498160ce4cfc1efa461d403b2f8d67e9bde68037799d6b45ee89f6c3a987e6cc",
+    "social/studio/contracts.py": "7780babc23b77e40885f9f56af71ee4e7166e82d77d13a0cb31ff179f9402dd5",
+    "social/privacy/workflow_contracts.py": "5f62d18db1caaef64cc4d093556020de1bce6688da84d96ae10f1aa5d8bf05db"
+  },
+  "cases": [
+    {
+      "name": "studio-unmodified",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "studio-title-space",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": " Fixture ",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "studio-fact-space",
+      "raw": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": " Fact ",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": " Context ",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      },
+      "normalized": {
+        "schema_version": 1,
+        "template": "did_you_know",
+        "template_version": 1,
+        "kind": "graphic",
+        "revision_id": "00000000-0000-4000-8000-000000000011",
+        "title": "Fixture",
+        "facts": [
+          {
+            "id": "fact",
+            "text": "Fact",
+            "source_url": "https://fixture.invalid/source"
+          },
+          {
+            "id": "context",
+            "text": "Context",
+            "source_url": "https://fixture.invalid/source"
+          }
+        ],
+        "scenes": [
+          {
+            "fact_id": "fact",
+            "seconds": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "privacy-lowercase",
+      "raw": {
+        "receipt_id": "00000000-0000-4000-8000-000000000012",
+        "policy_key": "fixture",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence": "Independently reviewed scope.",
+        "erase_credentials": [],
+        "erase_flows": [],
+        "media_assets": [
+          "abcdefab-cdef-4abc-8def-abcdefabcdef"
+        ]
+      },
+      "normalized": {
+        "receipt_id": "00000000-0000-4000-8000-000000000012",
+        "policy_key": "fixture",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence": "Independently reviewed scope.",
+        "erase_credentials": [],
+        "erase_flows": [],
+        "media_assets": [
+          "abcdefab-cdef-4abc-8def-abcdefabcdef"
+        ]
+      }
+    },
+    {
+      "name": "privacy-uppercase",
+      "raw": {
+        "receipt_id": "00000000-0000-4000-8000-000000000012",
+        "policy_key": "fixture",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence": "Independently reviewed scope.",
+        "erase_credentials": [],
+        "erase_flows": [],
+        "media_assets": [
+          "ABCDEFAB-CDEF-4ABC-8DEF-ABCDEFABCDEF"
+        ]
+      },
+      "normalized": {
+        "receipt_id": "00000000-0000-4000-8000-000000000012",
+        "policy_key": "fixture",
+        "policy_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evidence": "Independently reviewed scope.",
+        "erase_credentials": [],
+        "erase_flows": [],
+        "media_assets": [
+          "abcdefab-cdef-4abc-8def-abcdefabcdef"
+        ]
+      }
+    }
+  ],
+  "image_id": "sha256:bc6b9576f5d8c1b4b1797fd72a629c244499c220686d1aa433a40db55a93da9a"
+}

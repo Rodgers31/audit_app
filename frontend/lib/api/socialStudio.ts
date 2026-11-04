@@ -1,5 +1,6 @@
 import api from './axios';
-import { decodePost, SocialApiError, toSocialError } from './social';
+import { acknowledgedStudioText, acknowledgedUuid, sameJson } from './socialAcknowledgement';
+import { decodePost, SocialPost, SocialApiError, toSocialError } from './social';
 
 export interface Composition { schema_version: 1; template: string; template_version: 1; kind: 'graphic' | 'video'; revision_id: string; title: string; facts: { id: string; text: string; source_url: string }[]; scenes: { fact_id: string; seconds: number }[] }
 export interface RenderJob { id: string; revision_id: string; state: 'queued' | 'running' | 'ready' | 'failed' | 'cancelled'; version: number; composition: Composition; sha256: string | null; approved_sha256: string | null; safe_error: string | null; cancel_requested: boolean; attempt: number; retry_of_id: string | null }
@@ -65,17 +66,22 @@ export function decodeAnalytics(v: unknown): Analytics {
   });
   return { target_id: uuid(o.target_id), platform: one(o.platform, ['facebook', 'instagram', 'threads', 'x', 'tiktok']), availability: one(o.availability, ['observed', 'unavailable']), reason: nullable(o.reason), collections, page: integer(o.page, 1), has_more: bool(o.has_more) };
 }
+function sameJob(result: RenderJob, prior: RenderJob) { return result.id === prior.id && result.revision_id === prior.revision_id && result.attempt === prior.attempt && result.retry_of_id === prior.retry_of_id && sameJson(result.composition, prior.composition); }
 const base = '/admin/social/studio';
 async function get<T>(path: string, decode: (v: unknown) => T, params?: object, signal?: AbortSignal): Promise<T> { try { return decode((await api.get(base + path, { params, signal })).data); } catch (e) { throw toSocialError(e); } }
 async function post<T>(path: string, body: object, key: string, decode: (v: unknown) => T): Promise<T> { try { return decode((await api.post(base + path, body, { headers: { 'Idempotency-Key': key } })).data); } catch (e) { throw toSocialError(e); } }
 export const studioApi = {
   capabilities: (signal?:AbortSignal) => get('/capabilities', decodeCapabilities, undefined, signal),
   jobs: (page: number, signal?:AbortSignal) => get('/jobs', v => { const o = object(v); return { jobs: array(o.jobs, 10).map(decodeJob), page: integer(o.page, 1), has_more: bool(o.has_more) }; }, { page }, signal),
-  create: (composition: Composition, key: string) => post('/jobs', composition, key, decodeJob),
-  cancel: (job: RenderJob, key: string) => post(`/jobs/${job.id}/cancel`, { expected_version: job.version }, key, decodeJob),
-  retry: (job: RenderJob, key: string) => post(`/jobs/${job.id}/retry`, { expected_version: job.version }, key, decodeJob),
-  approve: (job: RenderJob, key: string) => post(`/jobs/${job.id}/approve`, { expected_version: job.version, sha256: job.sha256, review_attestation: { facts_checked: true, sources_checked: true } }, key, decodeJob),
-  attach: (job: RenderJob, assetId: string, postVersion: number, key: string) => post(`/jobs/${job.id}/attach`, { expected_version: postVersion, asset_id: assetId }, key, decodePost),
+  create: (composition: Composition, key: string) => post('/jobs', composition, key, v => { const result = decodeJob(v), revision = acknowledgedUuid(composition.revision_id), expected = { ...composition, revision_id: revision, title: acknowledgedStudioText(composition.title), facts: composition.facts.map(fact => ({ ...fact, text: acknowledgedStudioText(fact.text) })) }; if (!revision || result.revision_id !== revision || !sameJson(result.composition, expected) || result.attempt !== 1 || result.retry_of_id !== null) throw invalid(); return result; }),
+  cancel: (job: RenderJob, key: string) => post(`/jobs/${job.id}/cancel`, { expected_version: job.version }, key, v => { const result = decodeJob(v); if (!sameJob(result, job) || result.version !== job.version + 1 || !result.cancel_requested || result.state !== (job.state === 'queued' ? 'cancelled' : 'running')) throw invalid(); return result; }),
+  retry: (job: RenderJob, key: string) => post(`/jobs/${job.id}/retry`, { expected_version: job.version }, key, v => { const result = decodeJob(v); if (result.id === job.id || result.revision_id !== job.revision_id || !sameJson(result.composition, job.composition) || result.attempt !== job.attempt + 1 || result.retry_of_id !== job.id) throw invalid(); return result; }),
+  approve: (job: RenderJob, key: string) => post(`/jobs/${job.id}/approve`, { expected_version: job.version, sha256: job.sha256, review_attestation: { facts_checked: true, sources_checked: true } }, key, v => { const result = decodeJob(v); if (!sameJob(result, job) || result.version !== job.version + 1 || result.state !== 'ready' || result.sha256 !== job.sha256 || result.approved_sha256 !== job.sha256) throw invalid(); return result; }),
+  attach: (job: RenderJob, assetId: string, postVersion: number, key: string, sourcePost: SocialPost) => post(`/jobs/${job.id}/attach`, { expected_version: postVersion, asset_id: assetId }, key, v => {
+    const result = decodePost(v), expected = { ...sourcePost.document, master: { ...sourcePost.document.master, media: [...sourcePost.document.master.media, { asset_id: acknowledgedUuid(assetId), alt_text: job.composition.kind === 'graphic' ? job.composition.facts.map(f => f.text).join(' ') : null, caption_asset_id: null }] } };
+    if (sourcePost.version !== postVersion || sourcePost.revision_id !== job.revision_id || result.id !== sourcePost.id || result.title !== sourcePost.title || result.content_type !== sourcePost.content_type || result.origin_type !== sourcePost.origin_type || result.created_at !== sourcePost.created_at || result.created_by !== sourcePost.created_by || result.version !== postVersion + 1 || result.revision_id === sourcePost.revision_id || result.editorial_state !== 'draft' || !sameJson(result.document, expected) || !sameJson(result.references, sourcePost.references)) throw invalid();
+    return result;
+  }),
   calendar: (start: string, end: string, page: number, signal?:AbortSignal) => get('/calendar', decodeCalendar, { start, end, page }, signal),
   analytics: (targetId: string, page: number, signal?:AbortSignal) => get(`/analytics/${encodeURIComponent(targetId)}`, decodeAnalytics, { page }, signal),
   async media(job: RenderJob): Promise<string> {

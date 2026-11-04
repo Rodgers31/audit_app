@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { AccountPublishingStatus, decodeAccountPublishing, sendSocialCommand, socialApi } from '@/lib/api/social';
+import { useAdmin } from '@/lib/auth/admin';
+import { recoveredSocialCommand } from '@/lib/api/socialCommandRecovery';
 import { connectionApi } from '@/lib/api/socialConnections';
 import styles from '../social.module.css';
 
@@ -22,8 +24,8 @@ const explanations: Record<string, string> = {
 
 /** Explicit local account consent; no optimistic success or automatic retry. */
 export default function AccountPublishingControl({ accountId, name, refresh, canVerifyMeta = false }: { accountId: string; name: string; refresh: () => void; canVerifyMeta?: boolean }) {
-  const { user } = useAuth();
-  const scope = `${user?.id}:${accountId}`;
+  const { user } = useAuth(); const { isAdmin } = useAdmin();
+  const scope = `${user?.id}:${isAdmin}:${accountId}`;
   const generation = useRef({ scope, epoch: 0, mounted: true });
   if (generation.current.scope !== scope) generation.current = { scope, epoch: generation.current.epoch + 1, mounted: true };
   const [status, setStatus] = useState<AccountPublishingStatus>();
@@ -33,18 +35,17 @@ export default function AccountPublishingControl({ accountId, name, refresh, can
   const [message, setMessage] = useState<string>();
   const inFlight = useRef(false);
   const [error, setError] = useState<string>();
-  const pending = useRef<{ signature: string; key: string } | undefined>(undefined);
   const capture = () => {
     const epoch = generation.current.epoch;
     return () => generation.current.mounted && generation.current.epoch === epoch && generation.current.scope === scope;
   };
   useEffect(() => {
     generation.current.mounted = true;
-    setStatus(undefined); setExpanded(false); setBusy(false); setVerifying(false); setMessage(undefined); setError(undefined); pending.current = undefined; inFlight.current = false;
+    setStatus(undefined); setExpanded(false); setBusy(false); setVerifying(false); setMessage(undefined); setError(undefined); inFlight.current = false;
     return () => { generation.current.mounted = false; generation.current.epoch += 1; };
   }, [scope]);
   async function load() {
-    if (busy || inFlight.current || !user?.id) return;
+    if (busy || inFlight.current || !user?.id || !isAdmin) return;
     inFlight.current = true;
     const current = capture(); setBusy(true); setError(undefined); setMessage(undefined); setExpanded(true);
     try { const value = await socialApi.accountPublishing(accountId); if (current()) setStatus(value); }
@@ -52,35 +53,32 @@ export default function AccountPublishingControl({ accountId, name, refresh, can
     finally { if (current()) { inFlight.current = false; setBusy(false); } }
   }
   async function change(enabled: boolean) {
-    if (!status || busy || inFlight.current || !user?.id || (enabled && !status.enable_available)) return;
+    if (!status || busy || inFlight.current || !user?.id || !isAdmin || (enabled && !status.enable_available)) return;
     inFlight.current = true;
     const current = capture(); setBusy(true); setError(undefined); setMessage(undefined);
     const body = { expected_controls_version: status.controls_version, expected_state: status.state_token, publishing_enabled: enabled, reason: enabled ? 'Administrator enabled this account for manual publishing.' : 'Administrator paused publishing for this account.' };
-    const signature = JSON.stringify([scope, 'consent', body]);
-    if (pending.current?.signature !== signature) pending.current = { signature, key: crypto.randomUUID() };
     try {
-      const value = await sendSocialCommand(`/accounts/${encodeURIComponent(accountId)}/publishing`, body, pending.current.key, v => {
+      const path = `/accounts/${encodeURIComponent(accountId)}/publishing`;
+      const value = await recoveredSocialCommand(user.id, 'patch', path, body, key => sendSocialCommand(path, body, key, v => {
         const decoded = decodeAccountPublishing(v);
         if (decoded.account_id !== accountId || decoded.publishing_enabled !== enabled
             || decoded.controls_version !== body.expected_controls_version + 1 || decoded.state_token === body.expected_state) throw new Error('Account publishing response does not match this request. Refresh before continuing.');
         return decoded;
-      }, 'patch');
+      }, 'patch'), current);
       if (!current()) return;
-      setStatus(value); pending.current = undefined; refresh();
+      setStatus(value); refresh();
     } catch (e) { if (current()) setError(e instanceof Error ? e.message : 'Account publishing change was not confirmed. Retry the same action or refresh.'); }
     finally { if (current()) { inFlight.current = false; setBusy(false); } }
   }
   async function verify() {
-    if (!canVerifyMeta || !status || status.publishing_enabled || busy || inFlight.current || !user?.id) return;
+    if (!canVerifyMeta || !status || status.publishing_enabled || busy || inFlight.current || !user?.id || !isAdmin) return;
     inFlight.current = true;
     const current = capture(); setBusy(true); setVerifying(true); setError(undefined); setMessage(undefined);
     const body = { expected_controls_version: status.controls_version, expected_state: status.state_token, reason: 'Administrator requested verification of this saved Meta grant for publishing.' };
-    const signature = JSON.stringify([scope, 'verify', body]);
-    if (pending.current?.signature !== signature) pending.current = { signature, key: crypto.randomUUID() };
     try {
-      const value = await connectionApi.verifyPublishingAccess(accountId, body, pending.current.key);
+      const value = await recoveredSocialCommand(user.id, 'post', `/accounts/${accountId}/verify-publishing-access`, body, key => connectionApi.verifyPublishingAccess(accountId, body, key), current);
       if (!current()) return;
-      setStatus(value); pending.current = undefined;
+      setStatus(value);
       setMessage(value.enable_available ? 'Publishing access verified. Account publishing is still paused.'
         : 'Saved publishing permissions verified. Account publishing is still paused. Complete delivery setup, then verify again before enabling publishing.');
       refresh();
@@ -88,7 +86,7 @@ export default function AccountPublishingControl({ accountId, name, refresh, can
     finally { if (current()) { inFlight.current = false; setBusy(false); setVerifying(false); } }
   }
   return <div className={styles.fields} aria-label={`Publishing controls for ${name}`}>
-    <button type='button' className={styles.button} disabled={busy || !user?.id} aria-expanded={expanded} onClick={load}>{busy ? 'Checking account publishing…' : 'Refresh account publishing controls'}</button>
+    <button type='button' className={styles.button} disabled={busy || !user?.id || !isAdmin} aria-expanded={expanded} onClick={load}>{busy ? 'Checking account publishing…' : 'Refresh account publishing controls'}</button>
     {error && <p role='alert'>{error}</p>}
     {message && <p role='status'>{message}</p>}
     {expanded && status && <>

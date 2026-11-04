@@ -1,3 +1,4 @@
+jest.mock('@/lib/auth/admin',()=>({useAdmin:()=>({isAdmin:true})}));
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { decodeConnectionStatus, decodeDiscoveredFlow, decodeStartedFlow, decodeAccountHealth, decodeSelectedAccounts, connectionApi } from '@/lib/api/socialConnections';
 import { receiveMetaCallback } from '@/components/admin/social/connections/callbackSecurity';
@@ -20,7 +21,7 @@ const account={id,platform:'facebook',display_name:'AuditGava',handle:null,profi
 beforeEach(() => {
   jest.restoreAllMocks();
   window.sessionStorage.clear();
-  useAuth.mockReturnValue({user:{id:'actor'}});
+  useAuth.mockReturnValue({user:{id:'00000000-0000-4000-8000-000000000001'}});
   useSocialAccounts.mockReturnValue({ data: [], refetch: jest.fn(), isPending:false });
   useMetaConnectionStatus.mockReturnValue({ data:status, refetch:jest.fn(), isPending:false });
   useMetaAccountHealth.mockReturnValue({ data:health, refetch:jest.fn(), isPending:false });
@@ -81,7 +82,7 @@ test('callback completes once and explicitly selected Page excludes ungranted In
   fireEvent.change(screen.getByRole('combobox',{name:'Facebook Page'}),{target:{value:'901'}});
   expect(screen.getByRole('checkbox')).toBeDisabled();
   fireEvent.click(screen.getByRole('button',{name:'Confirm selected identities'}));
-  await waitFor(()=>expect(select).toHaveBeenCalledWith(id,'901',null,expect.any(String)));
+  await waitFor(()=>expect(select).toHaveBeenCalledWith(id,'901',null,expect.any(String),choice));
   await screen.findByText('Selected accounts connected. Publishing remains disabled.');
 });
 
@@ -103,7 +104,7 @@ function callback(popup:Window) {
 }
 function endActor(view: ReturnType<typeof render>, transition: string) {
   if (transition === 'unmount') view.unmount();
-  else { useAuth.mockReturnValue({user:{id:'other-actor'}});view.rerender(<MetaAccounts />); }
+  else { useAuth.mockReturnValue({user:{id:'00000000-0000-4000-8000-000000000002'}});view.rerender(<MetaAccounts />); }
 }
 test.each(['actor change','unmount'])('%s closes and ignores a deferred start result',async transition=>{
   const {popup,started}=readyFlow(), pending=deferred<typeof started>();
@@ -204,10 +205,10 @@ test.each(['actor change','unmount'])('accepted selection clears its recovery re
   await act(async()=>{callback(popup);});
   fireEvent.change(screen.getByRole('combobox',{name:'Facebook Page'}),{target:{value:'901'}});
   fireEvent.click(screen.getByRole('button',{name:'Confirm selected identities'}));
-  expect(readConnectionRecovery('actor').flow).toBe(id);
+  expect(readConnectionRecovery('00000000-0000-4000-8000-000000000001').flow).toBe(id);
   endActor(view,transition);
   await act(async()=>{pending.resolve({flow_id:id,accounts:[]});});
-  expect(readConnectionRecovery('actor').flow).toBeUndefined();
+  expect(readConnectionRecovery('00000000-0000-4000-8000-000000000001').flow).toBeUndefined();
   expect(refetch).not.toHaveBeenCalled();
   expect(screen.queryByText('Selected accounts connected. Publishing remains disabled.')).not.toBeInTheDocument();
 });
@@ -224,9 +225,9 @@ test('a late accepted selection preserves the same actors newer flow',async()=>{
   fireEvent.click(screen.getByRole('button',{name:'Confirm selected identities'}));
   view.unmount();
   const newerFlow='5aadebe9-11ce-4207-afce-836cd86cc9da';
-  expect(saveConnectionRecovery('actor',newerFlow,discovery.expires_at)).toBe(true);
+  expect(saveConnectionRecovery('00000000-0000-4000-8000-000000000001',newerFlow,discovery.expires_at)).toBe(true);
   await act(async()=>{pending.resolve({flow_id:id,accounts:[]});});
-  expect(readConnectionRecovery('actor').flow).toBe(newerFlow);
+  expect(readConnectionRecovery('00000000-0000-4000-8000-000000000001').flow).toBe(newerFlow);
 });
 
 test('callback privacy hold disables new connections while existing account details remain available',()=>{
@@ -238,4 +239,17 @@ test('callback privacy hold disables new connections while existing account deta
   expect(screen.getByRole('button',{name:'Reconnect identity'})).toBeDisabled();
   fireEvent.click(screen.getByRole('button',{name:'Connection details'}));
   expect(screen.getByRole('button',{name:'Disable local connection'})).toBeEnabled();
+});
+
+test('ambiguous Meta selection recovers its exact durable key after account-page remount',async()=>{
+ const {popup}=readyFlow();jest.spyOn(connectionApi,'complete').mockResolvedValue(discovery);jest.spyOn(connectionApi,'choices').mockResolvedValue(discovery);
+ const send=jest.spyOn(connectionApi,'select').mockRejectedValue(new Error('Unconfirmed identity selection'));
+ const first=render(<MetaAccounts/>);fireEvent.click(screen.getByRole('button',{name:'Connect owned Meta accounts'}));await waitFor(()=>expect(popup.location.replace).toHaveBeenCalled());await act(async()=>callback(popup));
+ fireEvent.change(screen.getByRole('combobox',{name:'Facebook Page'}),{target:{value:'901'}});fireEvent.click(screen.getByRole('button',{name:'Confirm selected identities'}));await screen.findByRole('alert');const original=send.mock.calls[0];first.unmount();
+ const next=render(<MetaAccounts/>);fireEvent.click(await screen.findByRole('button',{name:'Recover account choices'}));await screen.findByRole('heading',{name:'Confirm account identities'});fireEvent.change(screen.getByRole('combobox',{name:'Facebook Page'}),{target:{value:'901'}});fireEvent.click(screen.getByRole('button',{name:'Confirm selected identities'}));await screen.findByRole('alert');expect(send.mock.calls[1]).toEqual(original);next.unmount();
+});
+test('ambiguous shared-grant disconnect recovers the original key after remount',async()=>{
+ useSocialAccounts.mockReturnValue({data:[account],refetch:jest.fn(),isPending:false});const send=jest.spyOn(connectionApi,'disconnect').mockRejectedValue(new Error('Unconfirmed disconnect'));
+ const first=render(<MetaAccounts/>);fireEvent.click(screen.getByRole('button',{name:'Connection details'}));fireEvent.click(screen.getByRole('button',{name:'Disable local connection'}));await screen.findByRole('alert');const original=send.mock.calls[0];first.unmount();
+ const next=render(<MetaAccounts/>);fireEvent.click(screen.getByRole('button',{name:'Connection details'}));fireEvent.click(screen.getByRole('button',{name:'Disable local connection'}));await screen.findByRole('alert');expect(send.mock.calls[1]).toEqual(original);next.unmount();
 });

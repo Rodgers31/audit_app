@@ -1,3 +1,4 @@
+jest.mock('@/lib/auth/admin',()=>({useAdmin:()=>({isAdmin:true})}));
 import React from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import AccountPublishingControl from '@/components/admin/social/connections/AccountPublishingControl';
@@ -12,7 +13,7 @@ const verified = { ...state, controls_version: 2, state_token: 'b'.repeat(64), e
 const restricted = { ...state, controls_version: 2, state_token: 'b'.repeat(64) };
 const restrictedMessage = 'Saved publishing permissions verified. Account publishing is still paused. Complete delivery setup, then verify again before enabling publishing.';
 const get = api.get as jest.Mock, post = api.post as jest.Mock, patch = api.patch as jest.Mock;
-beforeEach(() => { jest.clearAllMocks(); (useAuth as jest.Mock).mockReturnValue({ user: { id: 'admin-a' } }); get.mockResolvedValue({ data: state }); post.mockResolvedValue({ data: verified }); });
+beforeEach(() => { jest.clearAllMocks(); sessionStorage.clear(); (useAuth as jest.Mock).mockReturnValue({ user: { id: '00000000-0000-4000-8000-000000000001' } }); get.mockResolvedValue({ data: state }); post.mockResolvedValue({ data: verified }); });
 async function mount(refresh = jest.fn()) {
   render(<AccountPublishingControl accountId={id} name='Fixture Page' refresh={refresh} canVerifyMeta />);
   fireEvent.click(screen.getByRole('button', { name: 'Refresh account publishing controls' }));
@@ -90,7 +91,7 @@ test.each([verified, restricted])('a late verification result cannot update a su
   fireEvent.click(screen.getByRole('button', { name: 'Refresh account publishing controls' }));
   fireEvent.click(await screen.findByRole('button', { name: 'Verify existing publishing access for Fixture Page' }));
   await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
-  (useAuth as jest.Mock).mockReturnValue({ user: { id: 'admin-b' } });
+  (useAuth as jest.Mock).mockReturnValue({ user: { id: '00000000-0000-4000-8000-000000000002' } });
   view.rerender(<AccountPublishingControl accountId={id} name='Fixture Page' refresh={refresh} canVerifyMeta />);
   await act(async () => { finish({ data: response }); });
   expect(refresh).not.toHaveBeenCalled(); expect(screen.queryByRole('status')).not.toBeInTheDocument();

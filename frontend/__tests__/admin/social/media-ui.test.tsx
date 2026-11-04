@@ -132,3 +132,4 @@ test('explicitly removing unsupported video alt text writes null while typed emp
   expect(JSON.parse(screen.getByTestId('document').textContent!)[0].alt_text).toBeNull();
   expect(screen.getByLabelText('Master media 1 alt text')).toHaveValue('');
 });
+import '../../../tests/socialRecoveryCrypto';

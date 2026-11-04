@@ -21,3 +21,4 @@ test('export actual media controls for responsive fixture verification', async (
   const upload=render(<QueryClientProvider client={qc}><MediaUpload capabilities={{ upload_available:true,library_available:true,allowed_mime_types:['image/jpeg','image/png','video/mp4'],max_image_bytes:10485760,max_video_bytes:52428800,unavailable_reason:null }} onSelect={jest.fn()} onClose={jest.fn()} onBusy={jest.fn()} contextKey='visual-fixture' /></QueryClientProvider>);
   save('upload',upload.container.innerHTML);
 });
+import '../../../tests/socialRecoveryCrypto';

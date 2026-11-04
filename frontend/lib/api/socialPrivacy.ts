@@ -1,4 +1,5 @@
 import api from '@/lib/api/axios';
+import { acknowledgedUuid, sameJson } from './socialAcknowledgement';
 import { toSocialError, SocialApiError } from './social';
 export interface PrivacyPlan {
   id: string; receipt_id: string; proposed_by: string; policy_key: string; policy_hash: string; plan_hash: string;
@@ -31,5 +32,26 @@ async function read<T>(url: string, decode:(v:unknown)=>T,signal?:AbortSignal): 
 export const privacyApi={
   queue:(page:number,signal?:AbortSignal)=>read(`/requests?page=${page}&page_size=20`,decodePrivacyQueue,signal),
   detail:(id:string,signal?:AbortSignal)=>read(`/requests/${encodeURIComponent(id)}`,v=>{ const o=object(v), r=request(v); if(r.id!==id) invalid(); return {...r,credentials:array(o.credentials).map(string),flows:array(o.flows).map(string),plans:array(o.plans).map(decodePrivacyPlan)}; },signal),
-  command:async(path:string, body:object, key:string):Promise<PrivacyPlan>=>{ try{return decodePrivacyPlan((await api.post('/admin/social/privacy'+path,body,{headers:{'Idempotency-Key':key}})).data);}catch(e){throw toSocialError(e);} },
+  command:async(path:string, body:object, key:string, context?:{actor:string;plan?:PrivacyPlan}):Promise<PrivacyPlan>=>{
+    try {
+      const result=decodePrivacyPlan((await api.post('/admin/social/privacy'+path,body,{headers:{'Idempotency-Key':key}})).data), input=object(body);
+      if(path==='/plans') {
+        const ids=(value:unknown)=>array(value ?? []).map(value=>acknowledgedUuid(string(value))??invalid()).sort();
+        if(result.decision!=='pending_review'||result.approved_by!==null||result.execution!==null||result.id!==acknowledgedUuid(key)||result.receipt_id!==acknowledgedUuid(string(input.receipt_id))||result.policy_key!==input.policy_key||result.policy_hash!==input.policy_hash||result.evidence!==input.evidence||context&&result.proposed_by!==context.actor||!sameJson(ids(result.scope.credentials.map(item=>item.id)),ids(input.erase_credentials))||!sameJson(ids(result.scope.flows.map(item=>item.id)),ids(input.erase_flows))||!sameJson(ids(result.scope.media_assets.map(item=>item.id)),ids(input.media_assets)))invalid();
+      } else {
+        const match=/^\/plans\/([^/]+)\/(decision|execute|reconcile)$/.exec(path);
+        if(!match||result.id!==match[1])invalid();
+        const prior=context?.plan;
+        if(prior&&(result.id!==prior.id||result.receipt_id!==prior.receipt_id||result.proposed_by!==prior.proposed_by||result.policy_key!==prior.policy_key||result.policy_hash!==prior.policy_hash||result.plan_hash!==prior.plan_hash||result.evidence!==prior.evidence||!sameJson(result.scope,prior.scope)))invalid();
+        if(match[2]==='decision') {
+          if(result.plan_hash!==input.plan_hash||result.decision!==input.decision||!result.approved_by||context&&result.approved_by!==context.actor||result.decision==='approved'&&!result.execution||result.decision==='rejected'&&result.execution!==null)invalid();
+        } else {
+          // The UI already holds this exact execution. Do not infer its hash,
+          // custody or operation identity from an arbitrary returned plan.
+          if(!prior?.execution||!result.execution||result.decision!=='approved'||result.approved_by!==prior.approved_by||result.execution.id!==prior.execution.id||result.execution.state!=='completed'||typeof input.expected_version!=='number'||prior.execution.version!==input.expected_version||result.execution.version<(prior.execution.state==='completed'?input.expected_version:input.expected_version+1)||result.execution.result.scope_completed!==true||result.execution.result.request_completed!==false)invalid();
+        }
+      }
+      return result;
+    } catch(e){throw toSocialError(e);}
+  },
 };

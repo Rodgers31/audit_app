@@ -44,6 +44,7 @@ def test_rotating_ips_cannot_bypass_aggregate_process_budget():
 
 def test_redis_slow_operation_releases_to_bounded_visible_local_mode():
     class Pipe:
+        def set(self, *args, **kwargs): return self
         def incr(self, *args): return self
         def expire(self, *args): return self
         async def execute(self): await asyncio.Event().wait()

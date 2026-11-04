@@ -3,9 +3,9 @@ import { socialApi } from '@/lib/api/social';
 import { socialMediaApi } from '@/lib/api/socialMedia';
 import { studioApi } from '@/lib/api/socialStudio';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, cleanup } from '@testing-library/react';
 import { post } from '../../../tests/socialFixtures';
-jest.mock('@/lib/auth/AuthProvider',()=>({useAuth:()=>({user:{id:'fixture-actor'}})}));
+jest.mock('@/lib/auth/AuthProvider',()=>({useAuth:()=>({user:{id:'00000000-0000-4000-8000-000000000001'}})}));
 jest.mock('@/lib/auth/admin',()=>({useAdmin:()=>({isAdmin:true})}));
 jest.mock('@/lib/api/social', () => ({ ...jest.requireActual('@/lib/api/social'), socialApi: { posts:jest.fn(), post:jest.fn() } }));
 jest.mock('@/lib/api/socialMedia', () => ({ socialMediaApi: { library:jest.fn() } }));
@@ -15,7 +15,7 @@ const job={ id:'job', revision_id:source.revision_id, state:'ready', version:3, 
 const asset={ id:'exact',filename:'Older exact.png',state:'ready',sha256:job.sha256,mime_type:'image/png' };
 let qc:QueryClient;
 beforeEach(() => {
- jest.clearAllMocks(); Object.defineProperty(crypto,'randomUUID',{configurable:true,value:()=> 'fixture-key'});
+ jest.clearAllMocks(); sessionStorage.clear(); Object.defineProperty(crypto,'randomUUID',{configurable:true,value:()=> '00000000-0000-4000-8000-000000000099'});
  qc=new QueryClient({defaultOptions:{queries:{retry:false,gcTime:0}}});
  (socialApi.posts as jest.Mock).mockImplementation(async page=>({posts:page===1?Array.from({length:20},(_,i)=>({...source,id:`p${i}`,title:`New ${i}`})):[source],page,has_more:page===1}));
  (socialApi.post as jest.Mock).mockResolvedValue(source);
@@ -40,7 +40,7 @@ async function older(){
 test('bounded pages reach older source and exact derivative',async()=>{
  await older(); const button=screen.getByRole('button',{name:'Add approved derivative to source draft'});
  await waitFor(()=>expect(button).toBeEnabled()); fireEvent.click(button);
- await waitFor(()=>expect(studioApi.attach).toHaveBeenCalledWith(job,asset.id,7,'fixture-key'));
+ await waitFor(()=>expect(studioApi.attach).toHaveBeenCalledWith(job,asset.id,7,'00000000-0000-4000-8000-000000000099',source));
  expect(socialApi.posts).toHaveBeenCalledTimes(2); expect(socialMediaApi.library).toHaveBeenCalledTimes(2);
 });
 test('moving away from selected asset page refuses attachment',async()=>{
@@ -61,13 +61,13 @@ test('independent: wrong hash, mime and non-ready asset excluded',async()=>{
 test('independent: cached source refetch failure disables attachment',async()=>{
  await older(); await waitFor(()=>expect(attachButton()).toBeEnabled());
  (socialApi.post as jest.Mock).mockRejectedValue(new Error('offline'));
- await qc.invalidateQueries({queryKey:['admin','social','fixture-actor','studio','source']});
+ await qc.invalidateQueries({queryKey:['admin','social','00000000-0000-4000-8000-000000000001','studio','source']});
  await waitFor(()=>expect(attachButton()).toBeDisabled()); fireEvent.click(attachButton()); expect(studioApi.attach).not.toHaveBeenCalled();
 });
 test('independent: cached asset refetch failure disables attachment',async()=>{
  await older(); await waitFor(()=>expect(attachButton()).toBeEnabled());
  (socialMediaApi.library as jest.Mock).mockRejectedValue(new Error('offline'));
- await qc.invalidateQueries({queryKey:['admin','social','fixture-actor','studio','assets']});
+ await qc.invalidateQueries({queryKey:['admin','social','00000000-0000-4000-8000-000000000001','studio','assets']});
  await waitFor(()=>expect(attachButton()).toBeDisabled()); fireEvent.click(attachButton()); expect(studioApi.attach).not.toHaveBeenCalled();
 });
 test('independent: changing source clears selected exact asset',async()=>{
@@ -77,13 +77,13 @@ test('independent: changing source clears selected exact asset',async()=>{
 });
 test('independent: source update while media is selected refuses stale revision',async()=>{
  await older(); await waitFor(()=>expect(attachButton()).toBeEnabled());
- qc.setQueryData(['admin','social','fixture-actor','studio','source',source.id],{...source,revision_id:'other-revision',version:8});
+ qc.setQueryData(['admin','social','00000000-0000-4000-8000-000000000001','studio','source',source.id],{...source,revision_id:'other-revision',version:8});
  await waitFor(()=>expect(attachButton()).toBeDisabled());
 });
 test('independent: pending source refetch blocks attachment',async()=>{
  await older(); await waitFor(()=>expect(attachButton()).toBeEnabled());
  let resolve:any; (socialApi.post as jest.Mock).mockImplementation(()=>new Promise(r=>{resolve=r;}));
- const pending=qc.invalidateQueries({queryKey:['admin','social','fixture-actor','studio','source']});
+ const pending=qc.invalidateQueries({queryKey:['admin','social','00000000-0000-4000-8000-000000000001','studio','source']});
  await waitFor(()=>expect(attachButton()).toBeDisabled()); resolve(source); await pending;
  await waitFor(()=>expect(attachButton()).toBeEnabled());
 });
@@ -91,7 +91,7 @@ test('independent: pending source refetch blocks attachment',async()=>{
 test('independent: out-of-order source completion cannot restore prior source',async()=>{
  await older(); let resolve:any;
  (socialApi.post as jest.Mock).mockImplementation(()=>new Promise(r=>{resolve=r;}));
- const pending=qc.invalidateQueries({queryKey:['admin','social','fixture-actor','studio','source']});
+ const pending=qc.invalidateQueries({queryKey:['admin','social','00000000-0000-4000-8000-000000000001','studio','source']});
  await waitFor(()=>expect(attachButton()).toBeDisabled());
  fireEvent.change(screen.getByLabelText('Source post'),{target:{value:''}}); resolve(source); await pending;
  expect(screen.getByLabelText('Source post')).toHaveValue(''); expect(screen.getByLabelText('Title · 70 characters')).toHaveValue(''); expect(attachButton()).toBeDisabled();
@@ -99,7 +99,7 @@ test('independent: out-of-order source completion cannot restore prior source',a
 test('independent: cached job network failure disables attachment',async()=>{
  await older(); await waitFor(()=>expect(attachButton()).toBeEnabled());
  (studioApi.jobs as jest.Mock).mockRejectedValue(new Error('offline'));
- await qc.invalidateQueries({queryKey:['admin','social','fixture-actor','studio','jobs']});
+ await qc.invalidateQueries({queryKey:['admin','social','00000000-0000-4000-8000-000000000001','studio','jobs']});
  await waitFor(()=>expect(attachButton()).toBeDisabled());
 });
 
@@ -115,10 +115,16 @@ test('late asset response for previous page cannot restore attachment',async()=>
  await older(); await waitFor(()=>expect(attachButton()).toBeEnabled());
  let release:(value:unknown)=>void=()=>{};
  (socialMediaApi.library as jest.Mock).mockImplementation(page=>page===2?new Promise(r=>{release=r}):Promise.resolve({assets:[],has_more:true}));
- const pending=qc.invalidateQueries({queryKey:['admin','social','fixture-actor','studio','assets']});
+ const pending=qc.invalidateQueries({queryKey:['admin','social','00000000-0000-4000-8000-000000000001','studio','assets']});
  await waitFor(()=>expect(attachButton()).toBeDisabled());
  // Page buttons wait for the in-flight page; changing source clears the selection immediately.
  fireEvent.change(screen.getByLabelText('Source post'),{target:{value:''}});
  release({assets:[asset],has_more:false}); await pending;
  expect(attachButton()).toBeDisabled(); expect(screen.getByLabelText('Matching inspected asset')).toHaveValue('');
+});
+
+test('ambiguous studio attachment keeps its original body and key through a workspace remount',async()=>{
+ (studioApi.attach as jest.Mock).mockRejectedValue(new Error('Outcome unconfirmed'));
+ await older(); await waitFor(()=>expect(attachButton()).toBeEnabled());fireEvent.click(attachButton());await screen.findByRole('alert');const original=(studioApi.attach as jest.Mock).mock.calls[0];
+ cleanup();await older();await waitFor(()=>expect(attachButton()).toBeEnabled());fireEvent.click(attachButton());await screen.findByRole('alert');expect((studioApi.attach as jest.Mock).mock.calls[1]).toEqual(original);
 });
