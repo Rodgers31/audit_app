@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "generated_by": "private_evidence/pr907-908-review-20261103/storage-author/publish_parent_index_v1.py",
+  "generator_sha256": "6551f1627bf0b69b1634bbfa3896879349415075e85d4d2e0c4342322ecfd646",
+  "generated_at": "2026-11-04T00:25:55.236754+00:00",
+  "classification": "dated_parent_observation_supplement_only",
+  "original_index": {
+    "path": "EVIDENCE.json",
+    "sha256": "8bbc29037d79b8f122e8fd0db8031a6b227625fabd33f1dd957156cc509bb9f3",
+    "evidence_cut": "2026-11-03T22:55:13.844054+00:00",
+    "unchanged": true
+  },
+  "target_main_at_observation": "1542bc5117f09b15b126e03bbd2158a54c348540",
+  "serving_source_at_observation": "f0f4705e9561e2e42edd93fc747e8bff24468fae",
+  "live_authority": false,
+  "current_state_refreshed": false,
+  "path_roots": {
+    "private_evidence": "Existing operator-controlled admin-redesign evidence root; raw observations remain private."
+  },
+  "sources": [
+    {
+      "id": "E16",
+      "scope": "Separate draft-master v6 enabled, then normal admin OFF v7; sources/destination hash preserved. General protected witness changed only by one audit event/one command receipt; individual row IDs were not independently correlated.",
+      "observed_from": "2026-11-03T23:23:17.164796+00:00",
+      "observed_to": "2026-11-03T23:37:07.632839+00:00",
+      "inputs": [
+        {
+          "location": "private_evidence",
+          "path": "ingestion-pin-repair-20261103/generation-controls-before.json",
+          "sha256": "abf78efd16babfe6be6b707116bcbdd99a4e6e16766256e28d38193f424c66a0"
+        },
+        {
+          "location": "private_evidence",
+          "path": "ingestion-pin-repair-20261103/generation-ui-preflight-v4.json",
+          "sha256": "a9e264f5035a240c7a8e903fc8d199eef9f6805249d87254d49757aba346d971"
+        },
+        {
+          "location": "private_evidence",
+          "path": "ingestion-pin-repair-20261103/generation-controls-after.json",
+          "sha256": "e3f3cb214d5fdaf635b818ceda7eb37b83c52b06a68388e31a1d86db26f5e047"
+        },
+        {
+          "location": "private_evidence",
+          "path": "ingestion-pin-repair-20261103/production-before-draft-command.json",
+          "sha256": "c6869f8324c1acf52e4a1487c1bb161cc44d55790ee946138b1ebfcd08ce4076"
+        },
+        {
+          "location": "private_evidence",
+          "path": "ingestion-pin-repair-20261103/production-after-draft-command.json",
+          "sha256": "2e393d05ebc49b0e59ab630eda98d513e8ab1e31b604d0bc92bc532a6e907a08"
+        },
+        {
+          "location": "private_evidence",
+          "path": "ingestion-pin-repair-20261103/generation-admin-off.txt",
+          "sha256": "e63097987566763da6464e003ea5bd51b8f20cb8291b70ec2737798145023605"
+        }
+      ],
+      "observation_producers": [
+        {
+          "location": "private_evidence",
+          "path": "ingestion-pin-repair-20261103/read_generation_controls_v2.py",
+          "sha256": "0cbc7b11c99cb2ce198b4a2f20532142e7c73eeeba83ba060b47e2436e9edc3b"
+        },
+        {
+          "location": "private_evidence",
+          "path": "ingestion-pin-repair-20261103/generation-observer-command-v2.txt",
+          "sha256": "1750462fe6578577f2e206c7a972ff1bdc5a1ce99f93982a5ab48f07d8a3dcb3"
+        },
+        {
+          "location": "private_evidence",
+          "path": "ingestion-pin-repair-20261103/read_generation_controls_v4.py",
+          "sha256": "cd4eaaf4445c87612daac6d0d11091d0c4cd13978b9cb1e742a1857f135be2e0"
+        },
+        {
+          "location": "private_evidence",
+          "path": "ingestion-pin-repair-20261103/generation-observer-command-v4.txt",
+          "sha256": "76de45a3dbfd71c9ab416b00c92dbd1e4d4cbcad46636bdb86c0994140c5ca2e"
+        }
+      ],
+      "general_witness_producer": {
+        "location": "private_evidence",
+        "path": "pr906-review-release-20261103/production-readback-v2.py",
+        "sha256": "6528c8ba95a97658041f17c0ae6f59f76edf0dbbde743e13b0a54342bca1fccb"
+      },
+      "provenance": "Parent visible-terminal observations and normal admin UI result; source-bound local evidence, not an authenticated portable provider export."
+    },
+    {
+      "id": "E17",
+      "scope": "Protective disablement and complete hashed repository variable census for the two nightly generation hooks; not a new generation or source run.",
+      "observed_at": "2026-11-03T23:31:51.341213+00:00",
+      "inputs": [
+        {
+          "location": "private_evidence",
+          "path": "ingestion-pin-repair-20261103/repository-before.json",
+          "sha256": "16004e166388b0427b8b9ad355bab6717b44ea38a777acaec3886b5468fb74a3"
+        },
+        {
+          "location": "private_evidence",
+          "path": "ingestion-pin-repair-20261103/hooks-disabled.json",
+          "sha256": "8a0a1454d25e1646e3fbd7e7c7d6838cc0bfeabfc6aafd6e049481a9f9d5462b"
+        }
+      ],
+      "provenance": "Retained parent gh variable set arguments/results plus false-value and complete hashed-variable readback. Original capture was a tool call; no standalone historical capture-program bytes are attested."
+    },
+    {
+      "id": "E18",
+      "scope": "Exact main/pin equality at this dated observation; unchanged backend/frontend/workflow trees and retained admission guard replay. A later merge requires separate exact reconciliation.",
+      "observed_at": "2026-11-03T23:38:31.568041+00:00",
+      "inputs": [
+        {
+          "location": "private_evidence",
+          "path": "ingestion-pin-repair-20261103/admission-source-proof.json",
+          "sha256": "7e5264b7ac6255009c1d095618d2b676f05375a180e5a7a4d46bae472171c584"
+        },
+        {
+          "location": "private_evidence",
+          "path": "ingestion-pin-repair-20261103/pin-updated.json",
+          "sha256": "2b4671c1032dddea9ebfdfc3cac74225961a8a7dba1f9785855fad10ea4ba7cb"
+        },
+        {
+          "location": "private_evidence",
+          "path": "ingestion-pin-repair-20261103/guard-after-pin.json",
+          "sha256": "2cda2319cb3a3a175c38c2c0f168be175499210aaf7b82ed019d9d25949c7be8"
+        }
+      ],
+      "provenance": "Retained parent gh operation/result, remote-main and full hashed-variable readbacks, plus offline gate replay; not a fresh current read or nightly success."
+    }
+  ],
+  "limitations": [
+    "Supplements only the later parent claims; E01\u2013E15 and their original generation/cut remain historical and unmodified.",
+    "No actual live observation or operation is performed by this index publisher.",
+    "No full nightly success, policy approval, credential validity/renewal, storage restore, upload, worker capacity or publication acceptance.",
+    "Displayed 14 November token expiry lacks verified time/timezone; an exact provider expiry and strictly earlier accepted handoff/renewal deadline are still required."
+  ]
+}

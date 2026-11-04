@@ -1,5 +1,10 @@
 # Storage retention decision and held pilot
 
+**Current reconciliation:** read the [3 November decision packet](../releases/storage-retention-packet-20261103/README.md)
+and the dated supplement at the end of this document first. Earlier release,
+pin, missing-metadata and procedure statements below are historical to their
+named observations. They are not fresh acceptance or execution authority.
+
 Prepared 3 November 2026, America/Chicago. **PROPOSED — NOT APPROVED OR RUN.**
 This packet is for the storage portion of issues [490](https://github.com/Rodgers31/audit_app/issues/490)
 and [488](https://github.com/Rodgers31/audit_app/issues/488). Both remain open.
@@ -38,8 +43,10 @@ actor UUID was not independently extracted. These proofs do not qualify storage,
 worker, native/source admission or publishing activation, and do not authorize a
 repeat check or new/reconnect OAuth.
 
-The parent's final observation reports publishing, uploads, background workers
-and financial generation OFF, with zero media assets/uploads, targets,
+The parent's historical final observation reported publishing, uploads, background workers
+and financial generation OFF; the separate generation-master limitation is corrected
+in the current decision packet. That earlier scoped witness records zero media
+assets/uploads, targets,
 publications and attempts. Financial, existing post/revision and source
 cursor/event fingerprints are unchanged. Only the expected account proofs,
 controls version and two audit/two idempotency receipt rows changed in the
@@ -256,3 +263,57 @@ metadata, establish real production custody/restore, representative egress/cost
 or authorize operation. No synthetic restore, 77-byte diagnostic, empty ledger,
 source merge or successful test suite substitutes for the actual one-asset
 application path and independent approved-custody restore.
+
+## Current reconciliation — 3 November 2026, 22:55:13Z evidence cut
+
+This additive reconciliation preserves the earlier plan and original receipts.
+It supersedes their current-readiness conclusions where identified below. The
+[owner form](../releases/storage-retention-packet-20261103/README.md),
+[conditional checklist](../releases/storage-retention-packet-20261103/STAGE_A.md)
+and [source index](../releases/storage-retention-packet-20261103/EVIDENCE.json)
+are preparation only. No policy is approved, digest installed, or action run.
+
+| Status | Verified scope / remaining limit | Evidence |
+| --- | --- | --- |
+| Accepted dated observation | Main `1542bc5117f09b15b126e03bbd2158a54c348540`, tree `2fa98d95754e9dde3f1407e315dd0317733c4d3a`; application backend/frontend/.github trees equal serving `f0f4705e9561e2e42edd93fc747e8bff24468fae`. Render `dep-dbl3il08v5cc73ak6g90`; frontend `dpl_FRvuB6VLPPfV1XKBCfnXB8hm6r8K`; schema `a756b20a0001`. Existing Starter 512 MiB / 0.5 CPU, Linux x86_64 Python 3.12.16. | E01–E03, E05; no new live check in this lane. |
+| Accepted dated observation | At 22:55:13.844054Z / 4:55:13 p.m. CST: controls version 3, all five automatic/global controls false; uploads held; the separate draft-generation master was not sampled (see parent correction in the decision packet); Facebook/Instagram connected but publishing paused; background processes 0; posts/revisions 8/10; assets/uploads/targets/publications/attempts all 0. Render auto-deploy OFF remains parent-owned. | E01–E03. Unset flags are not evidence that enabled-by-default warmup is disabled. |
+| Accepted dated observation | Private `audit-social-media-v1`; no public r2.dev/custom domain. CORS exactly `https://www.auditgava.com`, GET/HEAD/PUT, content-type/if-none-match, exposed ETag, max age 300. Only lifecycle: abort incomplete multipart after 7 days; no completed-original expiry or bucket lock. Catalog, on-demand migration, logging and uploads off; no paid Workers event service provisioned. | E05–E07. No versioning, replication or independent backup assumed. |
+| Accepted dated observation | Two old 77-byte diagnostic PNGs retain listed keys/sizes/mtime. Displayed 304 B includes metadata; neither object is an application asset. Request counters moved during metadata reads. | E08. Neither object mutation nor literal zero-request cost is established. |
+| Accepted identifier binding; custody missing | Existing **Account API token** `auditgava-social-media-v1`: Object Read & Write only for the social bucket, displayed expiry 14 November 2026. Deployed key-identifier digest, bucket and endpoint match the exact token record. | E09–E10. No secret-key or signed-PUT validity proof; no credential value exported. App key least privilege does not establish exclusive writers or cloud control-plane authority. |
+| Historical acceptance | Roger is already recovery custodian with seven-day rolling retention for **private local database exports only**. B42 full logical restore remains accepted only in its original operation scope. | E11–E12. No media, application-record, keyring/secret, provider/WAL-backup or new-destination authority. |
+| Missing operational reconciliation | B42's archive deadline, 29 October 2026 02:45:54 UTC / 28 October 9:45:54 p.m. CDT, is past. Actual present/disposed-with-evidence/unresolved copy inventory, oldest copy and seven-day enforcement remain to reconcile with Roger. | E11–E13. No archive opened, retention extended, disposal inferred or deletion authorized. |
+| Missing owner decisions | Retention/legal holds/exceptions; media maintenance/renewal/custody; approved existing backup destination, dependency closure/IDs/total cap/encryption/key recovery/custody UUID; restore operator and different independent reviewer. | Exact blank fields in owner form; do not repeat the already-decided Roger/seven-day question. |
+| Missing engineering evidence | Reconcile account administrators, Workers bindings and possible off-system credential copies; then bind future execution to fresh source/config/capacity/privacy evidence and exact commands. | E05/E09 only establish observed metadata and identifier binding. Quiet inventory is not exclusive-writer proof. |
+
+Vercel Git disconnection is carried from the parent-supplied assignment baseline,
+not independently reverified by E01–E03 or this lane. It remains a parent-owned
+release control; this packet neither reconnects it nor certifies its freshness.
+
+The older “Current configuration evidence required” section is now partially
+satisfied by E05–E10; do not request the same dashboard observations again as
+owner choices. Future freshness checks remain necessary before an approved
+action. The old ingestion pin is only the E01 historical sample. The parent
+owns its correction/admission guard and subsequent reconciliation; this lane
+does not change or certify either. A later integration must recheck exact pin
+equality because a documentation-only merge changes main's SHA.
+
+The earlier proposed retention periods and 70%/80% warnings remain unapproved
+options, not current policy or installed enforcement. No completed-object expiry,
+automatic cleanup, quota refund or forced pending release follows. Preserve
+historical references, failed/unknown writes, permanent markers, lifetime
+admission and deletion/effect/intent history. Do not retrofit legacy protocols.
+
+The conditional Stage A checklist supersedes earlier step 8's disposable-resource
+removal wording: **retain everything; no cleanup/deletion is authorized here or
+by the proposed Stage A scope**. One future JPEG ≤262,144 B, two retained payload
+copies ≤524,288 B and one new post/revision remain the smallest proposal.
+The ≤10-minute upload / ≤60-minute attended capture+restore windows are
+unapproved feasibility bounds, not application limits or authority. No fixture
+is generated and no asset/object/row is allocated as preparation.
+
+The PR906 corrected host tool refused unset `AUTO_WARMUP_ENABLED`; full held
+runtime acceptance is still missing (E04). Earlier tiny codec observations and
+local ARM Python 3.13.9 fixtures keep their original scopes. They do not accept
+real application upload/custody/restore, serving Linux 3.12.16 parity, positive
+busy-worker reserves, provider delivery, or launch. Preparation can complete
+while these operating and owner decisions remain held.
