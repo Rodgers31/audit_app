@@ -1,6 +1,6 @@
 # Conditional operator packet — no live authority
 
-All stages are **NOT AUTHORIZED / NOT RUN** by this lane. Use this packet with the [acceptance matrix](ACCEPTANCE.md), the storage [D1–D5/R1 form](../storage-retention-packet-20261103/README.md), [Stage A procedure](../storage-retention-packet-20261103/STAGE_A.md), and historical [controlled pilot](../controlled-launch-20261103/PILOT_PROPOSAL.md). Missing values mean HOLD. Do not submit placeholders as commands or silently select default owners/accounts/destinations.
+All stages are **NOT AUTHORIZED / NOT RUN** by this lane. Use this packet with the [acceptance matrix](ACCEPTANCE.md), the storage [D1–D5/R1 form](../storage-retention-packet-20261103/README.md), [current draft913 Stage A procedure](https://github.com/Rodgers31/audit_app/blob/c62ec3e1cab5b356661fdad38e204214c56b7999/docs/releases/storage-recovery-completion-20261103/STAGE_A.md), and historical [controlled pilot](../controlled-launch-20261103/PILOT_PROPOSAL.md). Missing values mean HOLD. Do not submit placeholders as commands or silently select default owners/accounts/destinations.
 
 ## Fixed boundaries and required filled fields
 
