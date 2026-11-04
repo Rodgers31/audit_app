@@ -6,7 +6,7 @@ import GenerationPreview from '@/components/admin/social/GenerationPreview';
 import api from '@/lib/api/axios';
 import {generationApi,decodeSourceRecords} from '@/lib/api/socialGeneration';
 
-let mockActor='actor-A',mockAdmin=true,mockSearch=new URLSearchParams();
+let mockActor='00000000-0000-4000-8000-000000000001',mockAdmin=true,mockSearch=new URLSearchParams();
 jest.mock('next/navigation',()=>({useSearchParams:()=>mockSearch}));
 jest.mock('@/lib/auth/AuthProvider',()=>({useAuth:()=>({user:{id:mockActor}})}));
 jest.mock('@/lib/auth/admin',()=>({useAdmin:()=>({isAdmin:mockAdmin})}));
@@ -16,7 +16,7 @@ const caps=['pending_bills','national_budget','revenue_by_source'].map(domain=>(
 const job=(id:number,domain='pending_bills',change={})=>({id,domain,status:'completed',dry_run:false,started_at:'2026-10-28T10:00:00Z',finished_at:'2026-10-28T10:01:00Z',duration_seconds:60,items_processed:1,items_created:1,items_updated:0,errors:[],error_count:0,diagnostics_redacted:true,created_at:'2026-10-28T10:00:00Z',metadata:{source_mode:'live'},...change});
 const source=(selection:any,total=1)=>({...selection,page_size:25,total,record_ids:Array.from({length:Math.min(25,Math.max(0,total-(selection.page-1)*25))},(_,i)=>(selection.reports?900:selection.ingestion_id*10)+(selection.page-1)*25+i),has_more:selection.page*25<total});
 const deferred=<T,>()=>{let resolve!:(value:T)=>void,reject!:(error:unknown)=>void;const promise=new Promise<T>((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};};
-beforeEach(()=>{jest.clearAllMocks();mockActor='actor-A';mockAdmin=true;mockSearch=new URLSearchParams();
+beforeEach(()=>{jest.clearAllMocks();mockActor='00000000-0000-4000-8000-000000000001';mockAdmin=true;mockSearch=new URLSearchParams();
   Object.defineProperty(crypto,'randomUUID',{configurable:true,value:()=> '00000000-0000-4000-8000-000000000123'});
   get.mockImplementation(async(path:string,config:any)=>{
     if(path.endsWith('/capabilities'))return {data:[...caps,{domain:'audits',financial:false,reports:true,reason:'financial_adapter_unavailable'}]};
@@ -89,7 +89,7 @@ test('late old record list cannot supply the newly selected job',async()=>{
 test('late old preview cannot reappear for a new administrator',async()=>{
   const pending=deferred<any>();post.mockImplementation(()=>pending.promise);
   const view=mount();await choose();fireEvent.click(screen.getByRole('button',{name:'2. Preview without saving'}));
-  await waitFor(()=>expect(post).toHaveBeenCalledTimes(1));mockActor='actor-B';view.rerender(view.wrap());
+  await waitFor(()=>expect(post).toHaveBeenCalledTimes(1));mockActor='00000000-0000-4000-8000-000000000002';view.rerender(view.wrap());
   await act(async()=>pending.resolve({data:{drafts_enabled:true,results:[{record_id:70,status:'eligible_change',reason:'semantic_evidence_changed',source_document_id:3}]}}));
   await waitFor(()=>expect(screen.queryByRole('status',{name:/checking/i})).not.toBeInTheDocument());
   if(screen.queryByRole('heading',{name:'Preview outcome'}))throw Error('LATE_PREVIEW_CROSSED_ACTOR');
@@ -99,7 +99,7 @@ test('late detection acknowledgement is not presented under a new administrator'
   const pending=deferred<any>(),original=post.getMockImplementation()!;
   post.mockImplementation((path,body,...rest)=>path.endsWith('/preview')?original(path,body,...rest):pending.promise);
   const view=mount();await choose();await preview();await detect();await waitFor(()=>expect(post).toHaveBeenCalledTimes(2));
-  mockActor='actor-B';view.rerender(view.wrap());
+  mockActor='00000000-0000-4000-8000-000000000002';view.rerender(view.wrap());
   await act(async()=>pending.resolve({data:{results:[{status:'draft_created',post_id:'00000000-0000-4000-8000-000000000777',sequence:1}]}}));
   await waitFor(()=>expect(screen.queryByRole('heading',{name:'Preview outcome'})).not.toBeInTheDocument());
   if(screen.queryByRole('link',{name:'Review generated draft'}))throw Error('LATE_DETECTION_CROSSED_ACTOR');

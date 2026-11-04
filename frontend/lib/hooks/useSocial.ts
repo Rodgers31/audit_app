@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth/AuthProvider';
 import { DeliveryFilter, EditorialState, sendSocialCommand, SocialApiError, SocialPost, socialApi, SocialSummary } from '@/lib/api/social';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
+import { confirmSocialCommand, socialCommandKey } from '@/lib/api/socialCommandRecovery';
 
 export const socialKeys = {
   root: (actor: string | undefined) => ['admin', 'social', actor] as const,
@@ -107,18 +108,18 @@ export function useSocialSystem() {
   return useQuery({ queryKey: [...socialKeys.root(actor), 'system'], queryFn: ({ signal }) => socialApi.status(signal), enabled, staleTime: 30_000, gcTime: 60_000, retry: false, refetchOnWindowFocus: false });
 }
 interface Command {
-  path: string; body: object; method: 'post' | 'patch'; key: string;
+  path: string; body: object; method: 'post' | 'patch'; identity: string; key?: string;
   decode: (value: unknown) => unknown; postId?: string; actor?: string;
 }
 /** A rejected/ambiguous command keeps its key and exact body for explicit retries. */
 export function useSocialMutation() {
   const { enabled, actor } = useSocialAccess();
   const qc = useQueryClient();
-  const receipts = useRef(new Map<string, string>());
   const mutation = useMutation<unknown, SocialApiError, Command>({
     retry: false,
     mutationFn: c => {
-      if (!enabled) throw new SocialApiError('ACCESS_DENIED', 'An authenticated admin session is required.');
+      if (!enabled || !c.actor) throw new SocialApiError('ACCESS_DENIED', 'An authenticated admin session is required.');
+      c.key = socialCommandKey(c.actor, c.identity);
       return sendSocialCommand(c.path, c.body, c.key, c.decode, c.method);
     },
     onSuccess: async (result, c) => {
@@ -135,17 +136,17 @@ export function useSocialMutation() {
       if (c.path === '/controls' || /\/(publish|publish-now|schedule|reschedule|cancel|retry|resume)$/.test(c.path)) {
         await qc.invalidateQueries({ queryKey: [...socialKeys.root(c.actor), 'system'], exact: true });
       }
+      // React Query surfaces storage failures through the same error boundary
+      // as transport/decoder failures. Never silently discard uncertain intent.
+      confirmSocialCommand(c.actor, c.identity, c.key!);
     },
   });
   async function run<T>(path: string, body: object, decode: (value: unknown) => T, options: { method?: 'post' | 'patch'; postId?: string } = {}): Promise<T> {
     const method = options.method ?? 'post';
     const identity = JSON.stringify([actor, method, path, body]);
-    let key = receipts.current.get(identity);
-    if (!key) { key = crypto.randomUUID(); receipts.current.set(identity, key); }
-    const result = await mutation.mutateAsync({ path, body, decode, method, key, postId: options.postId, actor }) as T;
+    const result = await mutation.mutateAsync({ path, body, decode, method, identity, postId: options.postId, actor }) as T;
     // Success confirms this intent. A later intentional duplicate/retry is a new
     // command; ambiguous transport or decoder failures keep the original key.
-    receipts.current.delete(identity);
     return result;
   }
   return { ...mutation, run };
