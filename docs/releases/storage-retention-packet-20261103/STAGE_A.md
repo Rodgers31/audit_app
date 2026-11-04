@@ -10,6 +10,9 @@ remain the authority boundary. No Stage B/C worker or send action follows.
 ## Preconditions — each must have an accepted receipt
 
 - [ ] D1–D5 and R1 reconciled; exact policy/custody scope independently reviewed.
+  D2 includes provider-issued exact expiry/timezone and a strictly earlier
+  recorded acceptance/renewal deadline with completion evidence; date-only or
+  unknown expiry and missing/missed deadlines leave intake held.
   Existing bucket/credential/read-only observations are prefilled in E05–E10.
   Recheck freshness through existing authorized access before execution; never
   broaden the app key to read control-plane configuration.

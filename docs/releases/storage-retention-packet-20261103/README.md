@@ -8,7 +8,8 @@ Issues [490](https://github.com/Rodgers31/audit_app/issues/490) and
 [488](https://github.com/Rodgers31/audit_app/issues/488) retain their unmet criteria.
 
 Read the [current status/evidence table](../../operations/storage-retention-20261103.md#current-reconciliation--3-november-2026-225513z-evidence-cut)
-and [hashed source index](EVIDENCE.json). E-numbers below resolve there. The
+and [historical source index](EVIDENCE.json). E01–E15 resolve there; later parent
+observations E16–E18 resolve in [their dated supplement](PARENT_EVIDENCE.json). Each
 index is a sanitized reconciliation of retained witnesses, not a fresh provider
 export, exclusive-writer certificate or production acceptance receipt.
 
@@ -28,7 +29,10 @@ The parent verified remote `main` and ingestion pin both equal
 `1542bc5117f09b15b126e03bbd2158a54c348540` at 23:38:31Z. These facts supplement,
 not replace, E01–E03 and their retained historical producers. Every future pilot
 must separately verify both control tables and the scheduled hook variables.
-The current evidence remains private in `ingestion-pin-repair-20261103`:
+These later parent claims are indexed separately as E16–E18 in the dated
+[parent source supplement](PARENT_EVIDENCE.json). The original EVIDENCE.json
+cut and E01–E15 are unchanged. The raw evidence remains private in
+`ingestion-pin-repair-20261103`:
 `generation-controls-before.json`, `generation-controls-after.json`,
 `production-before-draft-command.json`, `production-after-draft-command.json`,
 `hooks-disabled.json` and `pin-updated.json`. No pilot or policy is approved.
@@ -39,7 +43,7 @@ The current evidence remains private in `ingestion-pin-repair-20261103`:
 | --- | --- |
 | Current evidence | Main `1542bc5`, serving application `f0f4705`, schema `a756b20a0001`; controls version 3 all false, both saved accounts paused, 8 posts/10 revisions, zero assets/uploads/delivery rows/workers (E01–E04). No pin or production operation belongs to this lane. |
 | Storage | Private existing `audit-social-media-v1`, exact live-origin conditional-upload CORS; only 7-day incomplete-multipart abort, no completed-original expiry or lock; no assumed versioning/replication/backup (E05–E08). Two 77 B diagnostics are separate; 304 B displayed bucket usage includes metadata. |
-| App credential | Existing bucket-only Object Read & Write **Account API token** `auditgava-social-media-v1`, displayed expiry **14 November 2026**; deployed identifier/bucket/endpoint matched. No exported credential value, secret-key test, signed-PUT validity, exclusive-writer or administrator-authority proof (E09–E10). |
+| App credential | Existing bucket-only Object Read & Write **Account API token** `auditgava-social-media-v1`, displayed expiry **14 November 2026, exact time/timezone unverified**; deployed identifier/bucket/endpoint matched. Date-only display cannot satisfy D2's exact expiry/deadline gate. No exported credential value, secret-key test, signed-PUT validity, exclusive-writer or administrator-authority proof (E09–E10). |
 | Existing recovery decision | **Roger; seven-day rolling retention; private LOCAL DATABASE EXPORTS ONLY** (E11). Keep this decision. It covers no media, application records, secrets/keyrings, provider/WAL backups or new export destination. |
 | Existing restore acceptance | B42 logical restore accepted in its original operation scope; deadline **29 October 02:45:54 UTC**, now past. Copy inventory/enforcement is pending, not a new custody/period decision (E12–E13). No archive contents inspected or deleted here. |
 
@@ -53,7 +57,7 @@ record, with only its non-secret reference/hash in a reviewable decision.
 | ID | Exact missing input / record to complete |
 | --- | --- |
 | D1 — policy | Policy owner and independent privacy/accountability approver; decision ID/date/timezone; adopt/replace each existing [proposed data-class period](../../operations/storage-retention-20261103.md#proposed-retention-and-maintenance-policy). For each class: purpose, retention trigger/horizon, legal/evidence holds, exceptions, disposition authority and completion evidence. Cover originals, quarantine/pending/failed/unknown writes, revisions/references, admission/ownership/budget/fences/markers, deletion/effect/intent history, reports/logs, approved backups and provider/recipient copies as applicable. Record exact policy version/bytes/reference after approval; no digest installation here. |
-| D2 — accountable operation | Media maintenance operator, attending/stop authority, escalation route and accepted bounded report cadence; renewal operator and secure credential-recovery custodian with accepted responsibility **before 14 November 2026**. No person is preassigned. Keep renewal, secret recovery and policy approval distinct. |
+| D2 — accountable operation | Media maintenance operator, attending/stop authority, escalation route and accepted bounded report cadence; renewal operator and secure credential-recovery custodian with accepted responsibility by a recorded deadline strictly before the provider-issued exact expiry instant (RFC 3339 with UTC offset, normalized to UTC). Record the provider evidence, exact expiry and explicitly chosen pre-expiry handoff/renewal completion deadline; the displayed 14 November date alone leaves this gate HOLD. No person is preassigned. Keep renewal, secret recovery and policy approval distinct. |
 | D3 — existing destination and scope | Name the media-backup custodian and destination encryption/key-recovery owner, with each person's accepted responsibility; these are distinct from D2 credential custody. Existing approved backup destination/private locator and prior approval reference; exact DB table/row IDs, object keys/identities and required dependency closure; snapshot/history/intent cutoff; total packet byte cap including DB/history/metadata (not just ≤524,288 B media); allowed access, encryption at rest/in transit, key recovery and independent custody; custody UUID; retention/hold exceptions; isolated reconstruction target. New destinations/access/credentials/costs are outside scope. Roger's local-DB rule supplies no media export permission. |
 | D4 — independent restore | Named restore operator and a **different reviewer independent of capture and restore implementation**, each accepting their role; exact nonempty reconstruction/negative-control review scope, input manifest and report reference. No live credentials, listeners or production overwrite. |
 | D5 — writer reconciliation | Engineering/existing authorized control-plane reader records all possible writers: application credential holders/copies, account administrators, Workers bindings and off-system copies; evidence time, authority, restrictions and unresolved entries. Owner acknowledges any accepted limits. Listed token scope, a private bucket or a quiet LIST cannot prove exclusivity. Do not request broader app scope. |
@@ -64,10 +68,16 @@ record, with only its non-secret reference/hash in a reviewable decision.
 The current token remains unchanged. D2 must name who owns renewal, custody,
 secure recovery and escalation, with a private handoff record linking E09/E10 to
 the existing secret store reference and authorization, **without copying a key**.
-Record acceptance and a completion/checkpoint date before the displayed
-14 November expiry; exact expiry time/timezone was not established. Do not wait
-for an assumed end-of-day grace period. The parent may later propose a separately
-authorized renewal using existing scope. This packet performs no renewal,
+First obtain and retain the provider-issued exact expiry timestamp and timezone,
+normalize it to UTC, and bind its evidence to the existing token identity without
+copying a key. Record an explicit handoff acceptance and renewal/validation
+completion deadline strictly earlier than that instant, with the chosen margin.
+Require accepted responsibility and completed existing-scope renewal/validation
+evidence by that deadline before intake can qualify. The displayed 14 November
+date has no verified time/timezone and cannot satisfy this gate. Unknown expiry,
+missing deadline or a missed deadline means HOLD and escalation; do not infer
+midnight, an end-of-day grace period or permission to continue intake. The parent
+may later propose a separately authorized renewal using existing scope. This packet performs no renewal,
 rotation, export, reconnect or permission change. If ownership, recovery or
 validity is unresolved, keep intake held and escalate; expiry never authorizes a
 new credential or broader scope.
