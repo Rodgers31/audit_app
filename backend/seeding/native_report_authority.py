@@ -177,10 +177,96 @@ def _capture(receipt, *, domain, entity, scope_key, period, start, end, publishe
 
 
 class _KraAttributes(HTMLParser):
+    _VOID = frozenset({'br', 'hr'})
+    _START = re.compile(r'<[A-Za-z][A-Za-z0-9]*')
+    _NAME = re.compile(r'[A-Za-z_:][A-Za-z0-9_.:-]*')
+    _SPACE = re.compile(r'[ \t\r\n\f]+')
+    _UNQUOTED = re.compile(r'''[^ \t\r\n\f"'=<>`]+''')
+
+    def __init__(self):
+        super().__init__(convert_charrefs=False)
+        self._stack = []
+
     def handle_starttag(self, tag, attrs):
+        self._validate_start_token()
         names = [name for name, _ in attrs]
         if len(names) != len(set(names)):
             raise ValueError('Ambiguous publisher attributes')
+        if tag not in self._VOID:
+            if len(self._stack) >= 64:
+                raise ValueError('Publisher markup nesting limit exceeded')
+            self._stack.append(tag)
+
+    def _validate_start_token(self):
+        # HTMLParser tolerates missing separators and stray solidi. Walk the
+        # original token once; repaired attribute callbacks are not authority.
+        raw = self.get_starttag_text()
+        start = self._START.match(raw)
+        if start is None:
+            raise ValueError('Malformed publisher opening token')
+        position = start.end()
+        while True:
+            gap = self._SPACE.match(raw, position)
+            if gap is not None:
+                position = gap.end()
+            if ((position + 1 == len(raw) and raw.startswith('>', position))
+                    or (position + 2 == len(raw) and raw.startswith('/>', position))):
+                return
+            name = self._NAME.match(raw, position) if gap is not None else None
+            if name is None:
+                raise ValueError('Explicit publisher attribute separators required')
+            position = name.end()
+            gap = self._SPACE.match(raw, position)
+            equals = gap.end() if gap is not None else position
+            if equals >= len(raw) or raw[equals] != '=':
+                continue
+            position = equals + 1
+            gap = self._SPACE.match(raw, position)
+            if gap is not None:
+                position = gap.end()
+            if position >= len(raw):
+                raise ValueError('Publisher attribute value required')
+            if raw[position] in ('"', "'"):
+                end = raw.find(raw[position], position + 1)
+                if end < 0:
+                    raise ValueError('Complete publisher attribute value required')
+                position = end + 1
+            else:
+                value = self._UNQUOTED.match(raw, position)
+                if value is None:
+                    raise ValueError('Publisher attribute value required')
+                position = value.end()
+
+    def handle_startendtag(self, tag, attrs):
+        if tag not in self._VOID:
+            raise ValueError('Explicit publisher element boundaries required')
+        self.handle_starttag(tag, attrs)
+
+    def parse_endtag(self, i):
+        end = self.rawdata.find('>', i + 2)
+        if end < 0:
+            return -1
+        # HTMLParser tolerates and discards closing-tag attributes. Validate
+        # the original token before its repaired callback can balance a tag.
+        if re.fullmatch(r'</[A-Za-z][A-Za-z0-9]*[ \t\r\n]*>', self.rawdata[i:end + 1]) is None:
+            raise ValueError('Malformed publisher closing token')
+        return super().parse_endtag(i)
+
+    def handle_endtag(self, tag):
+        if not self._stack or self._stack[-1] != tag:
+            raise ValueError('Mismatched publisher element boundary')
+        self._stack.pop()
+
+    def handle_data(self, data):
+        if '<' in data:
+            raise ValueError('Incomplete publisher markup token')
+
+    def close(self):
+        if self.rawdata:
+            raise ValueError('Incomplete publisher markup')
+        super().close()
+        if self.rawdata or self._stack:
+            raise ValueError('Incomplete publisher markup')
 
     def handle_comment(self, data):
         if '<' in data or '>' in data or '--' in data:

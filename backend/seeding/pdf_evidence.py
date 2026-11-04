@@ -11,6 +11,7 @@ from pathlib import Path
 import hashlib
 
 from services.receipt_store import configured_receipt_store
+from services.receipt_retention import record_capture_diagnostic
 from services.response_receipts import (
     persist_receipt,
     persist_evidence,
@@ -86,7 +87,8 @@ def receipt_for_pdf(
                 capture_local_bytes(body, store, url=url), parser_version=parser_version
             )
         return receipt
-    if session is not None and context is not None and domain in ('national_budget', 'pending_bills', 'audits'):
+    attempted_retained_restore = session is not None and context is not None and domain in ('national_budget', 'pending_bills', 'audits')
+    if attempted_retained_restore:
         from services.response_receipts import capture_retained_pdf
         try:
             retained = capture_retained_pdf(session, context, store, domain=domain, url=url, body=body)
@@ -95,15 +97,18 @@ def receipt_for_pdf(
             # Missing/stale/changed original proof keeps the local-byte refusal.
             # Database/provider failures propagate instead of certifying a hit.
             pass
-    return copy_receipt(
-        capture_local_bytes(
-            body,
-            store,
-            url=url,
-            claimed_receipt=recorded if isinstance(recorded, dict) else claimed,
-        ),
-        parser_version=parser_version,
+    local = capture_local_bytes(
+        body,
+        store,
+        url=url,
+        claimed_receipt=recorded if isinstance(recorded, dict) else claimed,
     )
+    if attempted_retained_restore:
+        status = local.get("byte_check", {}).get("status")
+        reason = "bytes_retained" if status == "matched" else (
+            "metadata_conflict" if status == "conflict" else "bytes_missing")
+        record_capture_diagnostic("local_pdf_fallback", reason)
+    return copy_receipt(local, parser_version=parser_version)
 
 
 def cell_evidence(

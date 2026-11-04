@@ -35,9 +35,14 @@ def _branch(domain, *, financial, locked):
     selected_head = ''
     publication_contract = ''
     if domain == 'revenue_by_source':
-        # Match the privileged reader's KRA publication protocol. Catalogue
-        # availability is separate; legacy article proofs cannot yield a digest.
+        # Catalogue availability can attest only to a report. Financial cells
+        # also need the dated publication contract used by the privileged reader.
         publication_contract = """
+        AND r.value#>>'{extracted_json,response_receipt,observations,0,publication_contract}'='kra-visible-annual-release-v2'
+        AND jsonb_typeof(r.value#>'{extracted_json,response_receipt,observations,0,published_on}')='string'
+        AND r.value#>>'{extracted_json,response_receipt,observations,0,published_on}' ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+        AND r.value#>>'{extracted_json,response_receipt,observations,0,evidence_kind}' IS DISTINCT FROM 'publisher_catalogue'
+        """ if financial else """
         AND (r.value#>>'{extracted_json,response_receipt,observations,0,evidence_kind}'='publisher_catalogue'
           OR r.value#>>'{extracted_json,response_receipt,observations,0,publication_contract}'='kra-visible-annual-release-v2')
         """

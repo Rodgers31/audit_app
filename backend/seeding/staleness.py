@@ -1044,12 +1044,22 @@ def check_ingestion_freshness(
                 for j in jobs
                 if _job_text(j, "source_fallback_reason")
             }
+            fixtures = [j for j in jobs if _job_text(j, "source_mode") == "fixture"]
+            fixture_reasons = [_job_text(j, "source_fallback_reason") for j in fixtures]
+            expected_fixtures = all(
+                reason in EXEMPT_FIXTURE_REASONS for reason in fixture_reasons
+            )
+            fixture_detail = (
+                f"; {len(fixtures)}/{len(modes)} FIXTURE fallback(s) "
+                f"(fixture reasons: {', '.join(sorted({r or 'unrecorded' for r in fixture_reasons}))})"
+                if fixtures else ""
+            )
             findings.append(
                 Finding(
-                    WARN,
+                    FAIL if fixtures and not expected_fixtures else WARN,
                     f"{domain} ingestion",
                     f"publisher refresh incomplete in recent run(s): "
-                    f"{modes.count('partial')}/{len(modes)} partial; "
+                    f"{modes.count('partial')}/{len(modes)} partial{fixture_detail}; "
                     f"full publisher coverage remains unconfirmed "
                     f"(reasons: {', '.join(sorted(reasons)) or 'unrecorded'})",
                 )

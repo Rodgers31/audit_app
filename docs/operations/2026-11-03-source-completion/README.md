@@ -10,9 +10,11 @@ The KRA annual-article report parser requires a self-contained reviewed HTML pro
 
 New KRA article proofs carry `publication_contract=kra-visible-annual-release-v2`. Persistence, current privileged readers and the optional restricted digest definition require that exact article contract. Old/missing/unknown publication proofs refuse. The distinct reviewed catalogue contract keeps `published_on=null`; no catalogue/retrieval/report-month day is promoted into publication authority. CoB and OAG contract versions are unchanged.
 
-## Required companion patch
+## Verifier integration — updated 4 November
 
-`role-contract-view-hashes.patch` is a proposal for the runtime owner to apply serially to the unowned `backend/social/worker/role_contract.py`. The verifier pins exact PostgreSQL-deparsed definitions; the new KRA filter requires two measured new hashes. The strict verifier must not be weakened to accept both old and new definitions. Until that companion patch is integrated, the source branch's new-view installer correctly refuses its stale verifier pins. Combined-candidate test evidence must be labelled with the declared two-literal overlay.
+The original lane handoff required the companion literal patch. Consolidated PR #909 now includes that companion in `backend/social/worker/role_contract.py`; it is no longer an unapplied test overlay. `role-contract-view-hashes.patch` records the proposed change from the admitted base for review. Both literals are measured from actual PostgreSQL 17 deparsed definitions. The strict verifier accepts the current exact pair and refuses historical, unknown, incomplete or incorrectly granted views.
+
+Review corrections require balanced raw element boundaries, complete tokens and syntactically valid closing tags before BeautifulSoup can establish authority. The catalogue alternative is restricted to report witnesses. Financial KRA witnesses require the reviewed publication contract and a stated publication day; an undated catalogue remains report availability only. The snapshot view remains private to its owner; this work grants no worker access to it.
 
 An already installed old view also needs a separately reviewed owner-controlled definition update. No installer, grant, migration, policy, flag or production operation is authorized or performed here. Existing unexpected definitions must keep refusing; code deployment alone is not acceptance of the installed digest boundary. Preserve owner, security-barrier options, columns and all existing private ACLs in any future reviewed replacement. No legacy receipt is rewritten or backfilled with the new marker.
 

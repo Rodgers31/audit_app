@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from seeding.staleness import WARN, check_ingestion_freshness, hollow_run_findings
+from seeding.staleness import FAIL, WARN, check_ingestion_freshness, hollow_run_findings
 
 
 class _Session:
@@ -54,5 +54,6 @@ def test_recent_window_does_not_describe_fixture_nights_as_partial_refreshes():
     findings = check_ingestion_freshness(_Session(jobs),
         now=datetime(2026, 11, 4, 3, tzinfo=timezone.utc), domains=["fiscal_summary"])
     assert len(findings) == 1
-    assert findings[0].level == WARN
+    assert findings[0].level == FAIL
     assert "1/2 partial" in findings[0].message
+    assert "1/2 FIXTURE" in findings[0].message
