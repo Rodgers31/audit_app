@@ -14,7 +14,13 @@ financial/database fingerprints are not asserted as current here.
 The existing Render case **OAuth Request Logging** was read through the
 existing authenticated support panel on 3 November evening, Chicago. The latest
 entry remains the parent's existing follow-up, marked unseen; no newer provider
-answer was visible. Jérémy's 3 November answer confirms the customer-log boundary
+answer was visible. Observation window: **4 November 03:01:28.716–03:01:29.125
+UTC / 3 November 21:01 CST**. The sanitized private receipt is
+`launch-completion-20261103/privacy-meta/observations-v1.json`, SHA256
+`52f9509a0ba521d4e906bc3f0cacaaed0c79ea150970f3afaf7d4a14e5b10c06`.
+Its producer hash and explicit UI-transcription limit are recorded inside it;
+the private lane handoff indexes its original source captures. Jérémy's
+3 November answer confirms the customer-log boundary
 only and explicitly leaves internal/subprocessor collection, retention, access
 and pre-ingestion redaction unverified. No message was sent. The existing Vercel
 human no-selective-redaction answer and synthetic positive request-log capture
@@ -70,7 +76,7 @@ to the original 3 November 08:32:28 CST restricted grant receipt; Instagram's
 08:33:05 CST receipt remains separate. Neither proof was rerun. Both are dated
 GET-only checks, not indefinite validity or native delivery acceptance.
 
-A fresh normal Accounts-page read on 3 November evening showed both identities
+A normal Accounts-page read in the same timestamped receipt showed both identities
 connected, publishing disabled, adapter unavailable, and reconnect disabled.
 Reading Facebook's publishing panel showed global publishing off, native runtime
 unavailable and Enable disabled. The Verify action was **not clicked**. This UI
@@ -99,6 +105,11 @@ The future parent-owned preflight must freeze all these inputs before approval:
    request. Its provider phase is GET-only, potentially multiple bounded reads,
    including User/Page inspection, permissions and exact Page/linked identity.
    No OAuth exchange, refresh, reconnect, upload or publication belongs here.
+   Source anchors: `backend/social/connections/api.py:133`,
+   `service.py:507` in that directory, and `verification.py:30` (wire GET
+   allowlist). `backend/tests/social/test_existing_grant_verification.py`
+   executes positive, idempotent replay, stale/concurrent state, identity,
+   scopes/tasks/lifetimes, privacy and durable-write refusal controls.
 4. Keep global/platform/account publishing consent and workers paused during
    verification. On failure preserve the actual refusal. A timeout uses the
    same key/body for receipt reconciliation, never a new unreviewed command.
