@@ -279,7 +279,7 @@ def test_reader_releases_page_cache_after_text_or_failure(monkeypatch, fails):
 
     monkeypatch.setattr(pdfplumber,"open",lambda _:PDF())
 
-    def read(_):
+    def read(_, *, qualifications=None):
         if fails:
             raise ValueError("fixture extraction failure")
         return "Genuine source text"

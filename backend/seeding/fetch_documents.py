@@ -16,6 +16,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import mimetypes
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -52,6 +53,7 @@ def fetch_document(
     doc_type: DocumentType,
     dataset_id: Optional[str] = None,
     max_seconds: Optional[float] = None,
+    acquisition_context=None,
 ) -> SourceDocument:
     """Download ``url`` and return its up-to-date ``SourceDocument`` row.
 
@@ -64,9 +66,14 @@ def fetch_document(
     preserved in ``metadata['previous_md5']`` — every figure derived from
     the old bytes is unverified until re-extracted.
     """
-    doc = session.execute(
-        select(SourceDocument).where(SourceDocument.url == url)
-    ).scalar_one_or_none()
+    if acquisition_context is not None:
+        from .domains.audits.acquisition import validate_audit_fetch
+        doc = validate_audit_fetch(session, acquisition_context, url=url, country_id=country_id,
+            publisher=publisher, doc_type=doc_type, dataset_id=dataset_id)
+    else:
+        doc = session.execute(
+            select(SourceDocument).where(SourceDocument.url == url)
+        ).scalar_one_or_none()
     if doc is None:
         doc = SourceDocument(
             country_id=country_id,
@@ -89,6 +96,8 @@ def fetch_document(
     cache_dir = settings.cache_path.expanduser() / "pdfs"
     cache_dir.mkdir(parents=True, exist_ok=True)
 
+    transfer_started = time.monotonic()
+    transfer_allowance = max_seconds if max_seconds is not None else settings.pdf_download_timeout_seconds
     try:
         pdf_path = get_or_download_pdf(
             client,
@@ -110,6 +119,12 @@ def fetch_document(
         )
         actual_identity = file_identity(pdf_path)
     except PdfDownloadError as exc:
+        if acquisition_context is not None:
+            current = validate_audit_fetch(session, acquisition_context, url=url, country_id=country_id,
+                publisher=publisher, doc_type=doc_type, dataset_id=dataset_id, lock=True)
+            if current is None or current.id != doc.id:
+                raise ValueError("Audit source changed during failed acquisition") from exc
+            doc = current
         meta = dict(doc.meta or {})
         meta["fetch_error"] = str(exc)[:500]
         doc.meta = meta
@@ -120,6 +135,15 @@ def fetch_document(
         logger.warning("Fetch FAILED for %s: %s", url, exc)
         raise
 
+    if acquisition_context is not None:
+        # The official transfer can outlive a concurrent source/job change.
+        # Recheck fresh rows before Layer-2 metadata writes, and serialize the
+        # resulting binding through origin persistence in this transaction.
+        current = validate_audit_fetch(session, acquisition_context, url=url, country_id=country_id,
+            publisher=publisher, doc_type=doc_type, dataset_id=dataset_id, lock=True)
+        if current is None or current.id != doc.id:
+            raise ValueError("Audit source changed during acquisition")
+        doc = current
     new_md5 = actual_identity["md5"]
     now = datetime.now(timezone.utc)
     # A cache hit skips the network, so "verified now" would overstate.
@@ -211,6 +235,25 @@ def fetch_document(
         meta["dataset_id"] = dataset_id
         doc.meta = meta
     session.flush()
+    if acquisition_context is not None and dataset_id in ('oag_national_audits', 'oag_county_audits'):
+        from .domains.audits.acquisition import KEY, AuditOriginUnavailable, ensure_audit_origin
+        try:
+            origin = ensure_audit_origin(session, acquisition_context, doc.id, client, settings,
+                max_seconds=transfer_allowance - (time.monotonic() - transfer_started))
+        except (AuditOriginUnavailable, OSError, ValueError) as exc:
+            reason = exc.reason if isinstance(exc, AuditOriginUnavailable) else 'origin_unconfirmed'
+            origin = dict(version=1, state='held', reason=reason, source_document_id=doc.id,
+                ingestion_id=acquisition_context.job_id, origin_extraction_id=None,
+                retained_bytes=None, origin_qualified=False, native_publication_authority=False)
+        doc.meta = {**doc.meta, KEY: origin}
+        session.flush()
+    elif dataset_id in ('oag_national_audits', 'oag_county_audits') or 'audit_acquisition_origin_v1' in doc.meta:
+        # Layer 2 alone grants no job-bound authority, even for unchanged bytes.
+        doc.meta = {**doc.meta, 'audit_acquisition_origin_v1': dict(version=1, state='held',
+            reason='context_unavailable', source_document_id=doc.id, ingestion_id=None,
+            origin_extraction_id=None, retained_bytes=None, origin_qualified=False,
+            native_publication_authority=False)}
+        session.flush()
     logger.info(
         "Fetched document %s (%d bytes, md5 %s) -> %s",
         doc.id,

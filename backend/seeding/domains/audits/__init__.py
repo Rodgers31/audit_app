@@ -717,6 +717,7 @@ def run(
                             title=url.rsplit("/", 1)[-1],
                             doc_type=DocumentType[dataset.doc_type],
                             dataset_id=dataset_id,
+                            acquisition_context=context,
                             max_seconds=(
                                 settings.audits_volume_download_timeout_seconds
                                 if is_volume
@@ -749,6 +750,12 @@ def run(
                 doc_stat = {"dataset": dataset_id, "doc_id": doc.id, "url": url,
                             'parser_id': dataset.parser_id,
                             'extraction_outcome': 'pending' if parser is not None else 'not_requested'}
+                from .acquisition import KEY as ORIGIN_KEY
+                origin = doc.meta.get(ORIGIN_KEY) if isinstance(doc.meta, dict) else None
+                if origin is not None:
+                    doc_stat['acquisition_origin'] = deepcopy(origin)
+                    if origin.get('origin_qualified') is not True:
+                        errors.append(f"document {doc.id}: acquisition origin held ({origin.get('reason')})")
                 if parser is not None:
                     try:
                         from ...extractors.reconciliation import extract_and_load

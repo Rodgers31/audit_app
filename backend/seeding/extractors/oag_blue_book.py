@@ -57,7 +57,8 @@ EXTRACTOR_ID = "oag_blue_book"  # recorded on every extractions row
 #:    from that finding; a prior-year finding still retains its own table.
 #: 4: complete structural report headings, scoped clean statements, statutory
 #:    reporting context and lowered inline fraction glyphs.
-EXTRACTOR_VERSION = 4
+#: 5: marked historical table cells retain their own wrapped source glyphs.
+EXTRACTOR_VERSION = 5
 
 # ── text integrity ───────────────────────────────────────────────────
 _CID_RE = re.compile(r"\(cid:\d+\)")
@@ -203,6 +204,7 @@ class PageText:
     page_number: int  # 1-based PDF page number
     text: str
     method: str  # "pdfplumber" | "ocr" | "blank" | "rejected"
+    layout_qualifications: List[dict] = field(default_factory=list)
 
 
 @dataclass
@@ -221,6 +223,7 @@ class BlueBookFinding:
     amounts: List[float] = field(default_factory=list)
     method: str = "pdfplumber"
     report_kind: Optional[str] = None  # complete heading, unlike wrapped source label
+    layout_qualifications: List[dict] = field(default_factory=list)
 
 
 @dataclass
@@ -431,6 +434,12 @@ def segment_chapter(
     detached_rows = 0
     detached_max_row = 0
 
+    page_layout = {p.page_number: p.layout_qualifications for p in pages}
+
+    def append_line(line, page):
+        cur["lines"].append(line)
+        cur["body_pages"].add(page)
+
     def flush() -> None:
         nonlocal cur, rejected
         if cur is None:
@@ -478,6 +487,9 @@ def segment_chapter(
                 amounts=amounts,
                 method=cur_out["method"],
                 report_kind=cur_out["report_kind"],
+                layout_qualifications=[dict(q) for page in sorted(cur_out["body_pages"])
+                    for q in page_layout.get(page, [])
+                    if " ".join(q["cell_text"].split()) in body],
             )
         )
 
@@ -528,13 +540,13 @@ def segment_chapter(
         if skip_prior_issue_tables and cur is not None:
             if _PRIOR_ISSUES_TABLE_RE.match(line):
                 table_next = 1
-                cur["lines"].append(line)
+                append_line(line, pdf_page)
                 continue
             if table_next is not None:
                 row = _FINDING_START_RE.match(line) or finding_start_re.match(line)
                 if row and _paragraph_no(row) == table_next:
                     table_next += 1
-                    cur["lines"].append(line)
+                    append_line(line, pdf_page)
                     continue
                 structural = (
                     row
@@ -544,7 +556,7 @@ def segment_chapter(
                 )
                 if not structural:
                     # A row that wrapped onto a second line. Still the table.
-                    cur["lines"].append(line)
+                    append_line(line, pdf_page)
                     continue
                 table_next = None
         if stop_at_appendix and _APPENDIX_RE.match(line):
@@ -586,6 +598,7 @@ def segment_chapter(
                     "sub_section": sub_section,
                     "scope_context": scope_context,
                     "lines": [title],
+                    "body_pages": {pdf_page},
                     "method": method,
                 }
                 prev_no = no
@@ -599,7 +612,7 @@ def segment_chapter(
                 last_subsection_index = line_index
                 subreport, report_kind, opinion, heading = None, None, None, None
                 continue
-            cur["lines"].append(line)
+            append_line(line, pdf_page)
             if method == "ocr":
                 cur["method"] = "ocr"
         elif (_SUBSECTION_RE.match(line) and len(line.split()) >= 3
@@ -847,9 +860,169 @@ def _inline_fraction_chars(chars: list) -> list:
     return result
 
 
-def _page_text(source) -> str:
+def _marked_cell_overlaps(chars: list) -> tuple:
+    groups = {}
+    for char in chars:
+        mcid = char.get("mcid")
+        if mcid is None:
+            continue
+        if type(mcid) is not int or mcid < 0:
+            raise ValueError("Exact marked-content glyph identity required")
+        if any(type(char.get(key)) not in (int, float)
+               or not math.isfinite(char[key]) for key in ("x0", "x1", "top", "bottom")):
+            raise ValueError("Finite marked-content glyph coordinates required")
+        if not char.get("text", "").strip():
+            continue
+        groups.setdefault(mcid, []).append(char)
+    bounds = {
+        mcid: (min(c["x0"] for c in cell), max(c["x1"] for c in cell),
+               min(c["top"] for c in cell), max(c["top"] for c in cell))
+        for mcid, cell in groups.items()
+    }
+    overlaps = []
+    for first, a in bounds.items():
+        for second, b in bounds.items():
+            # pdfplumber's default line tolerance can mix a wrapped cell's
+            # trailing glyphs with the following row, even across a cell clip.
+            if (a[2] + 3 < b[2] <= a[3] + 3
+                    and max(a[0], b[0]) < min(a[1], b[1])):
+                overlaps.append((first, second))
+    return groups, overlaps
+
+
+def _historical_table_text(source, chars: list, qualifications: list) -> Optional[str]:
+    """Read overlapping historical cells by the PDF's own Table/TR/TD tags.
+
+    This does not infer a missing word or row. Every emitted character remains
+    in its original marked-content cell; surrounding prose keeps geometric
+    reading order. An overlapping cell receives a visible-fidelity qualification
+    because tagged embedded text alone cannot prove what the publisher rendered.
+    """
+    groups, overlaps = _marked_cell_overlaps(chars)
+    if not overlaps:
+        return None
+    tree = getattr(source, "structure_tree", [])
+    tables = []
+    visited = 0
+
+    def visit(nodes, depth=0):
+        nonlocal visited
+        if type(nodes) is not list or depth > 32:
+            raise ValueError("Bounded PDF structure list required")
+        for node in nodes:
+            visited += 1
+            if visited > 10000 or type(node) is not dict:
+                raise ValueError("Bounded PDF structure nodes required")
+            if node.get("type") == "Table":
+                tables.append(node)
+            visit(node.get("children", []), depth + 1)
+
+    visit(tree)
+    from pdfplumber.utils import chars_to_textmap
+
+    def text_of(glyphs):
+        return chars_to_textmap(glyphs).as_string if glyphs else ""
+
+    def descendants(node, kind):
+        result = []
+        for child in node.get("children", []):
+            if type(child) is not dict:
+                raise ValueError("PDF table structure node required")
+            if child.get("type") == kind:
+                result.append(child)
+            else:
+                result.extend(descendants(child, kind))
+        return result
+
+    def cell_ids(node):
+        ids = node.get("mcids", [])
+        if type(ids) is not list or any(type(i) is not int or i < 0 for i in ids):
+            raise ValueError("Exact marked-content cell identities required")
+        result = list(ids)
+        for child in node.get("children", []):
+            if type(child) is not dict:
+                raise ValueError("PDF table cell node required")
+            result.extend(cell_ids(child))
+        return result
+
+    replacements = []
+    assigned = set()
+    for table_index, table in enumerate(tables):
+        rows = descendants(table, "TR")
+        cells = []
+        for row in rows:
+            children = row.get("children", [])
+            if (type(children) is not list or len(children) != 2
+                    or any(type(c) is not dict or c.get("type") not in ("TH", "TD")
+                           for c in children)):
+                cells = []
+                break
+            cells.append([cell_ids(c) for c in children])
+        if not cells:
+            continue
+        texts = [[" ".join(text_of([c for c in chars if c.get("mcid") in ids]).split())
+                  for ids in row] for row in cells]
+        if not _PRIOR_ISSUES_TABLE_RE.match(" ".join(texts[0])):
+            continue
+        all_ids = [i for row in cells for cell in row for i in cell]
+        if len(all_ids) != len(set(all_ids)) or assigned.intersection(all_ids):
+            raise ValueError("A historical table cell has duplicate ownership")
+        row_of = {i: row for row, pair in enumerate(cells) for cell in pair for i in cell}
+        overflowing = {a for a, b in overlaps
+                       if a in row_of and b in row_of and row_of[a] < row_of[b]}
+        if not overflowing:
+            continue
+        if type(source.page_number) is not int or source.page_number <= 0:
+            raise ValueError("Exact physical page number required")
+        if (any(i not in groups for i in all_ids)
+                or any(not re.fullmatch(r"\d+(?:\.\d+)*\.?", row[0]) or not row[1]
+                       for row in texts[1:])):
+            raise ValueError("Complete numbered historical cells required")
+        selected = [c for c in chars if c.get("mcid") in row_of]
+        top = min(c["top"] for c in selected)
+        bottom = max(c["bottom"] for c in selected)
+        if any(c.get("mcid") not in row_of and c.get("text", "").strip()
+               and c["top"] < bottom and c["bottom"] > top for c in chars):
+            raise ValueError("Historical table overlaps unrelated page content")
+        if any(top < end and bottom > start for start, end, _, _ in replacements):
+            raise ValueError("Historical tables overlap")
+        for row_index, pair in enumerate(cells):
+            for column, ids in enumerate(pair):
+                if overflowing.intersection(ids):
+                    qualifications.append({
+                        "kind": "tagged_table_cell_overlap",
+                        "pdf_page": source.page_number,
+                        "table_index": table_index,
+                        "row_label": texts[row_index][0],
+                        "cell_mcids": list(ids),
+                        "cell_text": texts[row_index][column],
+                        "disposition": "qualified_embedded_text_visible_fidelity_unconfirmed",
+                        "requires_human_review": True,
+                    })
+        assigned.update(all_ids)
+        replacements.append((top, bottom, set(all_ids),
+                             "\n".join(" ".join(row) for row in texts)))
+    if not replacements:
+        return None
+    remaining = [c for c in chars if c.get("mcid") not in assigned]
+    parts = []
+    for top, _, _, table_text in sorted(replacements):
+        before = [c for c in remaining if c["top"] < top]
+        remaining = [c for c in remaining if c["top"] >= top]
+        parts.extend((text_of(before), table_text))
+    parts.append(text_of(remaining))
+    return "\n".join(part for part in parts if part.strip())
+
+
+def _page_text(source, *, qualifications=None) -> str:
+    if qualifications is not None and type(qualifications) is not list:
+        raise TypeError("Layout qualification list required")
+    qualifications = qualifications if qualifications is not None else []
     chars = source.chars
     aligned = _inline_fraction_chars(chars)
+    table_text = _historical_table_text(source, aligned, qualifications)
+    if table_text is not None:
+        return table_text
     if aligned == chars:
         return source.extract_text() or ""
     from pdfplumber.utils import chars_to_textmap
@@ -893,7 +1066,8 @@ def read_pages(
             try:
                 if visible_only:
                     source = page.within_bbox(page.bbox)
-                text = _page_text(source)
+                qualifications = []
+                text = _page_text(source, qualifications=qualifications)
                 method = "pdfplumber"
                 if not text.strip() and _is_plain_background(page):
                     method = "blank"
@@ -901,13 +1075,18 @@ def read_pages(
                     if ocr_enabled and ocr_used < ocr_max_pages:
                         ocr_text = _ocr_page(pdf_path, i + 1)
                         ocr_used += 1
-                        if ocr_text.strip() and cid_ratio(ocr_text) <= CID_REJECT_RATIO:
+                        # OCR observes the rendering, where an overlapping
+                        # tagged cell may be clipped. It cannot silently remove
+                        # the embedded source's visible-fidelity hold.
+                        if (ocr_text.strip() and cid_ratio(ocr_text) <= CID_REJECT_RATIO
+                                and not qualifications):
                             text, method = ocr_text, "ocr"
                         else:
                             method = "rejected"
                     else:
                         method = "rejected"
-                pages.append(PageText(page_number=i + 1, text=text, method=method))
+                pages.append(PageText(page_number=i + 1, text=text, method=method,
+                                      layout_qualifications=qualifications))
             finally:
                 # Only text survives this iteration. Retaining hundreds of
                 # Page layout/glyph caches can exhaust a bounded PDF worker.
@@ -966,6 +1145,8 @@ def finding_to_extracted_json(f: BlueBookFinding, fy: Optional[str]) -> dict:
         "amounts": f.amounts,
         "extraction_method": f.method,
     }
+    if f.layout_qualifications:
+        payload["layout_qualifications"] = [dict(q) for q in f.layout_qualifications]
     if f.report_kind == "statutory_reporting":
         # Statutory reporting observations are retained verbatim and labelled
         # neutral. An earlier subreport's adverse opinion cannot leak here.
