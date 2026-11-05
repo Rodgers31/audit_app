@@ -17,7 +17,8 @@ def edition():
 
 def framework():
     split = ff.split_for_fiscal_year(edition(), "FY 2023/24", known_ordinary_revenue=2288.9)
-    return ff.framework_payload(split, source_url="https://treasury.go.ke/book.pdf", page=63)
+    from fiscal_evidence import bind_framework
+    return bind_framework(ff.framework_payload(split, source_url="https://treasury.go.ke/book.pdf", page=63))
 
 
 def outturn(meta):
@@ -119,7 +120,8 @@ def test_unknown_header_is_not_inferred_from_old_fiscal_year():
     table = ff.parse_annex_lines(lines, page=63)
     split = ff.gate_column(table, 0, fiscal_year="FY 2023/24", identified_by="revenue_column")
     assert split.column_label is None
-    payload = ff.framework_payload(split, source_url="https://treasury.go.ke/book.pdf", page=63)
+    from fiscal_evidence import bind_framework
+    payload = bind_framework(ff.framework_payload(split, source_url="https://treasury.go.ke/book.pdf", page=63))
     row = outturn({"fiscal_framework": payload})
     assert row["column"] == "Vintage unconfirmed"
     assert row["balance"] == -880.5
@@ -158,7 +160,8 @@ def test_stored_missing_vintage_does_not_guess_from_period():
 def test_all_parser_identified_vintages_survive_publication(fy, revenue, label):
     """Use captured publisher headers, including Suppl.1, as positive controls."""
     split = ff.split_for_fiscal_year(edition(), fy, known_ordinary_revenue=revenue)
-    data = ff.framework_payload(split, source_url="https://treasury.go.ke/book.pdf", page=63)
+    from fiscal_evidence import bind_framework
+    data = bind_framework(ff.framework_payload(split, source_url="https://treasury.go.ke/book.pdf", page=63))
     row = fiscal_outturn(SimpleNamespace(meta={"fiscal_framework": data}, fiscal_year=fy))
     assert row["column"] == label
     assert row["balance"] is not None

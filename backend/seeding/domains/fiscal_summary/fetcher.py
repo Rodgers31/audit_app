@@ -202,6 +202,42 @@ def fetch_fiscal_summary_payload(
             framework_status = f"error({type(exc).__name__})"
             logger.warning("Treasury fiscal framework step skipped: %s", exc)
 
+    if settings.live_pdf_fetch_enabled:
+        try:
+            from .actuals import apply_apdmr, fetch_apdmr, FY
+            actuals = fetch_apdmr(client, settings)
+            payload = apply_apdmr(payload, actuals)
+            from services.response_receipts import receipt_is_sealed
+            receipt = actuals.get("_response_receipt")
+            current_acquisition = bool(receipt_is_sealed(receipt)
+                and receipt.get("byte_check", {}).get("status") == "matched"
+                and receipt.get("acquired_at"))
+            if current_acquisition:
+                refreshed_revenue_years.add(FY)
+            payload.setdefault("_run_facts", {})["historical_actuals"] = {
+                "state": "live" if current_acquisition else "retained_origin_unconfirmed",
+                "fiscal_year": FY, "contract": "fiscal-measures-v1",
+            }
+        except Exception as exc:
+            payload.setdefault("_run_facts", {})["historical_actuals"] = {
+                "state": "unavailable", "reason": type(exc).__name__ + ": " + str(exc),
+            }
+
+    if settings.live_pdf_fetch_enabled:
+        try:
+            from .actuals import fetch_brop, FY
+            observation = fetch_brop(client, settings)
+            target = next(row for row in payload["fiscal_years"] if row.get("fiscal_year") == FY)
+            target["tax_split_observation"] = observation
+            payload.setdefault("_run_facts", {})["brop_split_observation"] = {
+                "state": "reviewed_transcription", "fiscal_year": FY,
+                "qualification": "separate rounded observation; not an APDMR split",
+            }
+        except Exception as exc:
+            payload.setdefault("_run_facts", {})["brop_split_observation"] = {
+                "state": "unavailable", "reason": type(exc).__name__ + ": " + str(exc),
+            }
+
     # A successful budget overlay alone cannot establish complete revenue,
     # framework and historical-edition coverage for the whole domain.
     from ...freshness import mark_fixture, mark_live, mark_partial
@@ -314,7 +350,8 @@ def _fetch_budget_estimates(
 
     try:
         estimates = dataclasses.replace(
-            extract_budget_estimates(pdf_path, fiscal_year), source_url=found.url
+            extract_budget_estimates(pdf_path, fiscal_year), source_url=found.url,
+            source_sha256=__import__("hashlib").sha256(Path(pdf_path).read_bytes()).hexdigest()
         )
     except BudgetEstimatesError as exc:
         logger.warning(
@@ -482,7 +519,6 @@ def _apply_revenue_estimates(payload, series, *, refreshed_years=None):
 LISTING_NEWEST_FY_FACT = "budget_summary_listing_newest_fy"
 LISTING_EDITIONS_FACT = "budget_summary_editions"
 
-
 class _UncacheableOCRResults(Exception):
     def __init__(self, records):
         super().__init__("OCR unavailable; retain refusal details but retry next invocation")
@@ -575,8 +611,7 @@ def _fetch_budget_summary_editions(client, settings):
         facts[LISTING_EDITIONS_FACT][url] = entry
         try:
             pdf_path = get_or_download_pdf(
-                client,
-                url,
+                client, url,
                 cache_dir=Path(settings.cache_path) / "pdfs",
                 ttl_seconds=settings.pdf_cache_ttl_seconds,
                 max_seconds=settings.pdf_download_timeout_seconds,
@@ -604,6 +639,9 @@ def _fetch_budget_summary_editions(client, settings):
         try:
             entry["fiscal_year"] = edition_fiscal_year(pages, fiscal_year=link_fy)
             edition = read_edition(pages, fiscal_year=entry["fiscal_year"])
+            from dataclasses import replace
+            import hashlib
+            edition = replace(edition, source_sha256=hashlib.sha256(Path(pdf_path).read_bytes()).hexdigest())
         except FiscalFrameworkError as exc:
             entry["status"] = f"refused:{exc.reason}"
             entry["detail"] = exc.detail
@@ -625,7 +663,38 @@ def _fetch_budget_summary_editions(client, settings):
     return editions, facts
 
 
+def _validate_measure_contracts(payload):
+    from services.fiscal_qualification import VERSION
+    if not isinstance(payload, dict) or not isinstance(payload.get("fiscal_years", []), list):
+        raise ValueError("invalid fiscal payload")
+    for row in payload.get("fiscal_years", []):
+        if not isinstance(row, dict):
+            raise ValueError("invalid fiscal row")
+        contract = row.get("fiscal_measure_contract")
+        if contract is not None and (
+            not isinstance(contract, dict) or contract.get("version") != VERSION
+            or not isinstance(contract.get("measures"), dict)
+        ):
+            raise ValueError("invalid or unknown fiscal measure contract")
+
+
 def _apply_fiscal_framework(payload, editions, *, refreshed_revenue_years=None):
+    """Commit an accepted overlay atomically, including its refresh credit."""
+    from copy import deepcopy
+    _validate_measure_contracts(payload)
+    candidate = deepcopy(payload)
+    credited = set()
+    result, status = _apply_fiscal_framework_candidate(
+        candidate, editions, refreshed_revenue_years=credited,
+    )
+    payload.clear()
+    payload.update(result)
+    if refreshed_revenue_years is not None:
+        refreshed_revenue_years.update(credited)
+    return payload, status
+
+
+def _apply_fiscal_framework_candidate(payload, editions, *, refreshed_revenue_years=None):
     """Write each fiscal year's gated split onto its row. Pure; idempotent.
 
     For every row, editions are tried newest first and the first one that
@@ -734,6 +803,7 @@ def _apply_fiscal_framework(payload, editions, *, refreshed_revenue_years=None):
             continue
 
         framework = framework_payload(split, source_url=url, page=edition.table.page)
+        framework["source"]["sha256"] = edition.source_sha256
         framework["source"]["edition"] = f"Budget Summary for the {edition.fiscal_year} Budget"
         framework["source"]["column_identification"] = (
             "Approved budget (identified by the narrative)"
@@ -781,6 +851,22 @@ def _apply_fiscal_framework(payload, editions, *, refreshed_revenue_years=None):
                 )
         else:
             row["tax_split_absent_reason"] = split.tax_split_reason
+        # Only the source parser's accepted column can issue measure evidence.
+        # Retained columns and cross-document joins never receive a new proof.
+        from services.fiscal_qualification import VERSION, measure_evidence
+        contract = row.setdefault("fiscal_measure_contract", {"version": VERSION, "measures": {}})
+        proofs = contract["measures"]
+        source = framework["source"]
+        for field in ("total_borrowing", "recurrent_spending", "development_spending", "county_allocation"):
+            proofs[field] = measure_evidence(row[field] * 1e9, fy, FISCAL_FRAMEWORK_BASIS,
+                                            source["column"], 100_000_000, dict(source))
+        if row.get("revenue_basis") == "ordinary_revenue_excl_aia" and (same_document or row.get("_revenue_source") == "treasury_budget_summary_annex_live"):
+            proofs["total_revenue"] = measure_evidence(row["total_revenue"] * 1e9, fy,
+                "ordinary_revenue_excl_aia", source["column"], 100_000_000, dict(source))
+        if split.tax_split_ok and not row.get("tax_split_absent_reason"):
+            for field in ("tax_revenue", "non_tax_revenue"):
+                proofs[field] = measure_evidence(row[field] * 1e9, fy,
+                    "ordinary_revenue_excl_aia", source["column"], 100_000_000, dict(source))
         applied.append(fy)
 
     status = f"applied={applied}" if applied else "none_applied"
@@ -789,7 +875,16 @@ def _apply_fiscal_framework(payload, editions, *, refreshed_revenue_years=None):
     return payload, status
 
 
-def _apply_budget_estimates(
+def _apply_budget_estimates(payload, estimates):
+    from copy import deepcopy
+    _validate_measure_contracts(payload)
+    result, status = _apply_budget_estimates_candidate(deepcopy(payload), estimates)
+    payload.clear()
+    payload.update(result)
+    return payload, status
+
+
+def _apply_budget_estimates_candidate(
     payload: Dict[str, Any], estimates
 ) -> tuple[Dict[str, Any], str]:
     """INSERT (or refresh) the fiscal year the enacted estimates describe.
@@ -845,6 +940,7 @@ def _apply_budget_estimates(
             float(estimates.debt_redemption_kes) / 1e9, 1
         )
     row["budget_basis_source"] = {
+        "sha256": getattr(estimates, "source_sha256", None),
         "title": f"Programme Based Budget {estimates.fiscal_year} (Approved)",
         "publisher": "The National Treasury",
         "url": getattr(estimates, "source_url", None),
@@ -868,6 +964,30 @@ def _apply_budget_estimates(
     }
     row["_budget_source"] = "treasury_budget_estimates_live"
     fiscal_years.sort(key=lambda r: str(r.get("fiscal_year", "")))
+    from services.fiscal_qualification import VERSION, measure_evidence
+    contract = row.setdefault("fiscal_measure_contract", {"version": VERSION, "measures": {}})
+    contract["measures"]["appropriated_budget"] = measure_evidence(
+        budget * 1e9, estimates.fiscal_year, CANONICAL_BUDGET_BASIS, "Approved",
+        100_000_000, dict(row["budget_basis_source"]),
+    )
+    # Only the parsed CFS interest-and-redemption row can supply debt service.
+    debt_service = getattr(estimates, "debt_service_kes", None)
+    if debt_service is not None:
+        from services.fiscal_outturns import finite_number
+        if finite_number(debt_service) is None:
+            raise ValueError("invalid parsed CFS debt service")
+        source = {
+            "title": row["budget_basis_source"]["title"],
+            "publisher": "The National Treasury", "url": estimates.source_url,
+            "page": f"CFS interest & redemption, PDF p.{estimates.page_refs.get('cfs_summary')}",
+            "sha256": getattr(estimates, "source_sha256", None),
+        }
+        row["debt_service_cost"] = round(float(debt_service) / 1e9, 1)
+        row["debt_service_source"] = source
+        contract["measures"]["debt_service_cost"] = measure_evidence(
+            row["debt_service_cost"] * 1e9, estimates.fiscal_year,
+            "total_debt_service_interest_and_principal", "Approved", 100_000_000, source,
+        )
     return payload, ("created" if created else "updated")
 
 

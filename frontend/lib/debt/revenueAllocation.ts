@@ -28,6 +28,7 @@ import {
 } from '@/lib/fiscal/framework';
 
 export interface FiscalCurrent {
+  measure_qualifications?: Record<string, { vintage: string; source: { sha256: string } }>;
   fiscal_year?: string;
   /** Any unit — only its ratio to debt_service_cost is used. */
   total_revenue?: number | null;
@@ -92,6 +93,8 @@ export function computeRevenueBreakdown(
   const uses = frameworkUses(ff);
   const sources = frameworkSources(ff);
   if (!uses || !sources) return null;
+  const proof = c?.measure_qualifications?.total_revenue;
+  if (!proof || !ff?.source?.sha256 || proof.source.sha256 !== ff.source.sha256 || proof.vintage !== ff.source.column) return null;
   const rev = sources.ordinaryRevenue;
   if (!(rev > 0)) return null;
   // The headline divides by the row's revenue; the breakdown by the
@@ -125,8 +128,8 @@ export function computeRevenueAllocation(
   const ds = c.debt_service_cost;
   if (rev == null || rev <= 0 || ds == null) return null;
 
-  const debtServicePerRev =
-    c.debt_service_per_shilling != null ? c.debt_service_per_shilling : (ds / rev) * 100;
+  const debtServicePerRev = c.debt_service_per_shilling;
+  if (typeof debtServicePerRev !== "number" || !Number.isFinite(debtServicePerRev) || debtServicePerRev < 0) return null;
 
   return {
     rev,

@@ -494,6 +494,7 @@ class Edition:
     approved_index: int
     narrative_score: Tuple[int, int]
     narrative_pages: Tuple[int, int]
+    source_sha256: Optional[str] = None
 
 
 def _normalise_fy(label: str) -> Optional[str]:
@@ -746,6 +747,8 @@ def framework_payload(split: FrameworkSplit, *, source_url: Optional[str], page:
 
     out = {
         "basis": FISCAL_FRAMEWORK_BASIS,
+        "fiscal_year": split.fiscal_year,
+        "precision_kes": 100_000_000,
         "identified_by": split.identified_by,
         "total_expenditure_billion": b("expenditure"),
         "recurrent_billion": b("recurrent"),

@@ -46,6 +46,7 @@ def seed_fiscal_and_budget(db_session, seed_country, seed_source_doc):
         page_ref="s.3.2, report p.16 (PDF p.37)",
         meta={"fiscal_framework": {
             "basis": "treasury_fiscal_framework",
+            "fiscal_year": "FY2023/24",
             "source": {"url": "https://www.treasury.go.ke/test-framework.pdf", "page": 37, "column": "Actual"},
             "total_revenue_incl_aia_billion": 2450,
             "total_expenditure_billion": 3200,
@@ -72,6 +73,8 @@ def seed_fiscal_and_budget(db_session, seed_country, seed_source_doc):
         # Tier B (#137): a published fiscal row cites a page.
         page_ref="s.3.2, report p.16 (PDF p.37)",
     )
+    from fiscal_evidence import bind_framework
+    bind_framework(fs_complete.meta["fiscal_framework"])
     db_session.add_all([fs_complete, fs_incomplete])
     db_session.flush()
 

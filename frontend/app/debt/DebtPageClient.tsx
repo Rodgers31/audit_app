@@ -30,6 +30,7 @@ import {
   formatHeadlineKes,
   ratioWorking,
 } from '@/lib/debt/revenueAllocation';
+import FiscalMeasureDisclosure from '@/components/budget/FiscalMeasureDisclosure';
 import { annualCostCell, rateCell, sortLoans } from '@/lib/debt/loanInterest';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import {
@@ -800,6 +801,13 @@ export default function NationalDebtPage() {
           Restore per-metric, each against the indicator it actually names. */}
 
       {/* ═══════════ SECTION 6 — REVENUE ALLOCATION ═══════════ */}
+      {!taxAllocation && fiscal?.current && (
+        <section className='rounded-2xl border border-neutral-border/40 bg-white dark:bg-surface-base p-5 text-sm text-neutral-muted'>
+          <h2 className='font-semibold text-gov-dark dark:text-white'>Debt service and ordinary revenue · {fiscal.current.fiscal_year}</h2>
+          <p>The debt-service share is withheld until compatible source, period and vintage evidence is confirmed.</p>
+          <FiscalMeasureDisclosure qualifications={fiscal.current.measure_qualifications} absentReasons={fiscal.current.absent_reasons} taxObservation={fiscal.current.tax_split_observation} />
+        </section>
+      )}
       {taxAllocation && (
         <motion.section
           initial={{ opacity: 0, y: 20 }}

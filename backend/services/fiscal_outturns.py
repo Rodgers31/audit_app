@@ -51,7 +51,11 @@ def fiscal_outturn(row):
         "measure": "Revenue includes A-i-A; expenditure and net lending includes county transfers and contingency; balance includes grants.",
         "absent_reason": "No complete, reconciled fiscal-framework column with a source is available.",
     }
-    if framework.get("basis") != "treasury_fiscal_framework" or not has_source_locator(source):
+    from services.fiscal_qualification import valid_source, fiscal_year_key
+    if (framework.get("basis") != "treasury_fiscal_framework"
+            or fiscal_year_key(row.fiscal_year) is None
+            or fiscal_year_key(framework.get("fiscal_year")) != fiscal_year_key(row.fiscal_year)
+            or not valid_source(source)):
         return result
     fields = {
         "revenue": "total_revenue_incl_aia_billion", "expenditure": "total_expenditure_billion",

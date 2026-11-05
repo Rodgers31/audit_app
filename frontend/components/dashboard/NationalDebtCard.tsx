@@ -180,7 +180,7 @@ export default function NationalDebtCard() {
   const apiData = resp?.data || resp;
   const sustainability = apiData?.debt_sustainability || {};
   const debtServiceRatio =
-    fiscal?.current?.debt_service_per_shilling ?? sustainability.debt_service_ratio ?? null;
+    fiscal?.current?.debt_service_per_shilling ?? null;
 
   const firstYear = debtTimeline[0];
   const lastYear = debtTimeline[debtTimeline.length - 1];

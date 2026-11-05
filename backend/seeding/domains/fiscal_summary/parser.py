@@ -57,15 +57,24 @@ class FiscalSummaryRecord:
     #: so rather than drawing a bare gap.
     fiscal_framework_absent_reason: str | None = None
     tax_split_absent_reason: str | None = None
+    fiscal_measure_contract: dict[str, Any] | None = None
+    tax_split_observation: dict[str, Any] | None = None
+    source_evidence: list[dict[str, Any]] | None = None
 
 
 def _safe_float(val: Any) -> float | None:
     if val is None:
         return None
+    if isinstance(val, bool):
+        raise ValueError("boolean is not a fiscal amount")
     try:
-        return float(val)
-    except (ValueError, TypeError):
-        return None
+        number = float(val)
+        from math import isfinite
+        if not isfinite(number):
+            raise ValueError("nonfinite fiscal amount")
+        return number
+    except (ValueError, TypeError) as exc:
+        raise ValueError("malformed fiscal amount") from exc
 
 
 def _derive_debt_service_per_shilling(
@@ -153,6 +162,9 @@ def parse_fiscal_summary_payload(payload: dict[str, Any]) -> list[FiscalSummaryR
         logger.warning("No fiscal_years entries found in payload")
         return []
 
+    labels = [fy.get("fiscal_year") for fy in fiscal_years]
+    if len(set(labels)) != len(labels):
+        raise ValueError("duplicate fiscal year")
     records: list[FiscalSummaryRecord] = []
     for fy in fiscal_years:
         label = fy.get("fiscal_year")
@@ -204,6 +216,9 @@ def parse_fiscal_summary_payload(payload: dict[str, Any]) -> list[FiscalSummaryR
                 split_basis=fy.get("split_basis"),
                 fiscal_framework_absent_reason=fy.get("fiscal_framework_absent_reason"),
                 tax_split_absent_reason=fy.get("tax_split_absent_reason"),
+                fiscal_measure_contract=fy.get("fiscal_measure_contract"),
+                tax_split_observation=fy.get("tax_split_observation"),
+                source_evidence=fy.get("source_evidence"),
             )
         )
 

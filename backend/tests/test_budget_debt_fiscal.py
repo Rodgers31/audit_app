@@ -399,6 +399,8 @@ def seed_debt_sustainability(db_session, seed_country, seed_source_doc):
         # Tier B (#137): a published fiscal row cites a page.
         page_ref="s.3.2, report p.16 (PDF p.37)",
     )
+    from fiscal_evidence import qualify_synthetic_row
+    qualify_synthetic_row(fs)
     db_session.add(fs)
     db_session.commit()
     return entity

@@ -6,8 +6,26 @@ import { apiClient } from './axios';
 import { apiGet } from './request';
 import { FISCAL_ENDPOINTS } from './endpoints';
 
+export interface FiscalMeasureQualification {
+  value_kes: number;
+  fiscal_year: string;
+  basis: string;
+  vintage: string;
+  precision_kes: number;
+  source: { title?: string; url: string; page: string | number; sha256: string };
+}
+
+export interface FiscalTaxObservation {
+  fiscal_year: string; ordinary_revenue_billion: number; tax_revenue_billion: number;
+  non_tax_revenue_billion: number; precision_kes: number; disclosure: string;
+  source: { title: string; url: string; page: string };
+}
+
 export interface FiscalYearData {
   fiscal_year: string;
+  absent_reasons?: Record<string, string>;
+  measure_qualifications?: Record<string, FiscalMeasureQualification>;
+  tax_split_observation?: FiscalTaxObservation | null;
   /** Declared unit of the money fields. "KES" = raw KES (stage1 3a
    *  migration). Absent on a pre-migration backend, whose values are
    *  bare billions — convert with toRawKES(), never by guessing. */

@@ -30,7 +30,8 @@ def test_framework_preserves_printed_column(fy, revenue, column):
 ])
 def test_outturns_use_published_framework(client, db_session, seed_source_doc, fy, revenue, expenditure, balance, financing):
     split = ff.split_for_fiscal_year(edition(), fy, known_ordinary_revenue=revenue)
-    framework = ff.framework_payload(split, source_url="https://treasury.go.ke/book.pdf", page=63)
+    from fiscal_evidence import bind_framework
+    framework = bind_framework(ff.framework_payload(split, source_url="https://treasury.go.ke/book.pdf", page=63))
     db_session.add(FiscalSummary(fiscal_year=fy, total_revenue=revenue*1e9,
                                 recurrent_spending=float(split.values["recurrent"])*1e9,
                                 development_spending=float(split.values["development"])*1e9,

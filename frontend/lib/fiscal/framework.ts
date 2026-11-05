@@ -59,6 +59,7 @@ export interface FiscalFramework {
   tax_heads_billion?: Record<string, number | null>;
   tax_split_absent_reason?: string | null;
   source?: {
+    sha256?: string;
     title?: string;
     publisher?: string;
     url?: string | null;
