@@ -131,6 +131,12 @@ def create_request_engine(url, connect_args):
         use_deadline=True)
 
 
+def create_verification_engine(url, connect_args):
+    """One request-scoped verification child; no inherited or overflow clients."""
+    return _create_engine(url, connect_args, pool_size=1, pool_timeout=.5,
+        statement_ms=2000, lock_ms=500, use_deadline=True)
+
+
 def create_audit_reader_engine(url, connect_args):
     return _create_engine(url, connect_args, pool_size=AUDIT_READER_POOL_SIZE,
         pool_timeout=AUDIT_READER_POOL_TIMEOUT, statement_ms=AUDIT_READER_STATEMENT_MS,

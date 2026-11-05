@@ -505,6 +505,10 @@ class ConnectionService:
             raise SocialError('PRIVACY_GRANT_BLOCKED', 'A retained privacy request blocks fresh proof for this saved grant. Resolve its ownership before reconnecting or verifying.')
 
     def verify_existing_grant(self, account_id, actor, binding, route, key, body, request_id):
+        from .verification_execution import execute
+        return execute(self, account_id, actor, binding, route, key, body, request_id)
+
+    def _verify_existing_grant(self, account_id, actor, binding, route, key, body, request_id):
         """Read-only provider phase, followed by fenced paused-account admission."""
         from .contracts import ExistingGrantVerificationCommand
         from ..account_publishing import account_publishing

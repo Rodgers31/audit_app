@@ -114,6 +114,13 @@ class MetaProvider:
 
     def _request(self, method, path, *, token=None, params=None, data=None):
         # Path is internal, never derived from a returned provider URL.
+        from .verification_budget import MAX_BODY_BYTES, current_budget
+        budget = current_budget.get()
+        timeout = {}
+        if budget is not None:
+            budget.request(method)
+            remaining = budget.remaining()
+            timeout['timeout'] = httpx.Timeout(min(15.0, remaining), connect=min(5.0, remaining))
         headers = {'Accept-Encoding': 'identity'}
         if token:
             headers['Authorization'] = 'Bearer ' + token
@@ -121,20 +128,26 @@ class MetaProvider:
             public_params, private_params = {}, {}
             for key, value in (params or {}).items():
                 (private_params if key in {'input_token','appsecret_proof'} else public_params)[key] = value
-            request = self.client.build_request(method, f'https://graph.facebook.com/{self.config.graph_version}/{path}', params=public_params, data=data, headers=headers, extensions={'meta_secret_query': private_params})
+            request = self.client.build_request(method, f'https://graph.facebook.com/{self.config.graph_version}/{path}', params=public_params, data=data, headers=headers, extensions={'meta_secret_query': private_params}, **timeout)
             response = self.client.send(request, stream=True)
             try:
+                if budget is not None:
+                    budget.remaining()
                 # Stream raw identity bytes before allocation; reject unexpected
                 # compression rather than letting a decompression bomb expand.
                 if response.headers.get('content-encoding', 'identity').lower() != 'identity':
                     raise ValueError()
                 chunks, size, started = [], 0, time.monotonic()
-                for chunk in response.iter_bytes(chunk_size=16384):
+                for chunk in response.iter_bytes():
                     size += len(chunk)
-                    if size > 1_000_000 or time.monotonic() - started > 30:
+                    if size > MAX_BODY_BYTES or time.monotonic() - started > 30:
                         raise ValueError()
+                    if budget is not None:
+                        budget.body(len(chunk))
                     chunks.append(chunk)
                 value = json.loads(b''.join(chunks))
+                if budget is not None:
+                    budget.remaining()
             finally:
                 response.close()
         except httpx.HTTPError:
@@ -223,7 +236,10 @@ class MetaProvider:
         _identity(page_id)
         if any(type(token) is not str or not token or len(token) > 16384 for token in (user_token, page_token)):
             raise SocialError('CREDENTIAL_UNREADABLE', 'The saved grant is incomplete. Reconnect this account.', 503)
-        return self._inspect_user_grant(user_token, selected_page=(page_id, page_token))
+        from .verification_budget import VerificationBudget, current_budget
+        budget = current_budget.get() or VerificationBudget()
+        with budget.activate():
+            return self._inspect_user_grant(user_token, selected_page=(page_id, page_token))
 
     def _inspect_user_grant(self, token, selected_page=None):
         metadata = self.inspect_token(token, expected_type='USER')
