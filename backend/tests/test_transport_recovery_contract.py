@@ -132,3 +132,33 @@ def test_incomplete_status_cannot_recover_via_location(tmp_path,status,with_loca
         assert client.download_receipt(URL) is None
     assert calls==[URL]
     assert not list((tmp_path/'retained').rglob('*'))
+
+
+@pytest.mark.parametrize("slow_phase", ["rate_limit", "connect", "body"])
+def test_pdf_wall_clock_interrupts_blocking_phases(tmp_path, slow_phase):
+    import time
+    from contextlib import contextmanager
+    from seeding.http_client import PdfDownloadIncomplete
+    calls=[]
+    class Limiter:
+        @contextmanager
+        def context(self):
+            if slow_phase == "rate_limit": time.sleep(.4)
+            yield
+    class SlowBody(httpx.SyncByteStream):
+        def __iter__(self):
+            time.sleep(.4)
+            yield b"%PDF-1.7\nbody\n%%EOF"
+    def handler(request):
+        calls.append(True)
+        if slow_phase == "connect": time.sleep(.4)
+        return httpx.Response(200, stream=SlowBody() if slow_phase == "body" else httpx.ByteStream(b"%PDF-1.7\n%%EOF"))
+    started=time.monotonic()
+    with SeedingHttpClient(settings(tmp_path), rate_limiter=Limiter(), client=httpx.Client(transport=httpx.MockTransport(handler))) as client:
+        with pytest.raises(PdfDownloadIncomplete):
+            client.download_to_file(URL, tmp_path/"deadline.pdf", max_seconds=.03)
+        assert client.download_receipt(URL) is None
+    assert time.monotonic()-started < .25
+    assert not (tmp_path/"deadline.pdf").exists()
+    assert not list(tmp_path.glob("deadline.pdf.*.part"))
+    if slow_phase == "rate_limit": assert not calls

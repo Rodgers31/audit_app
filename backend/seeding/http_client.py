@@ -568,7 +568,9 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
 
                 mode = "ab" if offset else "wb"
                 try:
-                    with self._rate_limiter.context():
+                    # Interrupt blocking limiter, DNS/connect and read phases;
+                    # per-operation timeouts cannot bound total acquisition.
+                    with _wall_clock_budget(remaining), self._rate_limiter.context():
                         with self._client_for(url).stream(
                             "GET", url, headers=request_headers, timeout=httpx.Timeout(min(remaining, 30.0), connect=min(remaining, 15.0))
                         ) as response:
