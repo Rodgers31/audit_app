@@ -428,6 +428,9 @@ def parse_public_debt_table(page_text: str) -> Dict[int, Dict[str, Decimal]]:
         month = _MONTH_NUMBER[month_name]
         # FY label "2025/2026": Jul-Dec -> 2025, Jan-Jun -> 2026.
         year = fy_start if month >= 7 else fy_start + 1
+        if (year, month) > (date.today().year, date.today().month):
+            logger.warning("CBK 4.1.3 future month %04d-%02d refused as observed stock", year, month)
+            continue
         if year in best_month and best_month[year] >= month:
             continue
         best_month[year] = month

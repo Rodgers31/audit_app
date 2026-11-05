@@ -161,6 +161,10 @@ def write_debt_timeline_records(
     metadata: dict[str, Any],
 ) -> tuple[int, int]:
     """Upsert debt timeline records into the database (raw KES)."""
+    from .parser import parse_debt_timeline_payload
+    # Preflight the entire batch even for programmatic callers, before any
+    # source creation, receipt association or row mutation.
+    parse_debt_timeline_payload({"timeline": [dict(vars(record)) for record in records]})
     created = 0
     updated = 0
 

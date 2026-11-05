@@ -60,7 +60,7 @@ def _enrich_with_wb_gdp(
     try:
         gdp_by_year = _fetch_wb_gdp(client)
     except Exception as exc:
-        logger.warning("World Bank GDP API unavailable, using fixture GDP: %s", exc)
+        logger.warning("World Bank GDP API unavailable; retained GDP is not a fresh observation: %s", exc)
         base.setdefault("metadata", {}).setdefault("refresh_components", {})["gdp"] = {
             "state": "unavailable", "reason": "worldbank_response_unavailable",
         }
@@ -143,13 +143,13 @@ def _overlay_cbk_public_debt(
         if not live:
             continue
         before = entry.get("total")
-        entry["external"] = float(live["external"]) / 1e9
-        entry["domestic"] = float(live["domestic"]) / 1e9
-        entry["total"] = float(live["total"]) / 1e9
+        entry["external"] = Decimal(str(live["external"])) / Decimal("1e9")
+        entry["domestic"] = Decimal(str(live["domestic"])) / Decimal("1e9")
+        entry["total"] = Decimal(str(live["total"])) / Decimal("1e9")
         entry["source"] = "CBK Statistical Bulletin Table 4.1.3"
         entry.update(_stock_evidence(live))
         applied += 1
-        if before and abs(before - entry["total"]) > 1:
+        if before and abs(Decimal(str(before)) - entry["total"]) > 1:
             logger.info(
                 "CBK overlay corrected %d total: %.1fB -> %.1fB",
                 year,
@@ -173,9 +173,9 @@ def _overlay_cbk_public_debt(
         timeline.append(
             {
                 "year": year,
-                "external": float(live["external"]) / 1e9,
-                "domestic": float(live["domestic"]) / 1e9,
-                "total": float(live["total"]) / 1e9,
+                "external": Decimal(str(live["external"])) / Decimal("1e9"),
+                "domestic": Decimal(str(live["domestic"])) / Decimal("1e9"),
+                "total": Decimal(str(live["total"])) / Decimal("1e9"),
                 # gdp/gdp_ratio are filled by the World Bank pass that runs
                 # after this one; leaving them absent is correct until then.
                 "gdp": None,
@@ -187,7 +187,7 @@ def _overlay_cbk_public_debt(
         created += 1
         logger.info(
             "CBK overlay ADDED %d: total %.1fB (not previously in the series)",
-            year, float(live["total"]) / 1e9,
+            year, Decimal(str(live["total"])) / Decimal("1e9"),
         )
     if created:
         timeline.sort(key=lambda e: e.get("year") or 0)
