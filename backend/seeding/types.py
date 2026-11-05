@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 if TYPE_CHECKING:
     from .exclusion import DomainExecution
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictBool
 
 
 @dataclass
@@ -35,10 +35,10 @@ class DomainRunResult(BaseModel):
     domain: str
     started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     finished_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    items_processed: int = 0
-    items_created: int = 0
-    items_updated: int = 0
-    dry_run: bool = False
+    items_processed: int = Field(default=0, strict=True, ge=0, le=2147483647)
+    items_created: int = Field(default=0, strict=True, ge=0, le=2147483647)
+    items_updated: int = Field(default=0, strict=True, ge=0, le=2147483647)
+    dry_run: StrictBool = False
     errors: List[str] = Field(default_factory=list)
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
