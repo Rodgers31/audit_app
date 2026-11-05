@@ -93,6 +93,15 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = self.path.split("?")[0]
+        if path == '/large.pdf':
+            if self.headers.get('Range') != 'bytes=0-65535':
+                self.send_response(400); self.end_headers(); return
+            self.send_response(206)
+            self.send_header('Content-Range','bytes 0-65535/34055119')
+            self.send_header('Content-Length','65536')
+            self.end_headers()
+            self.wfile.write(b'x'*65536)
+            return
         if path == "/hang":
             # Accept, read the request, never answer.
             self.stop.wait(600)
@@ -137,14 +146,14 @@ def host():
 
 def _run(tmp_path: Path, sources: list[str], env: dict | None = None):
     """Run the real step against ``sources``; return (stdout, outputs, secs)."""
-    block = "          SOURCES=(\n" + "".join(f'            "{s}"\n' for s in sources) + "          )\n"
-    script = SOURCES_BLOCK.sub(lambda _: block, HEALTHCHECK, count=1)
+    script = HEALTHCHECK
     out_file = tmp_path / "github_output"
     out_file.write_text("")
     run_env = {
         "PATH": "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin",
         "GITHUB_OUTPUT": str(out_file),
         "GITHUB_STEP_SUMMARY": str(tmp_path / "step_summary"),
+        "HC_SOURCE_INVENTORY": '\n'.join(sources),
         **FAST,
         **(env or {}),
     }
@@ -257,6 +266,7 @@ def test_when_the_job_budget_runs_out_the_rest_are_named_and_outputs_still_writt
     assert int(outputs["unprobed"]) >= 3
     assert outputs.get("has_failures") == "true"
     assert outputs["critical_reachable"] == "false"
+    assert 'CRITICAL|Last|' in outputs['report']
     assert "Health Check Summary" in stdout
     assert secs < 5 + 5, f"a 5s job budget took {secs:.1f}s"
 
@@ -383,6 +393,12 @@ def test_exhausted_critical_timeout_pages_and_cannot_claim_recovery(tmp_path, ho
 def test_successful_critical_probe_is_a_recovery_control(tmp_path, host):
     _, outputs, _ = _run(tmp_path, [f'Critical|{host}/ok|true'])
     assert outputs['critical_reachable'] == 'true'
+
+
+def test_large_editions_use_a_bounded_prefix_without_claiming_full_content(tmp_path,host):
+    stdout,outputs,_=_run(tmp_path,[f'Large reviewed edition|{host}/large.pdf|true'])
+    assert '[OK]   Large reviewed edition (206)' in stdout
+    assert outputs['has_failures']=='false' and outputs['critical_reachable']=='true'
 
 
 def test_auto_close_requires_measured_critical_success():

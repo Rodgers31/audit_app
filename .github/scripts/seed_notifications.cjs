@@ -204,7 +204,7 @@ function healthDescription(needs) {
   // A partial probe is a measured outcome, not a fallback for missing or
   // malformed outputs. Validate the verdict before interpreting its count.
   if (!['true', 'false'].includes(outputs.has_failures)) return '❔ Unknown — missing or malformed health-check verdict';
-  if (outputs.has_failures === 'true') return '⚠️ Some sources were unreachable (may be related)';
+  if (outputs.has_failures === 'true') return '⚠️ Some required source diagnostics failed or remain unprobed (may be related)';
   if (typeof outputs.unprobed !== 'string' || !/^(0|[1-9][0-9]{0,4})$/.test(outputs.unprobed)) {
     return '❔ Unknown — missing or malformed unprobed source count';
   }
@@ -246,7 +246,10 @@ async function report({github, context, core, env = process.env}) {
   if (managed.length > 1) throw new Error('Pipeline incident lookup found multiple managed open incidents');
   const attempt = /^\d{1,5}$/.test(env.PIPELINE_RUN_ATTEMPT) ? env.PIPELINE_RUN_ATTEMPT : 'unknown';
   const observation = `<!-- seed-pipeline-observation:${context.runId}:${attempt} -->`;
-  if (managed[0]?.body.includes(observation)) return;
+  if (managed[0]?.body.includes(observation)) {
+    await core.summary.addRaw('\nManaged incident already records this run attempt. Pipeline failure remains intentional; user notification delivery is unobserved.\n').write();
+    return;
+  }
   const runUrl = `${context.serverUrl}/${scope.owner}/${scope.repo}/actions/runs/${context.runId}`;
   // The source-plan whitelist is the shell boundary. Reporting also excludes
   // arbitrary dispatch values so refused input cannot inject issue Markdown.
@@ -264,6 +267,7 @@ async function report({github, context, core, env = process.env}) {
   const title = `Data pipeline failed: ${failed}`.slice(0, 240);
   if (managed.length) await github.rest.issues.update({...scope, issue_number: managed[0].number, title, body});
   else await github.rest.issues.create({...scope, title, body, labels: ['bug', 'data-pipeline', 'automated']});
+  await core.summary.addRaw(`\nManaged incident ${managed.length ? 'updated' : 'created'} successfully. Pipeline failure remains intentional; user notification delivery is unobserved.\n`).write();
 }
 
 module.exports = {assess, healthDescription, currentRun, validRetention, verifyRefresh, runDescription, report};

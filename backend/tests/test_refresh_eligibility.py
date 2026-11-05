@@ -151,6 +151,8 @@ def execution_fixture():
         cli_executed='true', cli_exit='0', floor=30, run_id='1234', run_attempt='1',
         cli_run_id='1234', cli_run_attempt='1', cli_floor='30',
         cli_started='2026-11-04T02:00:00Z', cli_finished='2026-11-04T02:44:00Z')
+    from seeding.current_run import PRIOR_STEPS
+    context.update(prior_job_status='success', prior_steps={name:{'outcome':'success','conclusion':'success','outputs':{}} for name in PRIOR_STEPS})
     jobs = []
     for i, domain in enumerate(plan.domains):
         meta = {'source_mode': 'live', 'execution_plan': {'planned_domains': list(plan.domains), 'execution_order': list(plan.domains)},
@@ -304,11 +306,13 @@ def test_plan_identity_phase_has_no_database_import_dependency(tmp_path):
     output=tmp_path/'outputs';output.touch()
     env={'PATH':str(Path(sys.executable).parent)+':/usr/bin:/bin','PYTHONPATH':str(ROOT/'backend'),
         'GITHUB_OUTPUT':str(output),'GITHUB_SHA':SHA,'DATABASE_URL':'inert-invalid-driver://no-network',
-        'PYTHON_DOTENV_DISABLED':'1','SEED_PLAN_EVENT':'workflow_dispatch','SEED_PLAN_DOMAIN':'pending_bills',
+        'PYTHON_DOTENV_DISABLED':'1','PYTHONDONTWRITEBYTECODE':doc['env']['PYTHONDONTWRITEBYTECODE'],
+        'SEED_PLAN_EVENT':'workflow_dispatch','SEED_PLAN_DOMAIN':'pending_bills',
         'SEED_PLAN_DRY_RUN':'false','SEED_PLAN_BOOTSTRAP':'false'}
     result=subprocess.run(['bash','-eo','pipefail','-c',step['run']],cwd=ROOT,env=env,text=True,capture_output=True,timeout=10)
     assert result.returncode==0,result.stdout+result.stderr
-    fields=dict(line.split('=',1)for line in output.read_text().splitlines())
+    from tests.test_healthcheck_is_bounded import _outputs
+    fields=_outputs(output.read_text())
     assert fields['source_sha']==SHA and len(fields['plan_sha256'])==64 and fields['dry_run']=='false'
 
 

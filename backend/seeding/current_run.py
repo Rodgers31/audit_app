@@ -7,18 +7,46 @@ separate direct Actions dependencies. All projected strings have closed vocabula
 from __future__ import annotations
 
 from dataclasses import asdict
-from datetime import datetime
+from datetime import datetime, timezone
 import hashlib
 import json
+import math
 import os
 import re
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from .source_plan import environment_plan, validate_plan
 from .refresh_completion import REQUIRED_DOMAINS, accepted_records, fiscal_components_complete, audit_inventory_complete, required_refresh_failures
 
 SCHEMA_HEAD = 'a756b20a0001'
 MAX_JOBS = 18
+PRIOR_STEPS = frozenset(('checkout', 'python', 'ocr', 'dependencies', 'writer_tls',
+    'database', 'pdf_cache_period', 'restore_pdfs', 'native_boundary', 'cli',
+    'pdf_cache_state', 'save_pdfs'))
+
+
+def prior_steps_success(steps, job_status, plan):
+    """Check actual outcomes too: continued failures have conclusion=success.
+
+    job.status covers the runner's aggregate state; the exact identified-step
+    inventory makes a failed-but-continued action visible. Only the conditional
+    restore/save steps may be skipped. This witness grants no source acceptance.
+    """
+    validate_plan(plan)
+    if job_status != 'success' or type(steps) is not dict or set(steps) != PRIOR_STEPS:
+        return False
+    for name, step in steps.items():
+        if type(step) is not dict or type(step.get('outputs')) is not dict:
+            return False
+        pair = (step.get('outcome'), step.get('conclusion'))
+        if pair == ('success', 'success'):
+            continue
+        allowed_skip = name == 'save_pdfs' or (name == 'restore_pdfs' and
+            (plan.reacquire_pending_pdf or bool(plan.audits_source_acceptance)))
+        if not allowed_skip or pair != ('skipped', 'skipped'):
+            return False
+    return True
 
 
 def plan_identity(plan):
@@ -32,6 +60,115 @@ def _hex(value, length):
 
 def _number(value, *, positive=False):
     return type(value) is int and (1 if positive else 0) <= value <= 2**53 - 1
+
+
+def source_diagnostics(job):
+    """Closed diagnostic projection for delivered CoG/debt metadata.
+
+    Missing legacy metadata is explicitly unverified. A present malformed or
+    contradictory contract refuses cache eligibility. This never supplies
+    financial values, original source authority or publication permission.
+    """
+    if job.domain not in ('county_officials','debt_timeline'):
+        return None, True
+    output={'version':1,'generated_by':'backend/seeding/current_run.py',
+        'generator_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        'source_sha':os.environ.get('GITHUB_SHA') if _hex(os.environ.get('GITHUB_SHA'),40) else None,
+        'domain':job.domain,'job_id':job.id if _number(job.id,positive=True) else None,
+        'scope':'diagnostic_schema_only','source_acceptance':False,
+        'validation':'legacy_unverified'}
+    meta=job.meta if type(job.meta) is dict else {}
+    key='source_status' if job.domain=='county_officials' else 'year_coverage'
+    def refused():
+        output['validation']='refused'
+        return output,False
+    if type(job.meta) is not dict:return refused()
+    if key not in meta:return output, True
+    value=meta[key]
+    if type(value) is not dict:return refused()
+    if key=='source_status':
+        state=value.get('state')
+        if value.get('fixture_used') is not False:return refused()
+        if state=='unavailable':
+            if set(value)!={'state','fixture_used','stored_governors_retained','dated_stored_governors','oldest_age_seconds','newest_age_seconds'}:
+                return refused()
+            count,dated=value['stored_governors_retained'],value['dated_stored_governors']
+            old,new=value['oldest_age_seconds'],value['newest_age_seconds']
+            if (not _number(count) or count>47 or not _number(dated) or dated>count
+                    or any(type(getattr(job,k,None)) is not int or getattr(job,k)!=0
+                           for k in ('items_processed','items_created','items_updated'))):return refused()
+            if dated==0:
+                if old is not None or new is not None:return refused()
+            elif (any(type(age) not in (int,float) or not math.isfinite(age) or not 0<=age<=2**53-1 for age in (old,new))
+                    or new>old):return refused()
+        elif state in ('live','partial'):
+            if (set(value)!={'state','fixture_used','governors_observed','deputies_state'}
+                    or type(value.get('governors_observed')) is not int or value['governors_observed']!=47
+                    or value.get('deputies_state')!=('live' if state=='live' else 'unavailable')
+                    or meta.get('source_mode')!=state
+                    or type(job.items_processed) is not int or job.items_processed!=47):return refused()
+        else:return refused()
+        output['source_status']=dict(value)
+    else:
+        if (set(value)!={'contract','years','note'} or value.get('contract')!='debt-calendar-observation-coverage-v1'
+                or type(value.get('note')) is not str or len(value['note'])>1024
+                or type(value.get('years')) is not list or not 1<=len(value['years'])<=200):return refused()
+        projected=[];seen=set()
+        states={'observed_this_run','observed_unretained','retained_qualified','unqualified'}
+        measure_fields={'state','absence_reason','period','period_kind','stock_as_of_month','unit','basis',
+                        'source_url','source_digest','acquired_at','locator','publication_date','vintage_date'}
+        for row in value['years']:
+            if type(row) is not dict or set(row)!={'year','measures','ratio'}:return refused()
+            year=row['year'];measures=row['measures'];ratio=row['ratio']
+            if (type(year) is not int or not 1900<=year<=datetime.now(timezone.utc).year or year in seen
+                    or type(measures) is not dict or set(measures)!={'external','domestic','total','gdp'}
+                    or type(ratio) is not dict or set(ratio)!={'state','stock_as_of_month','gdp_calendar_year','year_end_stock','reason'}):return refused()
+            seen.add(year);parts={}
+            for name,part in measures.items():
+                if (type(part) is not dict or set(part)!=measure_fields or type(part.get('state')) is not str or part['state'] not in states
+                        or part.get('period')!=str(year) or part.get('unit')!='KES'
+                        or part.get('basis')!=('current_prices' if name=='gdp' else 'actual')
+                        or part.get('period_kind')!=('calendar_year' if name=='gdp' else 'latest_observed_month_in_calendar_year')
+                        or part.get('publication_date') is not None or part.get('vintage_date') is not None):return refused()
+                month=part.get('stock_as_of_month')
+                if month is not None and (type(month) is not str or not re.fullmatch(str(year)+r'-(0[1-9]|1[0-2])',month)):return refused()
+                if name=='gdp' and month is not None:return refused()
+                if part['source_digest'] is not None and not _hex(part['source_digest'],64):return refused()
+                url, timestamp, locator = part['source_url'], part['acquired_at'], part['locator']
+                if url is not None:
+                    if type(url) is not str or len(url)>2048:return refused()
+                    try:
+                        parsed=urlsplit(url)
+                        if parsed.scheme!='https' or not parsed.hostname or parsed.username or parsed.password or parsed.fragment:return refused()
+                    except ValueError:return refused()
+                if timestamp is not None:
+                    if type(timestamp) is not str or len(timestamp)>64:return refused()
+                    try:
+                        acquired=datetime.fromisoformat(timestamp.replace('Z','+00:00'))
+                        if acquired.tzinfo is None:return refused()
+                    except ValueError:return refused()
+                if locator is not None:
+                    if type(locator) is not dict:return refused()
+                    try:
+                        if len(json.dumps(locator,allow_nan=False))>16384:return refused()
+                    except (ValueError,TypeError,RecursionError):return refused()
+                if part['state']!='unqualified' and (not _hex(part['source_digest'],64)
+                        or url is None or timestamp is None or not locator):return refused()
+                reason=part.get('absence_reason')
+                if reason not in (None,'annual_period_not_ended','not_observed_in_selected_source'):return refused()
+                if part['state']=='unqualified' and reason is None or part['state']!='unqualified' and reason is not None:return refused()
+                parts[name]={'state':part['state'],'absence_reason':reason,'stock_as_of_month':month,
+                             'publication_date':None,'vintage_date':None}
+            month=ratio['stock_as_of_month']
+            if (ratio['state'] not in ('qualified_derived_pair','unavailable') or type(ratio['gdp_calendar_year']) is not int
+                    or ratio['gdp_calendar_year']!=year or type(ratio['year_end_stock']) is not bool
+                    or month!=parts['total']['stock_as_of_month'] or ratio['year_end_stock']!=(month==f'{year}-12')
+                    or ratio['reason']!=(None if ratio['state']=='qualified_derived_pair' else 'stock_denominator_pair_unqualified')):return refused()
+            if ratio['state']=='qualified_derived_pair' and any(parts[m]['state'] not in ('observed_this_run','retained_qualified') for m in ('total','gdp')):return refused()
+            projected.append({'year':year,'measures':parts,'ratio':dict(ratio)})
+        output['year_coverage']={'contract':value['contract'],'years':sorted(projected,key=lambda r:r['year'])}
+    output['validation']='valid'
+    return output,True
 
 
 def _held_document(doc):
@@ -150,6 +287,8 @@ def classify(jobs, plan, context):
     if (context.get('prior_success') != 'true' or context.get('cli_outcome') != 'success'
             or context.get('cli_executed') != 'true' or context.get('cli_exit') != '0'):
         reasons.append('execution_unverified')
+    if not prior_steps_success(context.get('prior_steps'), context.get('prior_job_status'), plan):
+        reasons.append('prior_steps_unverified')
     floor = context.get('floor')
     started, finished = context.get('cli_started'), context.get('cli_finished')
     try:
@@ -192,6 +331,8 @@ def classify(jobs, plan, context):
                 or job.started_at.replace(tzinfo=None) < started
                 or job.finished_at.replace(tzinfo=None) >= finished.replace(microsecond=999999)):
             reasons.append('job_result_refused'); continue
+        if not source_diagnostics(job)[1]:
+            reasons.append('source_diagnostic_refused')
         execution = meta.get('execution_plan')
         if (type(execution) is not dict or execution.get('planned_domains') != list(plan.domains)
                 or type(execution.get('execution_order')) is not list
@@ -256,7 +397,20 @@ def classify(jobs, plan, context):
 
 def environment_context():
     raw_floor = os.environ.get('SEED_JOB_FLOOR', '')
+    def unique_pairs(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError('duplicate step-context key')
+            result[key] = value
+        return result
+    try:
+        raw = os.environ.get('SEED_PRIOR_STEPS', '')
+        steps = json.loads(raw, object_pairs_hook=unique_pairs) if len(raw.encode()) <= 65536 else None
+    except (TypeError, ValueError):
+        steps = None
     return {'floor': int(raw_floor) if re.fullmatch(r'[0-9]{1,18}', raw_floor) else None,
+            'prior_steps': steps, 'prior_job_status': os.environ.get('SEED_PRIOR_JOB_STATUS'),
             **{key: os.environ.get(env) for key, env in {
                 'source_sha': 'GITHUB_SHA', 'admitted_sha': 'SEED_ADMITTED_SHA', 'planned_sha': 'SEED_PLANNED_SHA',
                 'schema_head': 'SEED_SCHEMA_HEAD', 'planned_identity': 'SEED_PLANNED_IDENTITY',

@@ -12,11 +12,12 @@ on:
   workflow_dispatch:
     inputs:
       domain:
-        description: 'One supported native domain (empty keeps the legacy all-domain scope plus explicit opt-ins)'
+        description: 'One supported native domain (all keeps the legacy scope plus explicit opt-ins)'
         required: false
         type: choice
+        default: all
         options:
-          - ''
+          - all
           - audits
           - counties_budget
           - economic_indicators
@@ -51,20 +52,20 @@ on:
         type: boolean
         default: false
       audits_review:
-        description: 'One-time source-checked OAG repair (empty for ordinary refresh)'
+        description: 'One-time source-checked OAG repair (none for ordinary refresh)'
         required: false
         type: choice
-        default: ''
+        default: none
         options:
-          - ''
+          - none
           - oag-2542-20261026
       audits_source_acceptance:
         description: 'Bounded fresh acquisition of four reviewed OAG county volumes (manual audits only)'
         required: false
         type: choice
-        default: ''
+        default: none
         options:
-          - ''
+          - none
           - oag-combined-catalogue-20261101
       run_validation:
         description: 'Run data validation after seeding'
@@ -100,6 +101,8 @@ permissions:
 
 env:
   PYTHON_DOTENV_DISABLED: '1'
+  # Keep installed artifact identities stable across ordinary Python children.
+  PYTHONDONTWRITEBYTECODE: '1'
   # Shared database and seeding configuration
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
   SEED_RATE_LIMIT: ${{ vars.SEED_RATE_LIMIT || '60/min' }}
@@ -150,8 +153,8 @@ env:
   SEED_PLAN_DOMAIN: ${{ github.event.inputs.domain }}
   SEED_PLAN_DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
   SEED_PLAN_BOOTSTRAP: ${{ github.event.inputs.run_bootstrap || 'false' }}
-  SEED_PLAN_AUDITS_REVIEW: ${{ github.event.inputs.audits_review || '' }}
-  SEED_PLAN_AUDITS_SOURCE_ACCEPTANCE: ${{ github.event.inputs.audits_source_acceptance || '' }}
+  SEED_PLAN_AUDITS_REVIEW: ${{ github.event.inputs.audits_review != 'none' && github.event.inputs.audits_review || '' }}
+  SEED_PLAN_AUDITS_SOURCE_ACCEPTANCE: ${{ github.event.inputs.audits_source_acceptance != 'none' && github.event.inputs.audits_source_acceptance || '' }}
   SEED_PLAN_REACQUIRE_PENDING_BILLS_PDF: ${{ github.event.inputs.reacquire_pending_pdf || 'false' }}
   SEED_LOG_LEVEL: INFO
   SOCIAL_GENERATION_HOOK_ENABLED: ${{ vars.SOCIAL_GENERATION_HOOK_ENABLED || 'false' }}
@@ -166,6 +169,7 @@ jobs:
     outputs:
       domains: ${{ steps.plan.outputs.domains }}
       bootstrap: ${{ steps.plan.outputs.bootstrap }}
+      health_sources: ${{ steps.plan.outputs.health_sources }}
       dry_run: ${{ steps.plan.outputs.dry_run }}
       source_sha: ${{ steps.plan.outputs.source_sha }}
       plan_sha256: ${{ steps.plan.outputs.plan_sha256 }}
@@ -175,8 +179,15 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
-          python-version: '3.12'
-      - run: pip install -r backend/requirements.txt
+          python-version: '3.12.16'
+      - name: Install reviewed ingestion runtime
+        run: |
+          INGESTION_SCRATCH="$RUNNER_TEMP/ingestion-$GITHUB_JOB"
+          python -B tools/nightly_acceptance_20261105/runtime.py acquire --wheelhouse "$INGESTION_SCRATCH/wheels"
+          python -B tools/nightly_acceptance_20261105/runtime.py wheels --wheelhouse "$INGESTION_SCRATCH/wheels"
+          python -B tools/nightly_acceptance_20261105/runtime.py install --wheelhouse "$INGESTION_SCRATCH/wheels" --venv "$INGESTION_SCRATCH/runtime"
+          "$INGESTION_SCRATCH/runtime/bin/python" -B tools/nightly_acceptance_20261105/runtime.py verify
+          echo "$INGESTION_SCRATCH/runtime/bin" >> "$GITHUB_PATH"
       - name: Validate whitelisted plan
         id: plan
         run: |
@@ -190,6 +201,7 @@ jobs:
   # are surfaced immediately instead of buried in log warnings.
   # ══════════════════════════════════════════════════════════════════
   healthcheck:
+    needs: [source_plan]
     name: Data Source Health Check
     if: github.event_name != 'schedule' || vars.INGESTION_NIGHTLY_ENABLED == 'true'
     runs-on: ubuntu-latest
@@ -199,59 +211,40 @@ jobs:
       has_failures: ${{ steps.check.outputs.has_failures }}
       unprobed: ${{ steps.check.outputs.unprobed }}
       critical_reachable: ${{ steps.check.outputs.critical_reachable }}
+      inventory_sha256: ${{ steps.check.outputs.inventory_sha256 }}
     steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       - name: Check data source URLs
         id: check
+        env:
+          HC_SOURCE_INVENTORY: ${{ needs.source_plan.outputs.health_sources }}
         run: |
           #!/usr/bin/env bash
           # Actions runs this step with `bash -eo pipefail`, so every command
-          # that may fail is guarded; the script must always exit 0 so it never
-          # blocks seeding. Failures are reported via outputs.
+          # that may fail is guarded. Measured outages use outputs; malformed
+          # inventories/budgets refuse with a nonzero status. Neither authorizes seeding.
 
-          # ── Data source registry ──────────────────────────────────
-          # Each entry: "LABEL|URL|CRITICAL"
-          # CRITICAL=true  → workflow fails and creates an issue
-          # CRITICAL=false → logged as warning only
-          #
-          # COB's slow HTML listings (`/publications/`, `/publications/county-reports/`,
-          # `/publications/...-review-reports/`) routinely take 30-50s to render because
-          # the WordPress query hits a CDN cache miss on low-traffic paths — they are
-          # NOT the primary ingestion path. The real fetcher prefers `/wp-json/wp/v2/media`
-          # (reliable, fast) and only falls back to HTML scraping, so the WP REST API
-          # is the real "is ingestion healthy?" signal and is the only COB source
-          # flagged as CRITICAL here.
+          # This inventory is produced by the selected native plan/settings.
+          # No probe, including an edition probe, certifies financial acceptance.
           SOURCES=(
-            "COB WP REST API|https://cob.go.ke/wp-json/wp/v2/media?per_page=1&mime_type=application/pdf|true"
-            "COB Homepage|https://cob.go.ke/|false"
-            "COB Publications|https://cob.go.ke/publications/|false"
-            "COB County Reports|https://cob.go.ke/publications/county-reports/|false"
-            "COB National Reports|https://cob.go.ke/publications/national-government-budget-implementation-review-reports/|false"
-            # Same shape as COB above: audits/fetcher.py:199-203 queries the
-            # WP media API first and only falls back to scraping the homepage,
-            # so the REST endpoint is the real "can we discover reports?"
-            # signal.
-            "OAG WP REST API|https://www.oagkenya.go.ke/wp-json/wp/v2/media?per_page=1&mime_type=application/pdf|true"
-            "OAG Homepage|https://www.oagkenya.go.ke/|true"
-            "OAG National Audit Reports|https://www.oagkenya.go.ke/national-government-audit-reports/|false"
-            "CBK Homepage|https://www.centralbank.go.ke/|true"
-            "CBK Public Debt|https://www.centralbank.go.ke/public-debt/|true"
-            # Treasury: www., NOT newsite. The probe used to point at
-            # https://newsite.treasury.go.ke/, which appears only in the legacy
-            # etl/ pipeline. The nightly runs `seeding.cli seed --all`, and
-            # seeding/config.py fetches www.treasury.go.ke. Both hosts answer
-            # 200, so the old probe was permanently green about a host this
-            # workflow never touches. Kept in sync by
-            # backend/tests/test_healthcheck_probes_the_real_hosts.py.
-            #
-            # budget-books is CRITICAL: it is where the enacted budget for the
-            # fiscal year comes from (FY2026/27 = KSh 5,485.7B), so losing it
-            # is how a fiscal year silently stops arriving on the site.
-            "Treasury Budget Books|https://www.treasury.go.ke/budget-books/|true"
-            "Treasury Budget Policy Statement|https://www.treasury.go.ke/budget-policy-statement/|false"
-            "Treasury BROP|https://www.treasury.go.ke/budget-review-and-outlook-paper/|false"
-            "World Bank API|https://api.worldbank.org/v2/country/KE?format=json|true"
-            "IMF DataMapper|https://www.imf.org/external/datamapper/api/v1/GGXWDG_NGDP/KEN|false"
           )
+          if [ -z "${HC_SOURCE_INVENTORY:-}" ] || [ "${#HC_SOURCE_INVENTORY}" -gt 24000 ]; then
+            echo 'Selected source-health inventory missing or exceeds bound' >&2
+            exit 2
+          fi
+          while IFS= read -r entry; do
+            [ -n "$entry" ] || { echo 'Empty health source refused' >&2; exit 2; }
+            for existing_entry in "${SOURCES[@]}"; do
+              if [ "$existing_entry" = "$entry" ]; then
+                echo 'Duplicate health source refused' >&2; exit 2
+              fi
+            done
+            SOURCES+=("$entry")
+          done <<< "$HC_SOURCE_INVENTORY"
+          if [ "${#SOURCES[@]}" -gt 128 ]; then exit 2; fi
+          HC_TMP=$(mktemp -d)
+          trap 'rm -rf -- "$HC_TMP"' EXIT
+          HC_BODY_FILE="$HC_TMP/body"
 
           REPORT=""
           FAILED_CRITICAL=0
@@ -282,6 +275,18 @@ jobs:
           HC_SOURCE_BUDGET=${HC_SOURCE_BUDGET:-75}
           HC_JOB_BUDGET=${HC_JOB_BUDGET:-240}
           HC_RETRY_DELAY=${HC_RETRY_DELAY:-3}
+          for bound in HC_ATTEMPT_MAX_TIME HC_SOURCE_BUDGET HC_JOB_BUDGET HC_RETRY_DELAY; do
+            value=${!bound}
+            if ! [[ "$value" =~ ^(0|[1-9][0-9]{0,2})$ ]]; then
+              echo "Malformed health budget: $bound" >&2; exit 2
+            fi
+          done
+          if [ "$HC_ATTEMPT_MAX_TIME" -lt 1 ] || [ "$HC_ATTEMPT_MAX_TIME" -gt 60 ] ||
+             [ "$HC_SOURCE_BUDGET" -lt 1 ] || [ "$HC_SOURCE_BUDGET" -gt 75 ] ||
+             [ "$HC_JOB_BUDGET" -lt 1 ] || [ "$HC_JOB_BUDGET" -gt 240 ] ||
+             [ "$HC_RETRY_DELAY" -gt 10 ]; then
+            echo 'Health budget exceeds approved bounds' >&2; exit 2
+          fi
           JOB_DEADLINE=$(( SECONDS + HC_JOB_BUDGET ))
 
           # Primary UA must start with a known HTTP-client identifier
@@ -314,7 +319,12 @@ jobs:
           # code alone would call a timeout healthy. Exit 28 forces "000".
           probe_once() {
             local code rc=0
-            code=$(curl -s -o /dev/null -w "%{http_code}" \
+            local range_args=()
+            # A bounded prefix establishes transport only, never full edition
+            # acceptance. Large reviewed PDFs must not require full downloads.
+            case "$2" in *.pdf|*.PDF|*.xlsx) range_args=(--range 0-65535) ;; esac
+            code=$(curl -s -o "$HC_BODY_FILE" -w "%{http_code}" \
+              --max-filesize 8388608 "${range_args[@]}" --proto =https,http --proto-redir =https \
               -L --max-time "$3" \
               -A "$1" "$2" 2>/dev/null) || rc=$?
             [[ "$code" =~ ^[0-9]{3}$ ]] || code="000"
@@ -366,6 +376,8 @@ jobs:
                   7) PROBE_ERROR="connection refused" ;;
                   18) PROBE_ERROR="incomplete response" ;;
                   28) PROBE_ERROR="timeout"; TIMED_OUT=1 ;;
+                  51|60) PROBE_ERROR="TLS certificate verification failed"; return 0 ;;
+                  63) PROBE_ERROR="bounded body probe refused or exceeds byte limit"; return 0 ;;
                   *) PROBE_ERROR="transport error $rc" ;;
                 esac
                 if [ "$ua" = "$BROWSER_UA" ] && ! is_transient "$code"; then
@@ -383,22 +395,94 @@ jobs:
             done
           }
 
-          for entry in "${SOURCES[@]}"; do
-            IFS='|' read -r label url critical <<< "$entry"
+          source_index=0
+          while [ "$source_index" -lt "${#SOURCES[@]}" ]; do
+            entry=${SOURCES[$source_index]}
+            source_index=$((source_index + 1))
+            IFS='|' read -r label url critical discovery extra <<< "$entry"
+            if [ -z "$label" ] || [ -n "$extra" ] ||
+               ! [[ "$critical" =~ ^(true|false)$ ]] ||
+               ! [[ "${discovery:-none}" =~ ^(none|treasury_editions)$ ]]; then
+              echo 'Malformed selected health source' >&2; exit 2
+            fi
+            if [ "$url" = reference ] && [ "$critical" = false ] &&
+               [ "$label" = 'learning_hub curated learning reference' ]; then
+              REPORT="${REPORT}OK|${label}|reference|curated reference; no live publisher expected\n"
+              OK_COUNT=$((OK_COUNT + 1))
+              continue
+            fi
+            if [ "$url" = missing ]; then
+              REPORT="${REPORT}CRITICAL|${label}|missing|required diagnostic coverage unavailable\n"
+              FAILED_CRITICAL=$((FAILED_CRITICAL + 1))
+              CRITICAL_TOTAL=$((CRITICAL_TOTAL + 1))
+              continue
+            fi
+            if ! [[ "$url" =~ ^https?://[^[:space:]\|]+$ ]]; then
+              echo 'Invalid health source URL' >&2; exit 2
+            fi
             if [ "$critical" = "true" ]; then CRITICAL_TOTAL=$((CRITICAL_TOTAL + 1)); fi
 
             # Out of job budget: say so for every source still waiting,
             # rather than let the runner kill the job and drop the outputs.
             if [ $(( JOB_DEADLINE - SECONDS )) -lt 1 ]; then
               echo "  [WARNING] $label → not probed: the ${HC_JOB_BUDGET}s health-check budget ran out ($url)"
-              REPORT="${REPORT}WARNING|${label}|${url}|not probed\n"
-              FAILED_WARN=$((FAILED_WARN + 1))
+              severity=WARNING
+              if [ "$critical" = true ]; then severity=CRITICAL; fi
+              REPORT="${REPORT}${severity}|${label}|${url}|not probed - coverage unknown\n"
               NOT_PROBED=$((NOT_PROBED + 1))
+              if [ "$critical" = true ]; then
+                FAILED_CRITICAL=$((FAILED_CRITICAL + 1))
+              else
+                FAILED_WARN=$((FAILED_WARN + 1))
+              fi
               continue
             fi
 
             started=$SECONDS
+            : > "$HC_BODY_FILE"
             probe_source "$url"
+            if [ "$discovery" = treasury_editions ]; then
+              # Parse only the bounded fetched listing. Missing/ambiguous
+              # discovery becomes an explicit required diagnostic gap.
+              if [[ "$HTTP_CODE" =~ ^2 ]] && python3 - "$HC_BODY_FILE" "$url" > "$HC_TMP/editions" <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          from urllib.parse import urljoin, urlsplit, unquote
+          import sys
+          body = Path(sys.argv[1]).read_bytes()
+          if not body or len(body) > 8 * 1024 * 1024:
+              raise SystemExit(2)
+          class Links(HTMLParser):
+              def __init__(self):
+                  super().__init__(); self.urls = set()
+              def handle_starttag(self, tag, attrs):
+                  if tag != 'a': return
+                  for key, value in attrs:
+                      if key != 'href' or not value: continue
+                      url = urljoin(sys.argv[2], value)
+                      low = unquote(url).lower()
+                      parsed = urlsplit(url)
+                      if ('budget' in low and 'summary' in low and parsed.path.lower().endswith('.pdf')
+                              and not any(x in low for x in ('draft','supplementary','supp-'))):
+                          if (parsed.scheme != 'https' or parsed.hostname not in
+                                  ('www.treasury.go.ke','treasury.go.ke','oldsite.treasury.go.ke')
+                                  or parsed.username or parsed.password or parsed.fragment
+                                  or len(url) > 2048 or any(c.isspace() or c == '|' for c in url)):
+                              raise ValueError('Unqualified Treasury edition link')
+                          self.urls.add(url)
+          links = Links(); links.feed(body.decode('utf-8', errors='strict'))
+          if not 1 <= len(links.urls) <= 24: raise SystemExit(2)
+          for index, url in enumerate(sorted(links.urls), 1):
+              print(f'fiscal_summary framework edition {index}|{url}|true')
+          PY
+              then
+                while IFS= read -r edition; do SOURCES+=("$edition"); done < "$HC_TMP/editions"
+              else
+                SOURCES+=("fiscal_summary edition discovery|missing|true")
+              fi
+              if [ "${#SOURCES[@]}" -gt 152 ]; then echo 'Edition inventory exceeds bound' >&2; exit 2; fi
+              TOTAL=${#SOURCES[@]}
+            fi
 
             if [[ "$HTTP_CODE" =~ ^2 ]]; then
               echo "  [OK]   $label ($HTTP_CODE)"
@@ -449,7 +533,16 @@ jobs:
             echo "critical_reachable=false" >> "$GITHUB_OUTPUT"
           fi
 
+          printf '%s\n' "${SOURCES[@]}" > "$HC_TMP/inventory"
+          python3 - "$HC_TMP/inventory" >> "$GITHUB_OUTPUT" <<'PY'
+          from pathlib import Path
+          from hashlib import sha256
+          import sys
+          print('inventory_sha256='+sha256(Path(sys.argv[1]).read_bytes()).hexdigest())
+          PY
+
           # Write to step summary
+          echo "Diagnostic scope: selected component reachability, including Treasury summary links. Runtime-discovered OAG/COB/PBB/KRA document and bundle URLs are not exhaustively probed here; inspect domain receipts. Reachability is not edition/content/coverage acceptance." >> "$GITHUB_STEP_SUMMARY"
           echo "## Data Source Health Check" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Status | Source | URL | HTTP Code |" >> $GITHUB_STEP_SUMMARY
@@ -513,14 +606,33 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
-          python-version: '3.12'
-      - run: pip install --upgrade pip && pip install -r backend/requirements.txt
+          python-version: '3.12.16'
+      - name: Install reviewed ingestion runtime
+        run: |
+          # Native acceptance is separate from the Python artifact lock.
+          NATIVE_PROFILE="docs/operations/nightly-acceptance-20261105/native/$GITHUB_JOB.json"
+          if [ ! -f "$NATIVE_PROFILE" ] || [ ! -s "$NATIVE_PROFILE" ] || [ -L "$NATIVE_PROFILE" ]; then
+            echo "Reviewed native ingestion profile missing; writer remains held" >&2
+            exit 1
+          fi
+          for PROFILE_PARENT in docs docs/operations docs/operations/nightly-acceptance-20261105 docs/operations/nightly-acceptance-20261105/native; do
+            if [ -L "$PROFILE_PARENT" ]; then
+              echo "Reviewed native ingestion profile missing; writer remains held" >&2
+              exit 1
+            fi
+          done
+          INGESTION_SCRATCH="$RUNNER_TEMP/ingestion-$GITHUB_JOB"
+          python -B tools/nightly_acceptance_20261105/runtime.py acquire --wheelhouse "$INGESTION_SCRATCH/wheels"
+          python -B tools/nightly_acceptance_20261105/runtime.py wheels --wheelhouse "$INGESTION_SCRATCH/wheels"
+          python -B tools/nightly_acceptance_20261105/runtime.py install --wheelhouse "$INGESTION_SCRATCH/wheels" --venv "$INGESTION_SCRATCH/runtime"
+          "$INGESTION_SCRATCH/runtime/bin/python" -B tools/nightly_acceptance_20261105/runtime.py verify --native-profile "docs/operations/nightly-acceptance-20261105/native/$GITHUB_JOB.json"
+          echo "$INGESTION_SCRATCH/runtime/bin" >> "$GITHUB_PATH"
       - name: Prepare verified writer TLS without copying credentials
-        run: python -I scripts/verification/github_database_qualify.py --prepare-writer-tls
+        run: python -I -B scripts/verification/github_database_qualify.py --prepare-writer-tls
       - name: Qualify the stored target and require the accepted schema head
         timeout-minutes: 1
         run: |
-          python -I scripts/verification/github_database_qualify.py --seed
+          python -I -B scripts/verification/github_database_qualify.py --seed
           cd backend
           test "$(alembic heads)" = 'a756b20a0001 (head)'
 
@@ -578,12 +690,31 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
-          python-version: '3.12'
-      - run: pip install --upgrade pip && pip install -r backend/requirements.txt
+          python-version: '3.12.16'
+      - name: Install reviewed ingestion runtime
+        run: |
+          # Native acceptance is separate from the Python artifact lock.
+          NATIVE_PROFILE="docs/operations/nightly-acceptance-20261105/native/$GITHUB_JOB.json"
+          if [ ! -f "$NATIVE_PROFILE" ] || [ ! -s "$NATIVE_PROFILE" ] || [ -L "$NATIVE_PROFILE" ]; then
+            echo "Reviewed native ingestion profile missing; writer remains held" >&2
+            exit 1
+          fi
+          for PROFILE_PARENT in docs docs/operations docs/operations/nightly-acceptance-20261105 docs/operations/nightly-acceptance-20261105/native; do
+            if [ -L "$PROFILE_PARENT" ]; then
+              echo "Reviewed native ingestion profile missing; writer remains held" >&2
+              exit 1
+            fi
+          done
+          INGESTION_SCRATCH="$RUNNER_TEMP/ingestion-$GITHUB_JOB"
+          python -B tools/nightly_acceptance_20261105/runtime.py acquire --wheelhouse "$INGESTION_SCRATCH/wheels"
+          python -B tools/nightly_acceptance_20261105/runtime.py wheels --wheelhouse "$INGESTION_SCRATCH/wheels"
+          python -B tools/nightly_acceptance_20261105/runtime.py install --wheelhouse "$INGESTION_SCRATCH/wheels" --venv "$INGESTION_SCRATCH/runtime"
+          "$INGESTION_SCRATCH/runtime/bin/python" -B tools/nightly_acceptance_20261105/runtime.py verify --native-profile "docs/operations/nightly-acceptance-20261105/native/$GITHUB_JOB.json"
+          echo "$INGESTION_SCRATCH/runtime/bin" >> "$GITHUB_PATH"
       - name: Prepare verified writer TLS without copying credentials
-        run: python -I scripts/verification/github_database_qualify.py --prepare-writer-tls
+        run: python -I -B scripts/verification/github_database_qualify.py --prepare-writer-tls
       - name: Qualify this job's actual database connection
-        run: python -I scripts/verification/github_database_qualify.py --seed
+        run: python -I -B scripts/verification/github_database_qualify.py --seed
       - name: Run bootstrap seeding
         run: |
           cd backend
@@ -632,18 +763,41 @@ jobs:
       RECEIPT_R2_SECRET_ACCESS_KEY: ${{ secrets.RECEIPT_R2_SECRET_ACCESS_KEY }}
       RECEIPT_R2_CONTROL_TOKEN: ${{ secrets.RECEIPT_R2_CONTROL_TOKEN }}
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+      - id: checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - id: python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
-          python-version: '3.12'
+          python-version: '3.12.16'
       # OCR system deps for scanned OAG audit PDFs (SEED_AUDITS_OCR_ENABLED)
-      - run: sudo apt-get update -qq && sudo apt-get install -y -qq tesseract-ocr poppler-utils
-      - run: pip install --upgrade pip && pip install -r backend/requirements.txt
+      - id: ocr
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq tesseract-ocr poppler-utils
+      - id: dependencies
+        run: |
+          # Native acceptance is separate from the Python artifact lock.
+          NATIVE_PROFILE="docs/operations/nightly-acceptance-20261105/native/$GITHUB_JOB.json"
+          if [ ! -f "$NATIVE_PROFILE" ] || [ ! -s "$NATIVE_PROFILE" ] || [ -L "$NATIVE_PROFILE" ]; then
+            echo "Reviewed native ingestion profile missing; writer remains held" >&2
+            exit 1
+          fi
+          for PROFILE_PARENT in docs docs/operations docs/operations/nightly-acceptance-20261105 docs/operations/nightly-acceptance-20261105/native; do
+            if [ -L "$PROFILE_PARENT" ]; then
+              echo "Reviewed native ingestion profile missing; writer remains held" >&2
+              exit 1
+            fi
+          done
+          INGESTION_SCRATCH="$RUNNER_TEMP/ingestion-$GITHUB_JOB"
+          python -B tools/nightly_acceptance_20261105/runtime.py acquire --wheelhouse "$INGESTION_SCRATCH/wheels"
+          python -B tools/nightly_acceptance_20261105/runtime.py wheels --wheelhouse "$INGESTION_SCRATCH/wheels"
+          python -B tools/nightly_acceptance_20261105/runtime.py install --wheelhouse "$INGESTION_SCRATCH/wheels" --venv "$INGESTION_SCRATCH/runtime"
+          "$INGESTION_SCRATCH/runtime/bin/python" -B tools/nightly_acceptance_20261105/runtime.py verify --native-profile "docs/operations/nightly-acceptance-20261105/native/$GITHUB_JOB.json"
+          echo "$INGESTION_SCRATCH/runtime/bin" >> "$GITHUB_PATH"
       - name: Prepare verified writer TLS without copying credentials
-        run: python -I scripts/verification/github_database_qualify.py --prepare-writer-tls
+        id: writer_tls
+        run: python -I -B scripts/verification/github_database_qualify.py --prepare-writer-tls
       - name: Qualify this job's actual database connection
         id: database
-        run: python -I scripts/verification/github_database_qualify.py --seed
+        run: python -I -B scripts/verification/github_database_qualify.py --seed
 
       # Persist downloaded source PDFs across runs. The COB county BIRR PDF is
       # ~48MB and the CDN's throughput swings wildly (measured 50s → 556s for
@@ -787,6 +941,7 @@ jobs:
       # frugality #175 was after, and keeps "Unable to reserve cache" out of
       # the log, where it reads as a failure rather than as a no-op.
       - name: Save downloaded source PDFs
+        id: save_pdfs
         # Keep the ordinary all-source cache bank intact after a one-source
         # qualification; do not replace its latest snapshot with one PDF.
         if: always() && env.SEED_PLAN_REACQUIRE_PENDING_BILLS_PDF != 'true' && env.SEED_PLAN_AUDITS_SOURCE_ACCEPTANCE == '' && steps.pdf_cache_state.outputs.files != '0' && steps.pdf_cache_state.outputs.key != steps.restore_pdfs.outputs.cache-matched-key
@@ -803,7 +958,9 @@ jobs:
           SEED_SCHEMA_HEAD: ${{ needs.migrate.outputs.schema_head }}
           SEED_PLANNED_SHA: ${{ needs.source_plan.outputs.source_sha }}
           SEED_PLANNED_IDENTITY: ${{ needs.source_plan.outputs.plan_sha256 }}
-          SEED_PRIOR_SUCCESS: ${{ success() }}
+          SEED_PRIOR_SUCCESS: ${{ job.status == 'success' }}
+          SEED_PRIOR_JOB_STATUS: ${{ job.status }}
+          SEED_PRIOR_STEPS: ${{ toJSON(steps) }}
           SEED_CLI_OUTCOME: ${{ steps.cli.outcome }}
           SEED_CLI_EXECUTED: ${{ steps.cli.outputs.executed }}
           SEED_CLI_EXIT: ${{ steps.cli.outputs.exit_code }}
@@ -867,7 +1024,11 @@ jobs:
               # and both of those modes complete cleanly — so a domain whose
               # headline figure never moved printed exactly like one that
               # refreshed. freshness.py declares five modes; this prints five.
-              if mode == 'fixture':
+              if job.domain == 'learning_hub' and mode == 'fixture' and (job.meta or {}).get('source_fallback_reason') == 'no_live_source':
+                  emoji = 'REFERENCE'
+              elif job.domain == 'county_officials' and mode == 'fixture' and job.items_processed == job.items_created == job.items_updated == 0:
+                  emoji = 'UNAVAILABLE'
+              elif mode == 'fixture':
                   emoji = 'STALE'
               elif mode == 'refused':
                   emoji = 'REFUSED'
@@ -884,6 +1045,11 @@ jobs:
               if reason:
                   src += f' ({reason})'
               print(f'[{emoji}] {job.domain}: {status} | created={job.items_created} updated={job.items_updated} processed={job.items_processed}{src}')
+              from seeding.current_run import source_diagnostics
+              diagnostic, _ = source_diagnostics(job)
+              if diagnostic is not None:
+                  import json
+                  print('SOURCE_DIAGNOSTICS_V1 '+json.dumps(diagnostic,separators=(',',':'),allow_nan=False))
               # Numerical writes and immutable source-byte retention are separate
               # outcomes. Preserve the observation contract without hiding gaps.
               from services.receipt_retention import safe_retention_summary
@@ -960,8 +1126,8 @@ jobs:
                   print(f'\n{failed} domain(s) failed!')
               if hollow:
                   print(
-                      f'\n{len(hollow)} domain(s) served a fixture or recorded '
-                      'no provenance: this run refreshed nothing for them, so '
+                      f'\n{len(hollow)} domain(s) have unavailable, fallback or '
+                      'unrecorded source evidence: this run cannot establish current coverage, so '
                       'it is not a success.'
                   )
               sys.exit(1)
@@ -996,12 +1162,31 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
-          python-version: '3.12'
-      - run: pip install --upgrade pip && pip install -r backend/requirements.txt
+          python-version: '3.12.16'
+      - name: Install reviewed ingestion runtime
+        run: |
+          # Native acceptance is separate from the Python artifact lock.
+          NATIVE_PROFILE="docs/operations/nightly-acceptance-20261105/native/$GITHUB_JOB.json"
+          if [ ! -f "$NATIVE_PROFILE" ] || [ ! -s "$NATIVE_PROFILE" ] || [ -L "$NATIVE_PROFILE" ]; then
+            echo "Reviewed native ingestion profile missing; writer remains held" >&2
+            exit 1
+          fi
+          for PROFILE_PARENT in docs docs/operations docs/operations/nightly-acceptance-20261105 docs/operations/nightly-acceptance-20261105/native; do
+            if [ -L "$PROFILE_PARENT" ]; then
+              echo "Reviewed native ingestion profile missing; writer remains held" >&2
+              exit 1
+            fi
+          done
+          INGESTION_SCRATCH="$RUNNER_TEMP/ingestion-$GITHUB_JOB"
+          python -B tools/nightly_acceptance_20261105/runtime.py acquire --wheelhouse "$INGESTION_SCRATCH/wheels"
+          python -B tools/nightly_acceptance_20261105/runtime.py wheels --wheelhouse "$INGESTION_SCRATCH/wheels"
+          python -B tools/nightly_acceptance_20261105/runtime.py install --wheelhouse "$INGESTION_SCRATCH/wheels" --venv "$INGESTION_SCRATCH/runtime"
+          "$INGESTION_SCRATCH/runtime/bin/python" -B tools/nightly_acceptance_20261105/runtime.py verify --native-profile "docs/operations/nightly-acceptance-20261105/native/$GITHUB_JOB.json"
+          echo "$INGESTION_SCRATCH/runtime/bin" >> "$GITHUB_PATH"
       - name: Prepare verified writer TLS without copying credentials
-        run: python -I scripts/verification/github_database_qualify.py --prepare-writer-tls
+        run: python -I -B scripts/verification/github_database_qualify.py --prepare-writer-tls
       - name: Qualify this job's actual database connection
-        run: python -I scripts/verification/github_database_qualify.py --seed
+        run: python -I -B scripts/verification/github_database_qualify.py --seed
 
       # Validation runs on a separate runner: the seed job's filesystem is
       # absent here. Restore its official byte cache, then prepare missing
@@ -1147,14 +1332,11 @@ jobs:
                 3, is_warning=True)
 
           # ── Sanity checks: values in reasonable ranges ──
-          latest_pop = session.query(PopulationData).filter(
-              PopulationData.entity_id.is_(None)
-          ).first()
-          if latest_pop and (latest_pop.total_population < 40_000_000 or latest_pop.total_population > 70_000_000):
-              errors.append(f'National population out of range: {latest_pop.total_population}')
-              print(f'[FAIL] National population sanity check: {latest_pop.total_population}')
-          elif latest_pop:
-              print(f'[OK] National population sanity: {latest_pop.total_population:,}')
+          from seeding.staleness import national_population_sanity
+          population_ok, population_message = national_population_sanity(session)
+          if not population_ok:
+              errors.append(population_message)
+          print(('' if population_ok else '[FAIL] ') + population_message)
 
           latest_gdp = session.query(GDPData).filter(
               GDPData.entity_id.is_(None)
@@ -1400,11 +1582,18 @@ jobs:
 
       - name: Create issue on URL health-check failure
         if: needs.healthcheck.outputs.has_failures == 'true'
+        env:
+          HEALTH_REPORT: ${{ needs.healthcheck.outputs.report }}
+          HEALTH_PLAN: ${{ needs.source_plan.outputs.plan_sha256 }}
+          HEALTH_INVENTORY: ${{ needs.healthcheck.outputs.inventory_sha256 }}
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
         with:
           script: |
             // Parse the health-check report to build a readable table
-            const report = `${{ needs.healthcheck.outputs.report }}`;
+            const report = process.env.HEALTH_REPORT || '';
+            const plan = process.env.HEALTH_PLAN, inventory = process.env.HEALTH_INVENTORY;
+            if (![plan,inventory].every(x => typeof x === 'string' && /^[0-9a-f]{64}$/.test(x))) throw new Error('Health issue scope unverified');
+            const scopeMarker = `<!-- seed-health-scope:${plan}:${inventory} -->`;
             const lines = report.trim().split('\n').filter(l => l.trim());
 
             let tableRows = '';
@@ -1424,7 +1613,8 @@ jobs:
             const existingIssues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              labels: 'data-source-down',
+              labels: 'data-source-down,automated',
+              per_page: 100,
               state: 'open',
             });
 
@@ -1432,8 +1622,9 @@ jobs:
             const title = `⚠️ Data source(s) unreachable: ${failedSources.join(', ')} — ${today}`;
             const body = [
               `## Data Source Health Check Failed`,
+              scopeMarker,
               ``,
-              `The nightly seeding pipeline detected **${failedSources.length} critical** data source(s) returning errors.`,
+              `The selected plan has **${failedSources.length} critical** source diagnostic failure(s) or unknown coverage; inspect each outcome below.`,
               ``,
               `### Affected Sources`,
               ``,
@@ -1442,7 +1633,7 @@ jobs:
               tableRows,
               ``,
               `### What This Means`,
-              `- Source probes run independently of database admission; check the pipeline outcome for writer execution`,
+              `- Probes cover the selected plan component endpoints and discovered Treasury editions; reachability is separate from extraction, edition acceptance and publication`,
               `- Affected domains may have **stale or missing data**`,
               `- Government websites (OAG, COB, CBK) occasionally restructure their URLs`,
               `- External APIs (World Bank, IMF) may have temporary outages`,
@@ -1473,9 +1664,19 @@ jobs:
               `*Auto-generated by the Database Seeding & Data Refresh workflow*`,
             ].join('\n');
 
-            // If there's already an open issue with this label, comment on it instead
+            // Preserve unresolved scope markers: recovery for A cannot clear B.
+            // Multiple distinct scopes require review; no blanket auto-close.
+            if (!Array.isArray(existingIssues.data) || existingIssues.data.length > 1) throw new Error('Health incident inventory ambiguous');
             if (existingIssues.data.length > 0) {
               const existing = existingIssues.data[0];
+              const previousBody = typeof existing.body === 'string' ? existing.body : '';
+              const legacy = /<!-- seed-health-scope:[0-9a-f]{64}:[0-9a-f]{64} -->/.test(previousBody)
+                ? '' : '\n<!-- seed-health-scope:legacy-unverified -->';
+              if (!previousBody.includes(scopeMarker)) {
+                if (previousBody.length > 55000) throw new Error('Health incident scope history exceeds bound');
+                await github.rest.issues.update({owner:context.repo.owner,repo:context.repo.repo,
+                  issue_number:existing.number,body:previousBody+legacy+'\n'+scopeMarker});
+              }
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -1498,12 +1699,18 @@ jobs:
         # `unprobed == '0'` as well: a run that ran out of budget before
         # reaching a source has not shown that source to be reachable.
         if: needs.healthcheck.result == 'success' && needs.healthcheck.outputs.critical_reachable == 'true' && needs.healthcheck.outputs.unprobed == '0'
+        env:
+          HEALTH_PLAN: ${{ needs.source_plan.outputs.plan_sha256 }}
+          HEALTH_INVENTORY: ${{ needs.healthcheck.outputs.inventory_sha256 }}
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
         with:
           script: |
             // All critical sources were reachable this run — close any
             // open data-source-down issues so a transient WAF block (415)
             // that self-heals overnight doesn't linger as an open bug.
+            const plan = process.env.HEALTH_PLAN, inventory = process.env.HEALTH_INVENTORY;
+            if (![plan,inventory].every(x => typeof x === 'string' && /^[0-9a-f]{64}$/.test(x))) throw new Error('Health recovery scope unverified');
+            const scopeMarker = `<!-- seed-health-scope:${plan}:${inventory} -->`;
             const open = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -1512,10 +1719,15 @@ jobs:
               // carries data-source-down + automated. A human-filed
               // investigative issue using only data-source-down is spared.
               labels: 'data-source-down,automated',
+              per_page: 100,
               state: 'open',
             });
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            if (!Array.isArray(open.data) || open.data.length >= 100) throw new Error('Health recovery issue inventory ambiguous');
             for (const issue of open.data) {
+              if (typeof issue.body !== 'string' || issue.body.includes('<!-- seed-health-scope:legacy-unverified -->')) continue;
+              const markers = issue.body.match(/<!-- seed-health-scope:[0-9a-f]{64}:[0-9a-f]{64} -->/g) || [];
+              if (new Set(markers).size !== 1 || markers[0] !== scopeMarker) continue;
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,

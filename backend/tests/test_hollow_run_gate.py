@@ -200,6 +200,10 @@ def _write_db(tmp_path: Path, rows, extra=()) -> str:
 def _run_step(db_url: str, *, domain: str = '', floor: int = 0) -> subprocess.CompletedProcess:
     """Execute the workflow step for real, from the repo root as Actions does."""
     env = dict(os.environ)
+    import json
+    from seeding.current_run import PRIOR_STEPS
+    env.setdefault('SEED_PRIOR_JOB_STATUS', 'success')
+    env.setdefault('SEED_PRIOR_STEPS', json.dumps({name:{'outcome':'success','conclusion':'success','outputs':{}} for name in PRIOR_STEPS}))
     env["DATABASE_URL"] = db_url
     env.update(SEED_JOB_FLOOR=str(floor), SEED_PLAN_EVENT='workflow_dispatch',
                SEED_PLAN_DOMAIN=domain, SEED_PLAN_SCHEDULE='',

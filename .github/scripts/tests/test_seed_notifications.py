@@ -212,7 +212,7 @@ class NotificationTests(unittest.TestCase):
                     execute(healthy(),env_overrides={key:value})
 
     def test_health_reporting_keeps_warnings_partial_and_unknown_distinct(self):
-        for outputs,expected in [({'has_failures':'true','unprobed':'0'},'Some sources were unreachable'),
+        for outputs,expected in [({'has_failures':'true','unprobed':'0'},'Some required source diagnostics failed or remain unprobed'),
                                  ({'has_failures':'false','unprobed':'3'},'3 source(s) not probed'),
                                  ({'has_failures':'','unprobed':'0'},'missing or malformed'),
                                  ({'has_failures':'false','unprobed':'0'},'No critical source failures')]:
@@ -265,7 +265,7 @@ class NotificationTests(unittest.TestCase):
             'Unknown — missing or malformed unprobed source count', alert=True)
 
     def test_valid_health_contract_preserves_critical_partial_and_complete(self):
-        cases = [({'has_failures': 'true', 'unprobed': count}, 'Some sources were unreachable')
+        cases = [({'has_failures': 'true', 'unprobed': count}, 'Some required source diagnostics failed or remain unprobed')
                  for count in ('0', '3', '', None, 'invalid')]
         cases += [({'has_failures': 'false', 'unprobed': '0'}, '✅ No critical source failures'),
                   ({'has_failures': 'false', 'unprobed': '3'}, 'Partial — 3 source(s) not probed'),
