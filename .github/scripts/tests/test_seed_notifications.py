@@ -32,7 +32,7 @@ def healthy(weekly=False):
             accepted_documents=1,held_proposals=[],retention={'state':'unverified'})])
     needs['seed']['outputs'] = {'report':json.dumps(receipt),'source_sha':sha,'schema_head':'a756b20a0001',
         'plan_sha256':plan,'classification':'complete','cache_eligible':'true','report_version':'1'}
-    needs['revalidate']['outputs'] = {'backend':'true','pages':'true'}
+    needs['revalidate']['outputs'] = {'backend':'true','pages':'true','protocol':'nightly-refresh-v2','source_sha':sha,'plan_sha256':plan,'run_id':'41268107359','run_attempt':'1','evidence_sha256':'e'*64}
     return needs
 
 
@@ -215,7 +215,7 @@ class NotificationTests(unittest.TestCase):
         for outputs,expected in [({'has_failures':'true','unprobed':'0'},'Some required source diagnostics failed or remain unprobed'),
                                  ({'has_failures':'false','unprobed':'3'},'3 source(s) not probed'),
                                  ({'has_failures':'','unprobed':'0'},'missing or malformed'),
-                                 ({'has_failures':'false','unprobed':'0'},'No critical source failures')]:
+                                 ({'has_failures':'false','unprobed':'0'},'Endpoint reachability diagnostics')]:
             with self.subTest(outputs=outputs):
                 needs=healthy(); needs['seed']['result']='failure'
                 needs['healthcheck']['outputs']=outputs
@@ -267,7 +267,7 @@ class NotificationTests(unittest.TestCase):
     def test_valid_health_contract_preserves_critical_partial_and_complete(self):
         cases = [({'has_failures': 'true', 'unprobed': count}, 'Some required source diagnostics failed or remain unprobed')
                  for count in ('0', '3', '', None, 'invalid')]
-        cases += [({'has_failures': 'false', 'unprobed': '0'}, '✅ No critical source failures'),
+        cases += [({'has_failures': 'false', 'unprobed': '0'}, '✅ Endpoint reachability diagnostics'),
                   ({'has_failures': 'false', 'unprobed': '3'}, 'Partial — 3 source(s) not probed'),
                   ({'has_failures': 'false', 'unprobed': '99999'}, 'Partial — 99999 source(s) not probed')]
         for outputs, expected in cases:
@@ -309,7 +309,7 @@ class CurrentRunReportTests(unittest.TestCase):
 
     def test_successful_backend_and_failed_pages_are_reported_separately(self):
         needs=healthy(); needs['revalidate']['result']='failure'
-        needs['revalidate']['outputs']={'backend':'true','pages':''}
+        needs['revalidate']['outputs'].update(backend='true',pages='')
         result=execute(needs)
         self.assertIn('backend acknowledged; pages unverified',result['summary'])
         self.assertIn('backend acknowledged; pages unverified',result['calls'][-1]['args']['body'])
@@ -364,3 +364,78 @@ class ReviewedReportContradictionTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class WorkflowRefreshOutcomeTests(unittest.TestCase):
+    def test_five_outcomes_never_promote_missing_retention(self):
+        result = execute(healthy())
+        for dimension in ('Execution:', 'Stored integrity:', 'Source coverage:', 'Evidence retention:', 'Cache/page freshness:'):
+            self.assertIn(dimension, result['summary'])
+        self.assertIn('Evidence retention: unverified', result['summary'])
+
+
+class WorkflowRefreshReviewRegressions(unittest.TestCase):
+    def test_failed_page_phase_cannot_claim_pages_acknowledged(self):
+        needs=healthy();needs['revalidate']['result']='failure'
+        result=execute(needs)
+        self.assertNotIn('pages acknowledged',result['summary'])
+
+    def test_missing_retained_bytes_are_not_masked_by_unverified_sibling(self):
+        needs=healthy();receipt=json.loads(needs['seed']['outputs']['report'])
+        row=receipt['jobs'][0];row['retention']={'state':'missing_bytes','observed':1,'retained':0,'missing':1,'recovered':0,'retry_requests':0}
+        other={**row,'domain':'learning_hub','job_id':32,'source_mode':'fixture','status':'completed_with_errors','error_count':1,'required_completion':'not_required','retention':{'state':'unverified'},'document_count':None,'accepted_documents':None}
+        receipt['jobs'].append(other);receipt['selected_domains'].append('learning_hub')
+        needs['source_plan']['outputs']['domains']=json.dumps(receipt['selected_domains'])
+        needs['seed']['outputs']['report']=json.dumps(receipt)
+        self.assertIn('Evidence retention: missing bytes',execute(needs)['summary'])
+
+
+class WorkflowRefreshDiagnosticRegressions(unittest.TestCase):
+    def test_curated_only_selection_never_claims_a_live_publisher(self):
+        needs=healthy();receipt=json.loads(needs['seed']['outputs']['report'])
+        receipt['selected_domains']=['learning_hub'];row=receipt['jobs'][0]
+        row.update(domain='learning_hub',source_mode='fixture',status='completed_with_errors',error_count=1,required_completion='not_required',document_count=None,accepted_documents=None)
+        needs['source_plan']['outputs']['domains']='["learning_hub"]';needs['seed']['outputs']['report']=json.dumps(receipt)
+        self.assertIn('Source coverage: curated reference',execute(needs)['summary'])
+
+
+class WorkflowRefreshObservabilityTests(unittest.TestCase):
+    def test_health_verdict_names_its_reachability_scope(self):
+        self.assertIn('Endpoint reachability diagnostics',execute(healthy())['summary'])
+
+    def test_cog_last_good_age_survives_unsafe_result(self):
+        needs=healthy();needs['seed']['outputs'].update(classification='unsafe',cache_eligible='false')
+        needs['seed']['result']='failure'
+        envelope={'version':1,'generator_sha256':'d'*64,'source_sha':'a'*40,'plan_sha256':'b'*64,
+            'run_id':'41268107359','run_attempt':'1','job_floor':30,'scope':'diagnostics_only_not_source_acceptance',
+            'rows':[{'domain':'county_officials','job_id':31,'validation':'valid','source_status':{
+                'state':'unavailable','fixture_used':False,'stored_governors_retained':47,'dated_stored_governors':47,
+                'oldest_age_seconds':86400,'newest_age_seconds':3600}}]}
+        needs['source_plan']['outputs']['domains']='["county_officials"]'
+        report=json.loads(needs['seed']['outputs']['report']);report.update(classification='unsafe',cache_eligible=False,selected_domains=['county_officials'],jobs=[])
+        needs['seed']['outputs']['report']=json.dumps(report)
+        needs['seed']['outputs']['source_diagnostics']=json.dumps(envelope)
+        result=execute(needs)
+        self.assertIn('CoG unavailable; retained governors=47',result['summary'])
+        self.assertIn('oldest age seconds=86400',result['summary'])
+        self.assertIn('Current-run report:** unverified',result['summary'])
+
+    def test_semantic_transition_is_visible_without_duplicate_comment(self):
+        needs=healthy();needs['validate']['result']='failure'
+        first=execute(needs)
+        body=first['calls'][-1]['args']['body']
+        needs=healthy();needs['validate']['result']='failure'
+        report=json.loads(needs['seed']['outputs']['report']);report['run_attempt']='2'
+        needs['seed']['outputs']['report']=json.dumps(report);needs['revalidate']['outputs']['run_attempt']='2'
+        second=execute(needs,attempt=2,issues=[{'number':888,'body':body}])
+        self.assertIn('Actionable state: unchanged',second['summary'])
+        self.assertEqual([c['method'] for c in second['calls']],['listForRepo','update'])
+
+
+class WorkflowRefreshPhaseBindingTests(unittest.TestCase):
+    def test_matching_outputs_do_not_override_failed_admission(self):
+        needs=healthy();needs['migrate']['result']='failure'
+        result=execute(needs)
+        self.assertIn('Execution: unverified',result['summary'])
+        self.assertIn('Cache/page freshness: unverified',result['summary'])
+        self.assertNotIn('backend acknowledged',result['summary'])

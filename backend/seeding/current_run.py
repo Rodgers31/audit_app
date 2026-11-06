@@ -430,10 +430,76 @@ def publish(report):
     if len(values['report'].encode('utf-8')) > 60000:
         raise ValueError('Current-run report exceeds bounded output')
     print('CURRENT_RUN_REPORT_V1 ' + values['report'])
+    print('Current-run classification: ' + report['classification'] + '; cache_eligible=' + values['cache_eligible'])
     if os.environ.get('GITHUB_OUTPUT'):
         with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as stream:
             stream.writelines(f'{key}={value}\n' for key, value in values.items())
-    print('Current-run classification: ' + report['classification'] + '; cache_eligible=' + values['cache_eligible'])
+
+
+
+def publish_diagnostics(jobs, report, context):
+    """A separate diagnostic side channel; it never changes refresh eligibility.
+
+    Preserve CoG last-good ages even when its zero-result makes execution unsafe.
+    Reduce debt contracts to coverage counts; no financial values cross this
+    reporting boundary. Unknown/mismatched execution identity produces no packet.
+    """
+    if (type(report) is not dict or not _hex(report.get('source_sha'), 40)
+            or not _hex(report.get('plan_sha256'), 64) or not _number(report.get('job_floor'))
+            or type(report.get('run_id')) is not str or re.fullmatch('[1-9][0-9]{0,17}', report['run_id']) is None
+            or type(report.get('run_attempt')) is not str or re.fullmatch('[1-9][0-9]{0,4}', report['run_attempt']) is None
+            or any(reason in report.get('refusals', []) for reason in (
+                'identity_refused', 'execution_window_refused', 'execution_identity_refused', 'boundary_refused',
+                'inventory_refused', 'job_identity_refused', 'selected_inventory_mismatch'))
+            or type(jobs) is not list or not 1 <= len(jobs) <= MAX_JOBS):
+        return None
+    if report.get('cli_executed') is not True or type(context) is not dict:
+        return None
+    try:
+        started = datetime.strptime(context['cli_started'], '%Y-%m-%dT%H:%M:%SZ')
+        finished = datetime.strptime(context['cli_finished'], '%Y-%m-%dT%H:%M:%SZ')
+        if finished < started or any(not isinstance(job.started_at, datetime) or not isinstance(job.finished_at, datetime)
+                or job.finished_at < job.started_at or job.started_at.replace(tzinfo=None) < started
+                or job.finished_at.replace(tzinfo=None) >= finished.replace(microsecond=999999) for job in jobs):
+            return None
+    except (KeyError, TypeError, ValueError):
+        return None
+    selected = report.get('selected_domains')
+    if (type(selected) is not list or len(jobs) != len(selected)
+            or sorted(job.domain for job in jobs) != sorted(selected)
+            or len({job.domain for job in jobs}) != len(jobs)
+            or len({job.id for job in jobs}) != len(jobs)
+            or any(not _number(job.id, positive=True) or job.id <= report['job_floor'] for job in jobs)):
+        return None
+    rows = []
+    for job in jobs:
+        diagnostic, _ = source_diagnostics(job)
+        if diagnostic is None:
+            continue
+        row = {key: diagnostic[key] for key in ('domain', 'job_id', 'validation')}
+        if diagnostic['validation'] == 'valid':
+            if 'source_status' in diagnostic:
+                row['source_status'] = diagnostic['source_status']
+            elif 'year_coverage' in diagnostic:
+                years = diagnostic['year_coverage']['years']
+                states = dict.fromkeys(('observed_this_run', 'observed_unretained', 'retained_qualified', 'unqualified'), 0)
+                for year in years:
+                    for part in year['measures'].values():
+                        states[part['state']] += 1
+                row['debt_coverage'] = {'years': len(years), 'measures': states,
+                    'qualified_ratios': sum(year['ratio']['state'] == 'qualified_derived_pair' for year in years),
+                    'unavailable_ratios': sum(year['ratio']['state'] == 'unavailable' for year in years)}
+        rows.append(row)
+    packet = {'version': 1, 'generator_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        **{key: report[key] for key in ('source_sha', 'plan_sha256', 'run_id', 'run_attempt', 'job_floor')},
+        'scope': 'diagnostics_only_not_source_acceptance', 'rows': rows}
+    raw = json.dumps(packet, separators=(',', ':'), allow_nan=False)
+    if len(raw.encode()) > 16000:
+        raise ValueError('Source diagnostics exceed reporting bound')
+    if os.environ.get('GITHUB_OUTPUT'):
+        with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as stream:
+            stream.write('source_diagnostics=' + raw + '\n')
+    return packet
 
 
 def main():

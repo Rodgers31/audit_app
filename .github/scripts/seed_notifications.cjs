@@ -131,11 +131,144 @@ function verifyRefresh(needs, context) {
      needs.source_plan.outputs.bootstrap === 'false' && needs.bootstrap?.result === 'skipped'));
 }
 
-function runDescription(r, needs) {
+
+function executionVerified(r, needs) {
+  return !!(r && r.cli_executed === true && r.cli_exit_zero === true &&
+    ['source_plan','migrate'].every(key=>needs[key]?.result === 'success') &&
+    (needs.seed?.result === 'success' && r.classification === 'complete' ||
+     needs.seed?.result === 'failure' && r.classification === 'required_source_incomplete') &&
+    (r.bootstrap_selected === true && needs.bootstrap?.result === 'success' ||
+     r.bootstrap_selected === false && needs.bootstrap?.result === 'skipped'));
+}
+
+function backendAcknowledged(r, needs) {
+  const o = needs.revalidate?.outputs;
+  return !!(executionVerified(r, needs) && needs.validate?.result === 'success' && ['success','failure'].includes(needs.revalidate?.result) && o?.backend === 'true' &&
+    o.protocol === 'nightly-refresh-v2' && o.source_sha === r.source_sha && o.plan_sha256 === r.plan_sha256 &&
+    o.run_id === r.run_id && o.run_attempt === r.run_attempt && hex(o.evidence_sha256,64));
+}
+
+function refreshAcknowledged(r, needs) {
+  return backendAcknowledged(r,needs) && needs.revalidate?.result === 'success' && needs.revalidate?.outputs?.pages === 'true';
+}
+
+function fiveOutcomes(r, needs) {
+  const known = executionVerified(r, needs);
+  const source = r?.classification === 'unsafe' ? 'unsafe' : !known ? 'unverified' :
+    r.jobs.some(j=>j.required_completion === 'incomplete') ? 'incomplete' :
+    r.jobs.some(j=>j.source_mode === 'partial') ? 'partial' :
+    r.jobs.every(j=>j.domain === 'learning_hub' && j.source_mode === 'fixture') ? 'curated reference; no live publisher claim' : 'reported live plus explicit reference domains; component authority unverified';
+  const retention = r?.jobs.some(j=>j.retention.state === 'missing_bytes') ? 'missing bytes (other domains may also be unverified)' :
+    !known || r.jobs.some(j=>['unverified','not_observed'].includes(j.retention.state) && j.domain !== 'learning_hub') ? 'unverified' :
+    r.jobs.every(j=>j.domain === 'learning_hub') ? 'reference inventory; publisher retention not applicable' : 'bytes confirmed; acquisition authority separate';
+  const changed = known ? (r.jobs.some(j=>j.created+j.updated>0) ? 'yes (writer-reported counts; semantic delta comparison unverified)' : 'no recorded writes (qualified inventory may be unchanged)') : 'unknown';
+  const first = ['source_plan','healthcheck','migrate','seed','bootstrap','validate','revalidate'].find(k=>
+    !['success'].includes(needs[k]?.result) && !(k==='bootstrap' && !r?.bootstrap_selected && needs[k]?.result==='skipped'));
+  const retry = source === 'incomplete' ? 'review required source holds; do not blindly retry' :
+    !known ? 'inspect execution and source diagnostics before retry' : !refreshAcknowledged(r,needs) ? 'inspect signed refresh receipts' : 'none requested';
+  return `Execution: ${known && r.cli_executed && r.cli_exit_zero ? 'verified' : 'unverified'}.\n` +
+    `Stored integrity: ${needs.validate?.result === 'success' ? 'passed stored-state checks' : 'unverified'}.\n` +
+    `Source coverage: ${source}.\nEvidence retention: ${retention}.\n` +
+    `Cache/page freshness: ${refreshAcknowledged(r, needs) ? 'signed invocation and serving census acknowledged' : 'unverified'}.\n` +
+    `First material gate failure: ${first || (source === 'partial' ? 'source coverage partial' : 'none recorded')}. Retry classification: ${retry}. Data changed: ${changed}.\n`;
+}
+
+function diagnosticDescription(needs, context) {
+  const raw=needs.seed?.outputs?.source_diagnostics;
+  if (typeof raw!=='string' || raw.length>16000) return 'Current source component diagnostics: unverified.\n';
+  let p, original, selected;
+  try {p=JSON.parse(raw);original=JSON.parse(needs.seed.outputs.report);selected=JSON.parse(needs.source_plan.outputs.domains);} catch {return 'Current source component diagnostics: unverified.\n';}
+  if (!keys(p,['version','generator_sha256','source_sha','plan_sha256','run_id','run_attempt','job_floor','scope','rows']) || p.version!==1 ||
+      p.scope!=='diagnostics_only_not_source_acceptance' || !hex(p.generator_sha256,64) || !object(original) || p.generator_sha256!==original.generator_sha256 ||
+      !hex(p.source_sha,40) || p.source_sha!==needs.source_plan?.outputs?.source_sha || p.source_sha!==needs.seed?.outputs?.source_sha ||
+      !hex(p.plan_sha256,64) || p.plan_sha256!==needs.source_plan?.outputs?.plan_sha256 || p.plan_sha256!==needs.seed?.outputs?.plan_sha256 ||
+      p.run_id!==String(context?.runId) || p.run_attempt!==context?.runAttempt || !count(p.job_floor) ||
+      !Array.isArray(selected) || selected.length<1 || selected.length>18 || !selected.every(d=>DOMAINS.has(d)) || new Set(selected).size!==selected.length ||
+      original.version!==1 || original.schema_head!=='a756b20a0001' || original.source_sha!==p.source_sha || original.plan_sha256!==p.plan_sha256 || original.run_id!==p.run_id || original.run_attempt!==p.run_attempt || original.job_floor!==p.job_floor || JSON.stringify(original.selected_domains)!==JSON.stringify(selected) || !Array.isArray(p.rows) || p.rows.length>2 || new Set(p.rows.map(row=>row?.domain)).size!==p.rows.length ||
+      JSON.stringify(p.rows.map(row=>row?.domain).sort())!==JSON.stringify(selected.filter(d=>['county_officials','debt_timeline'].includes(d)).sort()))
+    return 'Current source component diagnostics: unverified.\n';
+  let text='Component diagnostics only; publisher/source authority is separate.\n';
+  for (const row of p.rows) {
+    if (!object(row) || !['county_officials','debt_timeline'].includes(row.domain) || !selected.includes(row.domain) ||
+        !count(row.job_id) || row.job_id<=p.job_floor || !['valid','refused','legacy_unverified'].includes(row.validation))
+      return 'Current source component diagnostics: unverified.\n';
+    text+=`Source diagnostic job ${row.job_id}: ${row.domain}.\n`;
+    if (row.validation!=='valid') {if (!keys(row,['domain','job_id','validation'])) return 'Current source component diagnostics: unverified.\n';text+=`${row.domain}: ${row.validation}.\n`;continue;}
+    if (row.domain==='county_officials') {
+      const s=row.source_status;
+      if (!keys(row,['domain','job_id','validation','source_status']) || !object(s) || s.fixture_used!==false) return 'Current source component diagnostics: unverified.\n';
+      if (s.state==='unavailable') {
+        const age=v=>v===null || typeof v==='number' && Number.isFinite(v) && v>=0 && v<=Number.MAX_SAFE_INTEGER;
+        if (!keys(s,['state','fixture_used','stored_governors_retained','dated_stored_governors','oldest_age_seconds','newest_age_seconds']) ||
+            !count(s.stored_governors_retained) || s.stored_governors_retained>47 || !count(s.dated_stored_governors) || s.dated_stored_governors>s.stored_governors_retained ||
+            !age(s.oldest_age_seconds) || !age(s.newest_age_seconds) ||
+            (s.dated_stored_governors===0 ? s.oldest_age_seconds!==null || s.newest_age_seconds!==null : s.oldest_age_seconds===null || s.newest_age_seconds===null || s.newest_age_seconds>s.oldest_age_seconds))
+          return 'Current source component diagnostics: unverified.\n';
+        text+=`CoG unavailable; retained governors=${s.stored_governors_retained}; dated=${s.dated_stored_governors}; oldest age seconds=${s.oldest_age_seconds ?? 'unknown'}; newest age seconds=${s.newest_age_seconds ?? 'unknown'}; fixture used=false.\n`;
+      } else {
+        if (!keys(s,['state','fixture_used','governors_observed','deputies_state']) || !['live','partial'].includes(s.state) || s.governors_observed!==47 || s.deputies_state!==(s.state==='live'?'live':'unavailable'))
+          return 'Current source component diagnostics: unverified.\n';
+        text+=`CoG ${s.state}; observed governors=47; deputies=${s.deputies_state}.\n`;
+      }
+    } else {
+      const d=row.debt_coverage;
+      if (!keys(row,['domain','job_id','validation','debt_coverage']) || !keys(d,['years','measures','qualified_ratios','unavailable_ratios']) || !count(d.years) || d.years<1 || d.years>200 ||
+          !keys(d.measures,['observed_this_run','observed_unretained','retained_qualified','unqualified']) ||
+          !Object.values(d.measures).every(count) || Object.values(d.measures).reduce((a,b)=>a+b,0)!==d.years*4 ||
+          !count(d.qualified_ratios) || !count(d.unavailable_ratios) || d.qualified_ratios+d.unavailable_ratios!==d.years)
+        return 'Current source component diagnostics: unverified.\n';
+      text+=`Debt component coverage across ${d.years} years: freshly observed=${d.measures.observed_this_run}; observed without retained authority=${d.measures.observed_unretained}; retained qualified=${d.measures.retained_qualified}; unqualified=${d.measures.unqualified}; qualified stock/GDP pairs=${d.qualified_ratios}; unavailable pairs=${d.unavailable_ratios}.\n`;
+    }
+  }
+  return text;
+}
+
+function diagnosticState(needs, context) {
+  if (!diagnosticDescription(needs,context).startsWith('Component diagnostics only;')) return {scope:'unverified'};
+  const p=JSON.parse(needs.seed.outputs.source_diagnostics), original=JSON.parse(needs.seed.outputs.report);
+  const rows=p.rows.slice().sort((a,b)=>a.domain.localeCompare(b.domain)).map(row=> {
+    const result={domain:row.domain,validation:row.validation};
+    if (row.source_status) {
+      result.source_status={...row.source_status};
+      delete result.source_status.oldest_age_seconds; delete result.source_status.newest_age_seconds;
+    }
+    if (row.debt_coverage) result.debt_coverage=row.debt_coverage;
+    return result;
+  });
+  const reasons=new Set(['identity_refused','execution_unverified','prior_steps_unverified','execution_window_refused',
+    'execution_identity_refused','boundary_refused','inventory_refused','job_identity_refused','job_result_refused',
+    'source_diagnostic_refused','job_plan_refused','job_errors_refused','source_mode_refused','completion_unknown',
+    'completion_inconsistent','incomplete_subtype_unknown','selected_inventory_mismatch']);
+  const refusals=Array.isArray(original.refusals) && original.refusals.length<=reasons.size && original.refusals.every(v=>reasons.has(v))
+    ? [...new Set(original.refusals)].sort() : 'unverified';
+  let jobs='unverified';
+  if (Array.isArray(original.jobs) && original.jobs.length<=18 &&
+      new Set(original.jobs.map(j=>j?.domain)).size===original.jobs.length && original.jobs.every(j=>object(j) &&
+        DOMAINS.has(j.domain) && original.selected_domains.includes(j.domain) && count(j.job_id) && j.job_id>p.job_floor &&
+        ['live','partial','fixture','unknown'].includes(j.source_mode) &&
+        ['complete','incomplete','not_required','unknown'].includes(j.required_completion) && count(j.error_count) && validRetention(j.retention) &&
+        Array.isArray(j.held_proposals) && j.held_proposals.length<=16 && j.held_proposals.every(h=>object(h) && count(h.document_id) &&
+          h.document_id>0 && [h.source_sha256,h.candidate_sha256,h.previous_sha256].every(v=>hex(v,64))))) {
+    jobs=original.jobs.slice().sort((a,b)=>a.domain.localeCompare(b.domain)).map(j=>({domain:j.domain,source_mode:j.source_mode,
+      required_completion:j.required_completion,error_count:j.error_count,retention:j.retention,
+      holds:j.held_proposals.map(h=>[h.document_id,h.source_sha256,h.candidate_sha256,h.previous_sha256]).sort((a,b)=>a[0]-b[0])}));
+  }
+  return {scope:'diagnostic_schema_only',rows,refusals,jobs};
+}
+
+function incidentState(receipt, result, needs, context) {
+  const value={phases:result.rows.map(row=>[row.key,row.result,row.problem]),classification:receipt?.classification ?? 'unverified',
+    diagnostics:diagnosticState(needs,context),
+    domains:receipt?.jobs.slice().sort((a,b)=>a.domain.localeCompare(b.domain)).map(j=>[j.domain,j.status,j.source_mode,j.required_completion,j.error_count,j.retention.state,
+      j.held_proposals.map(h=>[h.document_id,h.source_sha256,h.candidate_sha256,h.previous_sha256])]) ?? []};
+  return require('node:crypto').createHash('sha256').update(JSON.stringify(value)).digest('hex');
+}
+
+function runDescription(r, needs, context) {
   const acknowledgements = needs.revalidate?.outputs || {};
-  const backend = acknowledgements.backend === 'true' ? 'acknowledged' : 'unverified';
-  const pages = acknowledgements.pages === 'true' && backend === 'acknowledged' ? 'acknowledged' : 'unverified';
-  let text = `**Refresh receipts:** backend ${backend}; pages ${pages}. Integrity job: ${STATES.has(needs.validate?.result) ? needs.validate.result : 'unknown'}.\n\n`;
+  const backend = backendAcknowledged(r, needs) ? 'acknowledged' : 'unverified';
+  const pages = refreshAcknowledged(r, needs) ? 'acknowledged' : 'unverified';
+  let text = fiveOutcomes(r, needs) + diagnosticDescription(needs, context) + `\n**Refresh receipts:** backend ${backend}; pages ${pages}. Integrity job: ${STATES.has(needs.validate?.result) ? needs.validate.result : 'unknown'}.\n\n`;
   if (!r) return text + '**Current-run report:** unverified (missing, malformed or mismatched identity).\n';
   text += `**Current-run report v1:** ${r.classification}; source \`${r.source_sha}\`; schema \`${r.schema_head}\`; plan \`${r.plan_sha256}\`.\n` +
     `Run ${r.run_id}:${r.run_attempt}; job floor ${r.job_floor}; CLI executed=${r.cli_executed}, exit=${r.cli_exit ?? 'unknown'}; dry run=${r.dry_run}; bootstrap selected=${r.bootstrap_selected}.\n\n` +
@@ -186,7 +319,7 @@ function assess(needs, inputs, receipt = null) {
       else if (receipt.classification !== 'complete') { detail += ' — required source evidence incomplete or execution unsafe'; problem = true; }
     }
     if (key === 'revalidate' && result === 'success' &&
-        (needs.revalidate?.outputs?.backend !== 'true' || needs.revalidate?.outputs?.pages !== 'true')) {
+        !refreshAcknowledged(receipt, needs)) {
       detail = 'success — refresh acknowledgements unverified'; problem = true;
     }
     return {key, label, result, detail, problem};
@@ -211,7 +344,7 @@ function healthDescription(needs) {
   if (outputs.unprobed !== '0') {
     return `❔ Partial — ${outputs.unprobed} source(s) not probed before the health-check budget ran out`;
   }
-  return '✅ No critical source failures (warnings, if any, are in the health-check job)';
+  return '✅ Endpoint reachability diagnostics passed; content, coverage and retention are separate';
 }
 
 async function report({github, context, core, env = process.env}) {
@@ -223,10 +356,10 @@ async function report({github, context, core, env = process.env}) {
   if (!needs || Array.isArray(needs) || typeof needs !== 'object' ||
       !inputs || Array.isArray(inputs) || typeof inputs !== 'object') throw new Error('Invalid notification inputs');
   const receipt = currentRun(needs, {...context, runAttempt:env.PIPELINE_RUN_ATTEMPT});
-  const diagnostics = runDescription(receipt, needs);
+  const diagnostics = runDescription(receipt, needs, {...context,runAttempt:env.PIPELINE_RUN_ATTEMPT});
   const result = assess(needs, inputs, receipt);
   const health = healthDescription(needs);
-  const outcome = result.problems.length ? '⚠️ Pipeline completion not verified' : '✅ Pipeline jobs completed as planned';
+  const outcome = result.problems.length ? '⚠️ Pipeline completion not verified' : receipt?.jobs.some(j=>j.source_mode === 'partial') ? '⚠️ Execution finished; source coverage remains partial' : '✅ Pipeline jobs completed as planned';
   const table = '| Job | Result | Interpretation |\n| --- | --- | --- |\n' +
     result.rows.map(row => `| ${row.label} (\`${row.key}\`) | ${row.result} | ${row.detail} |`).join('\n');
   await core.summary.addRaw(`\n### Pipeline outcome\n\n**${outcome}**\n\n${table}\n\n` +
@@ -257,7 +390,11 @@ async function report({github, context, core, env = process.env}) {
   const domain = typeof rawDomain === 'string' && /^[a-z][a-z_]{0,63}$/.test(rawDomain) ? rawDomain : 'unverified selection';
   const event = ['schedule', 'workflow_dispatch'].includes(context.eventName) ? context.eventName : 'unknown';
   const failed = result.problems.map(row => row.label).join(', ');
-  const body = `${INCIDENT}\n${observation}\n## Automated Data Pipeline Failure\n\n` +
+  const state = incidentState(receipt,result,needs,{...context,runAttempt:env.PIPELINE_RUN_ATTEMPT});
+  const previous = managed[0]?.body.match(/<!-- seed-pipeline-state:([0-9a-f]{64}) -->/)?.[1];
+  const transition = previous ? previous === state ? 'unchanged' : 'changed' : 'first observation';
+  await core.summary.addRaw(`\nActionable state: ${transition}; user notification delivery remains unobserved.\n`).write();
+  const body = `${INCIDENT}\n${observation}\n<!-- seed-pipeline-state:${state} -->\n## Automated Data Pipeline Failure\n\n` +
     `**Failed Steps:** ${failed}\n**Health Check:** ${health}\n` +
     `**Run:** ${runUrl}\n**Attempt:** ${attempt}\n**Triggered by:** ${event}\n**Domain:** ${domain}\n\n${table}\n\n${diagnostics}\n` +
     `### Action Required\n1. Inspect the [workflow run logs](${runUrl}) and admission/source-plan diagnostics before considering any write.\n` +
@@ -270,7 +407,7 @@ async function report({github, context, core, env = process.env}) {
   await core.summary.addRaw(`\nManaged incident ${managed.length ? 'updated' : 'created'} successfully. Pipeline failure remains intentional; user notification delivery is unobserved.\n`).write();
 }
 
-module.exports = {assess, healthDescription, currentRun, validRetention, verifyRefresh, runDescription, report};
+module.exports = {executionVerified, diagnosticState, diagnosticDescription, incidentState, fiveOutcomes, refreshAcknowledged, assess, healthDescription, currentRun, validRetention, verifyRefresh, runDescription, report};
 
 if (require.main === module) {
   try {

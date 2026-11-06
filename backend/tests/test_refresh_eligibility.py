@@ -380,6 +380,66 @@ def test_actual_failed_gate_outputs_reach_preflight_through_declared_job_outputs
     assert selected(needs),preflight(needs).stderr
 
 
+@pytest.mark.parametrize('fault',['diagnostics','grading','close','publish_log','contradictory_grade'])
+def test_actual_terminal_gate_never_publishes_eligibility_after_unknown_failure(tmp_path,monkeypatch,fault):
+    from sqlalchemy import create_engine,select
+    from sqlalchemy.orm import Session
+    from models import IngestionJob
+    from tests import test_hollow_run_gate as gate
+    url=gate._write_db(tmp_path,[('fiscal_summary','completed',0,1,1,'partial','fiscal_components_incomplete')])
+    engine=create_engine(url)
+    try:
+        with Session(engine)as session:
+            job=session.scalar(select(IngestionJob));native,_,_=execution_fixture()
+            meta=native[0].meta;meta['execution_plan']={'planned_domains':['fiscal_summary'],'execution_order':['fiscal_summary']}
+            job.meta=meta;session.commit()
+    finally:engine.dispose()
+    injection=tmp_path/'injection';injection.mkdir()
+    setup='def fail(*a,**k):raise RuntimeError("INJECTED_TERMINAL_RESULT_FAILURE")\n'
+    if fault=='diagnostics':setup+='from seeding import current_run\ncurrent_run.publish_diagnostics=fail\n'
+    elif fault=='grading':setup+='from seeding import staleness\nstaleness.hollow_run_findings=fail\n'
+    elif fault=='close':
+        setup+='import database\noriginal=database.SessionLocal\ndef session():\n value=original();value.close=fail;return value\ndatabase.SessionLocal=session\n'
+    elif fault=='publish_log':
+        setup+='import builtins\noriginal=builtins.print\ndef print_(*a,**k):\n if a and str(a[0]).startswith("Current-run classification:"):fail()\n return original(*a,**k)\nbuiltins.print=print_\n'
+    else:
+        setup+='from seeding import staleness\nfrom types import SimpleNamespace\nstaleness.hollow_run_findings=lambda jobs:[SimpleNamespace(level="FAIL")]\n'
+    (injection/'sitecustomize.py').write_text(setup)
+    output=tmp_path/'outputs';output.touch();monkeypatch.setenv('GITHUB_OUTPUT',str(output))
+    actual_run=subprocess.run;captured=[]
+    def instrument(*args,**kwargs):
+        environment=kwargs.get('env',{})
+        if environment.get('DATABASE_URL')==url and args[0][:2]==['bash','-e']:
+            kwargs['env']={**environment,'PYTHONPATH':str(injection)+':'+environment['PYTHONPATH']}
+            result=actual_run(*args,**kwargs);captured.append(result);return result
+        return actual_run(*args,**kwargs)
+    monkeypatch.setattr(subprocess,'run',instrument)
+    try:gate._run_step(url,domain='fiscal_summary')
+    except AssertionError:
+        # The deliberate diagnostic fault precedes the inherited helper's
+        # header witness. Verify the raw child rather than count setup as refusal.
+        assert captured and 'RuntimeError: INJECTED_TERMINAL_RESULT_FAILURE' in captured[0].stderr
+    assert len(captured)==1 and captured[0].returncode==1
+    if fault!='contradictory_grade':
+        assert 'RuntimeError: INJECTED_TERMINAL_RESULT_FAILURE' in captured[0].stderr
+    fields=dict(line.split('=',1)for line in output.read_text().splitlines())
+    if fault=='contradictory_grade':
+        assert fields['cache_eligible']=='false' and fields['classification']=='unsafe'
+        assert 'job_result_refused' in json.loads(fields['report'])['refusals']
+    else:assert 'report' not in fields and 'cache_eligible' not in fields
+    doc=yaml.safe_load((ROOT/'.github/workflows/seed.yml').read_text())
+    import re
+    mapped={}
+    for name,address in doc['jobs']['seed']['outputs'].items():
+        match=re.fullmatch(r'\$\{\{ steps\.results\.outputs\.(\w+) \}\}',address);assert match,address
+        mapped[name]=fields.get(match[1],'')
+    needs=needs_fixture();needs['seed']['outputs']=mapped
+    if 'report'in fields:
+        report=json.loads(fields['report'])
+        needs['source_plan']['outputs'].update(plan_sha256=report['plan_sha256'],domains=json.dumps(report['selected_domains']))
+    assert not selected(needs) and preflight(needs).returncode!=0
+
+
 @pytest.mark.parametrize('accepted,seen',[(None,None),(0,1),(1,None),(1,0),(2,1)])
 def test_complete_audits_receipt_requires_positive_coherent_document_inventory(accepted,seen):
     jobs,_,context=audit_fixture();plan=SourcePlan(('audits',),False,False);job=jobs[0]
@@ -397,3 +457,16 @@ def test_complete_audits_receipt_requires_positive_coherent_document_inventory(a
     report['jobs'][0].update(accepted_documents=accepted,document_count=seen)
     needs['seed']['outputs']['report']=json.dumps(report)
     assert preflight(needs).returncode!=0
+
+
+@pytest.mark.parametrize('outcome,conclusion,job_status,allowed', [
+    ('success','success','success',True), ('failure','failure','failure',False),
+    ('failure','success','success',False), ('skipped','skipped','success',False),
+    ('cancelled','cancelled','cancelled',False)])
+def test_real_classifier_previous_step_terminal_outcomes(outcome,conclusion,job_status,allowed):
+    jobs,plan,context=execution_fixture()
+    context['prior_steps']['dependencies'].update(outcome=outcome,conclusion=conclusion)
+    context['prior_job_status']=job_status
+    report=classify(jobs,plan,context)
+    assert report['cache_eligible'] is allowed
+    assert report['classification']==('required_source_incomplete' if allowed else 'unsafe')

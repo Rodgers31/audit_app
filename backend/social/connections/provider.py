@@ -90,6 +90,37 @@ class _SecretQueryTransport(httpx.BaseTransport):
         self.transport.close()
 
 
+class _IdentityBodyStream(httpx.SyncByteStream):
+    """Check each transport read before HTTPX's chunk coalescer can copy it.
+
+    A custom transport already owns the bytes it yields; we cannot undo that
+    allocation. Refuse an oversized read before further buffering, and give
+    HTTPX at most 16 KiB at a time. Tiny trickles still check the wall/aggregate
+    deadlines on EVERY read, even when no coalesced output is ready yet.
+    """
+    def __init__(self, stream, budget, limit):
+        self.stream, self.budget, self.limit = stream, budget, limit
+
+    def __iter__(self):
+        size, started = 0, time.monotonic()
+        for raw in self.stream:
+            if type(raw) is not bytes:
+                raise ValueError('Non-byte provider stream')
+            size += len(raw)
+            if size > self.limit or time.monotonic() - started > 30:
+                raise ValueError('Provider body allowance exceeded')
+            if self.budget is not None:
+                self.budget.body(len(raw))
+            view = memoryview(raw)
+            for offset in range(0, len(view), 16384):
+                yield bytes(view[offset:offset + 16384])
+        if time.monotonic() - started > 30:
+            raise ValueError('Provider body deadline exceeded')
+
+    def close(self):
+        self.stream.close()
+
+
 @dataclass(frozen=True)
 class InspectedDiscovery:
     app_id: str
@@ -137,12 +168,14 @@ class MetaProvider:
                 # compression rather than letting a decompression bomb expand.
                 if response.headers.get('content-encoding', 'identity').lower() != 'identity':
                     raise ValueError()
+                preloaded = response.is_stream_consumed
+                response.stream = _IdentityBodyStream(response.stream, budget, MAX_BODY_BYTES)
                 chunks, size, started = [], 0, time.monotonic()
-                for chunk in response.iter_bytes():
+                for chunk in response.iter_bytes(chunk_size=16384):
                     size += len(chunk)
                     if size > MAX_BODY_BYTES or time.monotonic() - started > 30:
                         raise ValueError()
-                    if budget is not None:
+                    if preloaded and budget is not None:
                         budget.body(len(chunk))
                     chunks.append(chunk)
                 value = json.loads(b''.join(chunks))

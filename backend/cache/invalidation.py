@@ -277,3 +277,193 @@ def invalidate_all() -> Dict[str, object]:
         "marker_identity": published_identity,
         "pid": os.getpid(),
     }
+
+
+def _process(pid):
+    """Kernel PID + start ticks prevent PID reuse from certifying a worker."""
+    from pathlib import Path
+    root = Path('/proc') / str(pid)
+    raw = (root / 'stat').read_text()
+    fields = raw.rsplit(') ', 1)[1].split()
+    command = (root / 'cmdline').read_bytes()
+    if len(command) > 32768 or not fields[19].isdigit() or not fields[1].isdigit():
+        raise ValueError('Malformed process identity')
+    return {'pid': pid, 'parent': int(fields[1]), 'identity': f'{pid}:{fields[19]}',
+            'command': command.replace(b'\0', b' ').decode('utf-8', errors='strict')}
+
+
+
+def _web_launch(command, module):
+    """Recognize the actual console/module launch, never a path substring."""
+    import re
+    import shlex
+    from pathlib import Path
+    parts = shlex.split(command)
+    if not parts:
+        return False
+    first = Path(parts[0]).name
+    if module == 'gunicorn' and first == 'gunicorn:' and len(parts) > 1 and parts[1] in ('master', 'worker'):
+        return True
+    if first == module:
+        return True
+    return (re.fullmatch(r'python(?:[0-9]+(?:\.[0-9]+)*)?', first) is not None and len(parts) > 1
+            and (parts[1:3] == ['-m', module] or Path(parts[1]).name == module))
+
+
+def _other_web_processes(allowed):
+    """Read kernel command inventories twice; unknown/changing scope refuses."""
+    from pathlib import Path
+    entries = sorted(p for p in Path('/proc').iterdir() if p.name.isdigit())
+    if not 1 <= len(entries) <= 4096:
+        raise ValueError('Process census exceeds bound')
+    peers = []
+    for entry in entries:
+        if int(entry.name) in allowed:
+            continue
+        try:
+            raw = (entry / 'cmdline').read_bytes()
+        except FileNotFoundError:
+            raise ValueError('Process inventory changed') from None
+        if len(raw) > 32768:
+            raise ValueError('Process command exceeds bound')
+        command = raw.replace(b'\0', b' ').decode('utf-8', errors='strict')
+        if _web_launch(command, 'uvicorn') or _web_launch(command, 'gunicorn'):
+            peers.append(int(entry.name))
+    if entries != sorted(p for p in Path('/proc').iterdir() if p.name.isdigit()):
+        raise ValueError('Process inventory changed')
+    return peers
+
+def serving_census() -> Dict[str, object]:
+    """Census the actual web workers in the current Linux container.
+
+    Supported deployments are a Gunicorn master and its workers, or a PID1
+    Uvicorn process (the repository container contract). Unknown supervisors,
+    multi-process Uvicorn, process churn and unreadable procfs fail closed.
+    This makes no claim about instances in other PID namespaces; deployment
+    acceptance must separately verify the existing single-instance topology.
+    """
+    import hashlib
+    import re
+    from pathlib import Path
+    try:
+        me = _process(os.getpid())
+        parent = _process(me['parent']) if me['parent'] > 0 else None
+        if parent is not None and _web_launch(parent['command'], 'gunicorn'):
+            supervisor = parent
+            def workers():
+                found = []
+                # Read the supervisor's kernel child list, not a self-reported
+                # environment count or a random sample of load-balanced HTTP.
+                children = (Path('/proc') / str(parent['pid']) / 'task' / str(parent['pid']) / 'children').read_text().split()
+                if not 1 <= len(children) <= 64:
+                    raise ValueError('Empty/oversized web census')
+                for pid in children:
+                    item = _process(int(pid))
+                    if item['parent'] != parent['pid'] or not _web_launch(item['command'], 'gunicorn'):
+                        raise ValueError('Unrecognized supervisor child')
+                    found.append(item['identity'])
+                return sorted(found)
+            before = workers()
+            if before != workers():
+                raise ValueError('Serving census changed')
+        elif me['pid'] == 1 and me['parent'] == 0 and _web_launch(me['command'], 'uvicorn'):
+            # Refuse an unaccounted parent/sibling topology. Uvicorn's spawned
+            # worker command does not contain uvicorn and cannot enter here.
+            count = re.search(r'--workers(?:=|\s+)(\S+)', me['command'])
+            if (count is not None and count[1] != '1') or (count is None and os.getenv('WEB_CONCURRENCY', '1') != '1'):
+                raise ValueError('Unqualified multi-process Uvicorn census')
+            if _other_web_processes({me['pid']}) or _other_web_processes({me['pid']}):
+                raise ValueError('Unaccounted web process peers')
+            supervisor, before = me, [me['identity']]
+        else:
+            raise ValueError('Unknown web supervisor')
+        if me['identity'] not in before or _process(supervisor['pid'])['identity'] != supervisor['identity']:
+            raise ValueError('Serving process changed')
+        allowed = {supervisor['pid'], *(int(worker.split(':')[0]) for worker in before)}
+        if _other_web_processes(allowed) or _other_web_processes(allowed):
+            raise ValueError('Unaccounted web master or worker')
+        _listener_scope(allowed)
+        boot = Path('/proc/sys/kernel/random/boot_id').read_text().strip()
+        namespace = os.stat('/proc/self/ns/pid').st_ino
+        instance = hashlib.sha256(f'{boot}:{namespace}:{supervisor["identity"]}'.encode()).hexdigest()
+        return {'scope': 'container', 'instance': instance, 'supervisor': supervisor['identity'],
+                'workers': before, 'worker': me['identity']}
+    except (OSError, ValueError, IndexError, UnicodeError) as exc:
+        raise InvalidationError('serving_census_unverified', 'Actual serving web-process census unavailable') from exc
+
+
+def _tcp_listeners():
+    """Bounded kernel TCP listener inventory: inode -> bound port."""
+    from pathlib import Path
+    listeners = {}
+    for name in ('tcp', 'tcp6'):
+        with (Path('/proc/net') / name).open() as stream:
+            raw = stream.read(1024 * 1024 + 1)
+        if len(raw) > 1024 * 1024:
+            raise ValueError('Kernel TCP inventory exceeds bound')
+        for line in raw.splitlines()[1:]:
+            fields = line.split()
+            if len(fields) < 10:
+                raise ValueError('Malformed kernel TCP inventory')
+            if fields[3] == '0A':
+                inode, port = int(fields[9]), int(fields[1].rsplit(':', 1)[1], 16)
+                if inode <= 0 or not 0 < port <= 65535 or inode in listeners:
+                    raise ValueError('Malformed kernel listener')
+                listeners[inode] = port
+    return listeners
+
+
+def _socket_inodes(pid, remaining):
+    """Read descriptor links, never their content or another process's secrets."""
+    from pathlib import Path
+    import re
+    found = set()
+    directory = Path('/proc') / str(pid) / 'fd'
+    for index, entry in enumerate(directory.iterdir()):
+        remaining[0] -= 1
+        if index >= 4096 or remaining[0] < 0:
+            raise ValueError('Kernel descriptor inventory exceeds bound')
+        try:
+            link = os.readlink(entry)
+        except FileNotFoundError:
+            # Ordinary accepted connections can close during enumeration. The
+            # LISTEN endpoint inventory is independently checked before/after.
+            continue
+        match = re.fullmatch(r'socket:\[([0-9]+)\]', link)
+        if match:
+            found.add(int(match[1]))
+    return found
+
+
+def _listener_scope(allowed):
+    """Reject hidden masters/custom servers sharing the actual serving ports.
+
+    SO_REUSEPORT creates different inodes, so matching only our inherited socket
+    is insufficient. Inspect every listener on our bound ports and all of its
+    holders. This proof is additional to exact supervisor/child/launch checks.
+    """
+    from pathlib import Path
+    before = _tcp_listeners()
+    own = _socket_inodes(os.getpid(), [4096]) & before.keys()
+    if not own:
+        raise ValueError('Actual serving listener absent')
+    ports = {before[inode] for inode in own}
+    targets = {inode: port for inode, port in before.items() if port in ports}
+    def holders():
+        result, remaining = set(), [100000]
+        for index, entry in enumerate(Path('/proc').iterdir()):
+            if index > 8192:
+                raise ValueError('Kernel process inventory exceeds bound')
+            if not entry.name.isdigit():
+                continue
+            try:
+                inodes = _socket_inodes(int(entry.name), remaining)
+            except FileNotFoundError:
+                continue  # An exited non-serving process is not a live holder.
+            if inodes & targets.keys():
+                result.add(int(entry.name))
+        return result
+    first, second = holders(), holders()
+    after = {inode: port for inode, port in _tcp_listeners().items() if port in ports}
+    if first != second or after != targets or first != set(allowed):
+        raise ValueError('Serving listener holders missing, changed or unaccounted')

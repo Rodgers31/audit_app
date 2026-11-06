@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "scope": "workflow_refresh offline fixture qualification; native/PG/production remain distinct",
+  "omission_correction": "Original runtime-profile family was omitted by the prior union selector, concealing the zero-inventory timing fixture failure. Always select it explicitly.",
+  "always": [
+    "backend/tests/test_nightly_runtime_profile.py",
+    "backend/tests/test_seeding_cli_budget.py",
+    "backend/tests/test_refresh_eligibility.py",
+    "backend/tests/test_refresh_workflow_responses.py",
+    "backend/tests/test_workflow_refresh_signed.py",
+    "backend/tests/test_workflow_refresh_adversarial.py",
+    "backend/tests/test_workflow_refresh_review_controls.py",
+    "backend/tests/test_workflow_refresh_diagnostics.py",
+    "backend/tests/test_cache_generation_status.py",
+    "backend/tests/test_cache_generation_processes.py",
+    "backend/tests/test_health_selected_plan.py",
+    "backend/tests/test_hollow_run_gate.py",
+    "backend/tests/test_refresh_completion.py",
+    "backend/tests/test_refresh_summary_truth.py",
+    "backend/tests/test_partial_refresh_reporting.py",
+    "backend/tests/test_refresh_acceptance.py",
+    "backend/tests/test_refresh_native_budget_scope.py",
+    "backend/tests/social/test_connections_provider.py",
+    "backend/tests/social/test_meta_verification_budget.py",
+    ".github/scripts/tests/test_seed_notifications.py",
+    "scripts/verification/nightly_workflow/test_refresh.py",
+    "scripts/verification/nightly_workflow/test_observation.py",
+    "scripts/verification/nightly_workflow/test_selectors.py"
+  ],
+  "acceptance_owned_held": [
+    "backend/tests/test_nightly_workflow_validation.py",
+    "backend/tests/test_refresh_current_run_postgres.py"
+  ],
+  "frontend": [
+    "frontend/__tests__/api/revalidate.test.ts",
+    "frontend/__tests__/api/revalidateManifest.test.ts"
+  ],
+  "workflow_semantic": "Official checksum-verified actionlint1.7.12 over every .github/workflows/*.yml/.yaml (all six); distinct from hosted compilation/execution.",
+  "held_note": "Original36 means35 actual PostgreSQL cases plusone constant. Do not count this offline selector as that PG inventory or combined native acceptance."
+}
