@@ -557,7 +557,10 @@ def test_national_media_search_distinguishes_empty_failure_and_partial(
         def __init__(self):
             self.calls = []
 
-        def get(self, url, *, raise_for_status):
+        def get(self, url, *, raise_for_status, cache, max_seconds, max_bytes, allowed_hosts):
+            assert raise_for_status is True and cache is False
+            assert max_seconds == 45.0 and max_bytes == 4 * 1024 * 1024
+            assert allowed_hosts == {"oagkenya.go.ke", "www.oagkenya.go.ke"}
             self.calls.append(url)
             term = next(
                 t for t in ("county", "audit report", "financial statements")
@@ -588,7 +591,10 @@ def test_malformed_media_items_do_not_certify_empty_discovery():
             return ["upstream error"]
 
     class Client:
-        def get(self, url, *, raise_for_status):
+        def get(self, url, *, raise_for_status, cache, max_seconds, max_bytes, allowed_hosts):
+            assert raise_for_status is True and cache is False
+            assert max_seconds == 45.0 and max_bytes == 4 * 1024 * 1024
+            assert allowed_hosts == {"oagkenya.go.ke", "www.oagkenya.go.ke"}
             return Response()
 
     urls, report = audits_domain._discovered_urls(
@@ -614,7 +620,10 @@ def test_malformed_media_url_does_not_discard_earlier_valid_candidate():
         def __init__(self):
             self.calls = 0
 
-        def get(self, url, *, raise_for_status):
+        def get(self, url, *, raise_for_status, cache, max_seconds, max_bytes, allowed_hosts):
+            assert raise_for_status is True and cache is False
+            assert max_seconds == 45.0 and max_bytes == 4 * 1024 * 1024
+            assert allowed_hosts == {"oagkenya.go.ke", "www.oagkenya.go.ke"}
             items = (
                 [{"mime_type": "application/pdf", "source_url": NATIONAL}]
                 if self.calls == 0 else

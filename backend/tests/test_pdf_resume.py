@@ -99,7 +99,8 @@ class _FakeClient:
         self._responder = responder
         self.ranges: list[str | None] = []
 
-    def stream(self, method, url, headers=None, timeout=None):
+    def stream(self, method, url, headers=None, timeout=None, *, follow_redirects=None):
+        assert follow_redirects is False
         rng = (headers or {}).get("Range")
         self.ranges.append(rng)
         response = self._responder(rng)

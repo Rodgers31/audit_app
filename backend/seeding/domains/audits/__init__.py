@@ -52,6 +52,7 @@ from ...registries import register_domain
 from ...source_registry import SOURCE_REGISTRY, SourceDataset
 from ...types import DomainRunContext, DomainRunResult
 from . import fetcher  # retained for its FY-derivation helpers + tests
+from .transport import OfficialListingClient
 
 logger = logging.getLogger("seeding.audits")
 
@@ -472,7 +473,7 @@ def run(
                 discovery = (
                     discovery_for(source_entries)
                     if selected is not None
-                    else discover_county_audit_documents(client)
+                    else discover_county_audit_documents(OfficialListingClient(client))
                 )
                 if not context.audits_observe_listing:
                     metadata["oag_county_discovery"] = (

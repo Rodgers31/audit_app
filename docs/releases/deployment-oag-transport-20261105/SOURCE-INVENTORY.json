@@ -1,0 +1,230 @@
+{
+  "schema": "deployment-oag-source-inventory-v1",
+  "generated_by": "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/deployment-repair-dispatch-20261105/oag_transport/write_lane_docs_v2.py",
+  "generator_sha256": "0fad4ba56cf26ad76e7ac53cab5322f2709e1ba049ec228b732019f3455dc11b",
+  "observation_scope": "Actual original official HTTPS200/local readback only; no production origin persistence, provider write, source/native admission or adoption.",
+  "documents": [
+    {
+      "source_document_id": 2392,
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-NATIONAL-GOVERNMENT-2024-2025.pdf",
+      "category": "held_document",
+      "sha256": "d8c72b4fbda2c920f30f79b3e0554f9965165735d220a810e6ae3994e2dbf899",
+      "size_bytes": 13428198,
+      "actual_local_http_started_at": "2026-11-05T23:58:30.046942+00:00",
+      "actual_local_http_completed_at": "2026-11-05T23:58:34.920001+00:00",
+      "exact_expected_edition": true,
+      "local_identical_readback": true,
+      "local_observation_sha256": "037e1a2eafee06a5ad3cfd415c7511c0d8026d52149214c4444f0fe0eefe3a11",
+      "required_later_scope": "New separately authorized bounded officialGET via admitted client/runtime and RUNNING audits PostgreSQL job; configured private report retention/readback; immutable original and distinct validation readback. These retained local bytes cannot recreate the lost in-process acquisition capability.",
+      "current_production_origin_persistence": false,
+      "native_publication_authority": false
+    },
+    {
+      "source_document_id": 2395,
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/02/REPORT-OF-THE-AUDITOR-GENERAL-FOR-THE-COUNTY-GOVERNMENTS-FOR-THE-YEAR-2020-2021-_VOLUME-I-COUNTY-EXECUTIVES.pdf",
+      "category": "accepted_inventory_origin_gap",
+      "sha256": "15a1f266881cd897e168bd21f53216e7e204c5fba5af32ce2888ba67b5606504",
+      "size_bytes": 7969551,
+      "actual_local_http_started_at": "2026-11-05T23:58:34.940107+00:00",
+      "actual_local_http_completed_at": "2026-11-05T23:58:38.824856+00:00",
+      "exact_expected_edition": true,
+      "local_identical_readback": true,
+      "local_observation_sha256": "fa71bb13948df83e34eb37fe839b6e926fa862fccc4c3107ccbbf3b18e676f83",
+      "required_later_scope": "New separately authorized bounded officialGET via admitted client/runtime and RUNNING audits PostgreSQL job; configured private report retention/readback; immutable original and distinct validation readback. These retained local bytes cannot recreate the lost in-process acquisition capability.",
+      "current_production_origin_persistence": false,
+      "native_publication_authority": false
+    },
+    {
+      "source_document_id": 2396,
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/02/REPORT-OF-THE-AUDITOR-GENERAL-FOR-THE-COUNTY-GOVERNMENTS-FOR-THE-YEAR-2020-2021-_VOLUME-II-COUNTY-ASSEMBLIES.pdf",
+      "category": "accepted_inventory_origin_gap",
+      "sha256": "34b11075b4855e341802dd81bacc4b0f6dc4093ebb15b4c6bb00c0ad6c5a6614",
+      "size_bytes": 6938538,
+      "actual_local_http_started_at": "2026-11-05T23:58:38.837676+00:00",
+      "actual_local_http_completed_at": "2026-11-05T23:58:42.583716+00:00",
+      "exact_expected_edition": true,
+      "local_identical_readback": true,
+      "local_observation_sha256": "0dfeb9527998dee90625f22235614bc8d447f334414c5a8cce05953c9c8eb988",
+      "required_later_scope": "New separately authorized bounded officialGET via admitted client/runtime and RUNNING audits PostgreSQL job; configured private report retention/readback; immutable original and distinct validation readback. These retained local bytes cannot recreate the lost in-process acquisition capability.",
+      "current_production_origin_persistence": false,
+      "native_publication_authority": false
+    },
+    {
+      "source_document_id": 2534,
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf",
+      "category": "accepted_inventory_origin_gap",
+      "sha256": "07db60417ab122a6082fea3ec4bf70b5038e7eb3554d1e9ca1f5fee0eae5d50c",
+      "size_bytes": 9976586,
+      "actual_local_http_started_at": "2026-11-05T23:58:42.592205+00:00",
+      "actual_local_http_completed_at": "2026-11-05T23:58:51.479251+00:00",
+      "exact_expected_edition": true,
+      "local_identical_readback": true,
+      "local_observation_sha256": "985d78b555c15ccf4171b3011f7495eca41060a7b8b21037d4d4e001200f62d3",
+      "required_later_scope": "New separately authorized bounded officialGET via admitted client/runtime and RUNNING audits PostgreSQL job; configured private report retention/readback; immutable original and distinct validation readback. These retained local bytes cannot recreate the lost in-process acquisition capability.",
+      "current_production_origin_persistence": false,
+      "native_publication_authority": false
+    },
+    {
+      "source_document_id": 2535,
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf",
+      "category": "accepted_inventory_origin_gap",
+      "sha256": "0cc278f2ac0cc11be86b03dea6f7f7c97710c3f3903145716f403292967387fe",
+      "size_bytes": 13149438,
+      "actual_local_http_started_at": "2026-11-05T23:58:51.493291+00:00",
+      "actual_local_http_completed_at": "2026-11-05T23:58:56.689260+00:00",
+      "exact_expected_edition": true,
+      "local_identical_readback": true,
+      "local_observation_sha256": "03e4ad6958403b3118d1dfd97a6e07289a9814b8a02a39c1bdb3e4511f65c10c",
+      "required_later_scope": "New separately authorized bounded officialGET via admitted client/runtime and RUNNING audits PostgreSQL job; configured private report retention/readback; immutable original and distinct validation readback. These retained local bytes cannot recreate the lost in-process acquisition capability.",
+      "current_production_origin_persistence": false,
+      "native_publication_authority": false
+    },
+    {
+      "source_document_id": 2536,
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf",
+      "category": "accepted_inventory_origin_gap",
+      "sha256": "5c0ebf31a7cd6dc07558e55507b2b5228fb9a653e638a39abd72beffa46674cf",
+      "size_bytes": 7016269,
+      "actual_local_http_started_at": "2026-11-05T23:58:56.706387+00:00",
+      "actual_local_http_completed_at": "2026-11-05T23:59:00.115562+00:00",
+      "exact_expected_edition": true,
+      "local_identical_readback": true,
+      "local_observation_sha256": "01953530f6310160e6027ff43e735ea10d125cdf1f6d1a14112d17f3defb3701",
+      "required_later_scope": "New separately authorized bounded officialGET via admitted client/runtime and RUNNING audits PostgreSQL job; configured private report retention/readback; immutable original and distinct validation readback. These retained local bytes cannot recreate the lost in-process acquisition capability.",
+      "current_production_origin_persistence": false,
+      "native_publication_authority": false
+    },
+    {
+      "source_document_id": 2537,
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf",
+      "category": "accepted_inventory_origin_gap",
+      "sha256": "e873eb8a2f5b24366b4b847e529c832ef42d2aea02702a015597c6c406f9b953",
+      "size_bytes": 8756083,
+      "actual_local_http_started_at": "2026-11-05T23:59:00.124522+00:00",
+      "actual_local_http_completed_at": "2026-11-05T23:59:04.417718+00:00",
+      "exact_expected_edition": true,
+      "local_identical_readback": true,
+      "local_observation_sha256": "1ca9b72410fc2bda3c37369eaaa51c24d0673b1c2804aae02ef5a984008da1ed",
+      "required_later_scope": "New separately authorized bounded officialGET via admitted client/runtime and RUNNING audits PostgreSQL job; configured private report retention/readback; immutable original and distinct validation readback. These retained local bytes cannot recreate the lost in-process acquisition capability.",
+      "current_production_origin_persistence": false,
+      "native_publication_authority": false
+    },
+    {
+      "source_document_id": 2539,
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf",
+      "category": "accepted_inventory_origin_gap",
+      "sha256": "bf36d9e65b7403f9ce66eaf32890834f546ca3674c331a2d5f734f9e68c59bcd",
+      "size_bytes": 34055119,
+      "actual_local_http_started_at": "2026-11-05T23:59:04.432821+00:00",
+      "actual_local_http_completed_at": "2026-11-05T23:59:16.584660+00:00",
+      "exact_expected_edition": true,
+      "local_identical_readback": true,
+      "local_observation_sha256": "70fd938777c757288d5e12264d2b62327878b67ae1310d3ba414515af10b2fe5",
+      "required_later_scope": "New separately authorized bounded officialGET via admitted client/runtime and RUNNING audits PostgreSQL job; configured private report retention/readback; immutable original and distinct validation readback. These retained local bytes cannot recreate the lost in-process acquisition capability.",
+      "current_production_origin_persistence": false,
+      "native_publication_authority": false
+    },
+    {
+      "source_document_id": 2540,
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf",
+      "category": "accepted_inventory_origin_gap",
+      "sha256": "683fa522bf11eaa2b0bc2a9eef51eadc3d664d9a512d3af63cb6e9479820f8a2",
+      "size_bytes": 32379711,
+      "actual_local_http_started_at": "2026-11-05T23:59:16.620603+00:00",
+      "actual_local_http_completed_at": "2026-11-05T23:59:23.986563+00:00",
+      "exact_expected_edition": true,
+      "local_identical_readback": true,
+      "local_observation_sha256": "965ee5b588c5358b305822c5b70a7594488f438cfcbd1b9235b3d48241623fe6",
+      "required_later_scope": "New separately authorized bounded officialGET via admitted client/runtime and RUNNING audits PostgreSQL job; configured private report retention/readback; immutable original and distinct validation readback. These retained local bytes cannot recreate the lost in-process acquisition capability.",
+      "current_production_origin_persistence": false,
+      "native_publication_authority": false
+    },
+    {
+      "source_document_id": 2541,
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf",
+      "category": "accepted_inventory_origin_gap",
+      "sha256": "aa72b0a512fe01ce8f40b9ed8597bd78657a9f441a8daf4963b07e661104d896",
+      "size_bytes": 11446165,
+      "actual_local_http_started_at": "2026-11-05T23:59:24.032459+00:00",
+      "actual_local_http_completed_at": "2026-11-05T23:59:28.511716+00:00",
+      "exact_expected_edition": true,
+      "local_identical_readback": true,
+      "local_observation_sha256": "880a15299e6a0d2e243662ae473dcba709604c55a8c4e896d73e8ac47904d262",
+      "required_later_scope": "New separately authorized bounded officialGET via admitted client/runtime and RUNNING audits PostgreSQL job; configured private report retention/readback; immutable original and distinct validation readback. These retained local bytes cannot recreate the lost in-process acquisition capability.",
+      "current_production_origin_persistence": false,
+      "native_publication_authority": false
+    },
+    {
+      "source_document_id": 2542,
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf",
+      "category": "accepted_inventory_origin_gap",
+      "sha256": "033e2aa26aa77351ec46f062573f25ede47d3e3a99978aeacf9a66af5ba717a5",
+      "size_bytes": 13839205,
+      "actual_local_http_started_at": "2026-11-05T23:59:28.531238+00:00",
+      "actual_local_http_completed_at": "2026-11-05T23:59:33.138452+00:00",
+      "exact_expected_edition": true,
+      "local_identical_readback": true,
+      "local_observation_sha256": "e4e33f4a80040f961342cf5a03a562e27a1ea015cad61444c732408bd498b6db",
+      "required_later_scope": "New separately authorized bounded officialGET via admitted client/runtime and RUNNING audits PostgreSQL job; configured private report retention/readback; immutable original and distinct validation readback. These retained local bytes cannot recreate the lost in-process acquisition capability.",
+      "current_production_origin_persistence": false,
+      "native_publication_authority": false
+    }
+  ],
+  "total_bytes": 158954863,
+  "cog": {
+    "governors": 47,
+    "distinct_counties": 47,
+    "deputies": 46,
+    "missing_deputies": [
+      "Homa Bay"
+    ],
+    "overlap": [],
+    "source_urls": [
+      "https://cog.go.ke/current-governors/",
+      "https://cog.go.ke/current-deputy-governors/"
+    ],
+    "database_adoption": false
+  },
+  "source_evidence_sha256": {
+    "original_observations": "c50af91a86413063c2c16accf68d568cef5e37d5318989c666a9e69beefec0f4",
+    "observation_supplement": "3f3fa8b2bdb2682c34e00a2b2bbabb0f924cb2b0ba8b7d369a28f211a25ad2d7",
+    "fresh_reader": "22718890e4b78cae021c1c031cf00278eebb971cb1c8889644fc84830195123c",
+    "regenerated_proposal": "b5498fea73528bfcd91079307e4f2c74c688db7a24b19b107184636af5986da5",
+    "row_dispositions": "46137e7e0e63e7fd05046c2dd88a2da8ec89b81137ebf577304e969a88179c5b",
+    "display_illustration_receipt": "20bd39bced2b2d449aaea34a26ad9ff19525634b7d0de125a5a6201d346a3229",
+    "display_illustration_png": "111c50d125012de164c662bd508ab892ce11e1f90a5ce663dc8509eb0cd2ccf0",
+    "summary": "115f9ee1d39d313fea0f009cc9e8c64c9243a6d7b083bc38f10d0c084a186345"
+  },
+  "reconciliation": {
+    "snapshot_observed_at": "2026-11-05T12:07:25.663997+00:00",
+    "counts": {
+      "previous": 813,
+      "candidate": 1850,
+      "clean": 969,
+      "retirements": 337,
+      "revisions": 78,
+      "additions": 1374
+    },
+    "candidate_sha256": "2cf57023abd733a35297b9577b1cc1b6c60372e2c951ed834e861a2bb73f5791",
+    "previous_sha256": "0c0fc620b3f9a50383f900b008d0478cffd117c8754aabb17357501f8f515366",
+    "proposal_sha256": "b4bd5ca010229e7815a5ab351270443403a644bff8bea3ccf05114826908613b",
+    "dependent_audit_count": 813,
+    "source_audit_count": 814,
+    "preserved_unreferenced_source_audit_ids": [
+      902
+    ],
+    "support_summary": {
+      "candidate_titles": 1850,
+      "candidate_bodies": 1848,
+      "candidate_starts": 1850,
+      "clean_bodies": 969,
+      "retirement_classes": {
+        "positive_clean_statement": 8,
+        "historical_table_entry": 327,
+        "historical_table_entry_qualified_cell_order_repair": 2
+      }
+    }
+  },
+  "source_adoption": false,
+  "native_publication_authority": false
+}

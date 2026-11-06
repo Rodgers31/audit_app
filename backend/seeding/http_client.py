@@ -325,13 +325,27 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
                         remaining = deadline - time.monotonic()
                         if remaining <= 0:
                             raise httpx.TimeoutException("body acquisition deadline exceeded")
-                        with self._client_for(str(target)).stream(
+                        transport_client = self._client_for(str(target))
+                        with transport_client.stream(
                             "GET", target, follow_redirects=False,
                             timeout=min(remaining, supplied_timeout), **kwargs
                         ) as response:
                             if response.status_code in (301, 302, 303, 307, 308):
-                                target = response.url.join(response.headers["location"])
-                                check_origin(target)
+                                redirected = response.url.join(response.headers["location"])
+                                check_origin(redirected)
+                                if ((redirected.scheme, redirected.host, redirected.port)
+                                        != (target.scheme, target.host, target.port)
+                                        and (any(h in response.request.headers for h in
+                                                 ("authorization", "cookie", "proxy-authorization"))
+                                             or getattr(transport_client, "auth", None) is not None
+                                             or kwargs.get("auth") is not None
+                                             or bool(getattr(transport_client, "cookies", None)))):
+                                    # Manual stream() calls reapply client headers,
+                                    # auth flows and cookies (including Set-Cookie
+                                    # received on this redirect). Stripping only a
+                                    # local headers dict cannot prevent that leak.
+                                    raise ValueError("Credential-bearing official redirect refused")
+                                target = redirected
                                 continue
                             if raise_for_status:
                                 response.raise_for_status()
@@ -412,6 +426,11 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
         Reconnects share the wall-clock and cumulative byte caps, with at most
         the configured transient attempts. Per-operation timeouts are capped
         by remaining time; partial bodies may resume under the rules below.
+
+        Redirects are refused before their target is resolved or contacted,
+        regardless of the injected/default client's redirect policy. A caller
+        must separately review a publisher's replacement URL. A final receipt
+        URL check cannot undo an already-followed redirect.
 
         RESUMPTION (``resume_part``)
         ---------------------------
@@ -572,8 +591,13 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
                     # per-operation timeouts cannot bound total acquisition.
                     with _wall_clock_budget(remaining), self._rate_limiter.context():
                         with self._client_for(url).stream(
-                            "GET", url, headers=request_headers, timeout=httpx.Timeout(min(remaining, 30.0), connect=min(remaining, 15.0))
+                            "GET", url, headers=request_headers, follow_redirects=False,
+                            timeout=httpx.Timeout(min(remaining, 30.0), connect=min(remaining, 15.0))
                         ) as response:
+                            if 300 <= response.status_code < 400:
+                                # Even raise_for_status=False must not consume a
+                                # redirect body, retain it, or treat it as a PDF.
+                                raise PdfDownloadError("Source download redirects refused")
                             if raise_for_status:
                                 response.raise_for_status()
                             if offset and response.status_code != 206:
