@@ -110,13 +110,19 @@ def source_diagnostics(job):
         else:return refused()
         output['source_status']=dict(value)
     else:
-        if (set(value)!={'contract','years','note'} or value.get('contract')!='debt-calendar-observation-coverage-v1'
+        base_fields={'contract','years','note'}
+        requirement_fields={'required_stock_years','required_gdp_years','unpublished_gdp_years'}
+        with_requirements=set(value)==base_fields|requirement_fields
+        if (set(value) not in (base_fields,base_fields|requirement_fields)
+                or value.get('contract')!='debt-calendar-observation-coverage-v1'
                 or type(value.get('note')) is not str or len(value['note'])>1024
                 or type(value.get('years')) is not list or not 1<=len(value['years'])<=200):return refused()
+        current_year=datetime.now(timezone.utc).year
         projected=[];seen=set()
         states={'observed_this_run','observed_unretained','retained_qualified','unqualified'}
         measure_fields={'state','absence_reason','period','period_kind','stock_as_of_month','unit','basis',
                         'source_url','source_digest','acquired_at','locator','publication_date','vintage_date'}
+        if with_requirements:measure_fields|={'required','publication_requirement'}
         for row in value['years']:
             if type(row) is not dict or set(row)!={'year','measures','ratio'}:return refused()
             year=row['year'];measures=row['measures'];ratio=row['ratio']
@@ -130,6 +136,11 @@ def source_diagnostics(job):
                         or part.get('basis')!=('current_prices' if name=='gdp' else 'actual')
                         or part.get('period_kind')!=('calendar_year' if name=='gdp' else 'latest_observed_month_in_calendar_year')
                         or part.get('publication_date') is not None or part.get('vintage_date') is not None):return refused()
+                if with_requirements:
+                    required=not (name=='gdp' and year>=current_year)
+                    if (type(part['required']) is not bool or part['required'] is not required
+                            or part['publication_requirement']!=('required_published_period' if required else 'annual_period_not_ended')):
+                        return refused()
                 month=part.get('stock_as_of_month')
                 if month is not None and (type(month) is not str or not re.fullmatch(str(year)+r'-(0[1-9]|1[0-2])',month)):return refused()
                 if name=='gdp' and month is not None:return refused()
@@ -166,6 +177,16 @@ def source_diagnostics(job):
                     or ratio['reason']!=(None if ratio['state']=='qualified_derived_pair' else 'stock_denominator_pair_unqualified')):return refused()
             if ratio['state']=='qualified_derived_pair' and any(parts[m]['state'] not in ('observed_this_run','retained_qualified') for m in ('total','gdp')):return refused()
             projected.append({'year':year,'measures':parts,'ratio':dict(ratio)})
+        if with_requirements:
+            expected_requirements={
+                'required_stock_years':sorted(seen),
+                'required_gdp_years':sorted(year for year in seen if year<current_year),
+                'unpublished_gdp_years':sorted(year for year in seen if year>=current_year),
+            }
+            for name,expected in expected_requirements.items():
+                years=value[name]
+                if type(years) is not list or any(type(year) is not int for year in years) or years!=expected:
+                    return refused()
         output['year_coverage']={'contract':value['contract'],'years':sorted(projected,key=lambda r:r['year'])}
     output['validation']='valid'
     return output,True

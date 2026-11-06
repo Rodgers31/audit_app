@@ -6,8 +6,8 @@
   "files": [
     {
       "path": ".github/workflows/seed.yml",
-      "bytes": 98542,
-      "sha256": "c8402d0089890c776745c64b83770ad8d6b5e98911a18979567dc73a839f4752"
+      "bytes": 97866,
+      "sha256": "b64f0bd06f4f3015d138ab389e8ac5fc5ed14730f9d2d3d0953aae49141998a4"
     },
     {
       "path": "backend/Dockerfile.prod",
@@ -61,8 +61,8 @@
     },
     {
       "path": "backend/social/connections/provider.py",
-      "bytes": 18967,
-      "sha256": "177adca17d9d6063affe1a2954ae63be90785b0de273a913fc0bf7c8c0318d16"
+      "bytes": 20463,
+      "sha256": "8440b3b4747369f9c0d93f005848f5275d4cd0b0f7e79026d2982c391e550963"
     },
     {
       "path": "backend/social/connections/service.py",
@@ -241,23 +241,23 @@
     },
     {
       "path": "tools/nightly_acceptance_20261105/operational.py",
-      "bytes": 10593,
-      "sha256": "c843eff85e8e844bc1f3a5d753820cc8268260740a9d2544e276baec61be8644"
+      "bytes": 12712,
+      "sha256": "06c8a38c8e9eeb7dcb6bd585787a538c2e8093a1792b62c386fc667beebb3f07"
     },
     {
       "path": "tools/nightly_acceptance_20261105/record.py",
-      "bytes": 12971,
-      "sha256": "bd359fd5b602b16c6558d93685b7aea5036e2569373ecea42041cfc6df34dbcc"
+      "bytes": 15403,
+      "sha256": "40504fdedc1e67a7b9593a73cd0f63dc5498361be3b6707d6072a647ced237c2"
     },
     {
       "path": "tools/nightly_acceptance_20261105/runtime.py",
-      "bytes": 24589,
-      "sha256": "063d487b3199859df352a13e6e413454b47a36c1a9fe341c383447e3f1a0112e"
+      "bytes": 26025,
+      "sha256": "8a3828fb479614ddfd80154cd9770a59b962cbb62331b773bc2272c52e2dfe16"
     },
     {
       "path": "tools/nightly_acceptance_20261105/verify.py",
-      "bytes": 6607,
-      "sha256": "5a8fea26d342164316a40a5dc097624ff364e295c2ded39b0250f19ef1b9e12d"
+      "bytes": 8908,
+      "sha256": "6912ea9f30ed5d1d8b6acea4aeeff30f68d48553097ef494edc2be4e1b78dcfa"
     }
   ]
 }
