@@ -1,0 +1,188 @@
+{
+  "schema": "deployment-readiness-matrix-v1",
+  "scope": "PREPARATION_ONLY",
+  "release_authorized": false,
+  "controls": {
+    "publishing": false,
+    "media_uploads": false,
+    "publishing_workers": false,
+    "financial_generation": false,
+    "drafts": false,
+    "shadow": false,
+    "auto_approve": false,
+    "auto_schedule": false,
+    "auto_publish": false,
+    "source_generation_hooks": false
+  },
+  "gates": [
+    {
+      "id": "release_inputs",
+      "state": "pending_engineering",
+      "evidence": [
+        "plan_inputs",
+        "pr914_inline",
+        "pr915_inline"
+      ],
+      "next": "Immutable reviewed paired commits/tree and all lane DELIVERY identities; resolve/classify ten findings then revalidate once.",
+      "authority": "coordinator + engineering reviewers"
+    },
+    {
+      "id": "production_artifacts",
+      "state": "pending_engineering",
+      "evidence": [
+        "plan_inputs",
+        "runtime_handoff"
+      ],
+      "next": "Exact cached qualified production-pruned backend/frontend artifacts, Node24.22.1, CPython3.12.16/Linux x86_64/native four-job profiles; build and startup readback.",
+      "authority": "runtime/release owners; no new downloads/builds here"
+    },
+    {
+      "id": "schema_role_tls",
+      "state": "pending_engineering",
+      "evidence": [
+        "production",
+        "topology"
+      ],
+      "next": "Final installed schema/view/owner/ACL/RLS/role/TLS preflight through approved existing reader; normalized strict contract comparison.",
+      "authority": "engineering; owner-controlled view update only under later authority"
+    },
+    {
+      "id": "rollback",
+      "state": "prepared",
+      "evidence": [
+        "plan",
+        "production"
+      ],
+      "next": "Fill exact artifact/runtime/pin and financial/audit keyed data/view/lineage preimages; independently rehearse nonempty reversal/conflict controls.",
+      "authority": "release/data owners + independent reviewer"
+    },
+    {
+      "id": "full15",
+      "state": "pending_authority",
+      "evidence": [
+        "scheduled_log",
+        "scheduled_boundary"
+      ],
+      "next": "After reviewed release/admission/source authority: one comparable exact fifteen-domain run with five separate outcome dimensions.",
+      "authority": "separate exact source/publication/ingestion authority"
+    },
+    {
+      "id": "replay",
+      "state": "pending_authority",
+      "evidence": [
+        "plan"
+      ],
+      "next": "Distinct identical-source/plan/runtime/schema replay with actual fact/origin/lineage/cache/public delta comparison.",
+      "authority": "separate bounded ingestion observation authority"
+    },
+    {
+      "id": "daily",
+      "state": "pending_authority",
+      "evidence": [
+        "plan_inputs"
+      ],
+      "next": "Ordinary daily event=schedule observation after release; three consecutive days is proposed reliability criterion only.",
+      "authority": "later ordinary schedules; no dispatch/pin/schedule change"
+    },
+    {
+      "id": "weekly",
+      "state": "pending_engineering",
+      "evidence": [
+        "plan"
+      ],
+      "next": "Immutable explicitly typed extended weekly/bootstrap/native importer plus distinct cold/coverage/retention/cleanup observation.",
+      "authority": "acceptance/runtime lane then later weekly observation authority"
+    },
+    {
+      "id": "storage_writers",
+      "state": "pending_engineering",
+      "evidence": [
+        "storage_ui",
+        "holder_metadata"
+      ],
+      "next": "Complete existing holder/admin/global/legacy/stopped-client/off-system-copy restrictions and writer census; no key search.",
+      "authority": "engineering discovery + actual holder attestations"
+    },
+    {
+      "id": "db_exports",
+      "state": "historical_scoped",
+      "evidence": [
+        "copy_census",
+        "metadata_current"
+      ],
+      "next": "Preserve accepted seven-day private-local DB-export rule; known B42 locator still regular. Classify actual exports/oldest/enforcement and exceptions or evidenced disposition, without payload reads/deletion.",
+      "authority": "Roger existing rule; copy holder supplies actual exception/disposition facts"
+    },
+    {
+      "id": "custody_restore",
+      "state": "pending_authority",
+      "evidence": [
+        "storage_handoff"
+      ],
+      "next": "Exact existing private destination/dependency/key recovery and durability, accepted copy scope/people, independent nonempty isolated restore with committed recapture.",
+      "authority": "existing custody/restore capability + O1/O2/O3 acceptance then exact A authority"
+    },
+    {
+      "id": "host_stop",
+      "state": "pending_engineering",
+      "evidence": [
+        "render_refusal",
+        "tiny_codec"
+      ],
+      "next": "Existing authorized service/time-bound shutdown delay observation, actual host reaper/parent-loss/physical client/group closure; no repeat credential search.",
+      "authority": "existing control-plane reader; later attended B proof authority"
+    },
+    {
+      "id": "capacity",
+      "state": "pending_engineering",
+      "evidence": [
+        "topology",
+        "topology_roles",
+        "tiny_codec"
+      ],
+      "next": "Final-source web+Meta child+future worker+nightly/scheduler/helper/operator/stopped-client map, current history/quota and representative positive reserves by distinct units.",
+      "authority": "engineering measurement then actual owner reserve acceptance"
+    },
+    {
+      "id": "media_browser",
+      "state": "pending_engineering",
+      "evidence": [
+        "tiny_codec",
+        "storage_ui"
+      ],
+      "next": "Supported-size intended-host/browser/CORS/conditional intake/private preview, direct signed-GET cache/copy budget and durable custody path. No live request now.",
+      "authority": "storage/browser owner engineering; later exact synthetic A authority"
+    },
+    {
+      "id": "saved_grants",
+      "state": "pending_engineering",
+      "evidence": [
+        "saved_grant_requests",
+        "saved_grant_report",
+        "exact_expiry"
+      ],
+      "next": "Prior two 503 native refusals are not grant proof. Integrate provider bounded-read repair; prepare serial saved checks within combined88-GET/16MB nominal budget and actual host closure. Storage renewal/recovery handoff strictly before2026-11-14T21:05:55Z.",
+      "authority": "workflow/provider engineering then separate saved-check authority; accepted renewal/recovery owners"
+    },
+    {
+      "id": "privacy",
+      "state": "historical_scoped",
+      "evidence": [
+        "privacy_report",
+        "privacy_originals"
+      ],
+      "next": "Preserve callback/proxy/vendor omission and retained-copy unknowns; existing privacy policy/hold/disposition/custody decisions unresolved. No vendor follow-up.",
+      "authority": "provider authoritative evidence + policy owner; no callback activation"
+    },
+    {
+      "id": "owner_stage",
+      "state": "pending_authority",
+      "evidence": [
+        "storage_handoff",
+        "runtime_handoff"
+      ],
+      "next": "O1 policy/copies, O2 accepting people/independent reviewer/renewal, O3 existing destination/key/reconstruction, O4 measured positive reserves then exact A/B/C windows; native C preflight separate from dispatch.",
+      "authority": "actual accepting owners; no person/reserve/destination/stage invented"
+    }
+  ]
+}
