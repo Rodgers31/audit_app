@@ -6,7 +6,6 @@ never discover or use production connection configuration.
 import json
 import os
 from pathlib import Path
-from urllib.parse import urlsplit
 
 import pytest
 from sqlalchemy import create_engine, select, text
@@ -15,6 +14,7 @@ from sqlalchemy.orm import Session
 from models import IngestionJob, IngestionStatus
 from tests.test_hollow_run_gate import HEALTHY_NIGHT, _write_db, _run_step
 from tests.test_refresh_eligibility import audit_fixture
+from tests.acceptance_owned_pg import owned_schema
 
 
 @pytest.fixture
@@ -22,25 +22,20 @@ def fixture_db(tmp_path):
     url=os.environ.get('REFRESH_FIXTURE_PG_URL')
     if not url:
         pytest.skip('owned PostgreSQL fixture explicitly required')
-    parsed=urlsplit(url)
-    if (os.environ.get('REFRESH_FIXTURE_OWNED') != 'true' or parsed.hostname != '127.0.0.1'
-            or parsed.path != '/auditgava_refresh_fixture' or parsed.username != 'postgres'):
-        raise RuntimeError('Unowned PostgreSQL target refused')
-    engine=create_engine(url)
-    IngestionJob.__table__.create(engine)
-    sqlite=create_engine(_write_db(tmp_path,HEALTHY_NIGHT))
-    with Session(sqlite) as source, Session(engine) as target:
-        for job in source.scalars(select(IngestionJob)):
-            target.add(IngestionJob(**{c.key:getattr(job,c.key) for c in IngestionJob.__mapper__.column_attrs}))
-        target.commit()
-    with engine.begin() as connection:
-        connection.execute(text("SELECT setval(pg_get_serial_sequence('ingestion_jobs','id'),(SELECT max(id) FROM ingestion_jobs))"))
-    sqlite.dispose()
-    try:
-        yield engine,url
-    finally:
-        IngestionJob.__table__.drop(engine)
-        engine.dispose()
+    with owned_schema() as (engine, child_url):
+        IngestionJob.__table__.create(engine)
+        sqlite=create_engine(_write_db(tmp_path,HEALTHY_NIGHT))
+        try:
+            with Session(sqlite) as source, Session(engine) as target:
+                for job in source.scalars(select(IngestionJob)):
+                    target.add(IngestionJob(**{c.key:getattr(job,c.key) for c in IngestionJob.__mapper__.column_attrs}))
+                target.commit()
+            with engine.begin() as connection:
+                connection.execute(text("SELECT setval(pg_get_serial_sequence('ingestion_jobs','id'),(SELECT max(id) FROM ingestion_jobs))"))
+            yield engine,child_url
+        finally:
+            sqlite.dispose()
+            (tmp_path/'seed_check.sqlite').unlink(missing_ok=True)
 
 
 def parse_report(result):

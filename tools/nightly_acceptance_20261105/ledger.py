@@ -68,10 +68,12 @@ def check_prepared(path):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=('prepare', 'check-prepared', 'check-local'))
+    parser.add_argument('action', choices=('prepare', 'check-prepared', 'check-local', 'check-semantic-local'))
     parser.add_argument('path', type=Path)
     parser.add_argument('--repo', type=Path, default=ROOT)
     parser.add_argument('--corpus', type=Path, action='append', default=[])
+    parser.add_argument('--backend-config', type=Path)
+    parser.add_argument('--signing-key-file', type=Path)
     args = parser.parse_args()
     try:
         if args.action == 'prepare':
@@ -80,6 +82,12 @@ if __name__ == '__main__':
         elif args.action == 'check-prepared':
             check_prepared(args.path)
             print('PREPARED_LEDGER_VALID; execution/adoption/release still pending')
+        elif args.action == 'check-semantic-local':
+            from operational import observe_local
+            require(args.backend_config is not None and args.signing_key_file is not None,
+                    'explicit owned backend configuration and signing key originals required')
+            result = observe_local(args.path, backend_config=args.backend_config, signing_key_file=args.signing_key_file)
+            print(result['verdict'])
         else:
             validate(args.path, args.repo)
             print('LOCAL_EXECUTION_VERIFIED; operational acceptance still pending')

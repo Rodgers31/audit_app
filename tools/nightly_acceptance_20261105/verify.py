@@ -2,13 +2,15 @@
 from __future__ import annotations
 import argparse
 from datetime import datetime, timezone
+import hashlib
+import io
 from pathlib import Path
 import sys
 
 sys.dont_write_bytecode = True
-from common import (Refusal, canonical, digest, fields, identity, integer, read_json,
+from common import (BoundEvidence, Refusal, canonical, digest, fields, identity, integer, loads, read_json,
                     require, sha256, string)
-from record import TOOL, inventory, source_snapshot, validate_outcomes
+from record import TOOL, child_invocation, inventory, source_snapshot, validate_outcomes
 
 KEYS = ('schema', 'generated_by', 'generator_sha256', 'helpers', 'generated_at',
         'target_commit', 'target_tree', 'source', 'source_sha256', 'runtime', 'argv',
@@ -45,13 +47,29 @@ def valid_source(source):
 
 
 def validate(path, repo=None, max_age_seconds=86400):
+    with BoundEvidence() as originals:
+        return _validate(path, repo, max_age_seconds, originals)
+
+
+def _validate(path, repo, max_age_seconds, originals):
     integer(max_age_seconds, 1)
     require(max_age_seconds <= 604800, 'freshness ceiling is seven days')
-    path = Path(path)
+    raw_path = path
+    path = Path(path).absolute()
     require(path.name == 'execution.json' and not path.is_symlink(), 'original execution path required')
-    receipt = read_json(path)
-    fields(receipt, KEYS)
-    require(receipt['schema'] == 'nightly-local-execution-v1', 'unknown execution schema')
+    receipt = originals.json(raw_path)
+    version2 = receipt.get('schema') == 'nightly-local-execution-v2'
+    fields(receipt, (*KEYS, 'configuration') if version2 else KEYS)
+    require(receipt['schema'] in ('nightly-local-execution-v1', 'nightly-local-execution-v2'), 'unknown execution schema')
+    config = receipt.get('configuration')
+    if version2:
+        fields(config, ('backend', 'optimized', 'repo', 'targets', 'native_profile'))
+        require(type(config['repo']) is str and Path(config['repo']).is_absolute()
+                and type(config['targets']) is list and bool(config['targets'])
+                and all(type(t) is str and t and not t.startswith('-') for t in config['targets']),
+                'explicit original source/targets required')
+        if repo is not None:
+            require(Path(repo).absolute() == Path(config['repo']), 'source checkout path differs')
     require(receipt['generated_by'] == str(TOOL) and receipt['generator_sha256'] == sha256(TOOL),
             'unexpected/stale recorder')
     require(receipt['helpers'] == inventory(TOOL.parent), 'helper bytes changed; historical execution only')
@@ -69,36 +87,56 @@ def validate(path, repo=None, max_age_seconds=86400):
     integer(receipt['cleanup']['pgid'], 2)
     require(receipt['cleanup']['group_absent'] is True and receipt['cleanup']['leader_reaped'] is True,
             'positive process closure proof required')
-    fields(receipt['artifacts'], ('stdout.log', 'stderr.log', 'junit.xml', 'phases.json', 'invocation.json'))
+    names = ('stdout.log', 'stderr.log', 'junit.xml', 'phases.json', 'invocation.json')
+    if version2 and config['backend'] is not None: names += ('backend.json',)
+    fields(receipt['artifacts'], names)
+    artifacts = {}
     for name, checksum in receipt['artifacts'].items():
-        artifact = path.parent / name
-        require(artifact.is_file() and not artifact.is_symlink() and sha256(artifact) == digest(checksum),
+        artifacts[name] = originals.read(path.parent / name)
+        require(hashlib.sha256(artifacts[name]).hexdigest() == digest(checksum),
                 f'original artifact changed: {name}')
-    actual = validate_outcomes(read_json(path.parent / 'phases.json'), path.parent / 'junit.xml',
+    actual = validate_outcomes(loads(artifacts['phases.json']), io.BytesIO(artifacts['junit.xml']),
                                receipt['expected'], receipt['child_exit'])
     require(receipt['executed'] == actual, 'executed inventory mismatch')
     argv = receipt['argv']
-    require(type(argv) is list and len(argv) >= 13 and all(type(x) is str and x for x in argv)
+    require(type(argv) is list and bool(argv) and all(type(x) is str and x for x in argv)
+            and Path(argv[0]).is_absolute(), 'absolute original interpreter required')
+    if version2:
+        expected_argv, expected_env = child_invocation(argv[0], Path(config['repo']), path.parent,
+                                                     config['targets'], config['backend'], config['optimized'])
+        require(argv == expected_argv, 'unexpected configured test entry point')
+        if config['backend'] is not None:
+            from acceptance_backend_config import validate_report
+            validate_report(loads(artifacts['backend.json']), config['backend'], receipt['expected'])
+    else:
+        require(len(argv) >= 13
             and Path(argv[0]).is_absolute()
             and argv[1:12] == ['-B', '-m', 'pytest', '-p', 'pytest_observer', '-p', 'no:cacheprovider', '-rA', '-o',
                               'xfail_strict=true', '--junitxml=' + str(path.parent / 'junit.xml')]
             and all(not x.startswith('-') for x in argv[12:]), 'unexpected test entry point')
-    expected_env = {'PATH': str(Path(receipt['argv'][0]).parent) + ':/usr/local/bin:/usr/bin:/bin',
+        expected_env = {'PATH': str(Path(receipt['argv'][0]).parent) + ':/usr/local/bin:/usr/bin:/bin',
                     'HOME': str(path.parent), 'TMPDIR': str(path.parent), 'PYTHONDONTWRITEBYTECODE': '1',
                     'PYTEST_DISABLE_PLUGIN_AUTOLOAD': '1', 'PYTHONPATH': str(TOOL.parent),
                     'NIGHTLY_PHASE_REPORT': str(path.parent / 'phases.json')}
     require(type(receipt['environment']) is dict and receipt['environment'] == expected_env,
             'unexpected child environment')
-    invocation = read_json(path.parent / 'invocation.json')
-    fields(invocation, ('argv', 'environment', 'source_sha256'))
-    require(canonical(invocation) == canonical({'argv': argv, 'environment': receipt['environment'],
-                                               'source_sha256': receipt['source_sha256']}),
+    invocation = loads(artifacts['invocation.json'])
+    fields(invocation, ('argv', 'environment', 'source_sha256', *(['configuration'] if version2 else [])))
+    expected_invocation = {'argv': argv, 'environment': receipt['environment'],
+                           'source_sha256': receipt['source_sha256']}
+    if version2: expected_invocation['configuration'] = config
+    require(canonical(invocation) == canonical(expected_invocation),
             'execution differs from retained original invocation')
     runtime = receipt['runtime']
     require(runtime is None or type(runtime) is dict, 'malformed execution runtime')
     if runtime is not None:
         from runtime import validate_runtime
         validate_runtime(runtime)
+    if version2 and config['native_profile'] is not None:
+        require(runtime is not None and runtime['qualification'] == 'PYTHON_AND_REVIEWED_NATIVE',
+                'native execution requires qualified original runtime')
+        require(hashlib.sha256(originals.read(config['native_profile'])).hexdigest() == runtime['native_profile_sha256'],
+                'original reviewed native profile changed')
     if repo is not None:
         corpus = list(receipt['source']['corpus'])
         require(canonical(source_snapshot(repo, corpus)) == canonical(receipt['source']),

@@ -10,22 +10,29 @@ from pathlib import Path
 import sys
 
 sys.dont_write_bytecode = True
-from common import Refusal, canonical, digest, fields, identity, integer, read_json, require, sha256, string
+from common import BoundEvidence, Refusal, canonical, digest, fields, identity, integer, read_json, require, sha256, string
+import hashlib
 from verify import fresh_time, valid_source
 
 CONTRACT = Path(__file__).resolve().parents[2] / 'docs/operations/nightly-acceptance-20261105/contract.json'
 
 
-def artifact(reference, root):
+def artifact(reference, root, originals=None):
     fields(reference, ('path', 'sha256', 'size'))
     name = Path(string(reference['path']))
-    require(not name.is_absolute() and '..' not in name.parts, 'relative retained original path required')
-    root = Path(root).resolve()
+    require(not name.is_absolute() and '..' not in name.parts and name.as_posix() == reference['path']
+            and name.as_posix() != '.', 'relative canonical retained original path required')
+    root = Path(root).absolute()
     path = root / name
     for parent in [path, *path.parents]:
         require(not parent.is_symlink(), 'retained original symlink')
-    require(path.is_file() and path.stat().st_size == integer(reference['size'], 1)
-            and sha256(path) == digest(reference['sha256']), 'retained original absent/empty/changed')
+    if originals is None:
+        with BoundEvidence() as bound:
+            data = bound.read(path)
+    else:
+        data = originals.read(path)
+    require(len(data) == integer(reference['size'], 1)
+            and hashlib.sha256(data).hexdigest() == digest(reference['sha256']), 'retained original absent/empty/changed')
     return path
 
 
@@ -36,13 +43,25 @@ def unique_strings(values):
 
 
 def validate(path):
-    path = Path(path)
+    with BoundEvidence() as originals:
+        return _validate(path, originals)
+
+
+def validate_weekly(path):
+    with BoundEvidence() as originals:
+        return _validate(path, originals, kind='weekly-bootstrap-native')
+
+
+def _validate(path, originals, kind='full15'):
+    value = originals.json(path)
+    path = Path(path).absolute()
     for entry in [path, *path.parents]:
         require(not entry.is_symlink(), 'original envelope symlink')
-    value = read_json(path)
     fields(value, ('schema', 'generated_at', 'binding', 'source', 'runtime', 'plan', 'cli', 'pg',
                    'domains', 'refresh', 'originals'))
-    require(value['schema'] == 'nightly-operational-envelope-v1', 'unknown operational envelope')
+    schema = {'full15':'nightly-operational-envelope-v1',
+              'weekly-bootstrap-native':'nightly-weekly-operational-envelope-v1'}[kind]
+    require(value['schema'] == schema, 'unknown typed operational envelope')
     fresh_time(value['generated_at'], 604800)
     binding = value['binding']
     fields(binding, ('commit', 'tree', 'admitted_sha', 'schema_revision', 'run_id', 'attempt'))
@@ -53,39 +72,44 @@ def validate(path):
     integer(binding['run_id'], 1)
     integer(binding['attempt'], 1)
     root = path.parent
-    source = read_json(artifact(value['source'], root))
+    def original(reference): return artifact(reference, root, originals)
+    def original_json(reference): return originals.json(original(reference))
+    source = original_json(value['source'])
     valid_source(source)
     require(source['commit'] == binding['commit'] and source['tree'] == binding['tree']
             and source['status'] == '', 'clean exact source identity required')
-    runtime = read_json(artifact(value['runtime'], root))
+    runtime = original_json(value['runtime'])
     from runtime import LOCK, validate_runtime
     validate_runtime(runtime)
     require(runtime['qualification'] == 'PYTHON_AND_REVIEWED_NATIVE'
             and runtime['lock_sha256'] == sha256(LOCK), 'reviewed production/native runtime required')
     plan = value['plan']
     fields(plan, ('sha256', 'original'))
-    original_plan = read_json(artifact(plan['original'], root))
+    original_plan = original_json(plan['original'])
     require(identity(original_plan) == digest(plan['sha256']), 'source plan digest differs')
     fields(original_plan, ('domains', 'bootstrap', 'dry_run', 'audits_review',
                            'reacquire_pending_pdf', 'audits_source_acceptance'))
     domains = unique_strings(original_plan['domains'])
-    require(set(domains) == set(read_json(CONTRACT)['domains']), 'full fifteen-domain plan required')
-    require(original_plan['dry_run'] is False and type(original_plan['bootstrap']) is bool
-            and type(original_plan['reacquire_pending_pdf']) is bool
-            and type(original_plan['audits_review']) is str
-            and type(original_plan['audits_source_acceptance']) is str, 'malformed/unexecuted plan')
+    expected = read_json(CONTRACT)['domains']
+    if kind == 'weekly-bootstrap-native': expected = ['opendata', *sorted(expected)]
+    require(set(domains) == set(expected), 'exact typed full15/weekly domain inventory required')
+    require(original_plan['dry_run'] is False
+            and original_plan['bootstrap'] is (kind == 'weekly-bootstrap-native')
+            and original_plan['reacquire_pending_pdf'] is False
+            and original_plan['audits_review'] == '' and original_plan['audits_source_acceptance'] == '',
+            'ordinary full15/weekly bootstrap scope differs')
     cli = value['cli']
     fields(cli, ('exit_code', 'executed', 'run_id', 'attempt', 'original'))
     require(integer(cli['exit_code']) == 0 and cli['executed'] is True, 'CLI did not execute successfully')
     require(cli['run_id'] == binding['run_id'] and type(cli['run_id']) is int
             and cli['attempt'] == binding['attempt'] and type(cli['attempt']) is int, 'CLI run/attempt differs')
-    artifact(cli['original'], root)
+    original(cli['original'])
     pg = value['pg']
     fields(pg, ('schema_revision', 'run_id', 'attempt', 'inventory'))
     require(pg['schema_revision'] == binding['schema_revision'] and pg['run_id'] == binding['run_id']
             and type(pg['run_id']) is int and pg['attempt'] == binding['attempt']
             and type(pg['attempt']) is int, 'PG identity differs')
-    pg_rows = read_json(artifact(pg['inventory'], root))
+    pg_rows = original_json(pg['inventory'])
     require(type(pg_rows) is list and len(pg_rows) == len(domains), 'PG full job inventory required')
     require(type(value['domains']) is list and len(value['domains']) == len(domains), 'domain results missing')
     ids, names, component_ids = set(), set(), set()
@@ -104,11 +128,11 @@ def validate(path):
             component_ids.add(key)
             for field in ('period', 'basis', 'units'):
                 string(component[field])
-            source_bytes = artifact(component['source_bytes'], root)
-            readback = artifact(component['readback'], root)
+            source_bytes = original(component['source_bytes'])
+            readback = original(component['readback'])
             require(sha256(source_bytes) == sha256(readback), 'retained readback bytes differ from original source')
-            artifact(component['authority'], root)
-            artifact(component['acquisition'], root)
+            original(component['authority'])
+            original(component['acquisition'])
     observed = set()
     for row in pg_rows:
         fields(row, ('domain', 'job_id', 'run_id', 'attempt', 'processed', 'created', 'updated'))
@@ -136,7 +160,7 @@ def validate(path):
         previous = sequence
         kinds.append(event['kind'])
         digest(event['signature'])
-        artifact(event['request'], root); artifact(event['response'], root)
+        original(event['request']); original(event['response'])
         if event['kind'] == 'backend_worker':
             require(type(event['pid']) is int and event['pid'] in pids and event['pid'] not in workers, 'bad/duplicate worker ack')
             workers.add(event['pid'])
@@ -144,11 +168,17 @@ def validate(path):
             require(event['pid'] is None, 'unexpected worker identity')
     require(kinds == ['backend_invalidate', *['backend_worker'] * len(pids), 'frontend']
             and workers == set(pids), 'backend census must precede pages')
-    originals = value['originals']
-    fields(originals, ('run', 'jobs', 'full_log', 'acquisition_inventory', 'source_authority_review',
+    attachments = value['originals']
+    fields(attachments, ('run', 'jobs', 'full_log', 'acquisition_inventory', 'source_authority_review',
                       'hmac_verification', 'cleanup'))
-    for reference in originals.values(): artifact(reference, root)
+    for reference in attachments.values(): original(reference)
     return value
+
+
+def observe_local(path, *, backend_config, signing_key_file):
+    """Supported local semantic importer; structural envelopes remain pending-only."""
+    from acceptance_semantic import observe
+    return observe(path, backend_config=backend_config, signing_key_file=signing_key_file)
 
 
 def replay(first_path, second_path):
@@ -173,11 +203,24 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('first', type=Path)
     parser.add_argument('--replay', type=Path)
+    parser.add_argument('--kind', choices=('full15','weekly-bootstrap-native'), default='full15')
+    parser.add_argument('--semantic-local', action='store_true')
+    parser.add_argument('--backend-config', type=Path)
+    parser.add_argument('--signing-key-file', type=Path)
     args = parser.parse_args()
     try:
-        if args.replay: replay(args.first, args.replay)
-        else: validate(args.first)
-        print('EVIDENCE_ENVELOPE_BOUND_AUTHORITY_AND_OPERATIONAL_REVIEW_PENDING')
+        if args.semantic_local:
+            require(args.replay is None and args.backend_config is not None and args.signing_key_file is not None,
+                    'semantic local importer requires explicit backend config and signing key originals')
+            result = observe_local(args.first, backend_config=args.backend_config, signing_key_file=args.signing_key_file)
+            print(result['verdict'])
+        else:
+            if args.replay:
+                require(args.kind == 'full15', 'weekly replay requires its distinct semantic contract')
+                replay(args.first, args.replay)
+            elif args.kind == 'weekly-bootstrap-native': validate_weekly(args.first)
+            else: validate(args.first)
+            print('EVIDENCE_ENVELOPE_BOUND_AUTHORITY_AND_OPERATIONAL_REVIEW_PENDING')
     except (Refusal, OSError, ValueError, KeyError) as exc:
         print(f'REFUSED: {exc}', file=sys.stderr)
         sys.exit(1)

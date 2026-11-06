@@ -21,14 +21,14 @@ import time
 import xml.etree.ElementTree as ET
 
 sys.dont_write_bytecode = True
-from common import (Refusal, canonical, fields, identity, integer, publish,
+from common import (BoundEvidence, Refusal, canonical, fields, identity, integer, publish,
                     read_json, require, sha256, string)
 
 TOOL = Path(__file__).resolve()
 
 
 def git(repo, *args):
-    result = subprocess.run(['git', '-C', str(repo), *args], capture_output=True, check=True,
+    result = subprocess.run(['git', '--no-optional-locks', '-c', 'safe.directory=' + str(repo), '-C', str(repo), *args], capture_output=True, check=True,
                             timeout=30, env={'PATH': '/usr/local/bin:/usr/bin:/bin', 'HOME': '/tmp'})
     return result.stdout.decode().strip()
 
@@ -165,7 +165,25 @@ def reap(process):
     return {'pgid': pgid, 'group_absent': True, 'leader_reaped': True}
 
 
-def run(repo, output, expected_path, targets, timeout=120, corpus=(), runtime_lock=None):
+def child_invocation(python, repo, output, targets, backend_config=None, optimized=False):
+    require(type(optimized) is bool, 'optimized mode must be an explicit boolean')
+    env = {'PATH': str(Path(python).parent) + ':/usr/local/bin:/usr/bin:/bin',
+           'HOME': str(output), 'TMPDIR': str(output), 'PYTHONDONTWRITEBYTECODE': '1',
+           'PYTEST_DISABLE_PLUGIN_AUTOLOAD': '1', 'PYTHONPATH': str(TOOL.parent),
+           'NIGHTLY_PHASE_REPORT': str(output / 'phases.json')}
+    argv = [str(python), *(['-O'] if optimized else []), '-B', '-m', 'pytest', '-p', 'pytest_observer',
+            '-p', 'no:cacheprovider', '-rA', '-o', 'xfail_strict=true', '--junitxml=' + str(output / 'junit.xml')]
+    if backend_config is not None:
+        from acceptance_backend_config import validate_config, selectors, environment
+        validate_config(backend_config); selectors(targets)
+        env.update(environment(repo, output, backend_config))
+        argv += ['--rootdir=' + str(repo)]
+        for plugin in backend_config['plugins']: argv += ['-p', plugin]
+    return [*argv, *targets], env
+
+
+def run(repo, output, expected_path, targets, timeout=120, corpus=(), runtime_lock=None, *,
+        backend_config=None, optimized=False, native_profile=None):
     repo = Path(repo).absolute()
     integer(timeout, 1)
     require(timeout <= 1800, 'local control timeout ceiling is 1800 seconds')
@@ -173,13 +191,21 @@ def run(repo, output, expected_path, targets, timeout=120, corpus=(), runtime_lo
             and all(type(x) is str and bool(x) and not x.startswith('-') for x in targets),
             'explicit pytest selectors required, no injected runner options')
     require(type(corpus) in (tuple, list) and len(set(map(str, corpus))) == len(corpus), 'duplicate corpus roots')
-    expected_path = Path(expected_path).resolve()
-    expected = read_json(expected_path)
+    with BoundEvidence() as originals:
+        expected = originals.json(expected_path)
+        if backend_config is not None and not isinstance(backend_config, dict):
+            backend_config = originals.json(backend_config)
+    expected_path = Path(expected_path).absolute()
     require(type(expected) is list and bool(expected) and all(type(x) is str and x for x in expected)
             and len(set(expected)) == len(expected), 'unique nonempty expected inventory required')
     output = outside(output, [repo, TOOL.parent, expected_path, *corpus])
     require(not output.exists(), 'fresh output directory required')
     require((repo / '.git').exists(), 'owned Git checkout required')
+    argv, env = child_invocation(sys.executable, repo, output, targets, backend_config, optimized)
+    require(native_profile is None or runtime_lock is not None, 'native profile requires explicit runtime lock')
+    configured = backend_config is not None or optimized or native_profile is not None
+    configuration = {'backend': backend_config, 'optimized': optimized, 'repo': str(repo), 'targets': targets,
+                     'native_profile': str(Path(native_profile).absolute()) if native_profile else None}
     snapshot = source_snapshot(repo, corpus)
     measured_tools = inventory(TOOL.parent)
     # Lock before substantial process execution; callers may hold it in an outer fixture.
@@ -191,15 +217,11 @@ def run(repo, output, expected_path, targets, timeout=120, corpus=(), runtime_lo
         runtime = None
         if runtime_lock is not None:
             from runtime import verify
-            runtime = verify(runtime_lock)
+            runtime = verify(runtime_lock) if native_profile is None else verify(runtime_lock, native_profile=native_profile)
         output.mkdir(mode=0o700)
-        env = {'PATH': os.path.dirname(sys.executable) + ':/usr/local/bin:/usr/bin:/bin',
-               'HOME': str(output), 'TMPDIR': str(output), 'PYTHONDONTWRITEBYTECODE': '1',
-               'PYTEST_DISABLE_PLUGIN_AUTOLOAD': '1',
-               'PYTHONPATH': str(TOOL.parent), 'NIGHTLY_PHASE_REPORT': str(output / 'phases.json')}
-        argv = [sys.executable, '-B', '-m', 'pytest', '-p', 'pytest_observer', '-p', 'no:cacheprovider', '-rA',
-                '-o', 'xfail_strict=true', '--junitxml=' + str(output / 'junit.xml'), *targets]
-        publish(output / 'invocation.json', {'argv': argv, 'environment': env, 'source_sha256': identity(snapshot)})
+        invocation = {'argv': argv, 'environment': env, 'source_sha256': identity(snapshot)}
+        if configured: invocation['configuration'] = configuration
+        publish(output / 'invocation.json', invocation)
         failures, child_exit, cleanup = [], None, None
         with (output / 'stdout.log').open('xb') as stdout, (output / 'stderr.log').open('xb') as stderr:
             process = subprocess.Popen(argv, cwd=repo, env=env, stdout=stdout, stderr=stderr,
@@ -218,13 +240,20 @@ def run(repo, output, expected_path, targets, timeout=120, corpus=(), runtime_lo
             cases = validate_outcomes(read_json(output / 'phases.json'), output / 'junit.xml', expected, child_exit)
         except (Refusal, OSError, ET.ParseError) as exc:
             failures.append(str(exc))
+        if backend_config is not None:
+            from acceptance_backend_config import validate_report
+            try:
+                validate_report(read_json(output / 'backend.json'), backend_config, expected)
+            except (Refusal, OSError) as exc:
+                failures.append(str(exc))
         try:
             require(canonical(source_snapshot(repo, corpus)) == canonical(snapshot), 'consumed source/corpus changed')
             require(inventory(TOOL.parent) == measured_tools, 'recorder/helper changed')
             require(read_json(expected_path) == expected, 'expected inventory changed')
             if runtime_lock is not None:
                 from runtime import verify
-                require(verify(runtime_lock) == runtime, 'runtime changed')
+                observed = verify(runtime_lock) if native_profile is None else verify(runtime_lock, native_profile=native_profile)
+                require(observed == runtime, 'runtime changed')
         except (Refusal, OSError, subprocess.SubprocessError) as exc:
             failures.append(str(exc))
         artifacts = {p.name: sha256(p) for p in output.iterdir() if p.is_file()}
@@ -237,6 +266,9 @@ def run(repo, output, expected_path, targets, timeout=120, corpus=(), runtime_lo
                    'expected': expected, 'executed': cases, 'cleanup': cleanup,
                    'artifacts': artifacts, 'failures': failures,
                    'verdict': 'LOCAL_CONTROLS_PASSED' if not failures else 'FAILED'}
+        if configured:
+            receipt['schema'] = 'nightly-local-execution-v2'
+            receipt['configuration'] = configuration
         publish(output / 'execution.json', receipt)
         return receipt
 
@@ -247,11 +279,15 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--expected', type=Path, required=True)
     parser.add_argument('--runtime-lock', type=Path)
+    parser.add_argument('--native-profile', type=Path)
+    parser.add_argument('--backend-config', type=Path)
+    parser.add_argument('--optimized', action='store_true')
     parser.add_argument('--corpus', type=Path, action='append', default=[])
     parser.add_argument('--timeout', type=int, default=120)
     parser.add_argument('targets', nargs='+')
     args = parser.parse_args()
-    result = run(args.repo, args.output, args.expected, args.targets, args.timeout, args.corpus, args.runtime_lock)
+    result = run(args.repo, args.output, args.expected, args.targets, args.timeout, args.corpus, args.runtime_lock,
+                 backend_config=args.backend_config, optimized=args.optimized, native_profile=args.native_profile)
     print(result['verdict'])
     return 0 if result['verdict'] == 'LOCAL_CONTROLS_PASSED' else 1
 

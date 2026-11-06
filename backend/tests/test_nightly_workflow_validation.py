@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import re
 from unittest.mock import patch
-from urllib.parse import urlsplit
+from contextlib import contextmanager
 
 import pytest
 import yaml
@@ -15,21 +15,29 @@ from sqlalchemy.orm import Session
 from models import Base, PopulationData
 from seeding.source_plan import build_plan
 from tests.test_hollow_run_gate import HEALTHY_NIGHT, _run_step, _write_db
+from tests.acceptance_owned_pg import owned_schema
 
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW = ROOT / '.github/workflows/seed.yml'
 
 
 def population_check(tmp_path, rows):
-    url = os.environ.get('REFRESH_FIXTURE_PG_URL')
-    if url:
-        parsed = urlsplit(url)
-        if (os.environ.get('REFRESH_FIXTURE_OWNED') != 'true' or parsed.hostname != '127.0.0.1'
-                or parsed.path != '/auditgava_refresh_fixture' or parsed.username != 'postgres'):
-            raise RuntimeError('Unowned population PostgreSQL fixture refused')
-    engine = create_engine(url or 'sqlite:///'+str(tmp_path/'population.sqlite'))
-    Base.metadata.create_all(engine)
-    try:
+    @contextmanager
+    def database():
+        if os.environ.get('REFRESH_FIXTURE_PG_URL') is not None:
+            with owned_schema() as (engine, _):
+                # All FK/type dependencies live in this exclusively owned schema.
+                Base.metadata.create_all(engine)
+                yield engine
+        else:
+            engine = create_engine('sqlite:///'+str(tmp_path/'population.sqlite'))
+            try:
+                Base.metadata.create_all(engine)
+                yield engine
+            finally:
+                engine.dispose()
+                (tmp_path/'population.sqlite').unlink(missing_ok=True)
+    with database() as engine:
         with Session(engine) as session:
             session.add_all(PopulationData(id=i, entity_id=None, year=y, total_population=n) for i,y,n in rows)
             session.commit()
@@ -43,9 +51,6 @@ def population_check(tmp_path, rows):
             with patch('seeding.staleness.datetime', FixedTime):
                 exec(compile(body, '<actual workflow population validation>', 'exec'), scope)
             return scope['errors']
-    finally:
-        Base.metadata.drop_all(engine)
-        engine.dispose()
 
 
 @pytest.mark.parametrize('rows', [
