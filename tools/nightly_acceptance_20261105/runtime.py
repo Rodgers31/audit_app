@@ -93,7 +93,8 @@ def environment():
 
 def target_verified(lock):
     validate_lock(lock)
-    require(platform.python_version() == lock['python'] and platform.system() == lock['system']
+    require(platform.python_implementation() == 'CPython'
+            and platform.python_version() == lock['python'] and platform.system() == lock['system']
             and platform.machine() == lock['machine'], 'interpreter/platform differs from lock')
 
 
@@ -167,6 +168,28 @@ def native_inventory():
                 library = Path(token)
                 require(library.is_file(), 'linked library missing')
                 linked[str(library)] = sha256(library)
+    if result['java'] is not None:
+        # libjvm and the module/security stores are loaded after the launcher
+        # starts; ldd(java) does not enumerate them. Bind the complete selected
+        # JVM home, following Debian's alternatives/configuration links to the
+        # bytes actually consumed, without treating the runner's other JDKs as
+        # part of this execution environment.
+        java_home = Path(result['java']['path']).resolve().parent.parent
+        require((java_home / 'lib/server/libjvm.so').is_file(), 'selected JVM library absent')
+        seen_directories, file_count, byte_count = set(), 0, 0
+        for directory, directories, files in os.walk(java_home, followlinks=True):
+            resolved = Path(directory).resolve()
+            require(resolved not in seen_directories, 'selected JVM directory cycle/alias')
+            seen_directories.add(resolved)
+            directories.sort()
+            for filename in sorted(files):
+                member = Path(directory) / filename
+                require(member.is_file(), 'selected JVM nonregular/missing file')
+                file_count += 1
+                byte_count += member.stat().st_size
+                require(file_count <= 8192 and byte_count <= 512 * 1024**2,
+                        'selected JVM inventory ceiling')
+                linked[str(member)] = sha256(member)
     result['linked_libraries'] = linked
     result['os_release_sha256'] = sha256('/etc/os-release')
     return result
