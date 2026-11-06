@@ -22,7 +22,7 @@ import { motion } from 'framer-motion';
 import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
 import { useMemo } from 'react';
 
-import { FISCAL_FRAMEWORK_BASIS, FiscalFramework, fiscalColumnLabel } from '@/lib/fiscal/framework';
+import { FISCAL_FRAMEWORK_BASIS, FiscalFramework } from '@/lib/fiscal/framework';
 
 export interface FiscalHistoryRow {
   fiscal_year: string;
@@ -35,6 +35,7 @@ export interface FiscalHistoryRow {
   split_basis?: string | null;
   fiscal_framework?: FiscalFramework | null;
   debt_service_source?: { title?: string } | null;
+  measure_qualifications?: Record<string, { vintage: string; source: { title?: string } }>;
 }
 
 interface Props {
@@ -140,7 +141,8 @@ export default function FiscalTrendStrip({ history }: Props) {
             year: r.fiscal_year.replace('FY ', ''),
             value: typeof r[c.key] === 'number' ? r[c.key] as number : null,
             column: c.key === 'appropriated_budget' ? 'Appropriated budget' : c.key === 'debt_service_cost'
-              ? r.debt_service_source?.title ?? 'Vintage unconfirmed' : fiscalColumnLabel(r),
+              ? r.debt_service_source?.title ?? 'Vintage unconfirmed'
+              : r.measure_qualifications?.[c.key]?.vintage ?? 'Vintage unconfirmed',
           }));
           const latest = values[values.length - 1];
           const first = values[0];

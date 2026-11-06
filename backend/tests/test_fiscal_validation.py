@@ -75,7 +75,7 @@ def test_spending_cannot_exceed_budget():
 
 
 # ── seed-time quarantine ────────────────────────────────────────────────
-def test_domain_quarantines_bad_row_keeps_good(db_session, seed_country, monkeypatch):
+def test_domain_quarantines_bad_row_keeps_good(db_session, seed_country, monkeypatch, tmp_path):
     from models import FiscalSummary
     from seeding.config import SeedingSettings
     from seeding.domains import fiscal_summary
@@ -94,7 +94,7 @@ def test_domain_quarantines_bad_row_keeps_good(db_session, seed_country, monkeyp
     )
 
     result = fiscal_summary.run(
-        db_session, SeedingSettings(), DomainRunContext(since=None, dry_run=False)
+        db_session, SeedingSettings(cache_path=tmp_path), DomainRunContext(since=None, dry_run=False)
     )
     db_session.commit()
 

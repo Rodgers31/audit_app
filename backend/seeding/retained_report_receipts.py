@@ -45,6 +45,9 @@ def _check_origin(source, receipt, *, url, checksum, size, at):
             or receipt.get('digest_scope') not in ('response.content', 'decoded_stream_body')
             or KEY in receipt or receipt.get('acquisition_kind') is not None
             or receipt.get('parser_result_origin') or receipt.get('failure_reason')
+            or type(receipt.get('acquired_at')) is not str
+            or type(receipt.get('byte_check')) is not dict
+            or type(receipt['byte_check'].get('checked_at')) is not str
             or type(receipt.get('status')) is not int or receipt['status'] != 200
             or receipt.get('source_kind') != 'pdf' or receipt.get('request') != {'method':'GET', 'url':url}
             or receipt.get('request_url') != url or receipt.get('response_url') != url

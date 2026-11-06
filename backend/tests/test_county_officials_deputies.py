@@ -33,7 +33,7 @@ class _Resp:
 
 def _client_serving(pages):
     class _Client:
-        def get(self, url, headers=None, raise_for_status=False):
+        def get(self, url, headers=None, raise_for_status=False, **kwargs):
             body = pages[url]
             if isinstance(body, Exception):
                 raise body

@@ -48,8 +48,8 @@ def test_complete_current_new_acquisition_replaces_stock_but_not_unobserved_gdp(
     record=capture(tmp_path/'new',monkeypatch)
     writer.write_debt_timeline_records(db,[record],{});db.commit()
     row=db.scalar(select(DebtTimeline).where(DebtTimeline.year==2025));q=qualify_rows(db,'debt_timeline',[row])[row.id]
-    assert row.total==Decimal('1400000000000') and row.gdp==prior_gdp and row.gdp_ratio is None
-    assert all(q[m]['status']=='verified' for m in ('total','external','domestic','gdp'))
+    assert row.total==Decimal('1400000000000') and row.gdp==prior_gdp and row.gdp_ratio==Decimal('14.0')
+    assert all(q[m]['status']=='verified' for m in ('total','external','domestic','gdp','gdp_ratio'))
 
 def test_three_stock_cells_must_share_one_current_acquisition(db,tmp_path,monkeypatch):
     _,rows,_,_=run_source(db,tmp_path/'first',monkeypatch);before=snapshots(rows)

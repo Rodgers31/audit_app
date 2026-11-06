@@ -74,6 +74,9 @@ def run(
             errors=[f"Write failed: {exc}"],
         )
 
+    from .coverage import coverage_report
+    coverage = coverage_report(session, records)
+
     finished_at = datetime.now(timezone.utc)
     logger.info(
         f"Debt timeline seeding complete: {created} created, {updated} updated "
@@ -88,5 +91,6 @@ def run(
         items_created=created,
         items_updated=updated,
         errors=errors,
-        metadata={"refresh_components": payload.get("metadata", {}).get("refresh_components", {})},
+        metadata={"refresh_components": payload.get("metadata", {}).get("refresh_components", {}),
+                  "year_coverage": coverage},
     )

@@ -60,7 +60,7 @@ describe('BudgetFlowHero on the fiscal framework', () => {
     const { fiscal_framework, ...legacy } = FY_2026_27_BILLIONS;
     const { container } = render(<BudgetFlowHero data={legacy} />);
     const t = text(container);
-    expect(t).toMatch(/How FY 2026\/27 breaks down is not published yet/);
+    expect(t).toMatch(/How FY 2026\/27 breaks down is withheld/);
     expect(t).not.toMatch(/Where it actually goes/);
   });
 });

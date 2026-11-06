@@ -31,11 +31,14 @@
  */
 
 import { motion } from 'framer-motion';
+import type { FiscalMeasureQualification, FiscalTaxObservation } from '@/lib/api/fiscal';
+import FiscalMeasureDisclosure from './FiscalMeasureDisclosure';
 import { ArrowDownRight, Info } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import {
   frameworkCitation,
+  qualifiedFrameworkValue,
   fiscalColumnLabel,
   frameworkOf,
   frameworkSources,
@@ -44,6 +47,9 @@ import {
 } from '@/lib/fiscal/framework';
 
 export interface FlowHeroInput {
+  absent_reasons?: Record<string, string>;
+  measure_qualifications?: Record<string, FiscalMeasureQualification>;
+  tax_split_observation?: FiscalTaxObservation | null;
   /** Billions KES of the gross budget that is redemption of maturing debt. */
   debt_redemption_billion?: number | null;
   /** The enacted headline, once sourced for this year. Absent until then. */
@@ -61,6 +67,7 @@ export interface FlowHeroInput {
   debt_service_per_shilling?: number | null; // cents per KES of revenue
   /** The split and the total it reconciles to, KSh billion. */
   fiscal_framework?: FiscalFramework | null;
+  fiscal_framework_absent_reason?: string | null;
 }
 
 interface Props {
@@ -108,20 +115,20 @@ export default function BudgetFlowHero({ data }: Props) {
   const uses = frameworkUses(ff);
   const sources = frameworkSources(ff);
   const hasFlow = uses != null && sources != null;
+  const issue = data?.fiscal_framework_absent_reason ?? Object.values(ff?.absent_reasons ?? {})[0];
+  const withholdingReason = typeof issue === 'string' && /invalid|contradict/.test(issue)
+    ? 'Some component evidence conflicts with the stored figures.'
+    : typeof issue === 'string' && /reconcile|disagree/.test(issue)
+      ? 'The available figures do not reconcile on the same basis.'
+      : 'Compatible source evidence for every component is not yet confirmed.';
   const flowTotal = uses?.total ?? null;
   const citation = frameworkCitation(ff);
-  const equitableShareB = ff?.county_equitable_share_billion ?? null;
+  const qualifiedShare = qualifiedFrameworkValue(ff, 'county_equitable_share_billion');
+  const qualifiedTransfers = qualifiedFrameworkValue(ff, 'county_transfers_billion');
+  const equitableShareB = qualifiedShare != null && qualifiedTransfers != null && qualifiedShare <= qualifiedTransfers ? qualifiedShare : null;
 
-  // "shillings-per-shilling-of-revenue" metric: debt service vs total revenue
-  const revenue = data?.total_revenue ?? null;
   const debtService = data?.debt_service_cost ?? null;
-  const debtServicePct =
-    revenue != null && revenue > 0 && debtService != null
-      ? (debtService / revenue) * 100
-      : null;
-  const debtServiceCents =
-    data?.debt_service_per_shilling ??
-    (debtServicePct != null ? Math.round(debtServicePct) : null);
+  const debtServiceCents = data?.debt_service_per_shilling ?? null;
 
   /* ── Sources (money in) ── */
   const sourceSegments: Segment[] = useMemo(() => {
@@ -273,7 +280,7 @@ export default function BudgetFlowHero({ data }: Props) {
     ];
   }, [uses, equitableShareB]);
 
-  if (!data || !budget) {
+  if (!data) {
     return null;
   }
 
@@ -281,7 +288,7 @@ export default function BudgetFlowHero({ data }: Props) {
   // budget coverage usually quotes. From API values only — this sentence
   // used to assert a hard-coded "~KES 4.8T".
   const quotedScaleB =
-    redemptionB != null && equitableShareB != null ? budget - redemptionB + equitableShareB : null;
+    budget != null && redemptionB != null && equitableShareB != null ? budget - redemptionB + equitableShareB : null;
 
   return (
     <motion.section
@@ -298,7 +305,7 @@ export default function BudgetFlowHero({ data }: Props) {
               National Budget · {fy}
             </div>
             <h2 className='font-display text-[26px] sm:text-3xl text-gov-dark dark:text-white leading-tight mt-1'>
-              {`KES ${fmtT(budget)} approved for ${fy}`}
+              {budget == null ? `Approved budget for ${fy} withheld` : `KES ${fmtT(budget)} approved for ${fy}`}
             </h2>
             <p className='text-sm text-neutral-muted mt-1 max-w-2xl'>
               {hasFlow
@@ -306,6 +313,7 @@ export default function BudgetFlowHero({ data }: Props) {
                 : 'The approved gross budget, on the Controller of Budget basis.'}
             </p>
 
+            <FiscalMeasureDisclosure qualifications={data?.measure_qualifications} absentReasons={data?.absent_reasons} taxObservation={data?.tax_split_observation} />
             <p className='text-xs text-neutral-muted mt-1'>Fiscal framework: {fiscalColumnLabel(data)} · {ff?.source?.edition ?? 'Edition unconfirmed'}</p>
 
             {/*
@@ -315,7 +323,7 @@ export default function BudgetFlowHero({ data }: Props) {
               likely to have seen. `<details>` so it is an affordance, not a
               wall of text, and native so it needs no modal machinery.
             */}
-            <details className='group mt-2 max-w-2xl'>
+            {budget != null && (<details className='group mt-2 max-w-2xl'>
               <summary className='inline-flex cursor-pointer list-none items-center gap-1.5 text-[12px] font-medium text-gov-forest hover:underline dark:text-emerald-100'>
                 <Info size={13} />
                 Why this figure, and why you may have seen a different one
@@ -362,7 +370,7 @@ export default function BudgetFlowHero({ data }: Props) {
                   question.
                 </p>
               </div>
-            </details>
+            </details>)}
           </div>
           {/* Debt-service callout */}
           <div className='relative flex-shrink-0'>
@@ -379,8 +387,8 @@ export default function BudgetFlowHero({ data }: Props) {
                 </div>
                 <div className='text-[11px] text-neutral-muted leading-tight'>
                   {debtServiceCents == null
-                    ? 'of every KES 100 of revenue — not yet published for this year'
-                    : 'of every KES 100 of revenue services the debt (interest + principal)'}
+                    ? 'per KES 100 of ordinary revenue — compatible source evidence unconfirmed'
+                    : 'of every KES 100 of ordinary revenue services the debt (interest + principal)'}
                 </div>
               </div>
             </div>
@@ -388,8 +396,7 @@ export default function BudgetFlowHero({ data }: Props) {
         </div>
       </div>
 
-      {/* Composition withheld — no Budget Summary column supplies this year
-          on one basis. Say so rather than drawing bars of zeros. */}
+      {/* The source may exist while its component evidence is unconfirmed. */}
       {!hasFlow && (
         <div className='px-5 sm:px-8 pb-7 pt-2'>
           <div className='rounded-xl border border-neutral-border/60 bg-surface-sunken/40 px-4 py-4'>
@@ -400,12 +407,10 @@ export default function BudgetFlowHero({ data }: Props) {
               />
               <div className='text-[12px] leading-relaxed text-neutral-muted'>
                 <span className='font-semibold text-gov-dark dark:text-white'>
-                  How {fy} breaks down is not published yet.
+                  How {fy} breaks down is withheld.
                 </span>{' '}
-                The sources-and-uses breakdown is drawn only from Treasury&apos;s
-                Budget Summary, where every part adds up to one total. No edition we
-                can read supplies {fy} on that basis, so the breakdown is withheld
-                rather than assembled from figures measured different ways.
+                Every part must be confirmed for this fiscal year and add up to
+                one spending total. {withholdingReason}
                 <span className='block mt-1.5 text-neutral-muted/80'>
                   A blank breakdown is not a finding that these amounts are zero.
                 </span>

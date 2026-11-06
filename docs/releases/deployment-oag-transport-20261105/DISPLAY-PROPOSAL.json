@@ -1,0 +1,189 @@
+{
+  "schema": "oag-clipped-title-display-proposal-v1",
+  "generated_by": "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/deployment-repair-dispatch-20261105/oag_transport/prepare_display_policy_v2.py",
+  "generator_sha256": "3514cd74ecf34e7cedadcfcec640c2b462195bab5c8918c13b39161744960231",
+  "at": "2026-11-06T00:26:33.846389+00:00",
+  "target_commit": "8ef389d7ffc5bfb86bed22ae5a9b63858f13424a",
+  "target_tree": "75637cdf82b20fdc8190305638d45ca019c838d0",
+  "verdict": "PROPOSED_POLICY_SEPARATE_IMPLEMENTATION_AND_REVIEW_REQUIRED",
+  "implemented": false,
+  "approved": false,
+  "source_adoption": false,
+  "source_sha256": "d8c72b4fbda2c920f30f79b3e0554f9965165735d220a810e6ae3994e2dbf899",
+  "supersedes": {
+    "path": "source-policy-v1/policy.json",
+    "sha256": "23d36d2f53abecb9d30c1a65fa6f122aec13683a4057c2ca5672b38ca6af0ef5",
+    "reason": "Typed vote identities now match actual integer parser payloads; fiscal year explicit. Public example text unchanged."
+  },
+  "publisher_correction_search": {
+    "catalogue": "https://www.oagkenya.go.ke/2024-2025-ministries-departments-and-agencies-reports/",
+    "current_link": "https://www.oagkenya.go.ke/wp-content/uploads/2026/06/AUDITOR-GENERALS-REPORT-ON-NATIONAL-GOVERNMENT-2024-2025.pdf",
+    "current_link_actual_sha256": "d8c72b4fbda2c920f30f79b3e0554f9965165735d220a810e6ae3994e2dbf899",
+    "same_bytes_as_held_may_edition": true,
+    "conclusion": "The examined current link is not a corrected rendered edition; no claim about all publisher holdings.",
+    "acquisition_receipt_sha256": "c50af91a86413063c2c16accf68d568cef5e37d5318989c666a9e69beefec0f4"
+  },
+  "source_cells": [
+    {
+      "physical_pdf_page": 266,
+      "printed_page": 253,
+      "parent_paragraph": 778,
+      "vote": 1082,
+      "cell_mcid": 13,
+      "contents_object": 538,
+      "embedded_text": "Delayed Completion of Pediatric Emergency Centre and Burns Management Centre",
+      "visible_text": "Delayed Completion of Pediatric Emergency Centre and Burns Management",
+      "clipped_embedded_suffix": "Centre",
+      "clip": [
+        116.54,
+        158.90000000000006,
+        539.61,
+        172.82000000000005
+      ],
+      "source_operators_sha256": "99675bd788691988f084b50f4a60188837a88a1d1c04cccf5ed96f20d2e9cdbf",
+      "render_sha256": "b49d1120e93e9cccb051b5a5de78fe6f9149d612a67626b6a8728ff2d52d9465"
+    },
+    {
+      "physical_pdf_page": 266,
+      "printed_page": 253,
+      "parent_paragraph": 778,
+      "vote": 1082,
+      "cell_mcid": 27,
+      "contents_object": 538,
+      "embedded_text": "Proposed Establishment of a NEURpsychiatric National Teaching and Referral Hospital",
+      "visible_text": "Proposed Establishment of a NEURpsychiatric National Teaching and",
+      "clipped_embedded_suffix": "Referral Hospital",
+      "clip": [
+        116.54,
+        259.72999999999996,
+        539.61,
+        273.65
+      ],
+      "source_operators_sha256": "f57e4b17e65ede673b3784ce4d49656438ca0d46bde501b4da02e2b441996b81",
+      "render_sha256": "b49d1120e93e9cccb051b5a5de78fe6f9149d612a67626b6a8728ff2d52d9465"
+    },
+    {
+      "physical_pdf_page": 691,
+      "printed_page": 678,
+      "parent_paragraph": 2169,
+      "vote": 1184,
+      "cell_mcid": 47,
+      "contents_object": 1396,
+      "embedded_text": "Delayed Completion of the Construction of National Employment Promotion Centre",
+      "visible_text": "Delayed Completion of the Construction of National Employment Promotion",
+      "clipped_embedded_suffix": "Centre",
+      "clip": [
+        106.58,
+        624.22,
+        539.61,
+        638.14
+      ],
+      "source_operators_sha256": "2b3f48bc2ff2dfbb2700b4611c8a82be074126d9688f7178e8343e0054c117da",
+      "render_sha256": "5dfe5c578aec9f1f824ee15f91a0f9ccba4d18b6178dffdb53aa52d4b4b89983"
+    },
+    {
+      "physical_pdf_page": 691,
+      "printed_page": 678,
+      "parent_paragraph": 2169,
+      "vote": 1184,
+      "cell_mcid": 49,
+      "contents_object": 1396,
+      "embedded_text": "Delayed Completion of Construction of Occupational Safety and Health (OSH) Institute Phase 1",
+      "visible_text": "Delayed Completion of Construction of Occupational Safety and Health (OSH)",
+      "clipped_embedded_suffix": "Institute Phase 1",
+      "clip": [
+        106.58,
+        638.62,
+        539.61,
+        652.54
+      ],
+      "source_operators_sha256": "8dcb791700d00929d3e37c07cc5aba2805dd0fc7aa19a1f007153c70e999ca17",
+      "render_sha256": "5dfe5c578aec9f1f824ee15f91a0f9ccba4d18b6178dffdb53aa52d4b4b89983"
+    }
+  ],
+  "examples": [
+    {
+      "parent_paragraph": 778,
+      "physical_pdf_page": 266,
+      "cell_mcid": 13,
+      "current_engineering_state": "Adoption held: publisher title is visibly clipped.",
+      "proposed_public_text": "Delayed Completion of Pediatric Emergency Centre and Burns Management [remaining title not visible in the publisher PDF]",
+      "qualification": "Historical issue title; part of the title is clipped in this edition. See the source page. This is prior-year context, not a new finding.",
+      "source_link": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-NATIONAL-GOVERNMENT-2024-2025.pdf#page=266",
+      "hidden_suffix_excluded_from_public_text": true
+    },
+    {
+      "parent_paragraph": 778,
+      "physical_pdf_page": 266,
+      "cell_mcid": 27,
+      "current_engineering_state": "Adoption held: publisher title is visibly clipped.",
+      "proposed_public_text": "Proposed Establishment of a NEURpsychiatric National Teaching and [remaining title not visible in the publisher PDF]",
+      "qualification": "Historical issue title; part of the title is clipped in this edition. See the source page. This is prior-year context, not a new finding.",
+      "source_link": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-NATIONAL-GOVERNMENT-2024-2025.pdf#page=266",
+      "hidden_suffix_excluded_from_public_text": true
+    },
+    {
+      "parent_paragraph": 2169,
+      "physical_pdf_page": 691,
+      "cell_mcid": 47,
+      "current_engineering_state": "Adoption held: publisher title is visibly clipped.",
+      "proposed_public_text": "Delayed Completion of the Construction of National Employment Promotion [remaining title not visible in the publisher PDF]",
+      "qualification": "Historical issue title; part of the title is clipped in this edition. See the source page. This is prior-year context, not a new finding.",
+      "source_link": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-NATIONAL-GOVERNMENT-2024-2025.pdf#page=691",
+      "hidden_suffix_excluded_from_public_text": true
+    },
+    {
+      "parent_paragraph": 2169,
+      "physical_pdf_page": 691,
+      "cell_mcid": 49,
+      "current_engineering_state": "Adoption held: publisher title is visibly clipped.",
+      "proposed_public_text": "Delayed Completion of Construction of Occupational Safety and Health (OSH) [remaining title not visible in the publisher PDF]",
+      "qualification": "Historical issue title; part of the title is clipped in this edition. See the source page. This is prior-year context, not a new finding.",
+      "source_link": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-NATIONAL-GOVERNMENT-2024-2025.pdf#page=691",
+      "hidden_suffix_excluded_from_public_text": true
+    }
+  ],
+  "policy": {
+    "allowed_edition": "d8c72b4fbda2c920f30f79b3e0554f9965165735d220a810e6ae3994e2dbf899",
+    "fiscal_year": "2024/2025",
+    "allowed_parents": [
+      {
+        "paragraph": 778,
+        "vote": 1082,
+        "complete_historical_entries": 28
+      },
+      {
+        "paragraph": 2169,
+        "vote": 1184,
+        "complete_historical_entries": 13
+      }
+    ],
+    "display": "Preserve every entry inside its original historical parent. Substitute only exact visible prefixes at the four identified cells, with an adjacent missing-text label and physical-page link. Preserve complete embedded text separately in reviewer evidence; never quote hidden suffixes as visible publisher text.",
+    "amounts": "INFO historical context; no amount or new allegation from these rows. Preserve the following court-award finding, all other findings, clean statements and opinions.",
+    "binding": "Bind an implementation to the exact PDF digest, parent/vote/fiscal year, marked cell, complete parent inventory and render identities. Unknown, different, missing or tampered qualifications refuse.",
+    "admission": "No generic review flag or reconciliation approval bypass. Existing common L3 and direct loader holds remain unchanged. Separately reviewed code, exact representation approval, national authority and a current-row adoption packet are still required.",
+    "rollout": "Review exact API/page/export/search/accessibility text and source links before public loading. No implementation or publishing is included.",
+    "rollback": "Remove the exact representation and withhold affected parents. Adopted data also requires complete extraction/audit before-images and a reviewed transaction rollback; code revert is insufficient."
+  },
+  "required_implementation_controls": [
+    "Exact four cells only; no global heuristic title truncation",
+    "Full28/13 parent grouping and prior-year INFO semantics preserved",
+    "Literal missing-text marker in visible and screen-reader text",
+    "No hidden suffix in public quotation/search/export fallback",
+    "Wrong edition/parent/cell/count/stale approval and generic exact review refuse",
+    "Native authority and original acquisition remain independent",
+    "Normal/optimized original fidelity/retention/refusal families remain mandatory"
+  ],
+  "input_sha256": {
+    "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/nightly-repair-dispatch-20261105/oag/content/source-objects-v1/source-object-decision-v1.json": "773f157cd17ddb00218760a9f3c18bca70cd1a06d5f5650d0fb9b31c79ec3ef5",
+    "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/deployment-repair-dispatch-20261105/oag_transport/official-get-v2/document-2392.pdf": "d8c72b4fbda2c920f30f79b3e0554f9965165735d220a810e6ae3994e2dbf899",
+    "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/deployment-repair-dispatch-20261105/oag_transport/official-get-v2/national-june-candidate.pdf": "d8c72b4fbda2c920f30f79b3e0554f9965165735d220a810e6ae3994e2dbf899",
+    "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/deployment-repair-dispatch-20261105/oag_transport/official-get-v2/receipt.json": "c50af91a86413063c2c16accf68d568cef5e37d5318989c666a9e69beefec0f4",
+    "/Users/roger/.codex/worktrees/deploy-oag-transport-20261105/audit_app/backend/seeding/extractors/oag_blue_book.py": "b4261af2302b0fb4919267b13dbcd8e8fc6326837c7ae43c25a4cc90d6560855",
+    "/Users/roger/.codex/worktrees/deploy-oag-transport-20261105/audit_app/backend/seeding/extractors/reconciliation.py": "9cf2df5bf2a57c2527b380a94c94a853f6b7f0f5d345028be6f755c024fd1ce1",
+    "/Users/roger/.codex/worktrees/deploy-oag-transport-20261105/audit_app/backend/seeding/domains/audits/loader.py": "28efba123af997b4496d5c56099b58fa1e315d9a5a0e2fe096e3a5e01dbffe5c",
+    "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/nightly-repair-dispatch-20261105/oag/content/source-objects-v1/physical-page-266.png": "b49d1120e93e9cccb051b5a5de78fe6f9149d612a67626b6a8728ff2d52d9465",
+    "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/nightly-repair-dispatch-20261105/oag/content/source-objects-v1/physical-page-691.png": "5dfe5c578aec9f1f824ee15f91a0f9ccba4d18b6178dffdb53aa52d4b4b89983",
+    "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/nightly-repair-dispatch-20261105/oag/content/source-objects-v1/physical-page-3.png": "45f8794ec4e514896bad0a3d101d7637223d9eb603eeaaa2756a9a5f20e6b3c3"
+  }
+}

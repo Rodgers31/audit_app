@@ -1,4 +1,6 @@
 /**
+ * Inert rendering corpus with explicit synthetic cell witnesses; no original
+ * acquisition, retained document association or source-adoption authority.
  * FY 2026/27 and FY 2023/24 as /api/v1/fiscal/summary serves them after
  * issue #237. The fiscal_framework figures are read from Treasury's Budget
  * Summary, Annex Table 2a:
@@ -52,12 +54,50 @@ export const FF_2023_24_ACTUAL: FiscalFramework = {
   ordinary_revenue_billion: 2288.9,
   ministerial_aia_billion: 413.7,
   grants_billion: 22.0,
+  fiscal_deficit_incl_grants_billion: 880.5,
   total_financing_billion: 818.3,
   adjustment_to_cash_basis_billion: 45.4,
   statistical_discrepancy_billion: -16.8,
   tax_revenue_billion: 2167.8,
   non_tax_revenue_billion: 121.1,
 };
+
+// Independent expected labels from the selected Annex cells, not an API proof issuer.
+const FIXTURE_CELLS: Record<string, [string, string]> = {
+  total_expenditure_billion: ['Expenditure and Net Lending','treasury_fiscal_framework'],
+  recurrent_billion: ['Recurrent Expenditure','treasury_fiscal_framework'],
+  interest_payments_billion: ['Interest Payments','treasury_fiscal_framework'],
+  development_billion: ['Development and Net Lending','treasury_fiscal_framework'],
+  county_transfers_billion: ['County Transfers','treasury_fiscal_framework'],
+  county_equitable_share_billion: ['Equitable Share','treasury_fiscal_framework'],
+  contingency_billion: ['Contingency','treasury_fiscal_framework'],
+  total_revenue_incl_aia_billion: ['Total Revenue including A-i-A','revenue_including_aia'],
+  ordinary_revenue_billion: ['Ordinary Revenue','ordinary_revenue_excl_aia'],
+  ministerial_aia_billion: ['Ministerial Appropriation in Aid','ministerial_appropriations_in_aid'],
+  grants_billion: ['Grants','treasury_fiscal_framework'],
+  fiscal_deficit_incl_grants_billion: ['Fiscal Balance including Grants (sign reversed)','treasury_fiscal_framework'],
+  total_financing_billion: ['Total Financing','treasury_fiscal_framework'],
+  net_foreign_financing_billion: ['Net Foreign Financing','treasury_fiscal_framework'],
+  net_domestic_financing_billion: ['Net Domestic Financing','treasury_fiscal_framework'],
+  adjustment_to_cash_basis_billion: ['Adjustment to Cash Basis','treasury_fiscal_framework'],
+  statistical_discrepancy_billion: ['Statistical Discrepancy','treasury_fiscal_framework'],
+  tax_revenue_billion: ['Tax Revenue','ordinary_revenue_excl_aia'],
+  non_tax_revenue_billion: ['Non-Tax Revenue','ordinary_revenue_excl_aia'],
+};
+export function withSyntheticFrameworkProofs(ff: FiscalFramework, fiscalYear: string, vintage: string): FiscalFramework {
+  const source = { ...ff.source, url: 'https://www.treasury.go.ke/rendering-fixture.pdf',
+    sha256: 'a'.repeat(64), page: 'Annex Table 2a, PDF p.63', table: 'Annex Table 2a: Fiscal Framework (KSh billion)',
+    edition: 'Inert rendering corpus for FY 2026/27 edition', column: vintage };
+  return { ...ff, source, fiscal_year: fiscalYear, measure_contract_version: 'fiscal-measures-v1', precision_kes: 100_000_000,
+    measure_qualifications: Object.fromEntries(Object.entries(FIXTURE_CELLS).flatMap(([key,[cell,basis]]) => {
+      const v = (ff as unknown as Record<string, unknown>)[key];
+      return typeof v === 'number' && Number.isFinite(v)
+        ? [[key,{ value_kes: Math.round(v * 1e9 * 100) / 100, fiscal_year: fiscalYear, basis, vintage,
+            precision_kes: 100_000_000, source: { ...source, cell } }]] : [];
+    })) };
+}
+Object.assign(FF_2026_27, withSyntheticFrameworkProofs(FF_2026_27, 'FY 2026/27', 'Approved'));
+Object.assign(FF_2023_24_ACTUAL, withSyntheticFrameworkProofs(FF_2023_24_ACTUAL, 'FY 2023/24', 'Actual'));
 
 /** The FY 2026/27 row in bare billions (the flow hero's normalised input). */
 export const FY_2026_27_BILLIONS = {

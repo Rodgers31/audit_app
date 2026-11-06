@@ -213,10 +213,12 @@ export const getNationalLoans = async (signal?: AbortSignal): Promise<NationalLo
 export interface DebtTimelineEntry {
   qualifications?: Qualifications;
   year: number;
-  external: number;
-  domestic: number;
-  total: number;
-  gdp: number;
+  external: number | null;
+  domestic: number | null;
+  total: number | null;
+  gdp: number | null;
+  period?: { stock_as_of_month: string | null; gdp_calendar_year: number; year_end_stock: boolean; publication_date: string | null; vintage_date: string | null };
+  absent_reasons?: Record<string, string>;
   gdp_ratio: number | null;
   /** Declared unit of the money fields. "KES" = raw KES (stage1 3a
    *  migration). Absent on a pre-migration backend, whose values are

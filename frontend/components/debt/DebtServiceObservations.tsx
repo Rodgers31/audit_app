@@ -1,3 +1,4 @@
+import type { FiscalMeasureQualification } from '@/lib/api/fiscal';
 import type { DebtServicePoint } from '@/lib/debt/debtServiceSeries';
 
 const money = (value: number | null) =>
@@ -9,7 +10,18 @@ function share(point: DebtServicePoint): string {
   if (point.service == null) reasons.push('debt service not published');
   if (point.revenue == null) reasons.push('revenue not published');
   else if (point.revenue <= 0) reasons.push('revenue must be greater than zero');
+  if (!reasons.length) reasons.push('compatible source evidence unconfirmed');
   return `Withheld: ${reasons.join('; ')}`;
+}
+
+function MeasureSource({ proof }: { proof?: FiscalMeasureQualification }) {
+  if (!proof) return null;
+  return <span className='mt-1 block font-normal text-neutral-muted'>
+    {proof.vintage}; printed precision KES {proof.precision_kes.toLocaleString('en-KE')}.{' '}
+    <a className='underline' href={proof.source.url} target='_blank' rel='noopener noreferrer'>
+      {proof.source.title ?? 'Source document'} · {proof.source.page}
+    </a>
+  </span>;
 }
 
 /** Same observations as the plotted series, available without pointer hover. */
@@ -36,8 +48,8 @@ export default function DebtServiceObservations({ points }: { points: DebtServic
               <th scope='row' className='px-1 py-3 sm:px-3 text-left font-medium break-words'>
                 {point.year ?? 'Fiscal year not published'}
               </th>
-              <td className='px-1 py-3 sm:px-3 tabular-nums break-words'>{money(point.service)}</td>
-              <td className='px-1 py-3 sm:px-3 tabular-nums break-words'>{money(point.revenue)}</td>
+              <td className='px-1 py-3 sm:px-3 tabular-nums break-words'>{money(point.service)}<MeasureSource proof={point.serviceQualification} /></td>
+              <td className='px-1 py-3 sm:px-3 tabular-nums break-words'>{money(point.revenue)}<MeasureSource proof={point.revenueQualification} /></td>
               <td className='px-1 py-3 sm:px-3 tabular-nums break-words'>{share(point)}</td>
             </tr>
           ))}

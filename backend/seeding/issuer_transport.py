@@ -56,7 +56,7 @@ def remaining(deadline: float) -> float:
 
 def _public_addresses(host: str, deadline: float) -> list[str]:
     result = subprocess.run(
-        [sys.executable, '-I', '-c', _RESOLVE, host],
+        [sys.executable, '-I', '-B', '-c', _RESOLVE, host],
         env={}, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
         timeout=min(2.0, remaining(deadline)), check=True,
     )

@@ -1,3 +1,5 @@
+import type { FiscalMeasureQualification } from '@/lib/api/fiscal';
+
 /**
  * Series for "The cost of debt over time".
  *
@@ -25,9 +27,13 @@ export interface FiscalYearRow {
   fiscal_year?: string | null;
   debt_service_cost?: number | null;
   total_revenue?: number | null;
+  debt_service_per_shilling?: number | null;
+  measure_qualifications?: Record<string, FiscalMeasureQualification>;
 }
 
 export interface DebtServicePoint {
+  serviceQualification?: FiscalMeasureQualification;
+  revenueQualification?: FiscalMeasureQualification;
   year: string | null;
   /** Debt service in KES, or null when the year has no published figure. */
   service: number | null;
@@ -49,9 +55,11 @@ export function buildDebtServiceSeries(years: FiscalYearRow[]): DebtServicePoint
       year: y?.fiscal_year ?? null,
       service,
       revenue,
+      serviceQualification: service == null ? undefined : y.measure_qualifications?.debt_service_cost,
+      revenueQualification: revenue == null ? undefined : y.measure_qualifications?.total_revenue,
       // Guarded on revenue > 0 as well as presence: a zero denominator is a
       // division artefact, not a share.
-      ratio: service != null && revenue != null && revenue > 0 ? (service / revenue) * 100 : null,
+      ratio: service != null && revenue != null && revenue > 0 && published(y.debt_service_per_shilling) && y.debt_service_per_shilling >= 0 ? y.debt_service_per_shilling : null,
     };
   });
 }
