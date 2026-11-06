@@ -139,20 +139,27 @@ def test_retained_fy2021_optional_unreadable_gdp_does_not_remove_sound_financial
 def test_real_pdf_redirect_then_unusable_new_response_does_not_accept_cached_parse(tmp_path, replacement):
     # Native PDF page objects from the exact downloaded official edition,
     # reduced to cover, two narrative pages and Annex 2a; mapping is retained.
+    from seeding.pdf_download import cached_pdf_meta
+
     data = (FIXTURES / 'fy2026_27_excerpt.pdf').read_bytes()
     source = json.loads((FIXTURES / 'fy2026_27_excerpt_source.json').read_text())
     assert hashlib.sha256(data).hexdigest() == source['sha256']
     listing = 'https://www.treasury.go.ke/budget-summary-revenue-expenditure'
-    state = {'body': data}
+    redirect_target = 'https://www.treasury.go.ke/source-edition.pdf'
+    state = {'body': data, 'redirect': False}
     calls = []
+    direct_payloads = []
 
     def serve(request):
         calls.append(str(request.url))
         if str(request.url) == listing:
             return httpx.Response(200, text=f'<a href="{URL}">FY 2026/27 Budget Summary</a>')
-        if str(request.url) == URL:
+        # The injected client enables redirects; the shared downloader must
+        # still reject the 302 without requesting this replacement resource.
+        assert str(request.url) == URL
+        if state['redirect']:
             return httpx.Response(302, headers={'location': '/source-edition.pdf'})
-        assert str(request.url) == 'https://www.treasury.go.ke/source-edition.pdf'
+        direct_payloads.append(state['body'])
         if state['body'] is None:
             raise httpx.ConnectError('[SSL: CERTIFICATE_VERIFY_FAILED] hostname mismatch', request=request)
         return httpx.Response(200, content=state['body'])
@@ -169,12 +176,44 @@ def test_real_pdf_redirect_then_unusable_new_response_does_not_accept_cached_par
             assert split.values['tax_revenue'] == Decimal('2858.7')
             assert split.values['non_tax_revenue'] == Decimal('127.1')
             assert first[0][1].table.page == 4
+            assert first[0][1].source_sha256 == source['sha256']
+            assert facts['budget_summary_editions'][URL]['status'] == 'read'
+            original_metadata = cached_pdf_meta(tmp_path / 'pdfs', URL)
+            assert original_metadata['sha256'] == source['sha256']
+            assert original_metadata['response_receipt']['request_url'] == URL
+            assert original_metadata['response_receipt']['response_url'] == URL
+            assert original_metadata['response_receipt']['digest'] == source['sha256']
+            original_pdf, = (tmp_path / 'pdfs').glob('*.pdf')
+            assert original_pdf.read_bytes() == data
+            assert direct_payloads == [data]
+
+            # A failed fresh redirect must not turn the old parsed edition
+            # into an accepted observation, even though its bytes remain.
             state['body'] = {'html': b'<html>Budget Summary FY 2026/27</html>',
                 'malformed_pdf': b'%PDF-1.7\nmalformed\n%%EOF', 'tls_error': None}[replacement]
+            state['redirect'] = True
             second, refused = _fetch_budget_summary_editions(client, settings)
             assert second == []
             assert refused['budget_summary_editions'][URL]['status'].startswith('unreadable(')
-    assert URL in calls and 'https://www.treasury.go.ke/source-edition.pdf' in calls
+            assert redirect_target not in calls
+            assert direct_payloads == [data]
+            assert client.download_receipt(URL) is None
+            assert original_pdf.read_bytes() == data
+            assert cached_pdf_meta(tmp_path / 'pdfs', URL) == original_metadata
+
+            # Reach each original invalid payload directly as a separate
+            # refresh; none may accept the retained good parse as its result.
+            state['redirect'] = False
+            third, unusable = _fetch_budget_summary_editions(client, settings)
+            assert third == []
+            assert unusable['budget_summary_editions'][URL]['status'].startswith('unreadable(')
+            assert len(direct_payloads) >= 2
+            assert all(body == state['body'] for body in direct_payloads[1:])
+            assert redirect_target not in calls
+            if replacement in {'html', 'tls_error'}:
+                assert original_pdf.read_bytes() == data
+                assert cached_pdf_meta(tmp_path / 'pdfs', URL) == original_metadata
+    assert URL in calls and redirect_target not in calls
 
 
 def test_all_five_accepted_parser_results_keep_exact_financial_values():
