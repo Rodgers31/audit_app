@@ -111,6 +111,9 @@ def test_api_injects_separate_authority_without_native_or_callback_admission(sav
  client.app.dependency_overrides[api.get_db]=lambda:service.db
  monkeypatch.setattr(api,'load_config',lambda:service.config)
  monkeypatch.setattr(httpx,'HTTPTransport',lambda **_:httpx.MockTransport(graph))
+ # Isolated DI/read-only-authority contract; no process-budget acceptance here.
+ from social.connections import verification_execution
+ monkeypatch.setattr(verification_execution,'execute',lambda svc,*args:svc._verify_existing_grant(*args))
  response=client.post(f'/api/v1/admin/social/accounts/{account_id}/verify-publishing-access',json=body,headers={'Idempotency-Key':str(uuid4())})
  assert response.status_code==200,response.text
  assert response.json()['enable_available'] is False and response.json()['publishing_enabled'] is False

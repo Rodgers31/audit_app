@@ -19,7 +19,7 @@ def test_later_domain_starts_first_after_real_budget_drop(clock, sessionmaker_fa
         def run(**kwargs):
             calls.append(name)
             clock.advance(60)
-            return DomainRunResult(domain=name)
+            return DomainRunResult(domain=name, items_processed=1)
         return run
     monkeypatch.setattr(cli,'REGISTRY',_FakeRegistry({n:handler(n) for n in ('a','b','c')}))
     settings=SeedingSettings(total_timeout_seconds=100,domain_timeout_seconds=600)
@@ -42,7 +42,7 @@ def test_workflow_multi_domain_plan_requests_fair_progress():
 def test_explicit_single_domain_is_not_replaced(clock,monkeypatch):
     calls=[]
     def run(**kwargs):
-        calls.append('a');return DomainRunResult(domain='a')
+        calls.append('a');return DomainRunResult(domain='a', items_processed=1)
     monkeypatch.setattr(cli,'REGISTRY',_FakeRegistry({'a':run}))
     selected=argparse.Namespace(domain=['a'],all=False,dry_run=False,since=None,fair_progress=True)
     assert cli.run_seed_command(selected,SeedingSettings(total_timeout_seconds=100))==0
@@ -58,7 +58,7 @@ def test_running_owner_shape_precedes_terminal_scheduling_telemetry(clock,sessio
         assert set(job.meta)=={'since','seeding_claim_id'}
         assert job.meta['seeding_claim_id']==str(context.ownership.identity)
         calls.append(job.domain)
-        return DomainRunResult(domain=job.domain)
+        return DomainRunResult(domain=job.domain, items_processed=1)
     monkeypatch.setattr(cli,'REGISTRY',_FakeRegistry({n:handler for n in ('cra','opendata','county_borrowing')}))
     assert cli.run_seed_command(args(),SeedingSettings(total_timeout_seconds=1320))==0
     assert calls==['cra','opendata','county_borrowing']
@@ -75,7 +75,7 @@ def test_explicit_recovery_admits_both_sources_before_ordinary_rotation(clock,se
     def handler(*,session,settings,context):
         from models import IngestionJob
         name=session.get(IngestionJob,context.job_id).domain
-        calls.append(name);return DomainRunResult(domain=name)
+        calls.append(name);return DomainRunResult(domain=name, items_processed=1)
     monkeypatch.setattr(cli,'REGISTRY',_FakeRegistry({n:handler for n in ('imf_weo','counties_budget','audits','opendata')}))
     selected=args(audits_reconciliation_review='oag-2542-20261026')
     assert cli.run_seed_command(selected,SeedingSettings(total_timeout_seconds=1320))==0

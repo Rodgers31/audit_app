@@ -168,7 +168,7 @@ class WriterScope:
                             or claim.entry_id != entry_digest(execution.entry)
                             or claim.entered_at is None or claim.returned_at is not None
                             or claim.released_at is not None
-                            or terminal_observation(db, claim, self.jobs[execution.domain]) is None):
+                            or terminal_observation(db, claim, self.jobs[execution.domain], receipt_kind='legacy_ownership') is None):
                         raise DomainOwnershipError("Legacy terminal observation unverified; ownership retained")
                     claim.returned_at = clock(db)
                     claim.released_at = claim.returned_at

@@ -47,7 +47,9 @@ def test_untrusted_dispatch_is_not_executable_shell(tmp_path):
     script = step['run'].replace('${{ github.event.inputs.domain }}', f'population; touch {marker}; #')
     script = script.replace("${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}", '')
     script = script.replace('cd backend', f'cd {tmp_path}')
-    env = {'PATH': str(Path(sys.executable).parent) + ':/opt/homebrew/bin:/usr/bin:/bin',
+    env = {'GITHUB_OUTPUT':str(tmp_path / 'step-outputs'), 'GITHUB_RUN_ID':'1234',
+           'GITHUB_RUN_ATTEMPT':'1', 'SEED_JOB_FLOOR':'0',
+           'PATH': str(Path(sys.executable).parent) + ':/opt/homebrew/bin:/usr/bin:/bin',
            'PYTHONPATH': str(ROOT / 'backend'), 'PYTHON_DOTENV_DISABLED': '1', 'PYTHONDONTWRITEBYTECODE': '1',
            'SEED_PLAN_EVENT': 'workflow_dispatch', 'SEED_PLAN_DOMAIN': f'population; touch {marker}; #',
            'SEED_CRA_INGESTION_ENABLED':'false', 'SEED_OPENDATA_INGESTION_ENABLED':'false',

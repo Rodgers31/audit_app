@@ -42,14 +42,14 @@ def test_completed_numerical_job_records_missing_receipt_bytes(clock, sessionmak
 @pytest.mark.parametrize('mode', ['dry_run', 'failure', 'domain_timeout', 'global_timeout'])
 def test_retention_summary_survives_rollback_and_timeout(clock, sessionmaker_factory, monkeypatch, mode):
     from seeding.cli import DomainTimeoutError
-    def handler(**kwargs):
+    def handler(*, context, **kwargs):
         capture_response(source_response(), None)
         if mode in {'domain_timeout', 'global_timeout'}:
             raise DomainTimeoutError('inert timeout')
         if mode == 'failure':
             raise RuntimeError('inert handler failure')
         freshness.mark_live('economic_indicators')
-        return DomainRunResult(domain='economic_indicators', items_processed=1, items_updated=1)
+        return DomainRunResult(domain='economic_indicators', dry_run=context.dry_run, items_processed=1, items_updated=1)
     monkeypatch.setenv('SOCIAL_GENERATION_HOOK_ENABLED', 'false')
     monkeypatch.setattr(cli, 'REGISTRY', _FakeRegistry({'economic_indicators':handler}))
     args = _args()

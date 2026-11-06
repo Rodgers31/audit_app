@@ -47,6 +47,35 @@ logger = logging.getLogger("seeding.staleness")
 FAIL = "FAIL"
 WARN = "WARN"
 
+
+def national_population_sanity(session, *, as_of_year=None):
+    """Validate the newest national observation, never an arbitrary old row.
+
+    This is stored-data sanity, not source/publication acceptance. Two years
+    allow normal annual publication lag; older-only data cannot certify latest
+    population. National NULL entity IDs can bypass SQL uniqueness, so duplicate
+    newest observations are refused rather than selected by insertion order.
+    """
+    from models import PopulationData
+    year = datetime.now(timezone.utc).year if as_of_year is None else as_of_year
+    if type(year) is not int or not 2000 <= year <= 2200:
+        raise ValueError('Population validation year refused')
+    rows = session.query(PopulationData).filter(
+        PopulationData.entity_id.is_(None)
+    ).order_by(PopulationData.year.desc(), PopulationData.id.desc()).limit(2).all()
+    if not rows:
+        return False, f'National population unavailable: no observation (validation year {year})'
+    latest = rows[0]
+    period = latest.year
+    if type(period) is not int or not year - 2 <= period <= year:
+        return False, f'National population year {period}: missing current observation (validation year {year})'
+    if len(rows) > 1 and rows[1].year == period:
+        return False, f'National population year {period}: duplicate newest observations'
+    value = latest.total_population
+    if type(value) is not int or not 40_000_000 <= value <= 70_000_000:
+        return False, f'National population year {period} out of range: {value}'
+    return True, f'National population sanity: {value:,} (year {period})'
+
 #: Fallback reasons a domain sets to say "there is no live source for this
 #: yet", as opposed to "the live source failed". Only these downgrade an
 #: all-fixture domain from FAIL to WARN. Emitted today by learning_hub
@@ -1018,6 +1047,16 @@ def check_ingestion_freshness(
                     f"the site is serving the previous seed's data.",
                 )
             )
+        elif domain == 'county_officials' and latest_modes - {'live'}:
+            partial = 'partial' in latest_modes
+            findings.append(Finding(
+                FAIL, 'county_officials ingestion',
+                ('Current CoG refresh partial; accepted governor rows may have refreshed while '
+                 'unavailable deputy coverage retains its previous names. '
+                 if partial else 'Current CoG coverage unavailable or unconfirmed; '
+                 'previous stored names, if any, remain unchanged. ') +
+                'Older live runs do not establish current recovery or last-good age.',
+            ))
         elif domain == "national_gdp" and latest_modes - {"live"}:
             # This domain has independent GDP and poverty checks. Older GDP
             # live runs cannot conceal the latest poverty failure (or vice
@@ -1322,6 +1361,14 @@ def hollow_run_findings(jobs: Iterable) -> List[Finding]:
 
         if mode == "fixture":
             if reason in EXEMPT_FIXTURE_REASONS:
+                continue
+            if domain == 'county_officials' and all(type(getattr(job,k,None)) is int and getattr(job,k) == 0
+                    for k in ('items_processed','items_created','items_updated')):
+                findings.append(Finding(
+                    FAIL, label,
+                    'CoG source unavailable or unconfirmed; no names written. Previous stored names, '
+                    'if any, remain unchanged; this run does not establish their last-good age.',
+                ))
                 continue
             findings.append(
                 Finding(

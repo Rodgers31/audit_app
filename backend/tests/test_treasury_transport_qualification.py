@@ -7,7 +7,7 @@ Synthetic certificates below are test peers, never official-source acceptance.
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-import re
+import shlex
 import shutil
 import ssl
 import subprocess
@@ -152,29 +152,32 @@ def test_sectigo_aia_is_not_an_approved_issuer_download(monkeypatch, scheme):
 
 
 def _health_script(host=HOST):
+    from seeding.source_plan import LEGACY_DOMAINS, SourcePlan, health_source_lines
     workflow = yaml.safe_load((REPO / '.github/workflows/seed.yml').read_text())
     step, = [s for s in workflow['jobs']['healthcheck']['steps']
              if s.get('name') == 'Check data source URLs']
     script = step['run']
     assert '${{' not in script
-    registry = re.compile(r'^\s*SOURCES=\(\n.*?^\s*\)\n', re.S | re.M)
-    original = registry.search(script)
-    assert original is not None
-    entries = re.findall(r'"([^"|\n]+)\|([^"|\n]+)\|(true|false)"', original.group())
-    labels = {row[0] for row in TREASURY}
-    expected = [(name, f'https://{HOST}{path}', str(critical).lower())
-                for name, path, critical in TREASURY]
-    assert sorted(row for row in entries if row[0] in labels) == sorted(expected)
-    sources = 'SOURCES=(\n' + ''.join(
-        f'  "{name}|https://{host}{path}|{str(critical).lower()}"\n'
+    assert 'HC_SOURCE_INVENTORY' in script
+    # The source plan now owns the actual fetched URLs. BPS is a legacy
+    # citation, not an acquisition endpoint; BROP is required pending-bill data.
+    actual = [line.split('|') for line in health_source_lines(
+        SourcePlan(LEGACY_DOMAINS, False, False),
+        SeedingSettings(_env_file=None),
+    ).splitlines()]
+    for path in ('/budget-books/', '/budget-review-and-outlook-paper/'):
+        assert any(row[1:3] == [f'https://{HOST}{path}', 'true'] for row in actual)
+    assert not any(row[1] == f'https://{HOST}/budget-policy-statement/' for row in actual)
+    # Controlled required/optional peers exercise the unchanged production
+    # shell's full transfer/TLS verdicts through its actual inventory seam.
+    inventory = '\n'.join(
+        f'{name}|https://{host}{path}|{str(critical).lower()}'
         for name, path, critical in TREASURY
-    ) + ')\n'
-    script, replaced = registry.subn(lambda _: sources, script)
-    assert replaced == 1
-    return script
+    )
+    return 'export HC_SOURCE_INVENTORY=' + shlex.quote(inventory) + '\n' + script
 
 
-@pytest.mark.parametrize('curl_exit,outcome', [(0, '200'), (60, 'transport error 60'),
+@pytest.mark.parametrize('curl_exit,outcome', [(0, '200'), (60, 'TLS certificate verification failed'),
                                             (18, 'incomplete response'), (28, 'timeout')])
 def test_treasury_health_requires_successful_complete_transfer(tmp_path, curl_exit, outcome):
     """A misleading HTTP 200 must not hide certificate or body-transfer failure."""
@@ -261,5 +264,5 @@ def test_health_curl_verifies_a_real_local_https_peer(tmp_path, expired):
     assert sorted(requests) == ([] if expired else sorted(row[1] for row in TREASURY))
     for name, path, critical in TREASURY:
         severity = ('CRITICAL' if critical else 'WARNING') if expired else 'OK'
-        outcome = 'transport error 60' if expired else '200'
+        outcome = 'TLS certificate verification failed' if expired else '200'
         assert f'{severity}|{name}|https://localhost:{server.server_port}{path}|{outcome}\n' in output

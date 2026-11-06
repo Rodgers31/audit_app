@@ -38,15 +38,17 @@ PROBED_WITHOUT_A_CONFIG_DEFAULT = {
     # Cross-check source for debt; no default because it is only consulted
     # when the CBK figure is missing.
     "www.imf.org": "debt cross-check, consulted opportunistically",
+    "cog.go.ke": "seeding.extractors.cog_governors SOURCE_URL / DEPUTIES_SOURCE_URL",
+    "www.kra.go.ke": "revenue_by_source.kra_discovery LISTING_URL / slug_candidates",
+    "www.knbs.or.ke": "population.census_counties CENSUS_VOLUME_I_URL",
 }
 
 
 def _probed_urls() -> list:
-    """URLs from the ``SOURCES=( ... )`` array in the health-check step."""
-    text = _WORKFLOW.read_text()
-    block = re.search(r"SOURCES=\(\s*(.*?)\n\s*\)", text, re.S)
-    assert block, "could not find the SOURCES=( ... ) array in seed.yml"
-    return re.findall(r'"[^"|]*\|([^"|]+)\|', block.group(1))
+    """Actual source-plan component inventory for the unchanged daily scope."""
+    from seeding.source_plan import SourcePlan, LEGACY_DOMAINS, health_source_lines
+    return [line.split('|')[1] for line in health_source_lines(SourcePlan(LEGACY_DOMAINS,False,False)).splitlines()
+            if line.split('|')[1].startswith('https://')]
 
 
 def _config_default_urls() -> dict:

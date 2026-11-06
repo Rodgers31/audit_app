@@ -1,0 +1,22 @@
+# Prepared operational observations
+
+These commands prepare capture contracts only. They never dispatch a hosted job, write production or admit evidence. Supply the actual released/admitted source and distinct observed run/attempt IDs after authorization and release. Use a new absolute external output path for every invocation.
+
+```sh
+python3 scripts/verification/nightly_workflow/observation.py --kind full15 --run-id "$FULL15_RUN_ID" --attempt "$ATTEMPT" --source-sha "$ADMITTED_RELEASE_SHA" --output "$EXTERNAL_DIR/full15.json"
+python3 scripts/verification/nightly_workflow/observation.py --kind replay --run-id "$REPLAY_RUN_ID" --replay-of "$FULL15_RUN_ID" --attempt "$ATTEMPT" --source-sha "$ADMITTED_RELEASE_SHA" --output "$EXTERNAL_DIR/replay.json"
+python3 scripts/verification/nightly_workflow/observation.py --kind daily --run-id "$SCHEDULED_RUN_ID" --attempt "$ATTEMPT" --source-sha "$ADMITTED_RELEASE_SHA" --output "$EXTERNAL_DIR/daily.json"
+python3 scripts/verification/nightly_workflow/observation.py --kind weekly --run-id "$WEEKLY_RUN_ID" --attempt "$ATTEMPT" --source-sha "$ADMITTED_RELEASE_SHA" --cra false --opendata true --county-borrowing false --discovery false --output "$EXTERNAL_DIR/weekly.json"
+```
+
+The weekly flags above represent the separately reviewed proposed enabled-OpenData plan. Read back the actual existing opt-ins before capture; change the prepared flags to match reality, never repository configuration to match this example. Weekly importer/schema support is acceptance-owned and held until its immutable delivery. Ordinary/full15 cannot silently widen. The full15/replay/daily commands forbid extra opt-ins. Preparing a contract is not executed or accepted evidence.
+
+The emitted argv arrays use only gh api GET endpoints for exact run/attempt metadata, fully paginated jobs and original logs. Retain raw bytes and HTTP/source/job metadata, including zero-job failures; an empty checks rollup is not acceptance. No log excerpt may replace the complete originals. Validate event and cron against actual metadata. Schedules are unchanged:02UTC Mon–Sat is currently preceding-day8p.m. Chicago; Sunday03UTC is currently Saturday9p.m. Queue delay is measured separately. Three consecutive ordinary observations remain a proposed reliability criterion, not previously obtained evidence.
+
+For full15 and replay retain exact plan/schema/role/TLS/runtime/native profile, current CLI/database job IDs, all component source bytes/authority/original acquisition/readback, five independent verdicts, signed refresh originals decrypted privately from the authenticated sealed log records using the existing signing arrangement, serving census and exact rendered API/page values. Replay needs the same source/component/runtime bytes and independent before/after data, lineage, cache and social-draft delta comparison. Zero writes alone is not proof. Weekly adds bootstrap, its declared opt-in inventory, cold initialization costs and cleanup. Do not reuse narrower older manual green runs as full-plan acceptance.
+
+The supported tools/nightly_acceptance_20261105/operational.py importer remains acceptance-owned. Its existing command is `python3 tools/nightly_acceptance_20261105/operational.py ORIGINAL.json --replay REPLAY.json`; it explicitly reports authority/operational review pending. Do not turn its structural envelope into a success adapter or fabricate fields for the new protocol. Consume the frozen extended adapter before claiming operational acceptance.
+
+Existing-channel notification verification is read-only preparation: retain incident888's exact body/update timestamp/run-attempt and semantic-state marker, then independently inspect the corresponding existing GitHub notification or delivered inbox item with its channel/time/recipient identity kept private. Preserve the delivery original and correlate its run/attempt and transition; absence remains delivery unobserved. Issue API success, summary success, a subscription or a test-double call is not delivery. No messages or new service were sent/created here.
+
+Rollback preparation requires the exact previous backend/frontend/workflow artifacts, native runtime/profile set, schema/admission identity and unchanged OFF controls. Restore a mutually compatible protocol/source release if needed; never fall back from failed v2 acknowledgment to an unsigned/legacy success. Code rollback does not undo separately adopted fiscal/audit/source/lineage data. No such data was adopted by this lane.

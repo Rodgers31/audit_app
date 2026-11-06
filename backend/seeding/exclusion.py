@@ -136,19 +136,21 @@ def unclaimed_running(db, domain):
     return False
 
 
-def terminal_observation(db, claim, job_id):
+def terminal_observation(db, claim, job_id, *, receipt_kind='source'):
     if type(job_id) is not int or job_id <= 0:
         return None
     job = db.get(IngestionJob, job_id)
     if job is None or job.domain != claim.domain or type(job.meta) is not dict or job.meta.get("seeding_claim_id") != str(claim.id):
         return None
-    return _coherent_terminal_job(db, job, claim.acquired_at)
+    return _coherent_terminal_job(db, job, claim.acquired_at, receipt_kind=receipt_kind)
 
 
-def _coherent_terminal_job(db, job, acquired_at):
+def _coherent_terminal_job(db, job, acquired_at, *, receipt_kind='source'):
+    from .terminal_inventory import valid_terminal_inventory
     if job.status not in (IngestionStatus.COMPLETED, IngestionStatus.COMPLETED_WITH_ERRORS, IngestionStatus.FAILED):
         return None
-    if type(job.errors) is not list or (job.status == IngestionStatus.COMPLETED and job.errors) or not all(type(v) is int and 0 <= v <= 2147483647 for v in (job.items_processed, job.items_created, job.items_updated)):
+    if not valid_terminal_inventory(job, completed=job.status == IngestionStatus.COMPLETED,
+                                    receipt_kind=receipt_kind):
         return None
     if db.get_bind().dialect.name == "postgresql":
         start, end = db.execute(select(
@@ -418,8 +420,8 @@ class DomainExecutionSet:
                             or claim.command_id is not None or claim.entered_at is None
                             or claim.entry_id != entry_digest(execution.entry)
                             or claim.returned_at is not None or claim.released_at is not None
-                            or _coherent_terminal_job(db, job, claim.acquired_at) is None
-                            or _coherent_terminal_job(db, job, claim.entered_at) is None):
+                            or _coherent_terminal_job(db, job, claim.acquired_at, receipt_kind='reference') is None
+                            or _coherent_terminal_job(db, job, claim.entered_at, receipt_kind='reference') is None):
                         raise DomainOwnershipError("Bootstrap member unverified; ownership retained")
                     claim.returned_at = clock(db)
                     claim.released_at = claim.returned_at
