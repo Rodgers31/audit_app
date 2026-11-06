@@ -37,8 +37,17 @@ def has_source_locator(source):
 
 
 def fiscal_outturn(row):
+    from services.fiscal_framework_qualification import qualified_framework
+    framework, reason = qualified_framework(row)
+    result = _outturn_from_framework(row, framework)
+    if reason:
+        result['absent_reason'] = reason
+    return result
+
+
+def _outturn_from_framework(row, framework):
+    """Reconcile one supplied column; callers must qualify its cells first."""
     meta = row.meta if isinstance(row.meta, dict) else {}
-    framework = meta.get("fiscal_framework")
     framework = framework if isinstance(framework, dict) else {}
     source = framework.get("source")
     source = source if isinstance(source, dict) else {}

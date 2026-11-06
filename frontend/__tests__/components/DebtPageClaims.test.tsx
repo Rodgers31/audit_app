@@ -47,6 +47,9 @@ const OVERVIEW = {
   debt_to_gdp_year: 2025,
   debt_to_gdp_basis: 'IMF General Government Gross Debt, % of GDP (GGXWDG_NGDP) — vintage-consistent',
   debt_to_gdp_source: 'IMF World Economic Outlook',
+  figure_qualifications: { derived_ratio: {
+    status: 'qualified', reason: 'published_imf_ratio_outside_seven_table_contract',
+  } },
   debt_sustainability: { imf_dsa: IMF_DSA },
   summary: {},
   categories: {},
@@ -86,7 +89,8 @@ describe('debt page financial claims (#289)', () => {
     expect(ratioTile()).toHaveTextContent('69.3%');
     expect(ratioTile()).not.toHaveTextContent('vs PFM Act 55%');
     expect(ratioTile()).toHaveTextContent('Nominal debt');
-    expect(ratioTile()).toHaveTextContent(OVERVIEW.debt_to_gdp_basis);
+    expect(ratioTile()).toHaveTextContent('IMF general-government debt / GDP, 2025');
+    expect(ratioTile()).toHaveTextContent('source vintage unconfirmed');
     expect(ratioTile()).toHaveTextContent('Observation: 2025');
     expect(ratioTile()).toHaveTextContent('IMF World Economic Outlook');
   });
@@ -99,7 +103,7 @@ describe('debt page financial claims (#289)', () => {
 
   it.each([null, undefined, NaN, Infinity, -Infinity, -1, true, '69.3', {}, []])('keeps missing or invalid %s ratios absent even with register/GDP inputs', async (ratio) => {
     await mount({ debt_to_gdp_ratio: ratio });
-    expect(ratioTile()).toHaveTextContent('Not published');
+    expect(ratioTile()).toHaveTextContent('Unavailable');
     expect(ratioTile()).not.toHaveTextContent(/\d+(\.\d+)?%/);
     expect(screen.getByText('High', { exact: true })).toBeInTheDocument();
   });
@@ -110,12 +114,22 @@ describe('debt page financial claims (#289)', () => {
     expect(ratioTile()).not.toHaveTextContent('Low');
   });
 
+  it('does not turn a withheld timeline endpoint into a minus-100-percent annual change', async () => {
+    client.setQueryData(['debt', 'national-timeline'], { timeline: [
+      { year: 2024, total: 100e9, external: 40e9, domestic: 60e9, gdp: null, gdp_ratio: null, unit: 'KES' },
+      { year: 2025, total: null, external: null, domestic: null, gdp: null, gdp_ratio: null,
+        unit: 'KES', absent_reasons: { total: 'debt_requires_declared_raw_kes' } },
+    ] });
+    await mount();
+    expect(screen.queryByText(/100\.0% YoY/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Added KES/)).not.toBeInTheDocument();
+  });
+
   it('does not borrow the total-debt date/source when ratio metadata is missing', async () => {
     await mount({ debt_to_gdp_year: null, debt_to_gdp_source: null, debt_to_gdp_basis: null,
       as_of: '2026-09-27', source: 'Unrelated register source' });
-    expect(ratioTile()).toHaveTextContent('Observation year unavailable');
-    expect(ratioTile()).toHaveTextContent('Source unavailable');
-    expect(ratioTile()).toHaveTextContent('Basis unavailable');
+    expect(ratioTile()).toHaveTextContent('Unavailable');
+    expect(ratioTile()).not.toHaveTextContent(/\d+(\.\d+)?%/);
     expect(ratioTile()).not.toHaveTextContent('Unrelated register source');
   });
 
@@ -130,19 +144,18 @@ describe('debt page financial claims (#289)', () => {
 
   it.each([{}, [], true, 12, '   '])('withholds malformed source and basis %p', async (value) => {
     await mount({ debt_to_gdp_source: value, debt_to_gdp_basis: value });
-    expect(ratioTile()).toHaveTextContent('Source unavailable');
-    expect(ratioTile()).toHaveTextContent('Basis unavailable');
-    expect(ratioTile()).toHaveTextContent('69.3%');
+    expect(ratioTile()).toHaveTextContent('Unavailable');
+    expect(ratioTile()).not.toHaveTextContent(/\d+(\.\d+)?%/);
   });
 
   it.each([{}, [], false, 0, -1, 2025.5, '2025', NaN, Infinity, ''])('withholds malformed observation year %p', async (year) => {
     await mount({ debt_to_gdp_year: year });
-    expect(ratioTile()).toHaveTextContent('Observation year unavailable');
+    expect(ratioTile()).toHaveTextContent('Unavailable');
     expect(ratioTile()).not.toHaveTextContent('Observation:');
   });
 
   it.each([{}, { risk_level: 'High' }, { imf_dsa: { ...IMF_DSA, source: {} } }])(
-    'does not derive a missing/uncited assessment from a high nominal ratio', async (debt_sustainability) => {
+    'does not derive a missing/uncited assessment from a high nominal ratio with %p', async (debt_sustainability) => {
       await mount({ debt_sustainability, debt_to_gdp_ratio: 95 });
       expect(screen.getByText('Not assessed')).toBeInTheDocument();
       expect(screen.queryByText('High', { exact: true })).not.toBeInTheDocument();

@@ -453,6 +453,8 @@ def test_api_serves_the_split_with_its_total(db_session, seed_country):
     row["fiscal_framework"]["source"]["sha256"] = SYNTHETIC_SHA
     for proof in row["fiscal_measure_contract"]["measures"].values():
         proof["source"]["sha256"] = SYNTHETIC_SHA
+    from fiscal_evidence import bind_framework
+    bind_framework(row["fiscal_framework"])
     row.update(
         appropriated_budget=5485.7,
         budget_basis="cob_gross",

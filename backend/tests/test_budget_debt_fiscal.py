@@ -21,6 +21,7 @@ from datetime import datetime
 from decimal import Decimal
 
 import pytest
+from fiscal_evidence import isolated_fiscal_debt_peer_worker
 from models import (
     BudgetLine,
     DebtCategory,
@@ -615,12 +616,9 @@ class TestDebtSustainability:
     def test_with_data_debt_to_gdp(self, client, seed_debt_sustainability):
         data = client.get("/api/v1/debt/sustainability").json()
         assert data["status"] == "success"
-        d2g = data["debt_to_gdp"]
-        assert d2g is not None
-        assert d2g["value"] == 61.4
-        assert d2g["year"] == 2024
-        assert "threshold_imf" not in d2g
-        assert "status" not in d2g
+        # A retained numeric ratio without operand receipts is withheld.
+        assert data["debt_to_gdp"] is None
+        assert data["debt_to_gdp_absent_reason"]
 
     def test_debt_service_to_revenue(self, client, seed_debt_sustainability):
         data = client.get("/api/v1/debt/sustainability").json()
@@ -632,10 +630,8 @@ class TestDebtSustainability:
 
     def test_external_debt_share(self, client, seed_debt_sustainability):
         data = client.get("/api/v1/debt/sustainability").json()
-        ext = data["external_debt_share"]
-        assert ext is not None
-        # 3800B / 8600B * 100 = 44.2%
-        assert ext == 44.2
+        assert data["external_debt_share"] is None
+        assert data["external_debt_share_absent_reason"]
 
     def test_projections(self, client, seed_debt_sustainability):
         """No published projection seeded → none published.

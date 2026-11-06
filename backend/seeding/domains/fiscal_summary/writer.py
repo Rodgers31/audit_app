@@ -238,8 +238,6 @@ def _retain_last_good(record, existing):
     from services.fiscal_qualification import fiscal_values, published_framework, VERSION
     values=fiscal_values(existing)
     proofs=values["measure_qualifications"]
-    if not proofs:
-        return record
     result=copy(record)
     contract=deepcopy(getattr(record,"fiscal_measure_contract",None) or {"version":VERSION,"measures":{}})
     retained=[]
@@ -254,18 +252,24 @@ def _retain_last_good(record, existing):
         source_field={"appropriated_budget":"budget_basis_source","total_revenue":"revenue_source","debt_service_cost":"debt_service_source"}.get(field)
         if source_field:
             setattr(result,source_field,deepcopy(proof["source"]))
-    if not retained:
-        return record
-    result.fiscal_measure_contract=contract
-    result.retained_measure_fields=retained
+    if retained:
+        result.fiscal_measure_contract=contract
+        result.retained_measure_fields=retained
     if "appropriated_budget" in retained:
         result.budget_basis=(existing.meta or {}).get("budget_basis")
-    if not getattr(result,"fiscal_framework",None):
+    candidate_framework = getattr(result, 'fiscal_framework', None)
+    from types import SimpleNamespace
+    candidate_public = published_framework(SimpleNamespace(
+        fiscal_year=result.fiscal_year, meta={'fiscal_framework': candidate_framework}))
+    if candidate_public is None:
         framework=published_framework(existing)
         if framework is not None:
-            result.fiscal_framework=framework
+            # Preserve the original per-cell proofs; the public serialization
+            # deliberately excludes parser input and cannot be re-ingested.
+            result.fiscal_framework=deepcopy(existing.meta["fiscal_framework"])
             result.split_basis="treasury_fiscal_framework"
             result.fiscal_framework_absent_reason=None
+            result.retained_measure_fields = [*retained, 'fiscal_framework']
     if getattr(result,"tax_split_observation",None) is None:
         result.tax_split_observation=deepcopy((existing.meta or {}).get("tax_split_observation"))
     return result
@@ -283,6 +287,8 @@ def write_fiscal_summary_records(session, records, metadata):
         if key in seen:
             raise ValueError("duplicate fiscal year in writer batch")
         seen.add(key)
+        from services.fiscal_framework_qualification import validate_framework_contract
+        validate_framework_contract(getattr(record, 'fiscal_framework', None), record.fiscal_year)
         from services.fiscal_qualification import MONEY_BASES
         for field in MONEY_BASES:
             _raw_kes(getattr(record,field,None))

@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import { render, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { cloneElement } from 'react';
 
 const mockOverview = jest.fn();
@@ -46,6 +46,7 @@ jest.mock('recharts', () => {
 });
 
 import NationalDebtCard from '@/components/dashboard/NationalDebtCard';
+import { syntheticDebtTimeline20261105 } from '@/test/fixtures/deploymentDebt20261105';
 
 const timelineRow = {
   year: 2025,
@@ -59,7 +60,7 @@ const timelineRow = {
 
 function renderHoveredRatio(ratio: number | null) {
   mockTimeline.mockReturnValue({
-    data: { timeline: [{ ...timelineRow, gdp_ratio: ratio }] },
+    data: { timeline: [ratio === null ? timelineRow : syntheticDebtTimeline20261105(ratio)] },
     isLoading: false,
   });
   render(<NationalDebtCard />);
@@ -98,5 +99,21 @@ describe('home debt chart tooltip', () => {
   it.each([0, 65.9])('retains a reported %s%% ratio', (ratio) => {
     const tooltip = renderHoveredRatio(ratio);
     expect(within(tooltip).getByText(`${ratio}%`)).toBeInTheDocument();
+  });
+
+  it.each(['KES', 'USD'])('keeps withheld %s stock amounts absent in headline, chart and tooltip', (unit) => {
+    mockOverview.mockReturnValue({ data: undefined, isLoading: false });
+    mockTimeline.mockReturnValue({ data: { timeline: [{ ...timelineRow,
+      unit, total: null, external: null, domestic: null, gdp: null }] }, isLoading: false });
+    render(<NationalDebtCard />);
+    const row = chartProps[0].data[0];
+    expect(row.total).toBeNull();
+    expect(row.external).toBeNull();
+    expect(row.domestic).toBeNull();
+    expect(screen.getByText('Total Public Debt').parentElement!.parentElement).not.toHaveTextContent('KES 0');
+    const tooltip = render(cloneElement(tooltipContents[0], {
+      active: true, payload: [{ payload: row }], label: row.year,
+    })).container;
+    expect(within(tooltip).queryByText('0B')).not.toBeInTheDocument();
   });
 });

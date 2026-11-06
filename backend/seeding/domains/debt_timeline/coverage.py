@@ -7,7 +7,7 @@ not an assertion that a mid-year debt stock is a year-end balance.
 from datetime import datetime, timezone
 import re
 from models import DebtTimeline, Extraction
-from services.figure_qualification import qualify_rows
+from .publication import debt_qualifications
 from .writer import _observed_evidence, _raw_kes
 
 CONTRACT = 'debt-calendar-observation-coverage-v1'
@@ -21,7 +21,7 @@ def coverage_report(session, records, *, now=None):
         raise ValueError('Calendar coverage years required')
     rows = session.query(DebtTimeline).filter(DebtTimeline.year.in_([r.year for r in records])).all()
     by_year = {r.year: r for r in rows}
-    qualifications = qualify_rows(session, 'debt_timeline', rows)
+    qualifications = debt_qualifications(session, rows, now=now)
     ids = {item.get('receipt', {}).get('extraction_id')
            for row in rows for item in (row.meta or {}).get('source_evidence', [])
            if isinstance(item, dict) and type(item.get('receipt')) is dict}
@@ -63,6 +63,9 @@ def coverage_report(session, records, *, now=None):
             month = match.group(0).split(' / ')[0] if match and int(match[1]) == record.year and 1 <= int(match[2]) <= 12 else None
             measures[measure] = {
                 'state': state, 'absence_reason': absence, 'period': str(record.year),
+                'required': not (measure == 'gdp' and record.year >= now.year),
+                'publication_requirement': ('annual_period_not_ended'
+                    if measure == 'gdp' and record.year >= now.year else 'required_published_period'),
                 'period_kind': 'calendar_year' if measure == 'gdp' else 'latest_observed_month_in_calendar_year',
                 'stock_as_of_month': month, 'unit': 'KES',
                 'basis': 'current_prices' if measure == 'gdp' else 'actual',
@@ -79,4 +82,7 @@ def coverage_report(session, records, *, now=None):
                       'year_end_stock': stock_month == f'{record.year}-12',
                       'reason': None if ratio_qualified else 'stock_denominator_pair_unqualified'}})
     return {'contract': CONTRACT, 'years': output,
+            'required_stock_years': sorted(r.year for r in records),
+            'required_gdp_years': sorted(r.year for r in records if r.year < now.year),
+            'unpublished_gdp_years': sorted(r.year for r in records if r.year >= now.year),
             'note': 'Acquisition is not publication. Unknown vintage remains null; no forecast or county balance admitted.'}

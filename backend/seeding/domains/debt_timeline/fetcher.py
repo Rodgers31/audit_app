@@ -7,6 +7,7 @@ figures using the World Bank API for accurate debt-to-GDP ratios.
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 from typing import Any
 from decimal import Decimal
 
@@ -53,8 +54,13 @@ def _enrich_with_wb_gdp(
     Updates GDP only from a complete observed response and records coverage.
     """
     timeline = _timeline(base)
+    current_year = datetime.now(timezone.utc).year
+    required_periods = sorted(entry['year'] for entry in timeline if entry['year'] < current_year)
+    unpublished_years = sorted(entry['year'] for entry in timeline if entry['year'] >= current_year)
     for entry in timeline:
         entry["gdp_ratio"] = None
+        if entry['year'] >= current_year:
+            entry['gdp'] = None
         entry["source_evidence"] = [item for item in entry.get("source_evidence", [])
             if isinstance(item, dict) and item.get("identity", {}).get("measure") not in ("gdp", "gdp_value")]
     try:
@@ -63,6 +69,8 @@ def _enrich_with_wb_gdp(
         logger.warning("World Bank GDP API unavailable; retained GDP is not a fresh observation: %s", exc)
         base.setdefault("metadata", {}).setdefault("refresh_components", {})["gdp"] = {
             "state": "unavailable", "reason": "worldbank_response_unavailable",
+            "required_periods": required_periods, "unpublished_years": unpublished_years,
+            "missing_years": required_periods,
         }
         return base
 
@@ -70,6 +78,8 @@ def _enrich_with_wb_gdp(
     missing = []
     for entry in timeline:
         year = entry.get("year")
+        if year >= current_year:
+            continue  # No completed annual GDP exists for an unfinished year.
         value = gdp_by_year.get(year)
         if (not isinstance(value, bool) and isinstance(value, (int, Decimal))
                 and Decimal(value).is_finite() and value > 0):
@@ -83,8 +93,10 @@ def _enrich_with_wb_gdp(
             missing.append(year)
 
     base.setdefault("metadata", {}).setdefault("refresh_components", {})["gdp"] = {
-        "state": "live" if updated and not missing else "partial" if updated else "unavailable",
+        "state": ("live" if updated and not missing else "partial" if updated else
+                  "not_yet_published" if not required_periods else "unavailable"),
         "observed_years": updated, "missing_years": missing,
+        "required_periods": required_periods, "unpublished_years": unpublished_years,
     }
 
     if updated:

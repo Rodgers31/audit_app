@@ -9332,7 +9332,7 @@ async def get_debt_timeline(db: Session = Depends(get_db)):
     from sqlalchemy import func  # noqa: F401 — used for reconciliation sum
 
     from models import DebtTimeline
-    from services.figure_qualification import qualify_rows
+    from seeding.domains.debt_timeline.publication import public_debt_rows
 
     try:
         rows = db.query(DebtTimeline).order_by(DebtTimeline.year.asc()).all()
@@ -9347,26 +9347,8 @@ async def get_debt_timeline(db: Session = Depends(get_db)):
                 "timeline": [],
             }
 
-        qualifications = qualify_rows(db, "debt_timeline", rows)
-        timeline = []
-        for r in rows:
-            timeline.append(
-                {
-                    "year": r.year,
-                    "qualifications": qualifications[r.id],
-                    "external": float(r.external),
-                    "domestic": float(r.domestic),
-                    "total": float(r.total),
-                    "gdp": float(r.gdp) if r.gdp is not None else None,
-                    "gdp_ratio": float(r.gdp_ratio)
-                    if r.gdp_ratio is not None
-                    else None,
-                    # The row's declared unit (stage1 3a): "KES" = raw KES.
-                    # Consumers convert on this field, never by guessing
-                    # magnitude — see F5.5.
-                    "unit": r.unit,
-                }
-            )
+        public_rows = public_debt_rows(db, rows)
+        timeline = [public_rows[r.id] for r in rows]
 
         # ── Source: the document behind the figure this response leads with ──
         #
@@ -9410,9 +9392,8 @@ async def get_debt_timeline(db: Session = Depends(get_db)):
             "primary_source": "debt_timeline_table",
             # debt_timeline stores raw KES with a declared unit column
             # (stage1 3a migration) — no scale factor.
-            "primary_value_kes": (
-                float(rows[-1].total) if rows[-1].total is not None else None
-            ),
+            "primary_value_kes": public_rows[latest_row.id]['total'],
+            "primary_absent_reason": public_rows[latest_row.id]['absent_reasons'].get('total'),
             "secondary_source": "loans_table",
             "secondary_value_kes": None,
             "percent_diff": None,
@@ -9514,24 +9495,27 @@ def _fiscal_row_to_dict(r) -> dict:
     from services.fiscal_qualification import fiscal_values, published_framework, published_tax_observation
 
     meta = r.meta if isinstance(r.meta, dict) else {}
-    framework = published_framework(r)
+    from services.fiscal_framework_qualification import qualified_framework
+    framework, framework_reason = qualified_framework(r)
     values = fiscal_values(r)
     proofs = values["measure_qualifications"]
     return {
         **values,
-        **{key: meta.get(key) for key in (
-            "budget_basis", "budget_basis_source", "debt_service_source", "revenue_source",
-            "debt_redemption_billion", "fiscal_framework", "split_basis",
-            "fiscal_framework_absent_reason", "tax_split_absent_reason",
-        )},
+        "budget_basis": "cob_gross" if meta.get("budget_basis") == "cob_gross" else None,
+        "split_basis": "treasury_fiscal_framework" if meta.get("split_basis") == "treasury_fiscal_framework" else None,
+        "tax_split_absent_reason": (meta["tax_split_absent_reason"]
+            if isinstance(meta.get("tax_split_absent_reason"), str) and 0 < len(meta["tax_split_absent_reason"].strip()) <= 2000
+            else "source_declares_tax_split_absent" if meta.get("tax_split_absent_reason") else None),
         "budget_basis_source": proofs.get("appropriated_budget", {}).get("source"),
         "debt_service_source": proofs.get("debt_service_cost", {}).get("source"),
         "revenue_source": proofs.get("total_revenue", {}).get("source"),
         "debt_redemption_billion": None,
         "fiscal_framework": framework,
-        "fiscal_framework_absent_reason": None if framework else "No complete reconciled source-qualified fiscal-framework column is available.",
+        "fiscal_framework_absent_reason": framework_reason,
         "tax_split_observation": published_tax_observation(r),
-        "retained_measure_fields": meta.get("retained_measure_fields", []),
+        "retained_measure_fields": [field for field in meta.get("retained_measure_fields", [])
+            if isinstance(field, str) and field in {*values["measure_qualifications"], "fiscal_framework"}]
+            if isinstance(meta.get("retained_measure_fields"), list) else [],
         "page_ref": r.page_ref,
     }
 
@@ -10734,6 +10718,9 @@ async def get_national_debt():
                     latest_timeline_row = (
                         db.query(_DT).order_by(_DT.year.desc()).first()
                     )
+                    from seeding.domains.debt_timeline.publication import public_debt_rows
+                    _timeline_public = (public_debt_rows(db, [latest_timeline_row])[latest_timeline_row.id]
+                                        if latest_timeline_row else None)
 
                     # The external/domestic split is the register's OWN sum,
                     # and nothing else. It used to be the register's *total*
@@ -10766,14 +10753,16 @@ async def get_national_debt():
                         "primary_value_kes": total_outstanding,
                         "secondary_source": "debt_timeline_table",
                         "secondary_value_kes": None,
+                        "secondary_absent_reason": (_timeline_public['absent_reasons'].get('total')
+                                                    if _timeline_public else 'no_timeline_observation'),
                         "secondary_year": None,
                         "percent_diff": None,
                         "status": "unchecked",
                         "note": "",
                     }
-                    if latest_timeline_row and latest_timeline_row.total:
+                    if _timeline_public and _timeline_public['total'] is not None:
                         # DebtTimeline stores raw KES (stage1 3a migration).
-                        secondary_kes = float(latest_timeline_row.total)
+                        secondary_kes = _timeline_public['total']
                         reconciliation["secondary_value_kes"] = secondary_kes
                         reconciliation["secondary_year"] = latest_timeline_row.year
                         if total_outstanding > 0:
@@ -10808,11 +10797,21 @@ async def get_national_debt():
                     # nominal GDP (World Bank) with the GDP year labelled.
                     # This replaces the old bug of dividing current debt by a
                     # stale/low hardcoded GDP (which produced 82% vs ~68%).
-                    _computed_ratio = (
-                        finite_number(round(total_outstanding / gdp_value * 100, 1))
-                        if gdp_value is not None and gdp_value > 0
-                        else None
+                    from services.figure_qualification import qualify_rows
+                    from seeding.domains.debt_timeline.publication import public_debt_rows
+                    loan_qualifications = qualify_rows(db, "loans", loans)
+                    gdp_qualifications = (
+                        qualify_rows(db, "gdp_data", [latest_gdp_row])
+                        if latest_gdp_row is not None else {}
                     )
+                    # Individual loan receipts do not establish a complete,
+                    # non-overlapping national stock population. Preserve its
+                    # diagnostic absence; use only the independently qualified
+                    # CBK stock/annual-GDP pair as the non-IMF ratio fallback.
+                    _computed_ratio = None
+                    _fallback_ratio = _timeline_public["gdp_ratio"] if _timeline_public else None
+                    _computed_qualification = (_timeline_public["qualifications"]["gdp_ratio"]
+                        if _timeline_public else {"status": "unavailable", "reason": "compatible_qualified_stock_and_annual_gdp_required"})
                     _imf = _latest_imf_debt_to_gdp(db)
                     if _imf is not None:
                         debt_to_gdp_ratio = _imf[0]
@@ -10822,12 +10821,12 @@ async def get_national_debt():
                             "(GGXWDG_NGDP) — vintage-consistent"
                         )
                         debt_to_gdp_source = "IMF World Economic Outlook"
-                    elif _computed_ratio is not None:
-                        debt_to_gdp_ratio = _computed_ratio
-                        debt_to_gdp_year = gdp_year
+                    elif _fallback_ratio is not None:
+                        debt_to_gdp_ratio = _fallback_ratio
+                        debt_to_gdp_year = latest_timeline_row.year
                         debt_to_gdp_basis = (
                             "Central government debt (CBK) / nominal GDP "
-                            f"(World Bank, {gdp_year}) — approximate"
+                            f"(World Bank, {latest_timeline_row.year}); stock as of {_timeline_public['period']['stock_as_of_month']}"
                         )
                         debt_to_gdp_source = "CBK / World Bank"
                     else:
@@ -10857,14 +10856,6 @@ async def get_national_debt():
                         debt_to_gdp=debt_to_gdp_ratio,
                     )
 
-                    from services.figure_qualification import qualify_rows
-
-                    loan_qualifications = qualify_rows(db, "loans", loans)
-                    gdp_qualifications = (
-                        qualify_rows(db, "gdp_data", [latest_gdp_row])
-                        if latest_gdp_row is not None
-                        else {}
-                    )
                     return {
                         "status": "success",
                         "data_source": "database",
@@ -10875,10 +10866,8 @@ async def get_national_debt():
                                 "gdp_data": gdp_qualifications,
                                 "derived_ratio": {
                                     "status": "qualified",
-                                    "reason": "published_imf_ratio_outside_seven_table_contract"
-                                    if _imf is not None
-                                    else "aggregate_operands_not_independently_reconciled",
-                                },
+                                    "reason": "published_imf_ratio_outside_seven_table_contract",
+                                } if _imf is not None else _computed_qualification,
                             },
                             "total_debt": total_debt,
                             "total_outstanding": total_outstanding,
@@ -10890,11 +10879,13 @@ async def get_national_debt():
                             "debt_to_gdp_basis": debt_to_gdp_basis,
                             "debt_to_gdp_source": debt_to_gdp_source,
                             "debt_to_gdp_vintage": _imf[2] if _imf else None,
+                            "debt_to_gdp_observation": _timeline_public if _fallback_ratio is not None and _imf is None else None,
                             "debt_to_gdp_absent_reason": (
                                 None if debt_to_gdp_ratio is not None else
-                                "No valid IMF actual or finite CBK/World Bank fallback ratio is available."
+                                "No valid IMF actual or compatible qualified stock/annual GDP pair is available."
                             ),
                             "debt_to_gdp_computed_central_gov": _computed_ratio,
+                            "computed_central_gov_absent_reason": "source_bound_complete_aggregate_stock_inventory_required",
                             "reconciliation": reconciliation,
                             # High-level breakdown
                             "summary": {
@@ -11927,6 +11918,8 @@ def _debt_sustainability_snapshot(db: Session):
     try:
         # Latest debt timeline entry (has debt/GDP data)
         latest_dt = db.query(DebtTimeline).order_by(DebtTimeline.year.desc()).first()
+        from seeding.domains.debt_timeline.publication import public_debt_rows
+        timeline_public = public_debt_rows(db, [latest_dt])[latest_dt.id] if latest_dt else None
         # Latest fiscal summary (has debt service and revenue) — the newest
         # row that cites a page.
         from services.publication_gate import latest_publishable_fiscal_summary
@@ -11975,8 +11968,8 @@ def _debt_sustainability_snapshot(db: Session):
                 "— vintage-consistent"
             )
             ratio_source = "IMF World Economic Outlook"
-        elif latest_dt and latest_dt.gdp_ratio is not None:
-            ratio = finite_number(latest_dt.gdp_ratio)
+        elif timeline_public and timeline_public["gdp_ratio"] is not None:
+            ratio = timeline_public["gdp_ratio"]
             ratio_year = latest_dt.year
             ratio_basis = (
                 "Central government debt / nominal GDP (CBK debt timeline) "
@@ -11993,6 +11986,8 @@ def _debt_sustainability_snapshot(db: Session):
                 "source": ratio_source,
                 "vintage": _imf_headline[2] if _imf_headline else None,
                 "source_document_id": latest_dt.source_document_id if latest_dt and not _imf_headline else None,
+                "period": timeline_public["period"] if timeline_public and not _imf_headline else None,
+                "qualifications": timeline_public["qualifications"] if timeline_public and not _imf_headline else None,
                 "assessment": "Nominal debt ratio; not comparable to present-value debt benchmarks. See the separately cited DSA assessment.",
             }
 
@@ -12011,12 +12006,7 @@ def _debt_sustainability_snapshot(db: Session):
                 debt_service_absent_reason = None
 
         # ── External Debt Share ────────────────────────────────────
-        external_share = None
-        if latest_dt and latest_dt.total is not None and latest_dt.external is not None:
-            total = finite_number(latest_dt.total)
-            ext = finite_number(latest_dt.external)
-            if total is not None and total > 0 and ext is not None and ext <= total:
-                external_share = round(ext / total * 100, 1)
+        external_share = timeline_public["external_debt_share"] if timeline_public else None
 
         # ── Regional Peers ─────────────────────────────────────────
         #
@@ -12045,6 +12035,8 @@ def _debt_sustainability_snapshot(db: Session):
             "debt_service_to_revenue": debt_service_to_revenue,
             "debt_service_to_revenue_absent_reason": debt_service_absent_reason,
             "external_debt_share": external_share,
+            "external_debt_share_absent_reason": (timeline_public["external_debt_share_absent_reason"]
+                if timeline_public else "compatible_qualified_stock_components_required"),
             "projections": projections,
             "projections_source": projections_source,
             "projections_absent_reason": projections_absent_reason,

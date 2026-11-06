@@ -811,6 +811,8 @@ def _apply_fiscal_framework_candidate(payload, editions, *, refreshed_revenue_ye
             else "The column printing this row's ordinary revenue (the latest "
             f"vintage the {edition.fiscal_year} edition prints for {fy})"
         )
+        from services.fiscal_framework_qualification import bind_framework_evidence
+        bind_framework_evidence(framework)
         v = split.values
         row["fiscal_framework"] = framework
         row["split_basis"] = FISCAL_FRAMEWORK_BASIS

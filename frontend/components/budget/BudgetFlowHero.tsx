@@ -38,6 +38,7 @@ import { useMemo, useState } from 'react';
 
 import {
   frameworkCitation,
+  qualifiedFrameworkValue,
   fiscalColumnLabel,
   frameworkOf,
   frameworkSources,
@@ -66,6 +67,7 @@ export interface FlowHeroInput {
   debt_service_per_shilling?: number | null; // cents per KES of revenue
   /** The split and the total it reconciles to, KSh billion. */
   fiscal_framework?: FiscalFramework | null;
+  fiscal_framework_absent_reason?: string | null;
 }
 
 interface Props {
@@ -113,9 +115,17 @@ export default function BudgetFlowHero({ data }: Props) {
   const uses = frameworkUses(ff);
   const sources = frameworkSources(ff);
   const hasFlow = uses != null && sources != null;
+  const issue = data?.fiscal_framework_absent_reason ?? Object.values(ff?.absent_reasons ?? {})[0];
+  const withholdingReason = typeof issue === 'string' && /invalid|contradict/.test(issue)
+    ? 'Some component evidence conflicts with the stored figures.'
+    : typeof issue === 'string' && /reconcile|disagree/.test(issue)
+      ? 'The available figures do not reconcile on the same basis.'
+      : 'Compatible source evidence for every component is not yet confirmed.';
   const flowTotal = uses?.total ?? null;
   const citation = frameworkCitation(ff);
-  const equitableShareB = ff?.county_equitable_share_billion ?? null;
+  const qualifiedShare = qualifiedFrameworkValue(ff, 'county_equitable_share_billion');
+  const qualifiedTransfers = qualifiedFrameworkValue(ff, 'county_transfers_billion');
+  const equitableShareB = qualifiedShare != null && qualifiedTransfers != null && qualifiedShare <= qualifiedTransfers ? qualifiedShare : null;
 
   const debtService = data?.debt_service_cost ?? null;
   const debtServiceCents = data?.debt_service_per_shilling ?? null;
@@ -386,8 +396,7 @@ export default function BudgetFlowHero({ data }: Props) {
         </div>
       </div>
 
-      {/* Composition withheld — no Budget Summary column supplies this year
-          on one basis. Say so rather than drawing bars of zeros. */}
+      {/* The source may exist while its component evidence is unconfirmed. */}
       {!hasFlow && (
         <div className='px-5 sm:px-8 pb-7 pt-2'>
           <div className='rounded-xl border border-neutral-border/60 bg-surface-sunken/40 px-4 py-4'>
@@ -398,12 +407,10 @@ export default function BudgetFlowHero({ data }: Props) {
               />
               <div className='text-[12px] leading-relaxed text-neutral-muted'>
                 <span className='font-semibold text-gov-dark dark:text-white'>
-                  How {fy} breaks down is not published yet.
+                  How {fy} breaks down is withheld.
                 </span>{' '}
-                The sources-and-uses breakdown is drawn only from Treasury&apos;s
-                Budget Summary, where every part adds up to one total. No edition we
-                can read supplies {fy} on that basis, so the breakdown is withheld
-                rather than assembled from figures measured different ways.
+                Every part must be confirmed for this fiscal year and add up to
+                one spending total. {withholdingReason}
                 <span className='block mt-1.5 text-neutral-muted/80'>
                   A blank breakdown is not a finding that these amounts are zero.
                 </span>

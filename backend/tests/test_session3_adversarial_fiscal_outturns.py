@@ -106,6 +106,8 @@ def test_printed_zero_is_preserved():
     for key in list(data):
         if key.endswith("_billion"):
             data[key] = 0
+    from services.fiscal_framework_qualification import bind_framework_evidence
+    bind_framework_evidence(data)  # Independently witnessed printed zeros.
     row = outturn({"fiscal_framework": data})
     assert row["expenditure"] == 0
     assert row["balance"] == 0
@@ -138,9 +140,10 @@ def test_stored_unknown_vintage_is_not_published_as_a_confirmed_label(column):
     data["source"]["column"] = column
     row = outturn({"fiscal_framework": data})
     assert row["column"] == "Vintage unconfirmed"
-    # An unknown vintage does not invalidate independently reconciled amounts.
-    assert row["balance"] == -880.5
-    assert row["absent_reason"] is None
+    # Changing the source header alone contradicts the persisted per-cell
+    # vintage proofs. Reconciliation does not rescue that contradiction.
+    assert row["balance"] is None
+    assert row["absent_reason"]
 
 
 def test_stored_missing_vintage_does_not_guess_from_period():
@@ -148,7 +151,8 @@ def test_stored_missing_vintage_does_not_guess_from_period():
     del data["source"]["column"]
     row = outturn({"fiscal_framework": data})
     assert row["column"] == "Vintage unconfirmed"
-    assert row["balance"] == -880.5
+    assert row["balance"] is None
+    assert row["absent_reason"]
 
 
 @pytest.mark.parametrize("fy,revenue,label", [

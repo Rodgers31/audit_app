@@ -40,6 +40,7 @@ from datetime import datetime, timezone
 from unittest.mock import patch
 
 import pytest
+from fiscal_evidence import isolated_fiscal_debt_peer_worker, qualify_synthetic_row
 from models import DebtTimeline, FiscalSummary, ImfWeoObservation
 
 VINTAGE = datetime(2026, 9, 7, tzinfo=timezone.utc)
@@ -95,7 +96,7 @@ def seeded(db_session, seed_source_doc):
     """The production inputs behind 77.6, 44.4 and the OLS line."""
     B = 1e9
     db_session.add(
-        FiscalSummary(
+        qualify_synthetic_row(FiscalSummary(
             fiscal_year="FY 2026/27",
             total_revenue=3000.0 * B,
             debt_service_cost=2328.0 * B,  # 77.6% of revenue
@@ -107,7 +108,7 @@ def seeded(db_session, seed_source_doc):
             source_document_id=seed_source_doc.id,
             # Tier B (#137): a published fiscal row cites a page.
             page_ref="s.3.2, report p.16 (PDF p.37)",
-        )
+        ))
     )
     # Five points chosen so the pre-fix least-squares fit reproduces
     # production's published line EXACTLY: 70.4 / 70.7 / 71.0 / 71.3 / 71.6.
@@ -167,9 +168,12 @@ def test_kenya_does_not_appear_twice_with_two_external_share_numbers(
     headline = body["external_debt_share"]
     peer = kenya_row(body)["external_debt_share"]
 
-    assert headline == pytest.approx(44.4, abs=0.05)
-    assert peer is None or peer == pytest.approx(headline, abs=0.05), (
-        f"page states external debt share as both {headline} and {peer}"
+    # These legacy stock rows have no independently matched source cells.
+    # Neither the headline nor the peer can publish their numeric 44.4%.
+    assert headline is None
+    assert peer is None
+    assert body["external_debt_share_absent_reason"] == (
+        "compatible_qualified_stock_components_required"
     )
 
 

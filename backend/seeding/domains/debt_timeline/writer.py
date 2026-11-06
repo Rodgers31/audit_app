@@ -179,6 +179,7 @@ def write_debt_timeline_records(
             )
         return doc_cache[key]
 
+    written = []
     for record in records:
         existing = (
             session.query(DebtTimeline).filter(DebtTimeline.year == record.year).first()
@@ -238,12 +239,12 @@ def write_debt_timeline_records(
                 existing.source_document_id = source_doc.id
             if gdp_observed:
                 existing.gdp = values["gdp"]
-            existing.gdp_ratio = (Decimal(str(existing.total)) / existing.gdp * 100).quantize(
-                Decimal("0.1")) if gdp_observed else None
+            existing.gdp_ratio = None
             existing.unit = "KES"
             existing.meta = {**(existing.meta or {}), "source_evidence": evidence}
             existing.updated_at = datetime.now(timezone.utc)
             updated += 1
+            written.append(existing)
         else:
             row = DebtTimeline(
                 year=record.year,
@@ -251,14 +252,18 @@ def write_debt_timeline_records(
                 domestic=_raw_kes(record.domestic),
                 total=_raw_kes(record.total),
                 gdp=_raw_kes(record.gdp),
-                gdp_ratio=record.gdp_ratio,
+                gdp_ratio=None,
                 unit="KES",
                 source_document_id=source_doc.id,
                 meta={"source_evidence": evidence},
             )
             session.add(row)
             created += 1
+            written.append(row)
 
+    session.flush()
+    from .publication import persist_qualified_ratios
+    persist_qualified_ratios(session, written)
     session.flush()
     logger.info(f"Debt timeline: {created} created, {updated} updated")
     return created, updated

@@ -54,7 +54,8 @@ def test_budget_line_readers_preserve_absence_and_sourced_zero(
 def test_fiscal_history_does_not_invent_missing_money_or_ratio(
     client, db_session, value
 ):
-    db_session.add(
+    from fiscal_evidence import qualify_synthetic_row
+    db_session.add(qualify_synthetic_row(
         FiscalSummary(
             fiscal_year="2024/25",
             unit="KES",
@@ -64,19 +65,19 @@ def test_fiscal_history_does_not_invent_missing_money_or_ratio(
             county_allocation=10e9,
             tax_revenue=value,
             borrowing_pct_of_budget=value,
-            page_ref="p.42",
+            page_ref="p.42", meta={'budget_basis': 'cob_gross'},
         )
-    )
+    ))
     db_session.flush()
     response = client.get("/api/v1/budget/overview")
     assert response.status_code == 200, response.text
     row = response.json()["fiscal_history"][0]
     assert row["appropriated_budget"] == 100
     assert row["tax_revenue"] == (None if value is None else value / 1e9)
-    assert row["borrowing_pct_of_budget"] == value
+    assert row["borrowing_pct_of_budget"] is None
+    assert row['absent_reasons']['borrowing_pct_of_budget'] == 'compatible_qualified_inputs_required'
     if value is None:
-        assert row["absent_reasons"]["tax_revenue"] == "not_reported"
-        assert row["absent_reasons"]["borrowing_pct_of_budget"] == "not_reported"
+        assert row["absent_reasons"]["tax_revenue"] == "measure_source_unconfirmed"
 
 
 @pytest.mark.parametrize(
@@ -315,7 +316,7 @@ def test_final_comprehensive_ratio_requires_same_source_stock_day(
 
 
 @pytest.mark.parametrize("metadata", [["unexpected"], True, "unexpected"])
-def test_fiscal_unknown_metadata_shape_does_not_destroy_sourced_amounts(
+def test_unknown_metadata_cannot_certify_legacy_fiscal_amounts(
     client, db_session, metadata
 ):
     db_session.add(
@@ -332,9 +333,8 @@ def test_fiscal_unknown_metadata_shape_does_not_destroy_sourced_amounts(
     db_session.flush()
     response = client.get("/api/v1/budget/overview")
     assert response.status_code == 200, response.text
-    row = response.json()["fiscal_history"][0]
-    assert row["appropriated_budget"] == 100
-    assert row["metadata_absent_reason"] == "invalid_metadata"
+    assert response.json()['fiscal_history'] == []
+    assert response.json()['fiscal_history_withheld'][0]['reason']
 
 
 def test_unknown_fiscal_unit_is_withheld_with_reason(client, db_session):

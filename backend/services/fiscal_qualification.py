@@ -22,6 +22,8 @@ MONEY_BASES = {
     'debt_ceiling': set(), 'actual_debt': set(),
 }
 VINTAGES = frozenset({'Actual','Preliminary','Approved','Supplementary I'})
+SOURCE_TEXT_FIELDS = ('title', 'publisher', 'table', 'edition', 'column',
+                      'column_identification', 'measure', 'cell', 'extraction_method')
 
 
 def fiscal_year_key(value):
@@ -39,6 +41,10 @@ def valid_source(source):
         return False
     if not isinstance(source.get('url'),str):
         return False
+    if any(source.get(key) is not None and (not isinstance(source[key], str)
+           or not source[key].strip() or len(source[key]) > 2000)
+           for key in SOURCE_TEXT_FIELDS if key != 'column'):
+        return False
     try:
         url = urlsplit(source['url'])
         host = url.hostname
@@ -54,11 +60,31 @@ def valid_source(source):
                 and isinstance(digest,str) and re.fullmatch(r'[0-9a-f]{64}',digest))
 
 
+def public_source(source):
+    """No unknown nested financial payload can hitchhike in source metadata."""
+    from copy import deepcopy
+    result = {key: deepcopy(source[key]) for key in ('url', 'page', 'sha256')}
+    result.update({key: source[key] for key in SOURCE_TEXT_FIELDS
+                   if isinstance(source.get(key), str) and source[key].strip()})
+    return result
+
+
+def public_measure_proof(proof):
+    from copy import deepcopy
+    result = {key: deepcopy(proof[key]) for key in (
+        'value_kes', 'fiscal_year', 'basis', 'vintage', 'precision_kes')}
+    result['source'] = public_source(proof['source'])
+    for key in ('source_document_id', 'extraction_id'):
+        if type(proof.get(key)) is int and proof[key] > 0:
+            result[key] = proof[key]
+    return result
+
+
 def measure_evidence(value_kes, fiscal_year, basis, vintage, precision_kes, source):
     """Create evidence only at a source parser's qualified promotion boundary."""
     # Match the existing Numeric(..., 2) KES storage boundary. Binary
     # float products such as 2167.8 * 1e9 must survive exact DB readback.
-    amount=finite_number(value_kes)
+    amount=finite_number(value_kes, nonnegative=False)
     if amount is not None:
         value_kes=round(amount,2)
     return {'value_kes':value_kes, 'fiscal_year':fiscal_year, 'basis':basis,
@@ -89,7 +115,7 @@ def qualify_measure(row, field):
             or (proof['source'].get('column') is not None
                 and proof['source']['column']!=proof['vintage'])):
         return None,None,'measure_evidence_invalid_or_contradictory'
-    return amount,proof,None
+    return amount,public_measure_proof(proof),None
 
 
 def fiscal_values(row):
@@ -143,45 +169,9 @@ def fiscal_values(row):
 
 
 def published_framework(row):
-    """Sanitize every nested figure consumed by fiscal charts and civic readers."""
-    from copy import deepcopy
-    from services.fiscal_outturns import fiscal_outturn
-    if fiscal_outturn(row)['absent_reason'] is not None:
-        return None
-    meta=row.meta if isinstance(row.meta,dict)else {}
-    result=deepcopy(meta['fiscal_framework'])
-    for key,value in list(result.items()):
-        if key.endswith('_billion'):
-            result[key]=finite_number(value,nonnegative=key not in {
-                'adjustment_to_cash_basis_billion','statistical_discrepancy_billion'})
-    revenue_parts=('ordinary_revenue_billion','ministerial_aia_billion')
-    if any(k in result for k in revenue_parts):
-        if (any(result.get(k)is None for k in revenue_parts)
-                or abs(sum(result[k]for k in revenue_parts)-result['total_revenue_incl_aia_billion'])>0.150001):
-            return None
-    parts=('recurrent_billion','development_billion','county_transfers_billion','contingency_billion')
-    if any(result.get(k)is None for k in parts) or abs(sum(result[k]for k in parts)-result['total_expenditure_billion'])>0.250001:
-        for key in (*parts,'interest_payments_billion','county_equitable_share_billion'):
-            result[key]=None
-    interest,recurrent=result.get('interest_payments_billion'),result.get('recurrent_billion')
-    if interest is None or recurrent is None or interest>recurrent:
-        result['interest_payments_billion']=None
-    share,transfers=result.get('county_equitable_share_billion'),result.get('county_transfers_billion')
-    if share is None or transfers is None or share>transfers:
-        result['county_equitable_share_billion']=None
-    tax,non_tax,ordinary=(result.get(k)for k in ('tax_revenue_billion','non_tax_revenue_billion','ordinary_revenue_billion'))
-    if (meta.get('tax_split_absent_reason') or result.get('tax_split_absent_reason')
-            or tax is None or non_tax is None or ordinary is None
-            or abs(tax+non_tax-ordinary)>0.150001):
-        result['tax_revenue_billion']=result['non_tax_revenue_billion']=None
-        result['tax_heads_billion']=None
-    else:
-        heads=result.get('tax_heads_billion')
-        if isinstance(heads,dict):
-            checked={k:finite_number(v)for k,v in heads.items()}
-            result['tax_heads_billion']=checked if checked and all(v is not None for v in checked.values())and abs(sum(checked.values())-tax)<0.300001 else None
-        else:result['tax_heads_billion']=None
-    return result
+    """Every exposed framework cell passes its own versioned evidence gate."""
+    from services.fiscal_framework_qualification import qualified_framework
+    return qualified_framework(row)[0]
 
 
 def published_tax_observation(row):
@@ -197,6 +187,12 @@ def published_tax_observation(row):
             or type(observation.get('precision_kes'))is not int or observation['precision_kes']!=1_000_000_000
             or observation.get('basis')!='ordinary_revenue_excl_aia' or observation.get('vintage')!='Preliminary'
             or not valid_source(observation.get('source'))
-            or observation['source']['sha256']!=BROP_SHA256 or observation['source']['url']!=BROP_URL):
+            or observation['source']['sha256']!=BROP_SHA256 or observation['source']['url']!=BROP_URL
+            or observation['source']['page']!='Table 8, PDF p.21'
+            or observation['source'].get('table') not in (None, 'Table 8', 'Table 8: Government Fiscal Projections')
+            or observation['source'].get('column') not in (None, 'Preliminary', 'Prel. Actual')):
         return None
-    return {**observation, 'disclosure':'Separate BROP preliminary observation at whole-billion precision; not a split of the higher-precision APDMR headline.'}
+    result = {key: observation[key] for key in (*expected, 'fiscal_year', 'precision_kes', 'basis', 'vintage')}
+    result['source'] = public_source(observation['source'])
+    result['disclosure'] = 'Separate BROP preliminary observation at whole-billion precision; not a split of the higher-precision APDMR headline.'
+    return result
