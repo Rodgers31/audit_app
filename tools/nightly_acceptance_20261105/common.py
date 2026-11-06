@@ -169,19 +169,33 @@ class BoundEvidence:
 
     def check(self):
         try:
-            for fd, parent, name, expected in self.directories:
-                actual = os.fstat(fd) if parent is None else os.stat(name, dir_fd=parent, follow_symlinks=False)
-                require(self._identity(actual) == expected, 'original evidence directory binding changed/substituted')
+            def bindings():
+                for fd, parent, name, expected in self.directories:
+                    actual = os.fstat(fd) if parent is None else os.stat(name, dir_fd=parent, follow_symlinks=False)
+                    require(self._identity(actual) == expected, 'original evidence directory binding changed/substituted')
+                for fd, parent, name, expected, checksum in self.files:
+                    require(self._file_identity(os.fstat(fd)) == expected
+                            and self._file_identity(os.stat(name, dir_fd=parent, follow_symlinks=False)) == expected,
+                            'original evidence file binding changed/substituted')
+            bindings()
             for fd, parent, name, expected, checksum in self.files:
-                require(self._file_identity(os.fstat(fd)) == expected
-                        and self._file_identity(os.stat(name, dir_fd=parent, follow_symlinks=False)) == expected,
-                        'original evidence file binding changed/substituted')
                 os.lseek(fd, 0, os.SEEK_SET)
                 hasher = hashlib.sha256()
-                for block in iter(lambda: os.read(fd, 1024 * 1024), b''):
+                size = 0
+                # Stop at one byte beyond the original size, even if a writer
+                # grows the regular file after the metadata precheck.
+                while True:
+                    block = os.read(fd, min(1024 * 1024, expected[4] + 1 - size))
+                    if not block:
+                        break
+                    size += len(block)
+                    require(size <= expected[4], 'original evidence changed through consumption')
                     hasher.update(block)
-                require(hasher.digest() == checksum and self._file_identity(os.fstat(fd)) == expected,
+                require(size == expected[4] and hasher.digest() == checksum
+                        and self._file_identity(os.fstat(fd)) == expected,
                         'original evidence changed through consumption')
+            # A late ancestor/leaf substitution must not survive the last read.
+            bindings()
         except OSError as exc:
             raise Refusal('original evidence binding changed/substituted') from exc
 
