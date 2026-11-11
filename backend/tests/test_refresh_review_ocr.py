@@ -1,8 +1,7 @@
 """PR860 independent regressions: actual extraction/reader/gates/cache, fake PDF/OCR only."""
 import json
-import sys
 from pathlib import Path
-from types import ModuleType, SimpleNamespace
+from types import SimpleNamespace
 from decimal import Decimal
 
 import pytest
@@ -11,7 +10,7 @@ import pdfplumber
 from seeding.config import SeedingSettings
 from seeding.domains.fiscal_summary import fiscal_framework as ff
 from seeding.domains.fiscal_summary import fetcher
-from seeding import pdf_download
+from seeding import native_ocr, pdf_download
 
 TITLE='Annex Table 2a: Fiscal Framework (KSh billion)'
 FY='FY 2026/27'
@@ -31,17 +30,12 @@ def harness(tmp_path,monkeypatch,*,partial=None,images=True,second=False,enabled
     source=corpus();annex=source[62]
     state={'calls':0,'renders':0,'version':'5.5.0','error':None,'ocr_text':annex,
            'text':TITLE if partial is None else partial,'images':images,'second':second}
-    fake=ModuleType('pytesseract')
-    fake.get_tesseract_version=lambda:state['version']
-    fake.get_languages=lambda **kw:['eng']
-    def ocr(*args,**kwargs):
+    def ocr(image):
         state['calls']+=1
-        require(kwargs.get('timeout')==20,'OCR must remain bounded to20seconds')
-        require(kwargs.get('lang') == 'eng', 'OCR must use a single fixed language')
         if state['error'] is not None:raise state['error']
         return state['ocr_text']
-    fake.image_to_string=ocr
-    monkeypatch.setitem(sys.modules,'pytesseract',fake)
+    monkeypatch.setattr(native_ocr,'recognize_annex',ocr)
+    monkeypatch.setattr(native_ocr,'engine_identity',lambda: (state['version'], ['eng']))
     class Page:
         width=612;height=792
         def __init__(self,i):self.index=i;self.page_number=i+1

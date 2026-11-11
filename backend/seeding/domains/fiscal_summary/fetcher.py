@@ -545,11 +545,10 @@ def _fetch_budget_summary_editions(client, settings):
     try:
         from importlib.metadata import version
         import json
-        import pytesseract
-        ocr_version = str(pytesseract.get_tesseract_version())
-        languages = pytesseract.get_languages(config="")
+        from ...native_ocr import engine_identity
+        ocr_version, languages = engine_identity()
         packages = {name: version(name) for name in
-                    ("pdfplumber", "pdfminer.six", "pytesseract", "numpy", "Pillow", "pypdfium2")}
+                    ("pdfplumber", "pdfminer.six", "numpy", "Pillow", "pypdfium2")}
         if (extractor_hash and ocr_version.strip() and "eng" in languages
                 and all(isinstance(v, str) and v.strip() for v in packages.values())):
             cache_dependencies = json.dumps({"extractor": extractor_hash, "ocr": ocr_version,

@@ -116,10 +116,10 @@ def verify_cpu(expected, raw):
 
 
 def hosted_preflight(job):
-    """The local archive has no authorized hosted launcher or distribution."""
+    """The offline candidate carries no credentialed writer approval."""
     require_job(job)
     load_job(job)
-    raise Refusal('hosted native writer held: no approved immutable distribution, CPU or launcher')
+    raise Refusal('hosted native writer held: credentialed parser isolation and launcher are unverified')
 
 
 def runner_diagnostics():

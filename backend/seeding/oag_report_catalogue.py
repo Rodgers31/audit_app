@@ -24,6 +24,11 @@ _COVER_PREFIX = r"(?:" + _PREFIX + r"|REPORT OF THE AUDITOR-GENERAL ON THE COUNT
 _KIND = r'COUNTY (EXECUTIVES|ASSEMBLIES)'
 
 
+class _CatalogueTree(ET.TreeBuilder):
+    def doctype(self, name, pubid, system):
+        raise ET.ParseError('Publisher RSS document type declarations are forbidden')
+
+
 def _normal(value):
     return ' '.join(value.translate(str.maketrans({'’': "'", '‘': "'", '–': '-', '—': '-'})).split()).upper()
 
@@ -147,10 +152,9 @@ def capture_catalogue_report(receipt, publisher_receipt, pages):
         feed = catalogue_url(scope['period'])
         listing = retained_body(publisher_receipt, 'audits', CONTENT_TYPE)
         if (len(listing) > MAX_METADATA_BYTES or publisher_receipt['request_url'] != feed
-                or publisher_receipt['response_url'] != feed
-                or b'<!DOCTYPE' in listing.upper() or b'<!ENTITY' in listing.upper()):
+                or publisher_receipt['response_url'] != feed):
             raise ValueError('Bounded exact publisher feed required')
-        root = ET.fromstring(listing)
+        root = ET.fromstring(listing, parser=ET.XMLParser(target=_CatalogueTree()))
         channels = root.findall('channel')
         if root.tag != 'rss' or root.attrib != {'version': '2.0'} or len(channels) != 1:
             raise ValueError('Reviewed RSS channel required')

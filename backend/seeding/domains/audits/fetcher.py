@@ -19,9 +19,9 @@ raw HTML.
 
 Both solutions to that are now implemented here:
 
-* OCR (pytesseract + pdf2image, page-capped via
+* OCR (PDFium + Tesseract, page-capped via
   ``audits_ocr_max_pages``) behind ``SEED_AUDITS_OCR_ENABLED`` —
-  the seed workflow apt-installs tesseract-ocr + poppler-utils and
+  the seed workflow installs the OCR dependencies and
   enables it; local runs default off.
 * PDF discovery via the OAG WordPress REST API
   (/wp-json/wp/v2/media — plain JSON, no JS rendering needed),
@@ -378,20 +378,10 @@ def _ocr_pdf_text(pdf_path: Path, max_pages: int = 30) -> str:
     at a time (not the whole document) so a 700-page report doesn't
     hold hundreds of rasterised pages in memory.
     """
-    try:
-        from pdf2image import pdfinfo_from_path
-        from ...native_ocr import NATIVE_TIMEOUT, read_page
-    except ImportError:
-        logger.warning(
-            "OCR requested but pytesseract/pdf2image not installed — "
-            "pip install pytesseract pdf2image (plus system "
-            "tesseract-ocr and poppler-utils)"
-        )
-        return ""
+    from ...native_ocr import page_count, read_page
 
     try:
-        info = pdfinfo_from_path(pdf_path, timeout=NATIVE_TIMEOUT)
-        total_pages = int(info.get("Pages", 0)) or 1
+        total_pages = page_count(pdf_path)
     except Exception as exc:
         logger.warning("OCR: could not read PDF info: %s", exc)
         return ""

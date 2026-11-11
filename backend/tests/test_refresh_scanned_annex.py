@@ -7,7 +7,7 @@ from pathlib import Path
 from PIL import Image
 import pdfplumber
 import pytest
-import pytesseract
+from seeding import native_ocr
 
 from seeding.domains.fiscal_summary import fiscal_framework as ff
 
@@ -50,7 +50,7 @@ def _image_pdf(monkeypatch, *, ocr_text=None, ocr_error=None):
         return original[62] if ocr_text is None else ocr_text
 
     monkeypatch.setattr(pdfplumber, 'open', lambda *args: PDF())
-    monkeypatch.setattr(pytesseract, 'image_to_string', recognize)
+    monkeypatch.setattr(native_ocr, 'recognize_annex', recognize)
     return calls
 
 

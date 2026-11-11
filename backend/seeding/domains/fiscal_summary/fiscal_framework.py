@@ -580,8 +580,8 @@ def _read_image_annex(page) -> str:
     """One image table at 300dpi; OCR cannot bypass any financial gate."""
     import math
     import numpy as np
-    import pytesseract
     from PIL import Image
+    from ...native_ocr import recognize_annex
 
     width, height = page.width, page.height
     if (any(isinstance(v, bool) or not isinstance(v, (int, float))
@@ -602,9 +602,8 @@ def _read_image_annex(page) -> str:
     horizontal = (pixels < 200).mean(axis=1) > .60
     pixels[:, vertical] = 255
     pixels[horizontal, :] = 255
-    text = pytesseract.image_to_string(
-        Image.fromarray(pixels), lang="eng", config="--psm 6 -c preserve_interword_spaces=1", timeout=20,
-    )
+    with Image.fromarray(pixels) as annex:
+        text = recognize_annex(annex)
     if not isinstance(text, str) or not 1 <= len(text) <= 100_000:
         raise FiscalFrameworkError("ocr_text_bounds")
     text = text.replace('|', ' ').replace('"', '')
