@@ -18,6 +18,7 @@ from sqlalchemy.dialects.postgresql import insert
 
 from admin_etl_dispatch import SOURCE_DOMAINS, db_clock, enabled, fresh, mapped
 from seeding.exclusion import reserve, unclaimed_running
+from seeding.terminal_inventory import valid_terminal_inventory
 from models import EtlDispatchCommand, EtlDispatchDomain, EtlDispatchWorker, IngestionJob, IngestionStatus, SeedingDomainClaim
 from admin_etl_qualification import qualification, QualificationRefused
 
@@ -208,7 +209,7 @@ def finish(factory, generation, command_id, token, exit_code):
             and tagged_claim
             and observed_start is not None and observed_finish is not None
             and command.started_at - tolerance <= observed_start <= observed_finish <= now + tolerance
-            and all(type(value) is int and 0 <= value <= 2147483647 for value in (job.items_processed, job.items_created, job.items_updated))
+            and valid_terminal_inventory(job, completed=job.status == IngestionStatus.COMPLETED)
             and job.status in (IngestionStatus.COMPLETED, IngestionStatus.COMPLETED_WITH_ERRORS, IngestionStatus.FAILED)
             and (job.status != IngestionStatus.COMPLETED or type(job.errors) is list and len(job.errors) == 0))
         if not coherent:

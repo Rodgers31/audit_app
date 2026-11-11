@@ -72,6 +72,8 @@ from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
 from typing import Dict, List, Optional, Tuple
 
+from ...isolated_parser import isolated
+
 logger = logging.getLogger("seeding.fiscal_summary.budget_estimates")
 
 # ── Anchors, confirmed against the real FY2026/27 Approved PBB ────────
@@ -549,6 +551,7 @@ def build_estimates(
 
 
 # ── PDF walk (thin shim over pdfplumber) ─────────────────────────────
+@isolated("pdf_path", types=(BudgetEstimates,), errors=(BudgetEstimatesError,))
 def extract_budget_estimates(pdf_path, fiscal_year: str) -> BudgetEstimates:
     """Read ``fiscal_year``'s enacted gross budget from a PBB book.
 

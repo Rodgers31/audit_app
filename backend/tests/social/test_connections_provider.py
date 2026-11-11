@@ -114,3 +114,53 @@ print("secret-free tracing verified")
 '''],cwd=root,text=True,capture_output=True)
     assert result.returncode==0,result.stderr
     assert result.stdout.strip()=='secret-free tracing verified'
+
+
+def test_saved_grant_stream_has_fixed_chunks_before_budget_accumulation(config, monkeypatch):
+    from social.connections import verification_budget as limits
+    from social.connections.verification_budget import VerificationBudget
+    observed = []
+    original = httpx.Response.iter_bytes
+    def recording(response, chunk_size=None):
+        for chunk in original(response, chunk_size=chunk_size):
+            observed.append(len(chunk))
+            yield chunk
+    monkeypatch.setattr(httpx.Response, 'iter_bytes', recording)
+    payload = b'{"padding":"' + b'x' * 100_000 + b'"}'
+    class Body(httpx.SyncByteStream):
+        def __iter__(self):
+            yield payload
+    provider = MetaProvider(config, transport=httpx.MockTransport(
+        lambda request: httpx.Response(200, stream=Body())))
+    budget = VerificationBudget()
+    try:
+        with budget.activate():
+            assert provider._request('GET', 'me')['padding'] == 'x' * 100_000
+        assert observed and max(observed) <= 16_384
+        assert budget.bytes_read == len(payload) and budget.requests == 1
+    finally:
+        provider.close()
+
+
+def test_trickling_stream_checks_deadline_before_chunk_coalescing(config, monkeypatch):
+    from social.connections import provider as module
+    now = [0.0]
+    monkeypatch.setattr(module.time, 'monotonic', lambda: now[0])
+    class Trickle(httpx.SyncByteStream):
+        count = 0
+        closed = False
+        def __iter__(self):
+            for byte in b'{"padding":"' + b'x' * 1000 + b'"}':
+                self.count += 1
+                now[0] += 10
+                yield bytes([byte])
+        def close(self): self.closed = True
+    body = Trickle()
+    provider = MetaProvider(config, transport=httpx.MockTransport(
+        lambda request: httpx.Response(200, stream=body)))
+    try:
+        with pytest.raises(SocialError, match='PROVIDER_RESPONSE_INVALID'):
+            provider._request('GET', 'me')
+        assert body.closed and body.count <= 4
+    finally:
+        provider.close()

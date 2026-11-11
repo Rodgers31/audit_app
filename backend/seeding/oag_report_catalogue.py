@@ -13,6 +13,8 @@ from tempfile import TemporaryDirectory
 from urllib.parse import urldefrag, urljoin
 import xml.etree.ElementTree as ET
 
+from .isolated_parser import isolated
+
 VERSION = 'oag-combined-catalogue-v1'
 CONTENT_TYPE = 'application/rss+xml'
 MAX_METADATA_BYTES = 512 * 1024
@@ -22,6 +24,11 @@ _YEAR = r'(20\d{2})[/\-](20\d{2})'
 _PREFIX = r"AUDITOR[ -]GENERAL'S REPORT ON (?:THE )?COUNTY GOVERNMENTS"
 _COVER_PREFIX = r"(?:" + _PREFIX + r"|REPORT OF THE AUDITOR-GENERAL ON THE COUNTY GOVERNMENTS)"
 _KIND = r'COUNTY (EXECUTIVES|ASSEMBLIES)'
+
+
+class _CatalogueTree(ET.TreeBuilder):
+    def doctype(self, name, pubid, system):
+        raise ET.ParseError('Publisher RSS document type declarations are forbidden')
 
 
 def _normal(value):
@@ -138,6 +145,29 @@ def fetch_catalogue_receipt(client, period):
         return client.download_receipt(url)
 
 
+@isolated('listing', errors=(ET.ParseError,))
+def _catalogue_entry(listing: bytes, *, feed: str, year: str, document_url: str) -> tuple[str, str, str]:
+    root = ET.fromstring(listing, parser=ET.XMLParser(target=_CatalogueTree()))
+    channels = root.findall('channel')
+    if root.tag != 'rss' or root.attrib != {'version': '2.0'} or len(channels) != 1:
+        raise ValueError('Reviewed RSS channel required')
+    channel = channels[0]
+    expected = {' '.join((year + separator + 'County Government Audit Reports - Office of the Auditor-General').upper().split())
+                for separator in ('-', ' ')}
+    if _normal(_field(channel, 'title')) not in expected:
+        raise ValueError('Publisher channel fiscal year required')
+    selfs = channel.findall(_ATOM + 'link')
+    if (len(selfs) != 1 or selfs[0].attrib != {'href': feed, 'rel': 'self', 'type': CONTENT_TYPE}):
+        raise ValueError('Exact RSS self identity required')
+    items = [item for item in channel.findall('item')
+             if _link(_field(item, 'link'), feed) == document_url]
+    if len(items) != 1:
+        raise ValueError('One exact report catalogue entry required')
+    item = items[0]
+    return (_field(item, 'title'), _field(item, 'pubDate'),
+            _field(item, 'guid', attributes={'isPermaLink': 'false'}))
+
+
 def capture_catalogue_report(receipt, publisher_receipt, pages):
     try:
         from .native_report_authority import retained_body, _capture
@@ -147,32 +177,14 @@ def capture_catalogue_report(receipt, publisher_receipt, pages):
         feed = catalogue_url(scope['period'])
         listing = retained_body(publisher_receipt, 'audits', CONTENT_TYPE)
         if (len(listing) > MAX_METADATA_BYTES or publisher_receipt['request_url'] != feed
-                or publisher_receipt['response_url'] != feed
-                or b'<!DOCTYPE' in listing.upper() or b'<!ENTITY' in listing.upper()):
+                or publisher_receipt['response_url'] != feed):
             raise ValueError('Bounded exact publisher feed required')
-        root = ET.fromstring(listing)
-        channels = root.findall('channel')
-        if root.tag != 'rss' or root.attrib != {'version': '2.0'} or len(channels) != 1:
-            raise ValueError('Reviewed RSS channel required')
-        channel = channels[0]
         year = f"{scope['start'][:4]}-{scope['end'][:4]}"
-        expected = {' '.join((year + separator + 'County Government Audit Reports - Office of the Auditor-General').upper().split())
-                    for separator in ('-', ' ')}
-        if _normal(_field(channel, 'title')) not in expected:
-            raise ValueError('Publisher channel fiscal year required')
-        selfs = channel.findall(_ATOM + 'link')
-        if (len(selfs) != 1 or selfs[0].attrib != {'href': feed, 'rel': 'self', 'type': CONTENT_TYPE}):
-            raise ValueError('Exact RSS self identity required')
-        items = [item for item in channel.findall('item')
-                 if _link(_field(item, 'link'), feed) == receipt['request_url']]
-        if len(items) != 1:
-            raise ValueError('One exact report catalogue entry required')
-        item = items[0]
-        title = _field(item, 'title')
+        title, raw_time, guid = _catalogue_entry(
+            listing, feed=feed, year=year, document_url=receipt['request_url'],
+        )
         _title_scope(title, scope)
-        raw_time = _field(item, 'pubDate')
         timestamp = _entry_time(raw_time)
-        guid = _field(item, 'guid', attributes={'isPermaLink': 'false'})
         if not re.fullmatch(r'https://www\.oagkenya\.go\.ke/\?post_type=dlp_document&p=[1-9][0-9]{0,8}', guid):
             raise ValueError('Exact OAG document-entry identity required')
         metadata = dict(kind=VERSION, catalogue_url=feed, document_url=receipt['request_url'],

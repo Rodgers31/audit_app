@@ -122,17 +122,11 @@ def _retained_fiscal_association(db, proof, *, field=None, receipt_store=None, o
     if APDMR_SHA256 not in cache:
         try:
             from hashlib import sha256
-            from io import BytesIO
-            import pdfplumber
-            from seeding.domains.fiscal_summary.actuals import parse_apdmr_table
+            from seeding.domains.fiscal_summary.actuals import decode_apdmr_amounts
             body = receipt_store.read(APDMR_SHA256)
             if type(body) is not bytes or not 0 < len(body) <= 10_000_000 or sha256(body).hexdigest() != APDMR_SHA256:
                 raise ValueError("original byte identity refused")
-            with pdfplumber.open(BytesIO(body)) as pdf:
-                if len(pdf.pages) < 37:
-                    raise ValueError("original page inventory refused")
-                parsed = parse_apdmr_table(pdf.pages[0].extract_text() or "", pdf.pages[36].extract_text() or "")
-            cache[APDMR_SHA256] = (len(body), parsed)
+            cache[APDMR_SHA256] = (len(body), decode_apdmr_amounts(body))
         except (FileNotFoundError, TimeoutError, ConnectionError, OSError):
             cache[APDMR_SHA256] = {"state": "unconfirmed", "reason": "retained_original_readback_unavailable"}
         except ImportError:

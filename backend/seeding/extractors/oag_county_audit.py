@@ -56,6 +56,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+from ..isolated_parser import isolated
+
 logger = logging.getLogger("seeding.extractors.oag_county_audit")
 
 EXTRACTOR_ID = "oag_county_audit"  # recorded on every extractions row
@@ -459,6 +461,7 @@ def _known_counties(session, *, country_id=None) -> Dict[str, str]:
     return out
 
 
+@isolated("pdf_path", errors=(CountyAuditError,))
 def read_pages(pdf_path) -> List[Tuple[int, str]]:
     """(1-based page number, text) for every page.
 
@@ -472,7 +475,13 @@ def read_pages(pdf_path) -> List[Tuple[int, str]]:
 
     try:
         with pdfplumber.open(pdf_path) as pdf:
-            return [(n + 1, p.extract_text() or "") for n, p in enumerate(pdf.pages)]
+            pages = []
+            for number, page in enumerate(pdf.pages, 1):
+                try:
+                    pages.append((number, page.extract_text() or ""))
+                finally:
+                    page.close()
+            return pages
     except CountyAuditError:
         raise
     except Exception as exc:

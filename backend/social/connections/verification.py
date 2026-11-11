@@ -97,3 +97,13 @@ class SavedGrantVerificationAuthority:
     def open_provider(self, config):
         self.require_for(config)
         return _SavedGrantReads(self.__config, self.__transport)
+
+    def require_process_ready(self, config):
+        """Only the ordinary production read port can cross the process wire.
+
+        An injected in-process transport cannot be silently replaced by real
+        network authority. Controlled semantic fixtures use the private body.
+        """
+        self.require_for(config)
+        if self.__transport is not None:
+            raise _unavailable()

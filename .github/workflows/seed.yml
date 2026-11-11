@@ -12,11 +12,12 @@ on:
   workflow_dispatch:
     inputs:
       domain:
-        description: 'One supported native domain (empty keeps the legacy all-domain scope plus explicit opt-ins)'
+        description: 'One supported native domain (all keeps the legacy scope plus explicit opt-ins)'
         required: false
         type: choice
+        default: all
         options:
-          - ''
+          - all
           - audits
           - counties_budget
           - economic_indicators
@@ -51,20 +52,20 @@ on:
         type: boolean
         default: false
       audits_review:
-        description: 'One-time source-checked OAG repair (empty for ordinary refresh)'
+        description: 'One-time source-checked OAG repair (none for ordinary refresh)'
         required: false
         type: choice
-        default: ''
+        default: none
         options:
-          - ''
+          - none
           - oag-2542-20261026
       audits_source_acceptance:
         description: 'Bounded fresh acquisition of four reviewed OAG county volumes (manual audits only)'
         required: false
         type: choice
-        default: ''
+        default: none
         options:
-          - ''
+          - none
           - oag-combined-catalogue-20261101
       run_validation:
         description: 'Run data validation after seeding'
@@ -100,8 +101,9 @@ permissions:
 
 env:
   PYTHON_DOTENV_DISABLED: '1'
-  # Shared database and seeding configuration
-  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  # Keep installed artifact identities stable across ordinary Python children.
+  PYTHONDONTWRITEBYTECODE: '1'
+  # Shared seeding configuration
   SEED_RATE_LIMIT: ${{ vars.SEED_RATE_LIMIT || '60/min' }}
   SEED_TIMEOUT_SECONDS: ${{ vars.SEED_TIMEOUT_SECONDS || '30.0' }}
   # Global wall-clock budget for `seed --all` (seconds). Kept below the
@@ -113,27 +115,13 @@ env:
   # CoB's indexed scan leaves parse reserve within its unchanged 600s domain
   # cap. Other PDF sources keep their own transfer limits.
   SEED_COB_PDF_DOWNLOAD_TIMEOUT_SECONDS: '420'
-  SEED_BUDGETS_DATASET_URL: ${{ secrets.SEED_BUDGETS_DATASET_URL }}
-  SEED_AUDITS_DATASET_URL: ${{ secrets.SEED_AUDITS_DATASET_URL }}
-  # OCR for scanned OAG audit-report PDFs (tesseract-ocr + poppler-utils
-  # are apt-installed in the seed job). Opt out by setting the repo
-  # Variable SEED_AUDITS_OCR_ENABLED=false.
+  # OCR for scanned OAG audit-report PDFs requires the admitted native runtime.
+  # Opt out with SEED_AUDITS_OCR_ENABLED=false.
   SEED_AUDITS_OCR_ENABLED: ${{ vars.SEED_AUDITS_OCR_ENABLED || 'true' }}
   SEED_AUDITS_OCR_MAX_PAGES: ${{ vars.SEED_AUDITS_OCR_MAX_PAGES || '30' }}
   # Source-qualified executive aging remains opt-in until bounded rollout.
   SEED_PENDING_BILLS_AGING_ENABLED: ${{ vars.SEED_PENDING_BILLS_AGING_ENABLED || 'false' }}
   SEED_PENDING_BILLS_ASSEMBLY_AGING_ENABLED: ${{ vars.SEED_PENDING_BILLS_ASSEMBLY_AGING_ENABLED || 'false' }}
-  SEED_POPULATION_DATASET_URL: ${{ secrets.SEED_POPULATION_DATASET_URL }}
-  SEED_ECONOMIC_INDICATORS_DATASET_URL: ${{ secrets.SEED_ECONOMIC_INDICATORS_DATASET_URL }}
-  # KRA FY-revenue page/PDF. The revenue_by_source domain overlays the live
-  # per-tax-head breakdown onto the fixture (gated by a plausibility check).
-  #
-  # This read `vars.SEED_KRA_REVENUE_URL` while the value was stored as a
-  # repository SECRET (set 2026-06-14) and no repository Variables exist at
-  # all — so it resolved to an empty string on every run and the overlay had
-  # never once executed. `secrets` first, `vars` kept as a fallback so either
-  # storage location works.
-  SEED_KRA_REVENUE_URL: ${{ secrets.SEED_KRA_REVENUE_URL || vars.SEED_KRA_REVENUE_URL }}
   # Listing pages used to DISCOVER the current edition of each periodically
   # republished document, so a new release is ingested automatically instead
   # of the pipeline re-reading a hardcoded path forever.
@@ -150,8 +138,8 @@ env:
   SEED_PLAN_DOMAIN: ${{ github.event.inputs.domain }}
   SEED_PLAN_DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
   SEED_PLAN_BOOTSTRAP: ${{ github.event.inputs.run_bootstrap || 'false' }}
-  SEED_PLAN_AUDITS_REVIEW: ${{ github.event.inputs.audits_review || '' }}
-  SEED_PLAN_AUDITS_SOURCE_ACCEPTANCE: ${{ github.event.inputs.audits_source_acceptance || '' }}
+  SEED_PLAN_AUDITS_REVIEW: ${{ github.event.inputs.audits_review != 'none' && github.event.inputs.audits_review || '' }}
+  SEED_PLAN_AUDITS_SOURCE_ACCEPTANCE: ${{ github.event.inputs.audits_source_acceptance != 'none' && github.event.inputs.audits_source_acceptance || '' }}
   SEED_PLAN_REACQUIRE_PENDING_BILLS_PDF: ${{ github.event.inputs.reacquire_pending_pdf || 'false' }}
   SEED_LOG_LEVEL: INFO
   SOCIAL_GENERATION_HOOK_ENABLED: ${{ vars.SOCIAL_GENERATION_HOOK_ENABLED || 'false' }}
@@ -166,19 +154,37 @@ jobs:
     outputs:
       domains: ${{ steps.plan.outputs.domains }}
       bootstrap: ${{ steps.plan.outputs.bootstrap }}
+      health_sources: ${{ steps.plan.outputs.health_sources }}
+      dry_run: ${{ steps.plan.outputs.dry_run }}
+      source_sha: ${{ steps.plan.outputs.source_sha }}
+      plan_sha256: ${{ steps.plan.outputs.plan_sha256 }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
-          python-version: '3.12'
-      - run: pip install -r backend/requirements.txt
+          python-version: '3.12.16'
+      - name: Install reviewed ingestion runtime
+        run: |
+          INGESTION_SCRATCH="$RUNNER_TEMP/ingestion-$GITHUB_JOB"
+          python -B tools/nightly_acceptance_20261105/runtime.py acquire --wheelhouse "$INGESTION_SCRATCH/wheels"
+          python -B tools/nightly_acceptance_20261105/runtime.py wheels --wheelhouse "$INGESTION_SCRATCH/wheels"
+          python -B tools/nightly_acceptance_20261105/runtime.py install --wheelhouse "$INGESTION_SCRATCH/wheels" --venv "$INGESTION_SCRATCH/runtime"
+          "$INGESTION_SCRATCH/runtime/bin/python" -B tools/nightly_acceptance_20261105/runtime.py verify
+          echo "$INGESTION_SCRATCH/runtime/bin" >> "$GITHUB_PATH"
       - name: Validate whitelisted plan
         id: plan
+        env:
+          SEED_BUDGETS_DATASET_URL: ${{ secrets.SEED_BUDGETS_DATASET_URL }}
+          SEED_AUDITS_DATASET_URL: ${{ secrets.SEED_AUDITS_DATASET_URL }}
+          SEED_POPULATION_DATASET_URL: ${{ secrets.SEED_POPULATION_DATASET_URL }}
+          SEED_ECONOMIC_INDICATORS_DATASET_URL: ${{ secrets.SEED_ECONOMIC_INDICATORS_DATASET_URL }}
+          SEED_KRA_REVENUE_URL: ${{ secrets.SEED_KRA_REVENUE_URL || vars.SEED_KRA_REVENUE_URL }}
         run: |
           cd backend
           python -m seeding.source_plan --check
+          python -m seeding.current_run
 
   # ══════════════════════════════════════════════════════════════════
   # Step 0: Health-check all government data source URLs
@@ -186,6 +192,7 @@ jobs:
   # are surfaced immediately instead of buried in log warnings.
   # ══════════════════════════════════════════════════════════════════
   healthcheck:
+    needs: [source_plan]
     name: Data Source Health Check
     if: github.event_name != 'schedule' || vars.INGESTION_NIGHTLY_ENABLED == 'true'
     runs-on: ubuntu-latest
@@ -195,59 +202,40 @@ jobs:
       has_failures: ${{ steps.check.outputs.has_failures }}
       unprobed: ${{ steps.check.outputs.unprobed }}
       critical_reachable: ${{ steps.check.outputs.critical_reachable }}
+      inventory_sha256: ${{ steps.check.outputs.inventory_sha256 }}
     steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       - name: Check data source URLs
         id: check
+        env:
+          HC_SOURCE_INVENTORY: ${{ needs.source_plan.outputs.health_sources }}
         run: |
           #!/usr/bin/env bash
           # Actions runs this step with `bash -eo pipefail`, so every command
-          # that may fail is guarded; the script must always exit 0 so it never
-          # blocks seeding. Failures are reported via outputs.
+          # that may fail is guarded. Measured outages use outputs; malformed
+          # inventories/budgets refuse with a nonzero status. Neither authorizes seeding.
 
-          # ── Data source registry ──────────────────────────────────
-          # Each entry: "LABEL|URL|CRITICAL"
-          # CRITICAL=true  → workflow fails and creates an issue
-          # CRITICAL=false → logged as warning only
-          #
-          # COB's slow HTML listings (`/publications/`, `/publications/county-reports/`,
-          # `/publications/...-review-reports/`) routinely take 30-50s to render because
-          # the WordPress query hits a CDN cache miss on low-traffic paths — they are
-          # NOT the primary ingestion path. The real fetcher prefers `/wp-json/wp/v2/media`
-          # (reliable, fast) and only falls back to HTML scraping, so the WP REST API
-          # is the real "is ingestion healthy?" signal and is the only COB source
-          # flagged as CRITICAL here.
+          # This inventory is produced by the selected native plan/settings.
+          # No probe, including an edition probe, certifies financial acceptance.
           SOURCES=(
-            "COB WP REST API|https://cob.go.ke/wp-json/wp/v2/media?per_page=1&mime_type=application/pdf|true"
-            "COB Homepage|https://cob.go.ke/|false"
-            "COB Publications|https://cob.go.ke/publications/|false"
-            "COB County Reports|https://cob.go.ke/publications/county-reports/|false"
-            "COB National Reports|https://cob.go.ke/publications/national-government-budget-implementation-review-reports/|false"
-            # Same shape as COB above: audits/fetcher.py:199-203 queries the
-            # WP media API first and only falls back to scraping the homepage,
-            # so the REST endpoint is the real "can we discover reports?"
-            # signal.
-            "OAG WP REST API|https://www.oagkenya.go.ke/wp-json/wp/v2/media?per_page=1&mime_type=application/pdf|true"
-            "OAG Homepage|https://www.oagkenya.go.ke/|true"
-            "OAG National Audit Reports|https://www.oagkenya.go.ke/national-government-audit-reports/|false"
-            "CBK Homepage|https://www.centralbank.go.ke/|true"
-            "CBK Public Debt|https://www.centralbank.go.ke/public-debt/|true"
-            # Treasury: www., NOT newsite. The probe used to point at
-            # https://newsite.treasury.go.ke/, which appears only in the legacy
-            # etl/ pipeline. The nightly runs `seeding.cli seed --all`, and
-            # seeding/config.py fetches www.treasury.go.ke. Both hosts answer
-            # 200, so the old probe was permanently green about a host this
-            # workflow never touches. Kept in sync by
-            # backend/tests/test_healthcheck_probes_the_real_hosts.py.
-            #
-            # budget-books is CRITICAL: it is where the enacted budget for the
-            # fiscal year comes from (FY2026/27 = KSh 5,485.7B), so losing it
-            # is how a fiscal year silently stops arriving on the site.
-            "Treasury Budget Books|https://www.treasury.go.ke/budget-books/|true"
-            "Treasury Budget Policy Statement|https://www.treasury.go.ke/budget-policy-statement/|false"
-            "Treasury BROP|https://www.treasury.go.ke/budget-review-and-outlook-paper/|false"
-            "World Bank API|https://api.worldbank.org/v2/country/KE?format=json|true"
-            "IMF DataMapper|https://www.imf.org/external/datamapper/api/v1/GGXWDG_NGDP/KEN|false"
           )
+          if [ -z "${HC_SOURCE_INVENTORY:-}" ] || [ "${#HC_SOURCE_INVENTORY}" -gt 24000 ]; then
+            echo 'Selected source-health inventory missing or exceeds bound' >&2
+            exit 2
+          fi
+          while IFS= read -r entry; do
+            [ -n "$entry" ] || { echo 'Empty health source refused' >&2; exit 2; }
+            for existing_entry in "${SOURCES[@]}"; do
+              if [ "$existing_entry" = "$entry" ]; then
+                echo 'Duplicate health source refused' >&2; exit 2
+              fi
+            done
+            SOURCES+=("$entry")
+          done <<< "$HC_SOURCE_INVENTORY"
+          if [ "${#SOURCES[@]}" -gt 128 ]; then exit 2; fi
+          HC_TMP=$(mktemp -d)
+          trap 'rm -rf -- "$HC_TMP"' EXIT
+          HC_BODY_FILE="$HC_TMP/body"
 
           REPORT=""
           FAILED_CRITICAL=0
@@ -278,6 +266,18 @@ jobs:
           HC_SOURCE_BUDGET=${HC_SOURCE_BUDGET:-75}
           HC_JOB_BUDGET=${HC_JOB_BUDGET:-240}
           HC_RETRY_DELAY=${HC_RETRY_DELAY:-3}
+          for bound in HC_ATTEMPT_MAX_TIME HC_SOURCE_BUDGET HC_JOB_BUDGET HC_RETRY_DELAY; do
+            value=${!bound}
+            if ! [[ "$value" =~ ^(0|[1-9][0-9]{0,2})$ ]]; then
+              echo "Malformed health budget: $bound" >&2; exit 2
+            fi
+          done
+          if [ "$HC_ATTEMPT_MAX_TIME" -lt 1 ] || [ "$HC_ATTEMPT_MAX_TIME" -gt 60 ] ||
+             [ "$HC_SOURCE_BUDGET" -lt 1 ] || [ "$HC_SOURCE_BUDGET" -gt 75 ] ||
+             [ "$HC_JOB_BUDGET" -lt 1 ] || [ "$HC_JOB_BUDGET" -gt 240 ] ||
+             [ "$HC_RETRY_DELAY" -gt 10 ]; then
+            echo 'Health budget exceeds approved bounds' >&2; exit 2
+          fi
           JOB_DEADLINE=$(( SECONDS + HC_JOB_BUDGET ))
 
           # Primary UA must start with a known HTTP-client identifier
@@ -310,7 +310,12 @@ jobs:
           # code alone would call a timeout healthy. Exit 28 forces "000".
           probe_once() {
             local code rc=0
-            code=$(curl -s -o /dev/null -w "%{http_code}" \
+            local range_args=()
+            # A bounded prefix establishes transport only, never full edition
+            # acceptance. Large reviewed PDFs must not require full downloads.
+            case "$2" in *.pdf|*.PDF|*.xlsx) range_args=(--range 0-65535) ;; esac
+            code=$(curl -s -o "$HC_BODY_FILE" -w "%{http_code}" \
+              --max-filesize 8388608 "${range_args[@]}" --proto =https,http --proto-redir =https \
               -L --max-time "$3" \
               -A "$1" "$2" 2>/dev/null) || rc=$?
             [[ "$code" =~ ^[0-9]{3}$ ]] || code="000"
@@ -362,6 +367,8 @@ jobs:
                   7) PROBE_ERROR="connection refused" ;;
                   18) PROBE_ERROR="incomplete response" ;;
                   28) PROBE_ERROR="timeout"; TIMED_OUT=1 ;;
+                  51|60) PROBE_ERROR="TLS certificate verification failed"; return 0 ;;
+                  63) PROBE_ERROR="bounded body probe refused or exceeds byte limit"; return 0 ;;
                   *) PROBE_ERROR="transport error $rc" ;;
                 esac
                 if [ "$ua" = "$BROWSER_UA" ] && ! is_transient "$code"; then
@@ -379,22 +386,94 @@ jobs:
             done
           }
 
-          for entry in "${SOURCES[@]}"; do
-            IFS='|' read -r label url critical <<< "$entry"
+          source_index=0
+          while [ "$source_index" -lt "${#SOURCES[@]}" ]; do
+            entry=${SOURCES[$source_index]}
+            source_index=$((source_index + 1))
+            IFS='|' read -r label url critical discovery extra <<< "$entry"
+            if [ -z "$label" ] || [ -n "$extra" ] ||
+               ! [[ "$critical" =~ ^(true|false)$ ]] ||
+               ! [[ "${discovery:-none}" =~ ^(none|treasury_editions)$ ]]; then
+              echo 'Malformed selected health source' >&2; exit 2
+            fi
+            if [ "$url" = reference ] && [ "$critical" = false ] &&
+               [ "$label" = 'learning_hub curated learning reference' ]; then
+              REPORT="${REPORT}OK|${label}|reference|curated reference; no live publisher expected\n"
+              OK_COUNT=$((OK_COUNT + 1))
+              continue
+            fi
+            if [ "$url" = missing ]; then
+              REPORT="${REPORT}CRITICAL|${label}|missing|required diagnostic coverage unavailable\n"
+              FAILED_CRITICAL=$((FAILED_CRITICAL + 1))
+              CRITICAL_TOTAL=$((CRITICAL_TOTAL + 1))
+              continue
+            fi
+            if ! [[ "$url" =~ ^https?://[^[:space:]\|]+$ ]]; then
+              echo 'Invalid health source URL' >&2; exit 2
+            fi
             if [ "$critical" = "true" ]; then CRITICAL_TOTAL=$((CRITICAL_TOTAL + 1)); fi
 
             # Out of job budget: say so for every source still waiting,
             # rather than let the runner kill the job and drop the outputs.
             if [ $(( JOB_DEADLINE - SECONDS )) -lt 1 ]; then
               echo "  [WARNING] $label → not probed: the ${HC_JOB_BUDGET}s health-check budget ran out ($url)"
-              REPORT="${REPORT}WARNING|${label}|${url}|not probed\n"
-              FAILED_WARN=$((FAILED_WARN + 1))
+              severity=WARNING
+              if [ "$critical" = true ]; then severity=CRITICAL; fi
+              REPORT="${REPORT}${severity}|${label}|${url}|not probed - coverage unknown\n"
               NOT_PROBED=$((NOT_PROBED + 1))
+              if [ "$critical" = true ]; then
+                FAILED_CRITICAL=$((FAILED_CRITICAL + 1))
+              else
+                FAILED_WARN=$((FAILED_WARN + 1))
+              fi
               continue
             fi
 
             started=$SECONDS
+            : > "$HC_BODY_FILE"
             probe_source "$url"
+            if [ "$discovery" = treasury_editions ]; then
+              # Parse only the bounded fetched listing. Missing/ambiguous
+              # discovery becomes an explicit required diagnostic gap.
+              if [[ "$HTTP_CODE" =~ ^2 ]] && python3 - "$HC_BODY_FILE" "$url" > "$HC_TMP/editions" <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          from urllib.parse import urljoin, urlsplit, unquote
+          import sys
+          body = Path(sys.argv[1]).read_bytes()
+          if not body or len(body) > 8 * 1024 * 1024:
+              raise SystemExit(2)
+          class Links(HTMLParser):
+              def __init__(self):
+                  super().__init__(); self.urls = set()
+              def handle_starttag(self, tag, attrs):
+                  if tag != 'a': return
+                  for key, value in attrs:
+                      if key != 'href' or not value: continue
+                      url = urljoin(sys.argv[2], value)
+                      low = unquote(url).lower()
+                      parsed = urlsplit(url)
+                      if ('budget' in low and 'summary' in low and parsed.path.lower().endswith('.pdf')
+                              and not any(x in low for x in ('draft','supplementary','supp-'))):
+                          if (parsed.scheme != 'https' or parsed.hostname not in
+                                  ('www.treasury.go.ke','treasury.go.ke','oldsite.treasury.go.ke')
+                                  or parsed.username or parsed.password or parsed.fragment
+                                  or len(url) > 2048 or any(c.isspace() or c == '|' for c in url)):
+                              raise ValueError('Unqualified Treasury edition link')
+                          self.urls.add(url)
+          links = Links(); links.feed(body.decode('utf-8', errors='strict'))
+          if not 1 <= len(links.urls) <= 24: raise SystemExit(2)
+          for index, url in enumerate(sorted(links.urls), 1):
+              print(f'fiscal_summary framework edition {index}|{url}|true')
+          PY
+              then
+                while IFS= read -r edition; do SOURCES+=("$edition"); done < "$HC_TMP/editions"
+              else
+                SOURCES+=("fiscal_summary edition discovery|missing|true")
+              fi
+              if [ "${#SOURCES[@]}" -gt 152 ]; then echo 'Edition inventory exceeds bound' >&2; exit 2; fi
+              TOTAL=${#SOURCES[@]}
+            fi
 
             if [[ "$HTTP_CODE" =~ ^2 ]]; then
               echo "  [OK]   $label ($HTTP_CODE)"
@@ -445,7 +524,16 @@ jobs:
             echo "critical_reachable=false" >> "$GITHUB_OUTPUT"
           fi
 
+          printf '%s\n' "${SOURCES[@]}" > "$HC_TMP/inventory"
+          python3 - "$HC_TMP/inventory" >> "$GITHUB_OUTPUT" <<'PY'
+          from pathlib import Path
+          from hashlib import sha256
+          import sys
+          print('inventory_sha256='+sha256(Path(sys.argv[1]).read_bytes()).hexdigest())
+          PY
+
           # Write to step summary
+          echo "Diagnostic scope: selected component reachability, including Treasury summary links. Runtime-discovered OAG/COB/PBB/KRA document and bundle URLs are not exhaustively probed here; inspect domain receipts. Reachability is not edition/content/coverage acceptance." >> "$GITHUB_STEP_SUMMARY"
           echo "## Data Source Health Check" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Status | Source | URL | HTTP Code |" >> $GITHUB_STEP_SUMMARY
@@ -478,6 +566,9 @@ jobs:
   migrate:
     needs: [source_plan]
     name: Verify Accepted Database
+    outputs:
+      source_sha: ${{ steps.schema.outputs.source_sha }}
+      schema_head: ${{ steps.schema.outputs.schema_head }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -504,16 +595,31 @@ jobs:
             *) exit 1 ;;
           esac
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+      - name: Record independent runner native diagnostics
+        run: >-
+          /usr/bin/env -i PATH=/usr/local/bin:/usr/bin:/bin LC_ALL=C.UTF-8
+          GITHUB_JOB="$GITHUB_JOB" /usr/bin/python3 -B
+          tools/nightly_acceptance_20261105/native_jobs.py runner-diagnostics
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
-          python-version: '3.12'
-      - run: pip install --upgrade pip && pip install -r backend/requirements.txt
+          python-version: '3.12.16'
+          architecture: x64
+          check-latest: false
+      - name: Require hosted native writer admission
+        env:
+          APPROVED_SHA: ${{ vars.INGESTION_WRITE_APPROVED_SHA }}
+          NIGHTLY_ENABLED: ${{ vars.INGESTION_NIGHTLY_ENABLED }}
+        run: python -I -B tools/nightly_acceptance_20261105/hosted_parser.py
       - name: Prepare verified writer TLS without copying credentials
-        run: python -I scripts/verification/github_database_qualify.py --prepare-writer-tls
+        run: python -I -B scripts/verification/github_database_qualify.py --prepare-writer-tls
       - name: Qualify the stored target and require the accepted schema head
         timeout-minutes: 1
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          python -I scripts/verification/github_database_qualify.py --seed
+          python -I -B scripts/verification/github_database_qualify.py --seed
           cd backend
           test "$(alembic heads)" = 'a756b20a0001 (head)'
 
@@ -530,6 +636,9 @@ jobs:
       # on `needs:` — correct: writing into a schema the code disagrees with
       # is worse than not writing.
       - name: Verify the deployed schema matches the models
+        id: schema
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           cd backend
           python -c "
@@ -543,6 +652,8 @@ jobs:
           if missing:
               sys.exit(1)
           "
+          echo "source_sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          echo 'schema_head=a756b20a0001' >> "$GITHUB_OUTPUT"
 
   # ══════════════════════════════════════════════════════════════════
   # Step 2: Bootstrap seeding (counties, national GDP, population, etc.)
@@ -566,15 +677,37 @@ jobs:
       (github.event_name == 'schedule' && github.event.schedule == '0 3 * * 0')
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+      - name: Record independent runner native diagnostics
+        run: >-
+          /usr/bin/env -i PATH=/usr/local/bin:/usr/bin:/bin LC_ALL=C.UTF-8
+          GITHUB_JOB="$GITHUB_JOB" /usr/bin/python3 -B
+          tools/nightly_acceptance_20261105/native_jobs.py runner-diagnostics
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
-          python-version: '3.12'
-      - run: pip install --upgrade pip && pip install -r backend/requirements.txt
+          python-version: '3.12.16'
+          architecture: x64
+          check-latest: false
+      - name: Require hosted native writer admission
+        env:
+          APPROVED_SHA: ${{ vars.INGESTION_WRITE_APPROVED_SHA }}
+          NIGHTLY_ENABLED: ${{ vars.INGESTION_NIGHTLY_ENABLED }}
+        run: python -I -B tools/nightly_acceptance_20261105/hosted_parser.py
       - name: Prepare verified writer TLS without copying credentials
-        run: python -I scripts/verification/github_database_qualify.py --prepare-writer-tls
+        run: python -I -B scripts/verification/github_database_qualify.py --prepare-writer-tls
       - name: Qualify this job's actual database connection
-        run: python -I scripts/verification/github_database_qualify.py --seed
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python -I -B scripts/verification/github_database_qualify.py --seed
       - name: Run bootstrap seeding
+        env:
+          SEED_BUDGETS_DATASET_URL: ${{ secrets.SEED_BUDGETS_DATASET_URL }}
+          SEED_AUDITS_DATASET_URL: ${{ secrets.SEED_AUDITS_DATASET_URL }}
+          SEED_POPULATION_DATASET_URL: ${{ secrets.SEED_POPULATION_DATASET_URL }}
+          SEED_ECONOMIC_INDICATORS_DATASET_URL: ${{ secrets.SEED_ECONOMIC_INDICATORS_DATASET_URL }}
+          SEED_KRA_REVENUE_URL: ${{ secrets.SEED_KRA_REVENUE_URL || vars.SEED_KRA_REVENUE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           cd backend
           python -c "
@@ -592,7 +725,16 @@ jobs:
   # ══════════════════════════════════════════════════════════════════
   seed:
     name: Seed Data Domains
-    needs: [migrate]
+    needs: [source_plan, migrate]
+    outputs:
+      report: ${{ steps.results.outputs.report }}
+      source_diagnostics: ${{ steps.results.outputs.source_diagnostics }}
+      report_version: ${{ steps.results.outputs.report_version }}
+      cache_eligible: ${{ steps.results.outputs.cache_eligible }}
+      classification: ${{ steps.results.outputs.classification }}
+      source_sha: ${{ steps.results.outputs.source_sha }}
+      schema_head: ${{ steps.results.outputs.schema_head }}
+      plan_sha256: ${{ steps.results.outputs.plan_sha256 }}
     runs-on: ubuntu-latest
     timeout-minutes: 50
     env:
@@ -609,23 +751,39 @@ jobs:
       SEED_RECEIPT_MAX_BYTES: ${{ vars.SEED_RECEIPT_MAX_BYTES }}
       SEED_RECEIPT_PART_MAX_BYTES: ${{ vars.SEED_RECEIPT_PART_MAX_BYTES }}
       SEED_RECEIPT_STORAGE_TIMEOUT_SECONDS: ${{ vars.SEED_RECEIPT_STORAGE_TIMEOUT_SECONDS || '30' }}
-      RECEIPT_SUPABASE_SECRET_KEY: ${{ secrets.RECEIPT_SUPABASE_SECRET_KEY }}
-      RECEIPT_R2_ACCESS_KEY_ID: ${{ secrets.RECEIPT_R2_ACCESS_KEY_ID }}
-      RECEIPT_R2_SECRET_ACCESS_KEY: ${{ secrets.RECEIPT_R2_SECRET_ACCESS_KEY }}
-      RECEIPT_R2_CONTROL_TOKEN: ${{ secrets.RECEIPT_R2_CONTROL_TOKEN }}
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - id: checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+      - name: Report the runner interpreter
+        id: python
+        run: /usr/bin/python3 -I -B --version
+      - name: Record independent runner native diagnostics
+        id: ocr
+        run: >-
+          /usr/bin/env -i PATH=/usr/local/bin:/usr/bin:/bin LC_ALL=C.UTF-8
+          GITHUB_JOB="$GITHUB_JOB" /usr/bin/python3 -B
+          tools/nightly_acceptance_20261105/native_jobs.py runner-diagnostics
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
-          python-version: '3.12'
-      # OCR system deps for scanned OAG audit PDFs (SEED_AUDITS_OCR_ENABLED)
-      - run: sudo apt-get update -qq && sudo apt-get install -y -qq tesseract-ocr poppler-utils
-      - run: pip install --upgrade pip && pip install -r backend/requirements.txt
+          python-version: '3.12.16'
+          architecture: x64
+          check-latest: false
+      - name: Require hosted native writer admission
+        id: dependencies
+        env:
+          APPROVED_SHA: ${{ vars.INGESTION_WRITE_APPROVED_SHA }}
+          NIGHTLY_ENABLED: ${{ vars.INGESTION_NIGHTLY_ENABLED }}
+        run: python -I -B tools/nightly_acceptance_20261105/hosted_parser.py
       - name: Prepare verified writer TLS without copying credentials
-        run: python -I scripts/verification/github_database_qualify.py --prepare-writer-tls
+        id: writer_tls
+        run: python -I -B scripts/verification/github_database_qualify.py --prepare-writer-tls
       - name: Qualify this job's actual database connection
         id: database
-        run: python -I scripts/verification/github_database_qualify.py --seed
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python -I -B scripts/verification/github_database_qualify.py --seed
 
       # Persist downloaded source PDFs across runs. The COB county BIRR PDF is
       # ~48MB and the CDN's throughput swings wildly (measured 50s → 556s for
@@ -675,6 +833,8 @@ jobs:
 
       - name: Capture the native run's job boundary
         id: native_boundary
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           cd backend
           python <<'PY'
@@ -693,13 +853,122 @@ jobs:
           PY
 
       - name: Seed planned domains
+        id: cli
         timeout-minutes: 45
+        env:
+          SEED_BUDGETS_DATASET_URL: ${{ secrets.SEED_BUDGETS_DATASET_URL }}
+          SEED_AUDITS_DATASET_URL: ${{ secrets.SEED_AUDITS_DATASET_URL }}
+          SEED_POPULATION_DATASET_URL: ${{ secrets.SEED_POPULATION_DATASET_URL }}
+          SEED_ECONOMIC_INDICATORS_DATASET_URL: ${{ secrets.SEED_ECONOMIC_INDICATORS_DATASET_URL }}
+          SEED_KRA_REVENUE_URL: ${{ secrets.SEED_KRA_REVENUE_URL || vars.SEED_KRA_REVENUE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RECEIPT_SUPABASE_SECRET_KEY: ${{ secrets.RECEIPT_SUPABASE_SECRET_KEY }}
+          RECEIPT_R2_ACCESS_KEY_ID: ${{ secrets.RECEIPT_R2_ACCESS_KEY_ID }}
+          RECEIPT_R2_SECRET_ACCESS_KEY: ${{ secrets.RECEIPT_R2_SECRET_ACCESS_KEY }}
+          RECEIPT_R2_CONTROL_TOKEN: ${{ secrets.RECEIPT_R2_CONTROL_TOKEN }}
         run: |
           cd backend
-          python -m seeding.source_plan --execute
+          echo "started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+          echo "run_id=$GITHUB_RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "run_attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+          echo "job_floor=$SEED_JOB_FLOOR" >> "$GITHUB_OUTPUT"
+          if python -m seeding.source_plan --execute; then
+            cli_exit=0
+          else
+            cli_exit=$?
+          fi
+          echo 'executed=true' >> "$GITHUB_OUTPUT"
+          echo "exit_code=$cli_exit" >> "$GITHUB_OUTPUT"
+          echo "finished_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+          exit "$cli_exit"
+
+      # The save key must change whenever there is PROGRESS TO BANK, and not
+      # otherwise. The previous version hashed completed `*.pdf` FILENAMES
+      # only, which made the commonest kind of progress invisible: a night
+      # that downloads 27MB of a 48MB PDF and is then stopped by the seed
+      # budget leaves a `.part` file and the same *.pdf filename set it
+      # started with, so it recomputed the SAME key, collided with the entry
+      # already stored under it, and saved nothing.
+      #
+      # OBSERVED on five consecutive nightlies (runs 34799406076, 34921218282,
+      # 35048000013, 35174426953, 35299414702) — a stalled cache and, with it,
+      # a stalled download:
+      #
+      #   Sep 14  Cache saved with key: seed-pdf-cache-2026-w38-c72cd0b7025eea9d
+      #   Sep 15  Failed to save: Unable to reserve cache with key
+      #             seed-pdf-cache-2026-w38-c72cd0b7025eea9d
+      #   Sep 16  Failed to save: ... (same key)
+      #   Sep 17  Failed to save: ... (same key)
+      #   Sep 18  Failed to save: ... (same key)
+      #
+      #   Sep 15..18 each: "resuming from 27751154 bytes" — byte-identical,
+      #   four nights running. Real progress was made every one of those
+      #   nights and thrown away every one of those nights.
+      #
+      # The fingerprint now covers every file in the directory, so a grown
+      # `.part` and a refreshed TTL sidecar both move the key. See
+      # .github/scripts/pdf_cache_fingerprint.py for the rule and the reasons,
+      # and backend/tests/test_pdf_cache_banks_progress.py, which runs this
+      # step for real over a simulated week.
+      # The period arrives through `env:` rather than being interpolated into
+      # the script. A `${{ }}` inside a run: block is pasted in as text before
+      # the shell sees it, which is the same seam that broke every nightly from
+      # 2026-09-03 — and it makes test_workflow_inline_scripts.py skip the step
+      # instead of checking it.
+      - name: Fingerprint the PDF cache
+        if: always() && steps.dependencies.outcome == 'success'
+        id: pdf_cache_state
+        env:
+          PDF_CACHE_PERIOD: ${{ steps.pdf_cache_period.outputs.period }}
+        run: |
+          python3 .github/scripts/pdf_cache_fingerprint.py \
+            backend/data/seeding/cache/pdfs \
+            "seed-pdf-cache-${PDF_CACHE_PERIOD}-"
+
+      # Two guards, both of which the old unconditional save needed and did
+      # not have:
+      #
+      # `files > 0` — never store an empty directory. `actions/cache` restores
+      # the NEWEST entry matching the prefix, so an empty snapshot saved by a
+      # run that died before its first download (this step is `if: always()`)
+      # would become that newest entry and delete every banked partial on the
+      # following night. Now that the key tracks content, that save would
+      # succeed rather than collide, so the hazard is real and new.
+      #
+      # `!= cache-matched-key` — when nothing changed, the restored entry is
+      # already exactly what we would upload. Skipping keeps the weekly-key
+      # frugality #175 was after, and keeps "Unable to reserve cache" out of
+      # the log, where it reads as a failure rather than as a no-op.
+      - name: Save downloaded source PDFs
+        id: save_pdfs
+        # Keep the ordinary all-source cache bank intact after a one-source
+        # qualification; do not replace its latest snapshot with one PDF.
+        if: always() && steps.dependencies.outcome == 'success' && env.SEED_PLAN_REACQUIRE_PENDING_BILLS_PDF != 'true' && env.SEED_PLAN_AUDITS_SOURCE_ACCEPTANCE == '' && steps.pdf_cache_state.outputs.files != '0' && steps.pdf_cache_state.outputs.key != steps.restore_pdfs.outputs.cache-matched-key
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: backend/data/seeding/cache/pdfs
+          key: ${{ steps.pdf_cache_state.outputs.key }}
 
       - name: Check ingestion job results
-        if: always() && steps.database.outcome == 'success' && steps.native_boundary.outcome == 'success'
+        id: results
+        if: ${{ !cancelled() && steps.database.outcome == 'success' && steps.native_boundary.outcome == 'success' }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SEED_ADMITTED_SHA: ${{ needs.migrate.outputs.source_sha }}
+          SEED_SCHEMA_HEAD: ${{ needs.migrate.outputs.schema_head }}
+          SEED_PLANNED_SHA: ${{ needs.source_plan.outputs.source_sha }}
+          SEED_PLANNED_IDENTITY: ${{ needs.source_plan.outputs.plan_sha256 }}
+          SEED_PRIOR_SUCCESS: ${{ job.status == 'success' }}
+          SEED_PRIOR_JOB_STATUS: ${{ job.status }}
+          SEED_PRIOR_STEPS: ${{ toJSON(steps) }}
+          SEED_CLI_OUTCOME: ${{ steps.cli.outcome }}
+          SEED_CLI_EXECUTED: ${{ steps.cli.outputs.executed }}
+          SEED_CLI_EXIT: ${{ steps.cli.outputs.exit_code }}
+          SEED_CLI_RUN_ID: ${{ steps.cli.outputs.run_id }}
+          SEED_CLI_RUN_ATTEMPT: ${{ steps.cli.outputs.run_attempt }}
+          SEED_CLI_FLOOR: ${{ steps.cli.outputs.job_floor }}
+          SEED_CLI_STARTED: ${{ steps.cli.outputs.started_at }}
+          SEED_CLI_FINISHED: ${{ steps.cli.outputs.finished_at }}
         run: |
           cd backend
           # Quoted heredoc, NOT `python -c "..."`. With python -c the script
@@ -733,9 +1002,12 @@ jobs:
           # A fixed age window would hide early jobs in a healthy 33–40 min run.
           jobs = session.query(IngestionJob).filter(
               IngestionJob.id > int(raw_floor),
-              IngestionJob.domain.in_(domains),
-          ).order_by(IngestionJob.id.desc()).all()
+          ).order_by(IngestionJob.id.desc()).limit(19).all()
 
+          from seeding.current_run import classify, environment_context, publish, publish_diagnostics
+          context = environment_context()
+          current = classify(jobs, plan, context)
+          publish_diagnostics(jobs, current, context)
           failed = 0
           print('\n--- Ingestion Job Results ---')
           missing = sorted(set(domains) - {job.domain for job in jobs})
@@ -753,7 +1025,11 @@ jobs:
               # and both of those modes complete cleanly — so a domain whose
               # headline figure never moved printed exactly like one that
               # refreshed. freshness.py declares five modes; this prints five.
-              if mode == 'fixture':
+              if job.domain == 'learning_hub' and mode == 'fixture' and (job.meta or {}).get('source_fallback_reason') == 'no_live_source':
+                  emoji = 'REFERENCE'
+              elif job.domain == 'county_officials' and mode == 'fixture' and job.items_processed == job.items_created == job.items_updated == 0:
+                  emoji = 'UNAVAILABLE'
+              elif mode == 'fixture':
                   emoji = 'STALE'
               elif mode == 'refused':
                   emoji = 'REFUSED'
@@ -770,6 +1046,11 @@ jobs:
               if reason:
                   src += f' ({reason})'
               print(f'[{emoji}] {job.domain}: {status} | created={job.items_created} updated={job.items_updated} processed={job.items_processed}{src}')
+              from seeding.current_run import source_diagnostics
+              diagnostic, _ = source_diagnostics(job)
+              if diagnostic is not None:
+                  import json
+                  print('SOURCE_DIAGNOSTICS_V1 '+json.dumps(diagnostic,separators=(',',':'),allow_nan=False))
               # Numerical writes and immutable source-byte retention are separate
               # outcomes. Preserve the observation contract without hiding gaps.
               from services.receipt_retention import safe_retention_summary
@@ -786,8 +1067,7 @@ jobs:
                   for reason, count in sorted(reasons.items()):
                       print(f'  [RECEIPT DIAGNOSTIC] {job.domain}: {phase} {reason}={count}')
               if job.errors:
-                  for err in job.errors[:3]:
-                      print(f'  ERROR: {str(err)[:200]}')
+                  print(f'  ERROR COUNT: {len(job.errors)}; inspect retained job evidence privately')
               if status not in {'completed', 'completed_with_errors'}:
                   failed += 1
 
@@ -842,15 +1122,21 @@ jobs:
               )
 
           session.close()
-          if failed or hollow or incomplete or not graded or missing:
+          # Eligibility is terminal output. An unknown exception in diagnostics,
+          # grading, session cleanup or logging must leave no eligible report.
+          if failed or hollow or not graded or missing:
+              current = dict(current, classification='unsafe', cache_eligible=False,
+                             refusals=sorted(set(current['refusals']) | {'job_result_refused'}))
+          if current['classification'] == 'unsafe' or failed or hollow or incomplete or not graded or missing:
               if failed:
                   print(f'\n{failed} domain(s) failed!')
               if hollow:
                   print(
-                      f'\n{len(hollow)} domain(s) served a fixture or recorded '
-                      'no provenance: this run refreshed nothing for them, so '
+                      f'\n{len(hollow)} domain(s) have unavailable, fallback or '
+                      'unrecorded source evidence: this run cannot establish current coverage, so '
                       'it is not a success.'
                   )
+              publish(current)
               sys.exit(1)
           source_gaps = [f for f in findings if f.level == 'WARN']
           ingestion_warnings = [j for j in jobs if j.status == IngestionStatus.COMPLETED_WITH_ERRORS or j.errors]
@@ -859,80 +1145,15 @@ jobs:
               print(f'\nRefresh completed with source gaps or ingestion warnings: {warning_count} warning(s). Review the PARTIAL, STALE and WARN results above.')
           else:
               print('\nAll domains completed successfully.')
+          publish(current)
           PY
-
-      # The save key must change whenever there is PROGRESS TO BANK, and not
-      # otherwise. The previous version hashed completed `*.pdf` FILENAMES
-      # only, which made the commonest kind of progress invisible: a night
-      # that downloads 27MB of a 48MB PDF and is then stopped by the seed
-      # budget leaves a `.part` file and the same *.pdf filename set it
-      # started with, so it recomputed the SAME key, collided with the entry
-      # already stored under it, and saved nothing.
-      #
-      # OBSERVED on five consecutive nightlies (runs 34799406076, 34921218282,
-      # 35048000013, 35174426953, 35299414702) — a stalled cache and, with it,
-      # a stalled download:
-      #
-      #   Sep 14  Cache saved with key: seed-pdf-cache-2026-w38-c72cd0b7025eea9d
-      #   Sep 15  Failed to save: Unable to reserve cache with key
-      #             seed-pdf-cache-2026-w38-c72cd0b7025eea9d
-      #   Sep 16  Failed to save: ... (same key)
-      #   Sep 17  Failed to save: ... (same key)
-      #   Sep 18  Failed to save: ... (same key)
-      #
-      #   Sep 15..18 each: "resuming from 27751154 bytes" — byte-identical,
-      #   four nights running. Real progress was made every one of those
-      #   nights and thrown away every one of those nights.
-      #
-      # The fingerprint now covers every file in the directory, so a grown
-      # `.part` and a refreshed TTL sidecar both move the key. See
-      # .github/scripts/pdf_cache_fingerprint.py for the rule and the reasons,
-      # and backend/tests/test_pdf_cache_banks_progress.py, which runs this
-      # step for real over a simulated week.
-      # The period arrives through `env:` rather than being interpolated into
-      # the script. A `${{ }}` inside a run: block is pasted in as text before
-      # the shell sees it, which is the same seam that broke every nightly from
-      # 2026-09-03 — and it makes test_workflow_inline_scripts.py skip the step
-      # instead of checking it.
-      - name: Fingerprint the PDF cache
-        if: always()
-        id: pdf_cache_state
-        env:
-          PDF_CACHE_PERIOD: ${{ steps.pdf_cache_period.outputs.period }}
-        run: |
-          python3 .github/scripts/pdf_cache_fingerprint.py \
-            backend/data/seeding/cache/pdfs \
-            "seed-pdf-cache-${PDF_CACHE_PERIOD}-"
-
-      # Two guards, both of which the old unconditional save needed and did
-      # not have:
-      #
-      # `files > 0` — never store an empty directory. `actions/cache` restores
-      # the NEWEST entry matching the prefix, so an empty snapshot saved by a
-      # run that died before its first download (this step is `if: always()`)
-      # would become that newest entry and delete every banked partial on the
-      # following night. Now that the key tracks content, that save would
-      # succeed rather than collide, so the hazard is real and new.
-      #
-      # `!= cache-matched-key` — when nothing changed, the restored entry is
-      # already exactly what we would upload. Skipping keeps the weekly-key
-      # frugality #175 was after, and keeps "Unable to reserve cache" out of
-      # the log, where it reads as a failure rather than as a no-op.
-      - name: Save downloaded source PDFs
-        # Keep the ordinary all-source cache bank intact after a one-source
-        # qualification; do not replace its latest snapshot with one PDF.
-        if: always() && env.SEED_PLAN_REACQUIRE_PENDING_BILLS_PDF != 'true' && env.SEED_PLAN_AUDITS_SOURCE_ACCEPTANCE == '' && steps.pdf_cache_state.outputs.files != '0' && steps.pdf_cache_state.outputs.key != steps.restore_pdfs.outputs.cache-matched-key
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
-        with:
-          path: backend/data/seeding/cache/pdfs
-          key: ${{ steps.pdf_cache_state.outputs.key }}
 
   # ══════════════════════════════════════════════════════════════════
   # Step 4: Data validation — verify tables have data and key metrics are sane
   # ══════════════════════════════════════════════════════════════════
   validate:
     name: Validate Data Integrity
-    needs: [migrate, seed]
+    needs: [migrate, seed, bootstrap]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -947,14 +1168,29 @@ jobs:
     if: ${{ !cancelled() && needs.migrate.result == 'success' && github.event.inputs.run_validation != 'false' }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+      - name: Record independent runner native diagnostics
+        run: >-
+          /usr/bin/env -i PATH=/usr/local/bin:/usr/bin:/bin LC_ALL=C.UTF-8
+          GITHUB_JOB="$GITHUB_JOB" /usr/bin/python3 -B
+          tools/nightly_acceptance_20261105/native_jobs.py runner-diagnostics
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
-          python-version: '3.12'
-      - run: pip install --upgrade pip && pip install -r backend/requirements.txt
+          python-version: '3.12.16'
+          architecture: x64
+          check-latest: false
+      - name: Require hosted native writer admission
+        env:
+          APPROVED_SHA: ${{ vars.INGESTION_WRITE_APPROVED_SHA }}
+          NIGHTLY_ENABLED: ${{ vars.INGESTION_NIGHTLY_ENABLED }}
+        run: python -I -B tools/nightly_acceptance_20261105/hosted_parser.py
       - name: Prepare verified writer TLS without copying credentials
-        run: python -I scripts/verification/github_database_qualify.py --prepare-writer-tls
+        run: python -I -B scripts/verification/github_database_qualify.py --prepare-writer-tls
       - name: Qualify this job's actual database connection
-        run: python -I scripts/verification/github_database_qualify.py --seed
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python -I -B scripts/verification/github_database_qualify.py --seed
 
       # Validation runs on a separate runner: the seed job's filesystem is
       # absent here. Restore its official byte cache, then prepare missing
@@ -968,6 +1204,8 @@ jobs:
             seed-pdf-cache-
 
       - name: Prepare reviewed retained county-source bytes
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           cd backend
           python -m seeding.source_cache \
@@ -975,6 +1213,8 @@ jobs:
             --receipt ../retained-source-cache-validation.json
 
       - name: Validate seeded data
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           cd backend
           python -c "
@@ -1100,14 +1340,11 @@ jobs:
                 3, is_warning=True)
 
           # ── Sanity checks: values in reasonable ranges ──
-          latest_pop = session.query(PopulationData).filter(
-              PopulationData.entity_id.is_(None)
-          ).first()
-          if latest_pop and (latest_pop.total_population < 40_000_000 or latest_pop.total_population > 70_000_000):
-              errors.append(f'National population out of range: {latest_pop.total_population}')
-              print(f'[FAIL] National population sanity check: {latest_pop.total_population}')
-          elif latest_pop:
-              print(f'[OK] National population sanity: {latest_pop.total_population:,}')
+          from seeding.staleness import national_population_sanity
+          population_ok, population_message = national_population_sanity(session)
+          if not population_ok:
+              errors.append(population_message)
+          print(('' if population_ok else '[FAIL] ') + population_message)
 
           latest_gdp = session.query(GDPData).filter(
               GDPData.entity_id.is_(None)
@@ -1176,8 +1413,8 @@ jobs:
   #      frontend/lib/revalidation/paths.json, the same file the route uses
   #      as its allowlist, so the two cannot disagree.
   # Both requests are HMAC-SHA256-signed with REVALIDATE_SECRET. Runs only
-  # after seed AND validate succeed on a non-dry run. Pages are never
-  # revalidated onto unvalidated data.
+  # after verified execution and integrity on a non-dry run. Known required
+  # source incompleteness stays red while accepted independent data can refresh.
   #
   # This job FAILS if the secret is missing, if either call does not
   # answer 200, or if any page path is rejected. Before #231 a missing
@@ -1185,19 +1422,84 @@ jobs:
   # stayed open for weeks while the run showed green.
   revalidate:
     name: Refresh API Cache and Pages
-    needs: [seed, validate]
-    if: success() && github.event.inputs.dry_run != 'true'
+    needs: [source_plan, migrate, seed, bootstrap, validate]
+    if: >-
+      ${{ !cancelled() &&
+          needs.source_plan.result == 'success' && needs.migrate.result == 'success' &&
+          needs.validate.result == 'success' &&
+          needs.source_plan.outputs.dry_run == 'false' &&
+          needs.source_plan.outputs.source_sha == github.sha &&
+          needs.migrate.outputs.source_sha == github.sha &&
+          needs.migrate.outputs.schema_head == 'a756b20a0001' &&
+          needs.seed.outputs.source_sha == github.sha &&
+          needs.seed.outputs.schema_head == needs.migrate.outputs.schema_head &&
+          needs.seed.outputs.plan_sha256 != '' &&
+          needs.seed.outputs.plan_sha256 == needs.source_plan.outputs.plan_sha256 &&
+          needs.seed.outputs.report_version == '1' && needs.seed.outputs.cache_eligible == 'true' &&
+          ((needs.seed.result == 'success' && needs.seed.outputs.classification == 'complete') ||
+           (needs.seed.result == 'failure' && needs.seed.outputs.classification == 'required_source_incomplete')) &&
+          ((needs.source_plan.outputs.bootstrap == 'true' && needs.bootstrap.result == 'success') ||
+           (needs.source_plan.outputs.bootstrap == 'false' && needs.bootstrap.result == 'skipped')) }}
+    outputs:
+      backend: ${{ steps.invalidate.outputs.acknowledged }}
+      pages: ${{ steps.pages.outputs.acknowledged }}
+      protocol: ${{ steps.invalidate.outputs.protocol }}
+      source_sha: ${{ steps.invalidate.outputs.source_sha }}
+      plan_sha256: ${{ steps.invalidate.outputs.plan_sha256 }}
+      run_id: ${{ steps.invalidate.outputs.run_id }}
+      run_attempt: ${{ steps.invalidate.outputs.run_attempt }}
+      evidence_sha256: ${{ steps.pages.outputs.evidence_sha256 || steps.invalidate.outputs.evidence_sha256 }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
       REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
       API_BASE_URL: ${{ vars.API_BASE_URL || 'https://audit-app-4pwa.onrender.com' }}
       REVALIDATE_URL: ${{ vars.REVALIDATE_URL || 'https://www.auditgava.com/api/revalidate' }}
+      REFRESH_NEEDS: ${{ toJSON(needs) }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
-          sparse-checkout: frontend/lib/revalidation/paths.json
+          sparse-checkout: |
+            frontend/lib/revalidation/paths.json
+            .github/scripts/seed_notifications.cjs
+            backend/seeding/current_run.py
+            scripts/verification/nightly_workflow/refresh.py
+            scripts/verification/nightly_workflow/evidence.cjs
           sparse-checkout-cone-mode: false
+
+      - name: Verify exact refresh eligibility before HTTP
+        env:
+          REFRESH_NEEDS: ${{ toJSON(needs) }}
+        run: |
+          python3 <<'PY'
+          import json, os, re
+          def require(ok):
+              if not ok:
+                  raise SystemExit('Exact current-run refresh eligibility refused')
+          needs = json.loads(os.environ['REFRESH_NEEDS'])
+          require(type(needs) is dict and set(needs) == {'source_plan','migrate','seed','bootstrap','validate'})
+          require(all(needs[k].get('result') == 'success' for k in ('source_plan','migrate','validate')))
+          plan, admitted, seed = (needs[k]['outputs'] for k in ('source_plan','migrate','seed'))
+          require(plan.get('dry_run') == 'false' and seed.get('cache_eligible') == 'true' and seed.get('report_version') == '1')
+          sha, identity = os.environ['GITHUB_SHA'], plan.get('plan_sha256')
+          require(re.fullmatch('[0-9a-f]{40}',sha) is not None and type(identity) is str and re.fullmatch('[0-9a-f]{64}',identity) is not None)
+          require(all(o.get('source_sha') == sha for o in (plan,admitted,seed)))
+          require(seed.get('plan_sha256') == identity and admitted.get('schema_head') == seed.get('schema_head') == 'a756b20a0001')
+          classification = seed.get('classification')
+          require((needs['seed']['result'],classification) in (('success','complete'),('failure','required_source_incomplete')))
+          require((plan.get('bootstrap'),needs['bootstrap']['result']) in (('true','success'),('false','skipped')))
+          report = json.loads(seed['report'])
+          require(type(report) is dict and type(report.get('version')) is int and report['version'] == 1)
+          require(report.get('source_sha') == sha and report.get('plan_sha256') == identity and report.get('schema_head') == 'a756b20a0001')
+          require(report.get('run_id') == os.environ['GITHUB_RUN_ID'] and report.get('run_attempt') == os.environ['GITHUB_RUN_ATTEMPT'])
+          require(report.get('cache_eligible') is True and report.get('dry_run') is False and report.get('cli_executed') is True)
+          require(type(report.get('cli_exit')) is int and report['cli_exit'] == 0 and report.get('cli_exit_zero') is True)
+          require(report.get('classification') == classification and report.get('bootstrap_selected') is (plan['bootstrap'] == 'true'))
+          domains = json.loads(plan['domains'])
+          require(type(domains) is list and 1 <= len(domains) <= 18 and report.get('selected_domains') == domains)
+          print('Exact current-run phase identities verified; checking the typed inventory.')
+          PY
+          node .github/scripts/seed_notifications.cjs --verify-refresh
 
       - name: Require the signing secret
         run: |
@@ -1207,48 +1509,18 @@ jobs:
           fi
 
       - name: Invalidate the API's response caches
+        id: invalidate
         run: |
-          BODY=$(jq -cn --argjson ts "$(date +%s)" --arg reason "seed run ${{ github.run_id }}" '{ts: $ts, reason: $reason}')
-          SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$REVALIDATE_SECRET" -r | cut -d' ' -f1)
-          # Render can be slow to answer the first request after idle, so allow retries on connection errors only.
-          HTTP=$(curl -sS --retry 3 --retry-connrefused --max-time 60 \
-            -o /tmp/invalidate_response.json -w '%{http_code}' \
-            -X POST "$API_BASE_URL/api/v1/system/cache/invalidate" \
-            -H "content-type: application/json" \
-            -H "x-revalidate-signature: $SIG" \
-            -d "$BODY")
-          cat /tmp/invalidate_response.json; echo ""
-          if [ "$HTTP" != "200" ] || ! jq -se 'length == 1 and .[0].invalidated == true' /tmp/invalidate_response.json > /dev/null; then
-            echo "::error::API cache invalidation failed (HTTP $HTTP). Pages revalidated now would be rebuilt from stale API responses, so stopping here."
-            exit 1
-          fi
-          echo "API caches cleared: $(jq -c '{redis, local: .local.cleared_entries, pid}' /tmp/invalidate_response.json)"
+          python3 scripts/verification/nightly_workflow/refresh.py backend \
+            --state "$RUNNER_TEMP/nightly-refresh-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT.json" \
+            --evidence "$RUNNER_TEMP/nightly-refresh-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT.jsonl"
 
       - name: Revalidate the prerendered pages
+        id: pages
         run: |
-          BODY=$(jq -c '{paths: .paths}' frontend/lib/revalidation/paths.json)
-          SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$REVALIDATE_SECRET" -r | cut -d' ' -f1)
-          HTTP=$(curl -sS --max-time 60 -o /tmp/revalidate_response.json -w '%{http_code}' \
-            -X POST "$REVALIDATE_URL" \
-            -H "content-type: application/json" \
-            -H "x-revalidate-signature: $SIG" \
-            -d "$BODY")
-          cat /tmp/revalidate_response.json; echo ""
-          if [ "$HTTP" != "200" ]; then
-            echo "::error::Revalidation webhook returned HTTP $HTTP"
-            exit 1
-          fi
-          if ! jq -se --argjson sent "$(printf '%s' "$BODY" | jq '.paths')" '
-            length == 1 and (.[0] |
-            (.rejected | type) == "array" and .rejected == [] and
-            (.revalidated | type) == "array" and
-            (.revalidated | all(type == "string")) and
-            (.revalidated | sort) == ($sent | sort))
-          ' /tmp/revalidate_response.json > /dev/null; then
-            echo "::error::Revalidation receipt must confirm exactly the requested page paths with no rejections."
-            exit 1
-          fi
-          echo "Revalidated $(jq '.revalidated | length' /tmp/revalidate_response.json) page paths."
+          python3 scripts/verification/nightly_workflow/refresh.py pages \
+            --state "$RUNNER_TEMP/nightly-refresh-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT.json" \
+            --evidence "$RUNNER_TEMP/nightly-refresh-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT.jsonl"
 
   # ══════════════════════════════════════════════════════════════════
   # Step 6: Summary and notifications
@@ -1295,11 +1567,18 @@ jobs:
 
       - name: Create issue on URL health-check failure
         if: needs.healthcheck.outputs.has_failures == 'true'
+        env:
+          HEALTH_REPORT: ${{ needs.healthcheck.outputs.report }}
+          HEALTH_PLAN: ${{ needs.source_plan.outputs.plan_sha256 }}
+          HEALTH_INVENTORY: ${{ needs.healthcheck.outputs.inventory_sha256 }}
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
         with:
           script: |
             // Parse the health-check report to build a readable table
-            const report = `${{ needs.healthcheck.outputs.report }}`;
+            const report = process.env.HEALTH_REPORT || '';
+            const plan = process.env.HEALTH_PLAN, inventory = process.env.HEALTH_INVENTORY;
+            if (![plan,inventory].every(x => typeof x === 'string' && /^[0-9a-f]{64}$/.test(x))) throw new Error('Health issue scope unverified');
+            const scopeMarker = `<!-- seed-health-scope:${plan}:${inventory} -->`;
             const lines = report.trim().split('\n').filter(l => l.trim());
 
             let tableRows = '';
@@ -1319,7 +1598,8 @@ jobs:
             const existingIssues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              labels: 'data-source-down',
+              labels: 'data-source-down,automated',
+              per_page: 100,
               state: 'open',
             });
 
@@ -1327,8 +1607,9 @@ jobs:
             const title = `⚠️ Data source(s) unreachable: ${failedSources.join(', ')} — ${today}`;
             const body = [
               `## Data Source Health Check Failed`,
+              scopeMarker,
               ``,
-              `The nightly seeding pipeline detected **${failedSources.length} critical** data source(s) returning errors.`,
+              `The selected plan has **${failedSources.length} critical** source diagnostic failure(s) or unknown coverage; inspect each outcome below.`,
               ``,
               `### Affected Sources`,
               ``,
@@ -1337,7 +1618,7 @@ jobs:
               tableRows,
               ``,
               `### What This Means`,
-              `- Source probes run independently of database admission; check the pipeline outcome for writer execution`,
+              `- Probes cover the selected plan component endpoints and discovered Treasury editions; reachability is separate from extraction, edition acceptance and publication`,
               `- Affected domains may have **stale or missing data**`,
               `- Government websites (OAG, COB, CBK) occasionally restructure their URLs`,
               `- External APIs (World Bank, IMF) may have temporary outages`,
@@ -1368,9 +1649,19 @@ jobs:
               `*Auto-generated by the Database Seeding & Data Refresh workflow*`,
             ].join('\n');
 
-            // If there's already an open issue with this label, comment on it instead
+            // Preserve unresolved scope markers: recovery for A cannot clear B.
+            // Multiple distinct scopes require review; no blanket auto-close.
+            if (!Array.isArray(existingIssues.data) || existingIssues.data.length > 1) throw new Error('Health incident inventory ambiguous');
             if (existingIssues.data.length > 0) {
               const existing = existingIssues.data[0];
+              const previousBody = typeof existing.body === 'string' ? existing.body : '';
+              const legacy = /<!-- seed-health-scope:[0-9a-f]{64}:[0-9a-f]{64} -->/.test(previousBody)
+                ? '' : '\n<!-- seed-health-scope:legacy-unverified -->';
+              if (!previousBody.includes(scopeMarker)) {
+                if (previousBody.length > 55000) throw new Error('Health incident scope history exceeds bound');
+                await github.rest.issues.update({owner:context.repo.owner,repo:context.repo.repo,
+                  issue_number:existing.number,body:previousBody+legacy+'\n'+scopeMarker});
+              }
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -1393,12 +1684,18 @@ jobs:
         # `unprobed == '0'` as well: a run that ran out of budget before
         # reaching a source has not shown that source to be reachable.
         if: needs.healthcheck.result == 'success' && needs.healthcheck.outputs.critical_reachable == 'true' && needs.healthcheck.outputs.unprobed == '0'
+        env:
+          HEALTH_PLAN: ${{ needs.source_plan.outputs.plan_sha256 }}
+          HEALTH_INVENTORY: ${{ needs.healthcheck.outputs.inventory_sha256 }}
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
         with:
           script: |
             // All critical sources were reachable this run — close any
             // open data-source-down issues so a transient WAF block (415)
             // that self-heals overnight doesn't linger as an open bug.
+            const plan = process.env.HEALTH_PLAN, inventory = process.env.HEALTH_INVENTORY;
+            if (![plan,inventory].every(x => typeof x === 'string' && /^[0-9a-f]{64}$/.test(x))) throw new Error('Health recovery scope unverified');
+            const scopeMarker = `<!-- seed-health-scope:${plan}:${inventory} -->`;
             const open = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -1407,10 +1704,15 @@ jobs:
               // carries data-source-down + automated. A human-filed
               // investigative issue using only data-source-down is spared.
               labels: 'data-source-down,automated',
+              per_page: 100,
               state: 'open',
             });
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            if (!Array.isArray(open.data) || open.data.length >= 100) throw new Error('Health recovery issue inventory ambiguous');
             for (const issue of open.data) {
+              if (typeof issue.body !== 'string' || issue.body.includes('<!-- seed-health-scope:legacy-unverified -->')) continue;
+              const markers = issue.body.match(/<!-- seed-health-scope:[0-9a-f]{64}:[0-9a-f]{64} -->/g) || [];
+              if (new Set(markers).size !== 1 || markers[0] !== scopeMarker) continue;
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,

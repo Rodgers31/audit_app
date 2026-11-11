@@ -1,0 +1,7 @@
+{
+  "partitions": [
+    {"unit":"pooler_clients","route_ref":"0000000000000000000000000000000000000000000000000000000000000001","limit":200,"measured_peak":null,"other_population":null,"accepted_reserve":null},
+    {"unit":"per_login_database_backends","route_ref":"0000000000000000000000000000000000000000000000000000000000000002","limit":15,"measured_peak":null,"other_population":null,"accepted_reserve":null},
+    {"unit":"physical_pg","route_ref":"0000000000000000000000000000000000000000000000000000000000000003","limit":60,"measured_peak":null,"other_population":null,"accepted_reserve":null}
+  ]
+}

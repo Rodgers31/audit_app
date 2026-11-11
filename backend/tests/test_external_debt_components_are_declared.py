@@ -106,11 +106,11 @@ IDS_2024 = {
 }
 
 
-def _record(area_name, area_id, series, value):
+def _record(area_name, area_id, series, value, year=2024):
     return {
         "variable": [
             {"concept": "Country", "id": "KEN", "value": "Kenya"},
-            {"concept": "Time", "id": "YR2024", "value": "2024"},
+            {"concept": "Time", "id": f"YR{year}", "value": str(year)},
             {"concept": "Series", "id": series, "value": series},
             {"concept": "Counterpart-Area", "id": area_id, "value": area_name},
         ],
@@ -147,9 +147,18 @@ class FakeIds:
             )
         series = url.split("/series/")[1].split("/")[0]
         year = int(url.split("/time/YR")[1].split("?")[0])
-        rows = self.data.get(series, []) if year in self.years else []
+        rows = self.data.get(series) if year in self.years else None
+        if not rows:
+            rows = [("World", "WLD", None)]
         return _Resp(
-            {"source": {"data": [_record(n, i, series, v) for n, i, v in rows]}},
+            {
+                "page": 1, "pages": 1, "per_page": 400, "total": len(rows),
+                "lastupdated": "2025-11-01",
+                "source": {
+                    "id": "6", "name": "International Debt Statistics",
+                    "data": [_record(n, i, series, v, year) for n, i, v in rows],
+                },
+            },
             url,
         )
 

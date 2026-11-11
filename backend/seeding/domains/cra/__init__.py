@@ -4,7 +4,8 @@ from datetime import datetime, timezone
 from ...freshness import mark_live, mark_refused
 from ...registries import register_domain
 from ...types import DomainRunResult
-from . import parser, source, writer
+from .decoder import decode_publication
+from . import source, writer
 
 
 @register_domain("cra")
@@ -15,7 +16,7 @@ def run(session, settings, context):
             raise source.CraSourceRefused("CRA ingestion is disabled; explicit reviewed-source opt-in required")
         writer.require_ownership(session, context, lock=False)
         payload, fetched_at = source.fetch_publication()
-        parsed = parser.parse_publication(payload)
+        parsed = decode_publication(payload)
         stats = writer.persist(session, context, payload, parsed, fetched_at)
     except Exception as exc:
         # CraSourceRefused messages are fixed, bounded diagnostics; other errors

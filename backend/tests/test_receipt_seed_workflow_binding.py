@@ -1,4 +1,4 @@
-"""Actual YAML job scope and resolved env -> Settings -> adapter behavior."""
+"""Actual YAML seeder scope and resolved env -> Settings -> adapter behavior."""
 from pathlib import Path
 import re
 
@@ -13,9 +13,13 @@ from test_supabase_receipt_store import BUCKET, KEY, URL
 WORKFLOW = Path(__file__).resolve().parents[2] / ".github/workflows/seed.yml"
 
 
-def job_environment(variables, secrets):
+def seeder_environment(variables, secrets):
     workflow = yaml.safe_load(WORKFLOW.read_text())
-    environment = workflow["jobs"]["seed"]["env"]
+    job = workflow["jobs"]["seed"]
+    cli = next(step for step in job["steps"] if step.get("id") == "cli")
+    receipt_keys = {name: value for name, value in cli["env"].items() if name.startswith("RECEIPT_")}
+    assert not set(receipt_keys).intersection(job["env"])
+    environment = {**job["env"], **receipt_keys}
     resolved = {}
     for name, expression in environment.items():
         assert isinstance(expression, str), (name, expression)
@@ -33,19 +37,19 @@ def job_environment(variables, secrets):
     return workflow, resolved
 
 
-def test_job_environment_keeps_literal_tls_setting():
-    _, environment = job_environment({}, {})
+def test_seeder_environment_keeps_literal_tls_setting():
+    _, environment = seeder_environment({}, {})
     assert environment['AUDIT_GITHUB_DATABASE_TLS'] == '1'
 
 
-def test_job_environment_still_refuses_unrecognized_expressions(tmp_path, monkeypatch):
+def test_seeder_environment_still_refuses_unrecognized_expressions(tmp_path, monkeypatch):
     workflow = yaml.safe_load(WORKFLOW.read_text())
     workflow['jobs']['seed']['env']['UNRECOGNIZED'] = '${{ unsupported.expression }}'
     path = tmp_path / 'workflow.yml'
     path.write_text(yaml.safe_dump(workflow))
     monkeypatch.setitem(globals(), 'WORKFLOW', path)
     with pytest.raises(AssertionError, match='UNRECOGNIZED'):
-        job_environment({}, {})
+        seeder_environment({}, {})
 
 
 def apply_environment(monkeypatch, environment):
@@ -58,7 +62,7 @@ def test_unset_workflow_config_retains_local_mode_without_secret_lookup(
 ):
     from config import secrets
 
-    workflow, environment = job_environment({}, {})
+    workflow, environment = seeder_environment({}, {})
     assert environment["SEED_RECEIPT_STORAGE_BACKEND"] == "local"
     assert environment["SEED_RECEIPT_MAX_BYTES"] == ""
     assert environment["SEED_RECEIPT_PART_MAX_BYTES"] == ""
@@ -91,7 +95,7 @@ def test_supabase_workflow_variables_reach_actual_settings_and_adapter(
         "SEED_RECEIPT_PART_MAX_BYTES": "512",
         "SEED_RECEIPT_STORAGE_TIMEOUT_SECONDS": "12",
     }
-    _, environment = job_environment(variables, {"RECEIPT_SUPABASE_SECRET_KEY": KEY})
+    _, environment = seeder_environment(variables, {"RECEIPT_SUPABASE_SECRET_KEY": KEY})
     apply_environment(monkeypatch, environment)
     monkeypatch.setattr(secrets, "get_secret", lambda name: environment[name])
     settings = SeedingSettings(storage_path=tmp_path)
@@ -110,7 +114,7 @@ def test_supabase_workflow_variables_reach_actual_settings_and_adapter(
 
 @pytest.mark.parametrize("cap", ["true", "0", "-1", "1.0", "1e3", "NaN", "33554433"])
 def test_workflow_hostile_part_caps_refuse_settings(monkeypatch, cap):
-    _, environment = job_environment({"SEED_RECEIPT_PART_MAX_BYTES": cap}, {})
+    _, environment = seeder_environment({"SEED_RECEIPT_PART_MAX_BYTES": cap}, {})
     apply_environment(monkeypatch, environment)
     with pytest.raises(ValueError):
         SeedingSettings()
@@ -121,7 +125,7 @@ def test_selected_supabase_without_workflow_cap_refuses_before_secret_lookup(
 ):
     from config import secrets
 
-    _, environment = job_environment(
+    _, environment = seeder_environment(
         {
             "SEED_RECEIPT_STORAGE_BACKEND": "supabase",
             "SEED_RECEIPT_SUPABASE_URL": URL,
@@ -141,13 +145,13 @@ def test_selected_supabase_without_workflow_cap_refuses_before_secret_lookup(
     assert not (tmp_path / "response-receipts").exists()
 
 
-def test_r2_workflow_binding_and_job_only_secrets(tmp_path, monkeypatch):
+def test_r2_workflow_binding_and_cli_only_secrets(tmp_path, monkeypatch):
     from config import secrets
     from services.r2_receipt_store import R2ReceiptStore
     from test_r2_receipt_store import ACCOUNT, R2_BUCKET, ACCESS, SECRET, CONTROL
     variables = {"SEED_RECEIPT_STORAGE_BACKEND": "r2", "SEED_RECEIPT_R2_ACCOUNT_ID": ACCOUNT, "SEED_RECEIPT_R2_BUCKET": R2_BUCKET, "SEED_RECEIPT_R2_JURISDICTION": "default", "SEED_RECEIPT_MAX_BYTES": "1024", "SEED_RECEIPT_PART_MAX_BYTES": "512", "SEED_RECEIPT_STORAGE_TIMEOUT_SECONDS": "12"}
     credentials = {"RECEIPT_R2_ACCESS_KEY_ID": ACCESS, "RECEIPT_R2_SECRET_ACCESS_KEY": SECRET, "RECEIPT_R2_CONTROL_TOKEN": CONTROL}
-    workflow, environment = job_environment(variables, credentials)
+    workflow, environment = seeder_environment(variables, credentials)
     apply_environment(monkeypatch, environment)
     monkeypatch.setattr(secrets, "get_secret", lambda name: environment[name])
     settings = SeedingSettings(storage_path=tmp_path)
@@ -157,6 +161,8 @@ def test_r2_workflow_binding_and_job_only_secrets(tmp_path, monkeypatch):
     assert (store.max_bytes, store.part_max_bytes, store._timeout) == (1024, 512, 12)
     for name in credentials:
         assert name not in workflow.get("env", {})
+        for step in workflow["jobs"]["seed"]["steps"]:
+            assert (name in step.get("env", {})) == (step.get("id") == "cli")
         for job_name, job in workflow["jobs"].items():
             if job_name != "seed": assert name not in str(job)
 

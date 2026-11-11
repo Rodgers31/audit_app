@@ -1,0 +1,72 @@
+# Ingestion runtime and acceptance preparation, 5 November 2026
+
+This packet supplies an ingestion-only Python artifact lock and local evidence tools. It makes no production adoption, source-authority, deployment, CI or schedule claim. The fixed review baseline is `0315cd8220e2a3ede99dbf92389dd4769f84aa47`, tree `cda4f46b2ae784bb1635d457e6fc69f2c06dd959`. Serving requirements and images are unchanged.
+
+`backend/ingestion-runtime.lock.json` locks 86 distributions to exact official Linux x86_64 wheels and SHA256 values. It retains the complete observed 5 November seed package set, including pandas3.1.1, SQLAlchemy2.0.57, Pydantic2.14.2, FastAPI0.156.8, httpx0.28.1, pdfplumber0.11.10, pypdfium2-5.14.0 and pip26.3. Pip resolved the complete graph under the unchanged backend requirements/security constraints. The raw report and wheel artifacts are retained in the runtime lane delivery. No package manager migration or application major upgrade is introduced. Hash checking follows [pip secure installs](https://pip.pypa.io/en/stable/topics/secure-installs/); platform-specific acquisition follows [pip download](https://pip.pypa.io/en/stable/cli/pip_download/).
+
+The supported candidate interpreter is CPython3.12.16/Linux x86_64, matching the repository's `.python-version` and cached image. The original nightly actually ran3.12.15 on Ubuntu24.04.5, runner image20261025.353.1; this patch change requires qualification. Native identities observed in the original job were tesseract/libtesseract5 `5.3.4-1build5`, poppler-utils/libpoppler134 `24.02.0-1ubuntu9.11`, poppler-data `0.4.12-1`, and eng/osd trained-data packages `1:4.1.0-2`. Those logs do not contain installed binary hashes or a complete native dependency census. The cached qualification image is Debian13.7, tesseract5.5.0, with no Poppler/JVM. It is **not** native nightly parity. At the original packet preparation, no native image was pulled/built, apt-installed or falsely sealed as equivalent. A later [controlled native engineering candidate](native/README.md) now supplies a frozen local Debian rootfs and two-install/corpus evidence. The separately sealed104-artifact Git candidate has not built or qualified after a bounded shared-resource wait. Native advisory disposition, CPU portability, hosted distribution and final approved writer profiles remain held; this is not Ubuntu/native production parity.
+
+The existing minimum ranges/security floors remain compatibility limits, not tested minimum environments. The candidate lock is the only package set this lane qualifies; all relevant current/minimum source controls and final combined source must execute before release. Updating the lock requires a new official resolution, wheel checks, dependency/advisory review, runtime/parser tests and independent review. Hash integrity is not an advisory scan.
+
+## Runtime invocation seam for the workflow owner
+
+Use an owned external scratch directory, CPython3.12.16 and the repository root. Do not run these commands against serving/developer environments. `acquire` only reads the sealed official wheel URLs with normal TLS; `install` only consumes the exact offline wheelhouse and creates a fresh external venv.
+
+```sh
+python -B tools/nightly_acceptance_20261105/runtime.py acquire --wheelhouse "$INGESTION_SCRATCH/wheels"
+python -B tools/nightly_acceptance_20261105/runtime.py wheels --wheelhouse "$INGESTION_SCRATCH/wheels"
+python -B tools/nightly_acceptance_20261105/runtime.py install --wheelhouse "$INGESTION_SCRATCH/wheels" --venv "$INGESTION_SCRATCH/runtime"
+"$INGESTION_SCRATCH/runtime/bin/python" -B tools/nightly_acceptance_20261105/runtime.py verify --native-profile "$REVIEWED_NATIVE_PROFILE"
+```
+
+The last command must succeed against an independently reviewed `reviewed-ingestion-native-v1` profile containing the complete `native` object from an approved runtime probe. No such profile is supplied here. Omitting it explicitly reports `PYTHON_ONLY_NATIVE_PENDING`; that output cannot admit a source writer or certify native/cache/proposal equivalence. The native object includes OS release hash, full dpkg inventory, executable/library hashes, trained-data hashes and language census. Optional Java absence remains visible; qualify tabula/JVM paths separately if selected. Use the complete returned runtime identity, its lock hash and parser/receipt code hashes in cache/proposal evidence. A code SHA or a version string alone cannot qualify reuse.
+
+Wiring belongs to the workflow lane. Replace every ambient range install/`pip --upgrade` in source_plan, validation/bootstrap, seed and refresh readers with this seam only after exact platform/native qualification. Keep existing job/step/CLI budgets and all OFF controls. Refuse a wheelhouse with extra/missing/tampered wheels, a manifest mismatch, a nonexact interpreter, dependency conflicts or extra distributions. Do not reuse the production Docker build as an ingestion-lock installer.
+
+## Local execution recorder
+
+`record.py` executes explicit pytest selectors in an allowlisted child environment and requires an independently retained nonempty exact node-ID inventory. No production/provider credentials, ambient pytest plugins, proxies or loader variables are forwarded. It binds every source file (including ignored/untracked files other than Git metadata), explicit external corpus bytes, Git HEAD/tree/status, recorder/helpers, command, actual phase outcomes, JUnit and logs. Before/after source/runtime drift fails verification even when the child exits0. Output must be a fresh external directory; existing paths, measured inputs, traversal and symlink destinations refuse before launch. An outer bounded OS sandbox must deny production network and restrict writes for target code. The tool does not itself provide an OS sandbox.
+
+```sh
+"$QUALIFICATION_VENV/bin/python" -B tools/nightly_acceptance_20261105/record.py --repo "$EXACT_COMBINED_CHECKOUT" --output "$EVIDENCE_NEW_DIR" --expected "$EXACT_NODE_IDS_JSON" --runtime-lock "$EXACT_COMBINED_CHECKOUT/backend/ingestion-qualification.lock.json" --corpus "$ORIGINAL_RETAINED_CORPUS" tests/test_selected.py
+python -B tools/nightly_acceptance_20261105/verify.py "$EVIDENCE_NEW_DIR/execution.json" --repo "$EXACT_COMBINED_CHECKOUT"
+python -O -B tools/nightly_acceptance_20261105/verify.py "$EVIDENCE_NEW_DIR/execution.json" --repo "$EXACT_COMBINED_CHECKOUT"
+```
+
+`backend/ingestion-qualification.lock.json` is a separate complete95-distribution profile: all86 production artifact rows remain byte-identical, plus nine test distributions resolved from `backend/ingestion-qualification.in`. Install it into a separate fresh qualification venv with `--lock backend/ingestion-qualification.lock.json` and the exact95-wheel qualification wheelhouse. Invoke the recorder from that venv and pass that qualification lock to `--runtime-lock`. Production installation continues to use only86 packages. The verifier anchors both complete lock identities; pip-only/partial/modified locks refuse even when manifest hashes match. Optional `runtime=null` is harness-only evidence and cannot satisfy locked-runtime acceptance. Backend integration plugin/owned-PG settings still need their exact final combined invocation and safe fixture configuration; these self-tests do not certify that cohort.
+
+The recorder requires zero child exit, one setup/call/teardown per expected test, matching nonempty JUnit inventory, no skipped/xfail/XPASS outcomes, and positive owned process-group absence/leader reaping. A timeout, missing selector/import, teardown error, absent artifact or non-strict XPASS is failure. Logs are not scanned for the word “passed”. Process-group proof is local only; it does not establish serving-host orphan adoption. External containers/DB schemas require separate owner-specific cleanup receipts. Never count collection-only execution as a pass.
+
+## Acceptance ledger and dependency barrier
+
+`contract.json` hashes the original raw GitHub evidence and lists every required gate. Its fifteen-domain inventory comes from ordinary run41953765083, attempt1. Daily02UTC is now8p.m.CST; weeklySunday03UTC is nowSaturday9p.m.CST. No cron or timeout change is proposed.
+
+```sh
+python -B tools/nightly_acceptance_20261105/ledger.py prepare "$NEW_LEDGER_JSON" --repo "$EXACT_COMBINED_CHECKOUT" --corpus "$ORIGINAL_RETAINED_CORPUS"
+python -O -B tools/nightly_acceptance_20261105/ledger.py check-prepared "$NEW_LEDGER_JSON"
+```
+
+The preparer produces only pending states and refuses edited pass assertions. Retain each later stage's original execution/source/hosted evidence beside it; do not hand-edit prepared ledgers into acceptance. The operational importer must be completed against immutable lane contracts and independently reviewed after their delivery. This intentionally cannot issue an operational-success verdict from local fixtures.
+
+Before combined qualification, obtain the workflow/fiscal/OAG/transport immutable commits, trees, full-file hashes, reviewed reports and source/adoption limits. Compose them without rewriting inherited PR history. Bind the complete consumed test/data/PDF/corpus bytes after publishing packet files. Execute all changed original/refusal families in normal and optimized Python, all36 actual-PG source cases and workflow semantics separately. No old694 count carries forward. Preserve CLI/source-plan/run/attempt/admitted SHA/schema/PG role/RLS/ACL/ownership guards. Do not substitute SQLite or inert transport/document doubles for actual PostgreSQL or official source authority.
+
+Later full15/replay evidence must bind exact plan digest and domains, each current CLI/PG job ID, terminal source-component coverage and period/vintage, schema/admission, complete runtime/native identities, original official acquisition plus retained-byte readback, approved fiscal/audit deltas and backend-worker acknowledgments before exact page acknowledgments under HMAC. Known fiscal/audit holds stay visible; an unknown/CoG-unavailable/empty/partial source cannot qualify full recovery. Warm/cold cache, DNS interruption, bad TLS, reconciliation holds and interrupted cleanup must execute. One narrow manual run cannot substitute for the comparable full15 run/replay or ordinary scheduled daily and distinct weekly bootstrap/native opt-in observations.
+
+Release, source adoption, ingestion pin and actual ordinary-run observation remain separate later authority. Publishing, uploads, workers, financial generation, shadow master, generation hooks and automatic approval/scheduling/publishing remain OFF/held. No hosted dispatch, production source acquisition, upload, adoption, cache invalidation, merge or deployment is authorized by these tools. Any failed identity, source authority, dependency/native parity, cleanup, workflow compiler, CLI/PG completion or acknowledgment gate blocks acceptance. The later release packet must name the exact rollback commit/runtime/pin and data-state unwinding rather than treating a code revert as data rollback.
+
+## Retained operational envelope and replay importer
+
+`operational.py` is an offline typed shared-envelope importer, separate from source-authority acceptance. Its `nightly-operational-envelope-v1` input binds full commit/tree/clean consumed source inventory, admission SHA/schema/run/attempt, sealed production runtime/native identities, canonical original plan digest and fifteen unique domain/job IDs, actual CLI/PG inventory, component period/basis/units and retained originals/readback byte equality. It also binds HMAC request/signature/response originals and requires the complete backend worker census before frontend event ordering. It refuses malformed/empty/stale/partial/unknown/duplicate/bool/nonfinite input and changed originals. All referenced paths must be regular retained files below the envelope directory.
+
+```sh
+python -B tools/nightly_acceptance_20261105/operational.py "$ORIGINAL_ENVELOPE_JSON"
+python -O -B tools/nightly_acceptance_20261105/operational.py "$ORIGINAL_ENVELOPE_JSON" --replay "$SAME_SOURCE_REPLAY_JSON"
+```
+
+The replay must have a distinct run/attempt but identical source/tree/admission/schema/plan/runtime/component/original-acquisition authority bytes. It never contacts a host or accepts itself as source review. A successful import says only `EVIDENCE_ENVELOPE_BOUND_AUTHORITY_AND_OPERATIONAL_REVIEW_PENDING`; it does not verify HMAC cryptography, original issuer authority, fiscal reconciliation, actual PG observation semantics, cleanup or backend response contents. Those original lane-specific verifiers and approval witnesses are mandatory separate gates. The document-envelope tests use deliberately inert records and cannot establish native/source/hosted acceptance. Weekly plans with additional opt-ins require their separate combined adapter; the full15 importer refuses a widened domain inventory.
+
+Installed payload verification additionally binds the trusted wheel files in `backend/ingestion-payloads.lock.json`, including generated console wrappers derived from the locked pip template and original wheel script bodies with the exact owned interpreter. It rejects extra files even if mutable RECORD lists them, missing/tampered raw RECORD entries, site-package symlinks and precompiled site bytecode. The installer first acquires locked pip offline, then reinstalls all pins with that installer so ensurepip does not choose the final wrapper template. `-B` prevents writes but does not by itself prevent reading existing bytecode; direct inventory includes consumed caches and qualification refuses them. Standard-library bytes are fingerprinted separately. Nonruntime C headers remain bound to their wheel artifact and are not an OCR/parser-runtime substitute.
+
+## Local verification scope
+
+The tooling suite contains106 executed cases (normal and optimized Python), including real failed/skipped/non-strict-XPASS/missing-selector/timeout child controls, strict disk readback and payload mutation/restore. The delivery records exact raw JUnit/inventories and final frozen source hashes. It also records two independent offline production installs at the same logical path and their complete identity comparison, plus the separate95-package qualification environment. None of those cases executes the final combined fiscal/OAG/transport/workflow application cohort, actual PostgreSQL36-case source family, native Ubuntu/Poppler parity or any production run. Those named gates remain pending; historical or overlapping passes are not added together.

@@ -37,11 +37,23 @@ def owned_url(raw, *, allow_schema=False):
 
 def owned_engine(raw, *, allow_schema=False, **kwargs):
     url = owned_url(raw, allow_schema=allow_schema)
-    return create_engine(url, connect_args={
+    supplied = kwargs.pop("connect_args", {})
+    limits = {
+        "connect_timeout": (1, 8), "keepalives": (0, 1),
+        "keepalives_idle": (1, 60), "keepalives_interval": (1, 60),
+        "keepalives_count": (1, 10), "tcp_user_timeout": (1, 60000),
+    }
+    if (type(supplied) is not dict or set(supplied) - set(limits)
+            or any(type(value) is not int or not limits[key][0] <= value <= limits[key][1]
+                   for key, value in supplied.items())):
+        raise ValueError("Expected bounded owned connection timing arguments")
+    pinned = {
         "host": "127.0.0.1", "hostaddr": "127.0.0.1", "port": url.port,
         "dbname": url.database, "user": url.username, "password": url.password,
         "sslmode": "disable", "gssencmode": "disable", "connect_timeout": 8,
-    }, **kwargs)
+    }
+    pinned.update(supplied)
+    return create_engine(url, connect_args=pinned, **kwargs)
 
 
 def schema_url(raw, schema):

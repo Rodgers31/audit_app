@@ -57,6 +57,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+from ..isolated_parser import isolated
 from .oag_blue_book import (
     BlueBookFinding,
     PageText,
@@ -426,6 +427,7 @@ def finding_to_extracted_json(
     }
 
 
+@isolated("pdf_path", types=(PageText,), errors=(CountyAuditError,))
 def read_head(pdf_path, n: int = HEAD_PAGES) -> List[PageText]:
     """The front matter only: enough to decide what the document is."""
     import pdfplumber

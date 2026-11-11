@@ -56,6 +56,7 @@ from typing import List, Optional, Tuple
 
 import pdfplumber
 
+from ...isolated_parser import isolated
 from ...pdf_parsers import KENYAN_COUNTIES
 
 logger = logging.getLogger(__name__)
@@ -700,6 +701,11 @@ def _check_county_table(
     return checks
 
 
+@isolated(
+    "pdf_path",
+    types=(BropParseResult, NationalPendingBills, CountyPendingBill),
+    errors=(BropNationalUnreconciled, BropTableIncomplete),
+)
 def parse_brop_pdf(
     pdf_path: Path, *, strict: bool = True, counties: bool = True,
 ) -> BropParseResult:

@@ -30,28 +30,11 @@ const REPO = path.resolve(FRONTEND, '..');
 const WORKFLOW = path.join(REPO, '.github', 'workflows', 'seed.yml');
 const SECRET = 'test-only-revalidate-secret';
 
-/**
- * The paths the workflow's revalidation step sends. It reads the step's own
- * text instead of keeping a copy here, and it fails closed: if the step builds
- * its body some way this function does not recognise, the test fails and
- * does not guess.
- */
+/** The executable workflow-client tests corroborate this shared manifest. */
 function workflowPaths(): string[] {
   const yml = fs.readFileSync(WORKFLOW, 'utf8');
-  const at = yml.indexOf('-X POST "$REVALIDATE_URL"');
-  if (at < 0) throw new Error('seed.yml no longer calls the revalidation webhook');
-  // The BODY assignment is the last one before the request to the webhook.
-  const before = yml.slice(0, at);
-  const literal = Array.from(before.matchAll(/BODY='(\{"paths".*?\})'/g)).pop();
-  const fromFile = Array.from(before.matchAll(/BODY=\$\(jq -c '\{paths: \.paths\}' (\S+?)\)/g)).pop();
-  const lastLiteral = literal?.index ?? -1;
-  const lastFile = fromFile?.index ?? -1;
-  if (lastFile > lastLiteral && fromFile) {
-    const manifest = JSON.parse(fs.readFileSync(path.join(REPO, fromFile[1]), 'utf8'));
-    return manifest.paths;
-  }
-  if (literal) return JSON.parse(literal[1]).paths;
-  throw new Error('cannot tell what paths the revalidation step sends');
+  expect(yml).toContain('python3 scripts/verification/nightly_workflow/refresh.py pages');
+  return JSON.parse(fs.readFileSync(path.join(FRONTEND, 'lib/revalidation/paths.json'), 'utf8')).paths;
 }
 
 /**

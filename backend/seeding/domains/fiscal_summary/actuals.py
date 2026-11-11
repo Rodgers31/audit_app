@@ -7,9 +7,11 @@ Only these explicitly reviewed editions are supported; new bytes need review.
 """
 import hashlib
 from pathlib import Path
+from io import BytesIO
 import re
 from decimal import Decimal
 
+from ...isolated_parser import isolated
 from services.fiscal_qualification import VERSION, measure_evidence
 
 APDMR_URL = 'https://www.treasury.go.ke/sites/default/files/Annual%20borrowing/Annual-Public-Debt-Report-2022-2023-Sept-2023.pdf'
@@ -73,14 +75,27 @@ def parse_apdmr_table(cover, text):
     return {key:float(values[-1]/1000)for key,values in fields.items()}
 
 
-def read_apdmr(path):
+@isolated("payload", errors=(ImportError,))
+def decode_apdmr_amounts(payload):
+    """Read the selected native table from the reviewed edition."""
     import pdfplumber
-    path=Path(path)
-    if path.stat().st_size>10_000_000 or hashlib.sha256(path.read_bytes()).hexdigest()!=APDMR_SHA256:
-        raise ValueError('apdmr_unreviewed_edition_bytes')
-    with pdfplumber.open(path) as pdf:
-        if len(pdf.pages)<37:raise ValueError('apdmr_missing_table_page')
-        return ParsedAPDMR(parse_apdmr_table(pdf.pages[0].extract_text()or '',pdf.pages[36].extract_text()or ''), capability=_PARSED_EDITION)
+
+    if len(payload) > 10_000_000 or hashlib.sha256(payload).hexdigest() != APDMR_SHA256:
+        raise ValueError("apdmr_unreviewed_edition_bytes")
+    with pdfplumber.open(BytesIO(payload)) as pdf:
+        if len(pdf.pages) < 37:
+            raise ValueError("apdmr_missing_table_page")
+        return parse_apdmr_table(pdf.pages[0].extract_text() or "", pdf.pages[36].extract_text() or "")
+
+
+def read_apdmr(path):
+    path = Path(path)
+    if path.stat().st_size > 10_000_000:
+        raise ValueError("apdmr_unreviewed_edition_bytes")
+    payload = path.read_bytes()
+    if len(payload) > 10_000_000 or hashlib.sha256(payload).hexdigest() != APDMR_SHA256:
+        raise ValueError("apdmr_unreviewed_edition_bytes")
+    return ParsedAPDMR(decode_apdmr_amounts(payload), capability=_PARSED_EDITION)
 
 
 def apply_apdmr(payload, amounts):
@@ -159,6 +174,19 @@ def fetch_apdmr(client, settings):
     return parsed
 
 
+@isolated("payload")
+def _validate_brop_pdf(payload):
+    import pdfplumber
+
+    if len(payload) > 10_000_000 or hashlib.sha256(payload).hexdigest() != BROP_SHA256:
+        raise ValueError("brop_unreviewed_edition_bytes")
+    with pdfplumber.open(BytesIO(payload)) as pdf:
+        cover = " ".join((pdf.pages[0].extract_text() or "").split())
+        if ("2023 BUDGET REVIEW" not in cover or "SEPTEMBER 2023" not in cover
+                or "Table 8: Government Fiscal Projections, Ksh Billion" not in (pdf.pages[20].extract_text() or "")):
+            raise ValueError("brop_edition_table_identity")
+
+
 def read_brop(path):
     """Read a reviewed transcription bound to this exact official edition.
 
@@ -167,15 +195,11 @@ def read_brop(path):
     Unknown bytes require another independent visual review and manifest.
     """
     import json
-    import pdfplumber
-    path=Path(path)
-    if path.stat().st_size>10_000_000 or hashlib.sha256(path.read_bytes()).hexdigest()!=BROP_SHA256:
-        raise ValueError('brop_unreviewed_edition_bytes')
-    with pdfplumber.open(path)as pdf:
-        cover=' '.join((pdf.pages[0].extract_text()or '').split())
-        if ('2023 BUDGET REVIEW' not in cover or 'SEPTEMBER 2023' not in cover
-                or 'Table 8: Government Fiscal Projections, Ksh Billion' not in (pdf.pages[20].extract_text()or '')):
-            raise ValueError('brop_edition_table_identity')
+
+    path = Path(path)
+    if path.stat().st_size > 10_000_000:
+        raise ValueError("brop_unreviewed_edition_bytes")
+    _validate_brop_pdf(path.read_bytes())
     manifest=json.loads((Path(__file__).parent/'data/brop-2023-table8-v1.json').read_text())
     if (manifest.get('contract')!='brop-reviewed-transcription-v1'
             or manifest.get('table')!='Table 8: Government Fiscal Projections'

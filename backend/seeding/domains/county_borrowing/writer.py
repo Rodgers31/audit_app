@@ -10,7 +10,8 @@ from models import (Country, Entity, EntityType, SourceDocument, Extraction,
 from services.county_debt import record_county_debt_observation, _county_instrument_schema_available, normalize_county_debt_observation, require_county_debt_keys
 from services.receipt_store import configured_receipt_store
 from .ownership import require_ownership, TOLERANCE
-from seeding.county_borrowing_contract import canonical, parse_publication, EXTRACTOR, DATASET, document_fields, document_metadata, document_matches
+from .decoder import decode_publication
+from seeding.county_borrowing_contract import canonical, EXTRACTOR, DATASET, document_fields, document_metadata, document_matches
 from seeding.county_borrowing_contract import CountyBorrowingRefused, edition, county_scope_key
 from seeding.county_borrowing_mapping_evidence import validate_mapping_source_evidence
 
@@ -26,7 +27,7 @@ def persist(session, settings, context, key, payload, parsed, fetched_at):
     if (type(fetched_at) is not datetime or fetched_at.utcoffset() is None
             or not start - TOLERANCE <= fetched_at <= now + TOLERANCE):
         raise CountyBorrowingRefused('County borrowing fetch time is outside the owned run')
-    expected = parse_publication(key, payload)
+    expected = decode_publication(key, payload)
     if type(parsed) is not dict or canonical(parsed) != canonical(expected):
         raise CountyBorrowingRefused('County borrowing parsed facts differ from source bytes')
     spec = edition(key)

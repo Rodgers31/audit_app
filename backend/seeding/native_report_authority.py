@@ -13,6 +13,8 @@ from pathlib import Path
 import re
 from urllib.parse import urlsplit
 
+from .isolated_parser import isolated
+
 if __package__.startswith('backend.'):
     from backend.services.response_receipts import acquisition_is_intact, copy_receipt, receipt_is_sealed, seal_receipt, persist_receipt
 else:
@@ -329,6 +331,29 @@ def _kra_publication_text(node):
     return node.get_text(' ', strip=True)
 
 
+@isolated("body")
+def _kra_article_text(body: bytes, charset: str) -> tuple[str, list[str]]:
+    text = body.decode(charset)
+    if re.search(r'<!(?!--|DOCTYPE[ \t\r\n]+html[ \t\r\n]*>)', text, re.I) or '<?' in text:
+        raise ValueError('Unreviewed publisher declaration')
+    from bs4 import BeautifulSoup, Comment
+    attributes = _KraAttributes()
+    attributes.feed(text)
+    attributes.close()
+    if attributes.rawdata:
+        raise ValueError('Incomplete publisher markup')
+    soup = BeautifulSoup(text, 'html.parser')
+    _validate_kra_article_markup(soup)
+    articles = soup.select('.blog-content')
+    if len(articles) != 1:
+        raise ValueError('One publisher article required')
+    lead = next((node for node in articles[0].children
+                 if not isinstance(node, Comment) and (getattr(node, 'name', None) or str(node).strip())), None)
+    dates = [_kra_publication_text(node) for node in soup.select('.bottom-wrapper p')
+             if node.get_text(' ', strip=True).startswith('PRESS RELEASE')]
+    return _kra_publication_text(lead), dates
+
+
 def capture_kra_release(receipt):
     """KRA article's labelled full day and leading annual scope, not listing hints.
 
@@ -345,25 +370,7 @@ def capture_kra_release(receipt):
         if content_type is None:
             raise ValueError('Reviewed publisher encoding required')
         charset = content_type['quoted'] or content_type['bare'] or 'utf-8'
-        text = body.decode('ascii' if charset.lower() == 'us-ascii' else 'utf-8')
-        if re.search(r'<!(?!--|DOCTYPE[ \t\r\n]+html[ \t\r\n]*>)', text, re.I) or '<?' in text:
-            raise ValueError('Unreviewed publisher declaration')
-        from bs4 import BeautifulSoup, Comment
-        attributes = _KraAttributes()
-        attributes.feed(text)
-        attributes.close()
-        if attributes.rawdata:
-            raise ValueError('Incomplete publisher markup')
-        soup = BeautifulSoup(text, 'html.parser')
-        # Full site layouts need a separately reviewed source profile. Checking
-        # only scope/day ancestors misses active or overlaying sibling markup.
-        _validate_kra_article_markup(soup)
-        articles = soup.select('.blog-content')
-        if len(articles) != 1:
-            raise ValueError('One publisher article required')
-        lead = next((node for node in articles[0].children
-                     if not isinstance(node, Comment) and (getattr(node, 'name', None) or str(node).strip())), None)
-        lead = _kra_publication_text(lead)
+        lead, dates = _kra_article_text(body, 'ascii' if charset.lower() == 'us-ascii' else 'utf-8')
         # The reviewed publisher lead states an achieved whole-year result.
         # A bare FY mention cannot distinguish a monthly result or a target.
         annual = re.fullmatch(
@@ -375,8 +382,6 @@ def capture_kra_release(receipt):
             raise ValueError('Reviewed annual achieved-results lead unavailable')
         years = [annual[1]]
         period, start, end = _fy(years[0])
-        dates = [_kra_publication_text(node) for node in soup.select('.bottom-wrapper p')
-                 if node.get_text(' ', strip=True).startswith('PRESS RELEASE')]
         if len(dates) != 1 or not re.fullmatch(r'PRESS RELEASE \d{2}/\d{2}/\d{4}', dates[0]):
             raise ValueError('Full publisher-labelled article date unavailable')
         published = datetime.strptime(dates[0].removeprefix('PRESS RELEASE '), '%d/%m/%Y').date()

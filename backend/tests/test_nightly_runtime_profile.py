@@ -64,7 +64,7 @@ def replay(clock, monkeypatch, *, total_seconds, slow_domain=None):
                 clock.advance(current_alarm[0])
                 raise cli.DomainTimeoutError("simulated alarm at the actual CLI allocation")
             clock.advance(work)
-            return DomainRunResult(domain=name)
+            return DomainRunResult(domain=name, items_processed=1, dry_run=kwargs["context"].dry_run)
         return run
 
     monkeypatch.setattr(fair_progress, "admission_order", lambda maker, domains: list(order))

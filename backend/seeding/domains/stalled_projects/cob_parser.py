@@ -50,6 +50,8 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
+
+from ...isolated_parser import isolated
 logger = logging.getLogger("seeding.stalled_projects.cob_parser")
 
 #: Who is speaking in every row this module emits. COB compiles the tables
@@ -916,6 +918,7 @@ def reconcile(
 # --------------------------------------------------------------------------
 
 
+@isolated("pdf_path")
 def page_texts(pdf_path: Path) -> List[str]:
     """Plain text per page via pdfium: ~3s for 935 pages, against minutes
     for pdfplumber, which is then only opened on the ~60 pages that hold a
@@ -1381,6 +1384,7 @@ class CbirrStalledProjectsParser:
     def __init__(self, pdf_path: Path):
         self.pdf_path = Path(pdf_path)
 
+    @isolated("pdf_path", method=True)
     def parse(self) -> List[Dict[str, Any]]:
         import pdfplumber
 

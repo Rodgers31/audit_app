@@ -5,16 +5,56 @@ on:
   workflow_dispatch:
     inputs:
       purpose:
-        description: 'Existing writer-target qualification or archived reader-contract inspection'
+        description: 'Existing writer-target qualification, archived reader inspection, native runner observation, or native candidate qualification'
         type: choice
         default: github-writer-target
-        options: [github-writer-target, legacy-reader-inspection]
+        options: [github-writer-target, legacy-reader-inspection, native-runner-observation, native-runner-qualification, isolated-parser-qualification]
 permissions:
   contents: read
 concurrency:
   group: ingestion-read-only-preflight
   cancel-in-progress: false
 jobs:
+  qualify_isolated_parser:
+    if: inputs.purpose == 'isolated-parser-qualification' && github.repository == 'Rodgers31/audit_app' && github.ref == 'refs/heads/codex/consolidated-execution-20261104'
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12.16'
+          architecture: x64
+          check-latest: false
+      - name: Exercise writer parser provisioning without credentials
+        run: python -I -B tools/nightly_acceptance_20261105/hosted_parser.py --qualification
+  observe_native_runner:
+    if: inputs.purpose == 'native-runner-observation' && github.repository == 'Rodgers31/audit_app' && github.ref == 'refs/heads/codex/consolidated-execution-20261104'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Observe the standard runner with an isolated digest-pinned base
+        timeout-minutes: 3
+        run: python3 -B tools/nightly_acceptance_20261105/hosted_runner_observation.py
+  qualify_native_candidate:
+    if: inputs.purpose == 'native-runner-qualification' && github.repository == 'Rodgers31/audit_app' && github.ref == 'refs/heads/codex/consolidated-execution-20261104'
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 24
+      - name: Qualify the sealed native image offline
+        run: python3 -B tools/nightly_acceptance_20261105/qualify_native_candidate.py
   qualify_github_writer:
     if: inputs.purpose == 'github-writer-target'
     runs-on: ubuntu-latest

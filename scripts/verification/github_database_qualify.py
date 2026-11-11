@@ -165,7 +165,7 @@ def main(args):
                if k not in SECRETS and not k.startswith('PG')}
         env[label] = os.environ.get(label, '')
         try:
-            child = subprocess.run([sys.executable, '-I', str(Path(__file__).resolve()),
+            child = subprocess.run([sys.executable, '-I', '-B', str(Path(__file__).resolve()),
                                     '--child', label], env=env, capture_output=True,
                                    text=True, timeout=20, check=False)
             if child.returncode != 0 or len(child.stdout) > 4096:

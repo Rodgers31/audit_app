@@ -112,7 +112,7 @@ def _handler(calls, name, *, work=0.0, raise_timeout=False, clock=None):
             clock.advance(work)
         if raise_timeout:
             raise seed_cli.DomainTimeoutError("aborted by the CLI")
-        return DomainRunResult(domain=name)
+        return DomainRunResult(domain=name, dry_run=context.dry_run, items_processed=1)
 
     return _run
 

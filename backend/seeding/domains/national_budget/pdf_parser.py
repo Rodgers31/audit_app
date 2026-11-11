@@ -57,6 +57,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import pdfplumber
 
 from ...cob_report_scope import COB_PERIOD_DESCRIPTORS as _PERIOD_DESCRIPTORS
+from ...isolated_parser import isolated
 
 logger = logging.getLogger(__name__)
 
@@ -255,6 +256,7 @@ class NgBirrSectoralParser:
         self.pdf_path = pdf_path
         self._table_sources = {}
 
+    @isolated("pdf_path", method=True, types=(PeriodInfo, NgBirrPdfRecord))
     def parse(self) -> Tuple[PeriodInfo, List[NgBirrPdfRecord]]:
         with pdfplumber.open(self.pdf_path) as pdf:
             period = _detect_period(pdf)

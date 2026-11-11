@@ -19,9 +19,9 @@ raw HTML.
 
 Both solutions to that are now implemented here:
 
-* OCR (pytesseract + pdf2image, page-capped via
+* OCR (PDFium + Tesseract, page-capped via
   ``audits_ocr_max_pages``) behind ``SEED_AUDITS_OCR_ENABLED`` —
-  the seed workflow apt-installs tesseract-ocr + poppler-utils and
+  the seed workflow installs the OCR dependencies and
   enables it; local runs default off.
 * PDF discovery via the OAG WordPress REST API
   (/wp-json/wp/v2/media — plain JSON, no JS rendering needed),
@@ -39,12 +39,14 @@ from __future__ import annotations
 import logging
 import re
 import tempfile
+from importlib.util import find_spec
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import quote_plus, urljoin
 
 from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
+from ...isolated_parser import isolated
 from ...utils import load_json_resource, slugify_entity
 from ...freshness import mark_fixture, mark_live
 from .transport import PDF_MAX_BYTES, get_official_body
@@ -305,10 +307,7 @@ def _download_and_parse_audit_pdf(
     back to OCR via pdf2image + pytesseract.
     """
     tmp_path: Optional[Path] = None
-    try:
-        # Try to use pdfplumber for text extraction
-        import pdfplumber
-    except ImportError:
+    if find_spec("pdfplumber") is None:
         logger.warning(
             "pdfplumber not available — cannot parse OAG PDFs. "
             "Install: pip install pdfplumber"
@@ -332,30 +331,10 @@ def _download_and_parse_audit_pdf(
             tmp_path,
         )
 
-        findings: List[Dict[str, Any]] = []
-
-        with pdfplumber.open(tmp_path) as pdf:
-            full_text = ""
-            for page in pdf.pages[:50]:  # limit to first 50 pages
-                text = page.extract_text()
-                if text:
-                    full_text += text + "\n"
-
-        if not full_text.strip():
-            if settings.audits_ocr_enabled:
-                full_text = _ocr_pdf_text(
-                    tmp_path, max_pages=settings.audits_ocr_max_pages
-                )
-            else:
-                # OAG publishes scanned-image PDFs — enable
-                # SEED_AUDITS_OCR_ENABLED (and install tesseract-ocr +
-                # poppler-utils) to extract them. INFO not WARNING so
-                # the log doesn't suggest a new fault on every run.
-                logger.info(
-                    "PDF appears to contain no extractable text "
-                    "(scanned image; OCR disabled)"
-                )
-                return None
+        full_text = _read_audit_pdf_text(
+            tmp_path, ocr_enabled=settings.audits_ocr_enabled,
+            ocr_max_pages=settings.audits_ocr_max_pages,
+        )
 
         if not full_text.strip():
             return None
@@ -373,28 +352,39 @@ def _download_and_parse_audit_pdf(
                 pass
 
 
+@isolated("pdf_path")
+def _read_audit_pdf_text(
+    pdf_path: Path, *, ocr_enabled: bool, ocr_max_pages: int,
+) -> str:
+    import pdfplumber
+
+    chunks = []
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages[:50]:
+            text = page.extract_text()
+            if text:
+                chunks.append(text + "\n")
+    full_text = "".join(chunks)
+    if full_text.strip():
+        return full_text
+    if ocr_enabled:
+        return _ocr_pdf_text(pdf_path, max_pages=ocr_max_pages)
+    logger.info("PDF appears to contain no extractable text (scanned image; OCR disabled)")
+    return ""
+
+
 def _ocr_pdf_text(pdf_path: Path, max_pages: int = 30) -> str:
-    """OCR a scanned PDF into text (pdf2image + pytesseract).
+    """OCR a scanned PDF into text using bounded Poppler and Tesseract calls.
 
     Returns "" when the OCR stack isn't installed or fails — callers
     treat that identically to a text-less PDF. Pages are rendered one
     at a time (not the whole document) so a 700-page report doesn't
     hold hundreds of rasterised pages in memory.
     """
-    try:
-        import pytesseract
-        from pdf2image import convert_from_path, pdfinfo_from_path
-    except ImportError:
-        logger.warning(
-            "OCR requested but pytesseract/pdf2image not installed — "
-            "pip install pytesseract pdf2image (plus system "
-            "tesseract-ocr and poppler-utils)"
-        )
-        return ""
+    from ...native_ocr import page_count, read_page
 
     try:
-        info = pdfinfo_from_path(pdf_path)
-        total_pages = int(info.get("Pages", 0)) or 1
+        total_pages = page_count(pdf_path)
     except Exception as exc:
         logger.warning("OCR: could not read PDF info: %s", exc)
         return ""
@@ -410,13 +400,9 @@ def _ocr_pdf_text(pdf_path: Path, max_pages: int = 30) -> str:
     chunks: List[str] = []
     for page_no in range(1, pages_to_read + 1):
         try:
-            images = convert_from_path(
-                pdf_path, dpi=200, first_page=page_no, last_page=page_no
-            )
-            for image in images:
-                text = pytesseract.image_to_string(image)
-                if text.strip():
-                    chunks.append(text)
+            text = read_page(pdf_path, page_no)
+            if text.strip():
+                chunks.append(text)
         except Exception as exc:
             logger.warning("OCR failed on page %d: %s", page_no, exc)
             break

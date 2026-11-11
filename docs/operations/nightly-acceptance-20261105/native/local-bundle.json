@@ -1,0 +1,47 @@
+{
+  "corpus": {
+    "cases_sha256": "3d13a1aceaf549eb7535846557f08069ff64cae82a4d47f10e867f48a68231b6",
+    "retained_sha256": "d8c72b4fbda2c920f30f79b3e0554f9965165735d220a810e6ae3994e2dbf899"
+  },
+  "cpu": {
+    "cpu family": "6",
+    "flags": "fpu tsc de cx8 apic sep cmov pat pse36 clflush mmx fxsr sse sse2 syscall nx lm rep_good nopl pni cpuid pclmulqdq ssse3 cx16 sse4_1 popcnt sse4_2 aes lahf_lm movbe fma avx f16c rdrand bmi1 avx2 bmi2",
+    "model": "142",
+    "model name": "VirtualApple @ 2.50GHz",
+    "stepping": "10",
+    "vendor_id": "VirtualApple"
+  },
+  "distribution": "RETAINED_LOCAL_DOCKER_ARCHIVE",
+  "image": {
+    "archive_bytes": 194080768,
+    "archive_sha256": "334503f349b11c3657df4e46720212c7133e4eee4875b140fd87e5f3c99832f9",
+    "config": "sha256:8cc6bf3c3017a8c990ccab91078d04bb8e40a38bb7005c1aba42417994f6cf28",
+    "layers": [
+      "sha256:a5d6d345f6afa08d7c31272055746d60a838b290bfcc82c0a23e8e984d61a933",
+      "sha256:fab99bd4639aec48a77ec4d2e3564c0907e0e1e962bbf773219a0b503a168955",
+      "sha256:bca572b9549074f7cbc5f2d9d29f589038ff21c5f68cef2965167a33f177a9c0",
+      "sha256:cae4cb2b5e819765b847e67faa443b377607452f2ec949d142cad15d9d7ea0b3",
+      "sha256:b4c8887116d9e1c3abf186cd0adb08bdcf205b0680778b8640b00195a2310a37"
+    ],
+    "manifest": "sha256:6038c5b3d001e31ccf30e212d0e24b39d91ec07cc3c9716be5390550c5076502",
+    "platform": "linux/amd64"
+  },
+  "native_inventory_sha256": "8b94fea138dc0519e3ad3daeb56045e594777de9232b5fa58c41c34faf41b1d8",
+  "native_lock_sha256": "1c0036610e5841068bd96362b439a8f0ae01ee7f593b368b0805e9c2c8a78858",
+  "runtimes": {
+    "production": {
+      "lock_sha256": "1db8d8f2765fb5e99cdf74c9629345e9178d10940706d809b1a209deb4b273d7",
+      "packages": 86,
+      "prefix": "/opt/ingestion",
+      "runtime_sha256": "6487c18e999c387e8e51ed721a01003b1cf901a3b30f09d359da599a513a0e2b"
+    },
+    "qualification": {
+      "lock_sha256": "18547cc36199be4e678a43c617c5c5b87f27438fa3c5964f8f5d0f0dbb474058",
+      "packages": 95,
+      "prefix": "/opt/qualification",
+      "runtime_sha256": "bbed744c7152ed0358121a2a46ac1e29c23f26229a8650cd3f9e33e6a289345c"
+    }
+  },
+  "schema": "ingestion-native-bundle-v1",
+  "scope": "LOCAL_QUALIFICATION_ONLY"
+}

@@ -15,6 +15,7 @@ from pathlib import Path
 
 from models import Extraction
 from services.pending_bills_aging import EXTRACTOR, ASSEMBLY_EXTRACTOR, absent_observation
+from ...isolated_parser import isolated
 from .parser import require_pending_amount
 
 ARTIFACT_SHA256 = "919930622bc9fbc0c0b5cdcb566219e4f1432e7c9a3329dfd5bb23616cd33c20"
@@ -246,6 +247,13 @@ class AssemblyAgingParser(ExecutiveAgingParser):
 
 
 def _parse_pdf_scopes(path, payables_entries, scopes):
+    # The writer keeps the fresh-parse capability on its original records.
+    # The PDF decoder receives only the stock cells needed for reconciliation.
+    return _decode_pdf_scopes(path, list(payables_entries), scopes)
+
+
+@isolated("path")
+def _decode_pdf_scopes(path, payables_entries, scopes):
     """Open the retained edition once and inspect only the required pages."""
     import pdfplumber
 

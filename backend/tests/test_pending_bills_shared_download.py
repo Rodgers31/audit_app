@@ -49,7 +49,12 @@ def test_pending_bills_resumes_other_domains_interrupted_download(
     assert banked > 0
 
     def resume(rng):
-        return _FakeStream(WHOLE[banked:] if rng else WHOLE, status=206 if rng else 200)
+        if rng:
+            return _FakeStream(
+                WHOLE[banked:], status=206,
+                headers={"Content-Range": f"bytes {banked}-{len(WHOLE) - 1}/{len(WHOLE)}"},
+            )
+        return _FakeStream(WHOLE)
 
     downloader = _FakeClient(resume)
     client, seen = prepare(monkeypatch, settings, downloader)

@@ -41,9 +41,12 @@ def body_for(service,row):
 
 
 def client_for(service):
+ # These fixtures exercise in-process service/API semantics with an inert Graph
+ # transport. The default owned-process boundary has its own actual IPC/PG suite.
+ from types import SimpleNamespace
  app=FastAPI();app.include_router(api.router)
  app.dependency_overrides[api.service]=lambda:service
- app.dependency_overrides[api.verification_service]=lambda:service
+ app.dependency_overrides[api.verification_service]=lambda:SimpleNamespace(verify_existing_grant=service._verify_existing_grant)
  app.dependency_overrides[require_admin]=lambda:AdminUser(id=str(ACTOR),email=None,roles=['admin'])
  app.dependency_overrides[api.admin_session]=lambda:api.AdminSession(ACTOR,BINDING)
  return TestClient(app,raise_server_exceptions=False)
@@ -64,7 +67,7 @@ def verify(service,row,body=None,key=None):
  account_id=row.id
  service.db.rollback()
  command=body if body is not None else body_for(service,row)
- return service.verify_existing_grant(account_id,ACTOR,BINDING,'POST verify/'+str(account_id),key or uuid4(),command,uuid4())
+ return service._verify_existing_grant(account_id,ACTOR,BINDING,'POST verify/'+str(account_id),key or uuid4(),command,uuid4())
 
 
 def test_saved_grant_direct_positive(saved,graph):

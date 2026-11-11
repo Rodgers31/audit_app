@@ -1,0 +1,263 @@
+{
+  "schema": "deployment-readiness-source-v1",
+  "baseline_commit": "8ef389d7ffc5bfb86bed22ae5a9b63858f13424a",
+  "baseline_tree": "75637cdf82b20fdc8190305638d45ca019c838d0",
+  "matrix": "docs/releases/deployment-readiness-20261105/gate-matrix.json",
+  "files": [
+    {
+      "path": ".github/workflows/seed.yml",
+      "bytes": 94965,
+      "sha256": "48d30bbdf1be29a6578d455534cc43acaa9018bf9691035eb129ba005aebb775"
+    },
+    {
+      "path": "backend/Dockerfile.prod",
+      "bytes": 3657,
+      "sha256": "7f53b08891da9947f638486f2897fbb45e3bf1ee6233937ba471ae0f6f1c4c24"
+    },
+    {
+      "path": "backend/database.py",
+      "bytes": 3663,
+      "sha256": "1b608a9c14f59c83441d5949ce45b4947b84c272bfaaf37dd00e6b051e31664c"
+    },
+    {
+      "path": "backend/ingestion-runtime.lock.json",
+      "bytes": 29109,
+      "sha256": "1db8d8f2765fb5e99cdf74c9629345e9178d10940706d809b1a209deb4b273d7"
+    },
+    {
+      "path": "backend/request_database.py",
+      "bytes": 9225,
+      "sha256": "1ff5cedf6b17c673ad76f69f735bfd8df883cacaba58cb0be6e0e6efdc7237c5"
+    },
+    {
+      "path": "backend/requirements.txt",
+      "bytes": 2227,
+      "sha256": "877daa26c9dd36cd91aed1546440592be713351ed5ae55f417f587320b08d473"
+    },
+    {
+      "path": "backend/security-constraints.txt",
+      "bytes": 377,
+      "sha256": "22a48a5d28facb3eb2f47148090ce81f7ea5a7fe483a8db4ab7839dc356bc9f3"
+    },
+    {
+      "path": "backend/seeding/source_plan.py",
+      "bytes": 32316,
+      "sha256": "af6544c25c222bdaf33f2bf676d24d2f38daccad9c2ccc08f23ea8b37bc199f1"
+    },
+    {
+      "path": "backend/services/admin_audit_storage.py",
+      "bytes": 18445,
+      "sha256": "b6e00f2f6af838b8ef90769d39df4b4a1c044d9e18c638591044a8be5e0bf38e"
+    },
+    {
+      "path": "backend/social/connections/api.py",
+      "bytes": 6678,
+      "sha256": "c0b11aacbab12e22866ce6e15003049c6bf5a96f1b60c19b592489042265a57c"
+    },
+    {
+      "path": "backend/social/connections/callback_ingress.py",
+      "bytes": 1605,
+      "sha256": "b851adc74d153ebd8bd8b643a71cfc88cfd22651f5464fa7803e2db4e4409a42"
+    },
+    {
+      "path": "backend/social/connections/provider.py",
+      "bytes": 20463,
+      "sha256": "8440b3b4747369f9c0d93f005848f5275d4cd0b0f7e79026d2982c391e550963"
+    },
+    {
+      "path": "backend/social/connections/service.py",
+      "bytes": 50895,
+      "sha256": "6baabc9d16586f1478474e676f57c7ab7fdc86399bd131720bf0287aa9b05481"
+    },
+    {
+      "path": "backend/social/connections/verification_budget.py",
+      "bytes": 2106,
+      "sha256": "4ae75c3651e628733edb6ff9c4947b8d0839b28c23187d6aade16a604f8732b5"
+    },
+    {
+      "path": "backend/social/connections/verification_execution.py",
+      "bytes": 15782,
+      "sha256": "f6f03fa0b3a544fd57352e588fe2fa8171ae7d337b8ce6cc56bc8337cfaa5a7b"
+    },
+    {
+      "path": "backend/social/connections/verification_process.py",
+      "bytes": 10622,
+      "sha256": "2ab3a780829f187df4581b0ccbd081a99c7003357d4df6e48fb481c5997c006b"
+    },
+    {
+      "path": "backend/social/connections/verification_protocol.py",
+      "bytes": 914,
+      "sha256": "97267b93a2e55e4899ed98b0688e7e4fdcf5fff14cda033c9a61c528f9b5f2ee"
+    },
+    {
+      "path": "backend/social/media/config.py",
+      "bytes": 4928,
+      "sha256": "d739759a2a10d6b1e6ef3b5478122f5eccf1dc1840b7cd28653da4e70a4c64ed"
+    },
+    {
+      "path": "backend/social/media/maintenance.py",
+      "bytes": 8693,
+      "sha256": "9a5ddc1c12e4bb088d7d2475031bd2407758bd064190edd46385042faabfefe7"
+    },
+    {
+      "path": "backend/social/media/recovery.py",
+      "bytes": 31316,
+      "sha256": "0884a8767efe260dcfadee3e67d59cae3c365f44c21a6d684161b48352163ae9"
+    },
+    {
+      "path": "backend/social/media/recovery_packet.py",
+      "bytes": 14185,
+      "sha256": "83d66f0693547806b4c794ee91d562b0ec4fdcb4021939f19a9b106f60f8e0f6"
+    },
+    {
+      "path": "backend/social/media/storage.py",
+      "bytes": 13628,
+      "sha256": "4603508551f41865553ba06c028227fb48001a4897383e02eb2589c40734473d"
+    },
+    {
+      "path": "backend/social/privacy/policy.py",
+      "bytes": 2820,
+      "sha256": "8dec2f83d5bbfd29726883931c6b1d613902d7b594b1a4d2a42d7a15689d337d"
+    },
+    {
+      "path": "backend/social/worker/config.py",
+      "bytes": 5000,
+      "sha256": "5b92a98ffc93d78e6f5e93cee6dca58f0be0e7d8ff53af2d7482c430c70b0c18"
+    },
+    {
+      "path": "backend/social/worker/role_contract.py",
+      "bytes": 36579,
+      "sha256": "cbf9a6e1ae11c427e54673d41aa9a69a5c636519e28affaca3114fb0295a7100"
+    },
+    {
+      "path": "backend/social_worker_supervisor.py",
+      "bytes": 9005,
+      "sha256": "83cc276664038c750719856369dd89a50fd571de97866a3ced5d88bf57fcb05d"
+    },
+    {
+      "path": "docs/releases/deployment-readiness-20261105/EVIDENCE.md",
+      "bytes": 10255,
+      "sha256": "d38a1f62ff266ae45cd69d4936dfd0ace7d94c07415d5bae21001547b621431b"
+    },
+    {
+      "path": "docs/releases/deployment-readiness-20261105/GATES.md",
+      "bytes": 6107,
+      "sha256": "ac4661058f4c649ba040e6c96c583ff0f6d5c56df0f62314fe5c9dde1652137c"
+    },
+    {
+      "path": "docs/releases/deployment-readiness-20261105/LAUNCH.md",
+      "bytes": 12758,
+      "sha256": "34d173b9ba7db3d640c062dd7e6f990a5e3b2508b2c7895f6c14fa133db1177c"
+    },
+    {
+      "path": "docs/releases/deployment-readiness-20261105/OBSERVATION.md",
+      "bytes": 7067,
+      "sha256": "1d37fd4e4f4bf57ce250c29b8bfaa5c0dc5178d504665988fa1525259c830093"
+    },
+    {
+      "path": "docs/releases/deployment-readiness-20261105/README.md",
+      "bytes": 4247,
+      "sha256": "fae01899abd8942618a0d8a7b3390b3afd07a03b8ff10b00cb2b5283ae7c838a"
+    },
+    {
+      "path": "docs/releases/deployment-readiness-20261105/RELEASE.md",
+      "bytes": 8377,
+      "sha256": "03b5c4e5245f4d31c0ace0c23b70aea152c6a6189f5f4cf1ae03d375eab78fdf"
+    },
+    {
+      "path": "docs/releases/deployment-readiness-20261105/ROLLBACK.md",
+      "bytes": 6203,
+      "sha256": "db969c666050706a039430721ee49fcfc151674cbf97fe0f519370aaadc225b9"
+    },
+    {
+      "path": "docs/releases/deployment-readiness-20261105/evidence-catalog.json",
+      "bytes": 8983,
+      "sha256": "95b0a75b9df2d937b51f2765b49bb7d59de02359ca5870b863ca66a417f71fbe"
+    },
+    {
+      "path": "docs/releases/deployment-readiness-20261105/gate-matrix.json",
+      "bytes": 7391,
+      "sha256": "2780ebd1f23a8bf35cf29ff61513d15dd6a10cca121e1008959d0ae40e03d277"
+    },
+    {
+      "path": "frontend/.nvmrc",
+      "bytes": 8,
+      "sha256": "d9f318747a126ce2247661af67852b185def7789492eabfad7bba322be087c33"
+    },
+    {
+      "path": "frontend/Dockerfile.prod",
+      "bytes": 3106,
+      "sha256": "f4af1c586542237c1d1b6d059a7b09565a040492c62929f59f60e56c029452f1"
+    },
+    {
+      "path": "frontend/package-lock.json",
+      "bytes": 440311,
+      "sha256": "7f0a0a6236f7c4b13fd2bb772252af97e3bca7eab72fc9414718ad55c6b5b426"
+    },
+    {
+      "path": "frontend/package.json",
+      "bytes": 4964,
+      "sha256": "05f98e775aa24452e949c6d2a367efdeaae81124497d892fe075f9342d9ccbd7"
+    },
+    {
+      "path": "frontend/scripts/container-config.cjs",
+      "bytes": 1700,
+      "sha256": "0b76fb253e0058c80f285ed14e14ed50c2ab4496c9f330e2a9244a7089154c6b"
+    },
+    {
+      "path": "frontend/scripts/verify-native-dependencies.mjs",
+      "bytes": 8045,
+      "sha256": "d71046105f70a01f50d193959b366a475937fd83b7996201d92baacc25c86344"
+    },
+    {
+      "path": "frontend/scripts/verify-runtime-dependencies.cjs",
+      "bytes": 4016,
+      "sha256": "b7574441c8a5adcbb889229e36a78ece9888d1be0dc39f81b2f7519a2303f282"
+    },
+    {
+      "path": "scripts/verification/deployment_readiness_20261105/capacity.pending.json",
+      "bytes": 606,
+      "sha256": "9e61cf5aed42ffcdd3ea29cfc1cc18df095b3140687176b529a1d1356e942cd7"
+    },
+    {
+      "path": "scripts/verification/deployment_readiness_20261105/catalog_preflight.sql",
+      "bytes": 5087,
+      "sha256": "522ae426501909e4ee6d14111c43c967ca8118a879fb2500a822c940a16a0a20"
+    },
+    {
+      "path": "scripts/verification/deployment_readiness_20261105/packet.py",
+      "bytes": 23100,
+      "sha256": "272358e52384add6df0851396a4532ff07b44c0be541122bee2a8b47bc093d53"
+    },
+    {
+      "path": "scripts/verification/deployment_readiness_20261105/test_packet.py",
+      "bytes": 7919,
+      "sha256": "be0803560925820d502e062a7ce9e909fc9a8220b918341704f82550205a196d"
+    },
+    {
+      "path": "scripts/verification/deployment_readiness_20261105/test_review_boundaries.py",
+      "bytes": 7625,
+      "sha256": "0cf3732e43cd7e51a4de385e8397677b69aa9ef2d61c1ec42aecd14992dea357"
+    },
+    {
+      "path": "tools/nightly_acceptance_20261105/operational.py",
+      "bytes": 13683,
+      "sha256": "fc1e7be1713541777c47d63c644713199f40f49411ba1cfeb49472dcf732e2e7"
+    },
+    {
+      "path": "tools/nightly_acceptance_20261105/record.py",
+      "bytes": 15403,
+      "sha256": "40504fdedc1e67a7b9593a73cd0f63dc5498361be3b6707d6072a647ced237c2"
+    },
+    {
+      "path": "tools/nightly_acceptance_20261105/runtime.py",
+      "bytes": 26025,
+      "sha256": "8a3828fb479614ddfd80154cd9770a59b962cbb62331b773bc2272c52e2dfe16"
+    },
+    {
+      "path": "tools/nightly_acceptance_20261105/verify.py",
+      "bytes": 8908,
+      "sha256": "6912ea9f30ed5d1d8b6acea4aeeff30f68d48553097ef494edc2be4e1b78dcfa"
+    }
+  ]
+}

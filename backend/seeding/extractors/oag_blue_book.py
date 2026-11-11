@@ -39,7 +39,9 @@ import math
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Literal, Dict, List, Optional, Tuple
+
+from ..isolated_parser import isolated
 
 logger = logging.getLogger("seeding.extractors.oag_blue_book")
 
@@ -203,8 +205,12 @@ _FY_SPAN_RE = re.compile(r"(20\d{2})\s*[/_–-]\s*(20\d{2}|\d{2})")
 class PageText:
     page_number: int  # 1-based PDF page number
     text: str
-    method: str  # "pdfplumber" | "ocr" | "blank" | "rejected"
+    method: Literal["pdfplumber", "ocr", "blank", "rejected"]
     layout_qualifications: List[dict] = field(default_factory=list)
+
+    def __post_init__(self):
+        if type(self.page_number) is not int or self.page_number < 1:
+            raise ValueError("A positive physical PDF page is required")
 
 
 @dataclass
@@ -1106,20 +1112,14 @@ def read_pages(
     return pages
 
 
+read_pages = isolated("pdf_path", types=(PageText,))(read_pages)
+
+
 def _ocr_page(pdf_path: Path, page_number: int) -> str:
+    from ..native_ocr import read_page
+
     try:
-        import pytesseract
-        from pdf2image import convert_from_path
-    except ImportError:
-        logger.warning(
-            "OCR fallback requested but pytesseract/pdf2image not installed"
-        )
-        return ""
-    try:
-        images = convert_from_path(
-            pdf_path, dpi=200, first_page=page_number, last_page=page_number
-        )
-        return "\n".join(pytesseract.image_to_string(img) for img in images)
+        return read_page(pdf_path, page_number)
     except Exception as exc:
         logger.warning("OCR failed on page %d: %s", page_number, exc)
         return ""

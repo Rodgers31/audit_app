@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import math
+import os
 from typing import Any, Dict, Optional
 
 from ...config import SeedingSettings
@@ -398,9 +399,7 @@ def _fetch_revenue_estimates(
     from ...pdf_download import get_or_download_pdf
     from .revenue_estimates import (
         build_revenue_series,
-        parse_fiscal_framework,
-        _TABLE_MARKER,
-        _squash,
+        extract_fiscal_framework_table,
     )
 
     page_url = settings.treasury_budget_summary_page_url
@@ -433,20 +432,15 @@ def _fetch_revenue_estimates(
         return None, f"download_failed({type(exc).__name__})"
 
     try:
-        import pdfplumber
-
-        with pdfplumber.open(pdf_path) as pdf:
-            for n, page in enumerate(pdf.pages):
-                if _squash(_TABLE_MARKER) not in _squash(page.extract_text() or ""):
-                    continue
-                table = parse_fiscal_framework(page.extract_words(), page=n + 1)
-                published, quarantined = build_revenue_series(
-                    table, through_fiscal_year=fiscal_year, source_url=found.url
-                )
-                if not published:
-                    return None, f"all_quarantined({sorted(quarantined.values())})"
-                return published, f"{len(published)} year(s); quarantined={quarantined}"
-        return None, "fiscal_framework_table_not_found"
+        table = extract_fiscal_framework_table(pdf_path)
+        if table is None:
+            return None, "fiscal_framework_table_not_found"
+        published, quarantined = build_revenue_series(
+            table, through_fiscal_year=fiscal_year, source_url=found.url
+        )
+        if not published:
+            return None, f"all_quarantined({sorted(quarantined.values())})"
+        return published, f"{len(published)} year(s); quarantined={quarantined}"
     except Exception as exc:
         return None, f"parse_failed({type(exc).__name__})"
 
@@ -579,17 +573,24 @@ def _fetch_budget_summary_editions(client, settings):
     extractor_hash = parser_digest(extract_page_texts)
     cache_dependencies = None
     try:
-        from importlib.metadata import version
         import json
-        import pytesseract
-        ocr_version = str(pytesseract.get_tesseract_version())
-        languages = pytesseract.get_languages(config="")
-        packages = {name: version(name) for name in
-                    ("pdfplumber", "pdfminer.six", "pytesseract", "numpy", "Pillow", "pypdfium2")}
-        if (extractor_hash and ocr_version.strip() and "eng" in languages
-                and all(isinstance(v, str) and v.strip() for v in packages.values())):
-            cache_dependencies = json.dumps({"extractor": extractor_hash, "ocr": ocr_version,
-                                             "languages": sorted(languages), "packages": packages}, sort_keys=True)
+        fingerprint = None
+        if os.environ.get("SEED_PARSER_ROOT"):
+            # parse_with_cache adds the provisioned worker's image, runtime,
+            # and OCR source fingerprint for credentialed parsing.
+            fingerprint = {}
+        elif os.environ.get("AUDIT_GITHUB_DATABASE_TLS") != "1":
+            from importlib.metadata import version
+            from ...native_ocr import engine_identity
+
+            ocr_version, languages = engine_identity()
+            packages = {name: version(name) for name in
+                        ("pdfplumber", "pdfminer.six", "numpy", "Pillow", "pypdfium2")}
+            if (ocr_version.strip() and "eng" in languages
+                    and all(isinstance(v, str) and v.strip() for v in packages.values())):
+                fingerprint = {"ocr": ocr_version, "languages": sorted(languages), "packages": packages}
+        if extractor_hash and fingerprint is not None:
+            cache_dependencies = json.dumps({"extractor": extractor_hash, **fingerprint}, sort_keys=True)
     except Exception:
         logger.info("Fiscal extractor fingerprint unavailable; bypassing parse cache")
 

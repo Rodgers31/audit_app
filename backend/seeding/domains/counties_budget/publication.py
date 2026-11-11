@@ -12,10 +12,12 @@ from pathlib import Path
 import re
 from urllib.parse import urlsplit
 
+from ...isolated_parser import isolated
 from services.response_receipts import acquisition_is_intact, copy_receipt, receipt_is_sealed, seal_receipt, persist_receipt
 
 _AUTHORITY = object()
 _LABEL = re.compile(r"^(?:Publication date|Published on):[ \t]*(.+?)[ \t]*$", re.IGNORECASE)
+
 _MONTHS = {name.lower(): i for i, name in enumerate(("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"), 1)}
 
 
@@ -50,6 +52,25 @@ def _full_date(raw):
     raise ValueError("Explicit full publisher publication date unavailable")
 
 
+@isolated("path")
+def _publication_candidates(path):
+    import pdfplumber
+    candidates = []
+    with pdfplumber.open(path, pages=[1, 2, 3]) as pdf:
+        for page in pdf.pages:
+            try:
+                text = page.extract_text() or ""
+                if len(text) > 100000:
+                    return None
+                for line in text.splitlines():
+                    match = _LABEL.fullmatch(line.strip())
+                    if match:
+                        candidates.append((_full_date(match[1]), page.page_number, line.strip()))
+            finally:
+                page.close()
+    return candidates
+
+
 def capture_publication_date(path: Path, receipt):
     """Read actual PDF text under an intact fresh financial-parser acquisition.
 
@@ -74,20 +95,9 @@ def capture_publication_date(path: Path, receipt):
                 or receipt.get("byte_check", {}).get("status") != "matched"
                 or receipt._store.read(receipt["storage_key"]) != body):
             return None, "publication_retained_bytes_mismatch"
-        import pdfplumber
-        candidates = []
-        with pdfplumber.open(path, pages=[1, 2, 3]) as pdf:
-            for page in pdf.pages:
-                try:
-                    text = page.extract_text() or ""
-                    if len(text) > 100000:
-                        return None, "publication_page_text_limit"
-                    for line in text.splitlines():
-                        match = _LABEL.fullmatch(line.strip())
-                        if match:
-                            candidates.append((_full_date(match[1]), page.page_number, line.strip()))
-                finally:
-                    page.close()
+        candidates = _publication_candidates(path)
+        if candidates is None:
+            return None, "publication_page_text_limit"
         if len(candidates) != 1:
             return None, "publication_date_missing_or_ambiguous"
         published, page, span = candidates[0]

@@ -87,21 +87,29 @@ the aggregate it would replace.
 
 from __future__ import annotations
 
+import json
 import logging
+import math
 from dataclasses import dataclass
-from decimal import Decimal
+from datetime import date
+from decimal import Decimal, InvalidOperation
 from typing import Any, Callable, Dict, List, Optional, Tuple
+
+import httpx
 
 from ...config import SeedingSettings
 from .fx import rate_provenance, usd_kes_rate_for_year
 from ...http_client import SeedingHttpClient
 from ...observations import ObservedSeries
+from .wb_ids_xml import parse_ids_xml
 from services.response_receipts import response_receipt, copy_receipt, seal_receipt
-import json
 
 logger = logging.getLogger("seeding.national_debt.wb_ids_creditors")
 
 _IDS_BASE = "https://api.worldbank.org/v2/sources/6/country/KEN/series"
+_IDS_PAGE_SIZE = 400
+_IDS_MAX_BODY_BYTES = 256 * 1024
+_IDS_SOURCE_NAME = "International Debt Statistics"
 
 # IDS reports USD; the rate to convert it is fetched per IDS year from the
 # World Bank's own PA.NUS.FCRF series — see fx.py. There is deliberately no
@@ -220,8 +228,8 @@ DECT_COMPONENTS: Tuple[DectComponent, ...] = (
 #
 # Carrying IMF credit moves the measured ratio from ~0.95 to ~1.08 for 2024,
 # so there is roughly 6% of headroom left below the ceiling. A pull that
-# breaches it quarantines and the fixture's external rows publish instead —
-# loudly, in the log and in payload metadata (see fetcher.fetch_debt_payload).
+# breaches it is quarantined, and fetcher.fetch_debt_payload refuses the
+# register before the writer runs.
 EXTERNAL_COVERAGE_BAND = (0.60, 1.15)
 
 
@@ -251,56 +259,128 @@ class Creditor:
         return Decimal(str(self.usd)) * self.usd_kes_rate
 
 
-def _fetch_series(
-    client: SeedingHttpClient, series: str, year: int
-) -> Dict[str, Tuple[str, float]]:
-    """{creditor name: (counterpart id, USD)} for one series and year."""
-    url = (
-        f"{_IDS_BASE}/{series}/counterpart-area/all/time/YR{year}"
-        "?format=json&per_page=400"
-    )
-    resp = client.get(url)
-    resp.raise_for_status()
-    payload = json.loads(resp.content, parse_float=Decimal)
-    receipt = response_receipt(resp, getattr(client, "receipt_store", None))
-    receipt = copy_receipt(receipt, parser_version="wb-ids-creditor-v1")
+class _IdsSeries(ObservedSeries):
+    def __init__(self, source_release: date, recovery_url: str | None):
+        super().__init__()
+        self.source_release = source_release.isoformat()
+        self.recovery_url = recovery_url
+
+
+def _parse_series_response(
+    client: SeedingHttpClient,
+    resp: httpx.Response,
+    url: str,
+    series: str,
+    year: int,
+    *,
+    xml: bool,
+) -> _IdsSeries:
+    content_type = resp.headers.get("content-type", "").split(";")[0].strip().lower()
+    expected_types = {"text/xml", "application/xml"} if xml else {"application/json"}
+    if (
+        resp.status_code != 200
+        or resp.url != httpx.URL(url)
+        or content_type not in expected_types
+        or not 0 < len(resp.content) <= _IDS_MAX_BODY_BYTES
+    ):
+        raise IdsCreditorError(f"{series}: unexpected IDS response transport")
     try:
-        records = payload["source"]["data"]
-    except (KeyError, TypeError) as exc:
+        payload = parse_ids_xml(resp.content) if xml else json.loads(
+            resp.content, parse_float=Decimal
+        )
+        source = payload["source"]
+        records = source["data"]
+        last_updated = date.fromisoformat(payload["lastupdated"])
+        if (
+            source["id"] != "6"
+            or source["name"] != _IDS_SOURCE_NAME
+            or not isinstance(records, list)
+            or any(type(payload[key]) is not int for key in ("page", "pages", "per_page", "total"))
+            or payload["page"] != 1
+            or payload["pages"] != 1
+            or payload["per_page"] != _IDS_PAGE_SIZE
+            or not 0 < payload["total"] == len(records) <= _IDS_PAGE_SIZE
+            or last_updated > date.today()
+        ):
+            raise ValueError("unqualified source or incomplete page")
+    except (KeyError, TypeError, ValueError) as exc:
         raise IdsCreditorError(f"{series}: unexpected IDS response shape") from exc
 
-    out: Dict[str, Tuple[str, float]] = ObservedSeries()
+    receipt = response_receipt(resp, getattr(client, "receipt_store", None))
+    if (
+        receipt.get("acquired_at") is None
+        or receipt.get("status") != 200
+        or receipt.get("request_url") != url
+        or receipt.get("response_url") != url
+    ):
+        raise IdsCreditorError(f"{series}: IDS acquisition does not match the live request")
+    parser_version = "wb-ids-creditor-xml-v1" if xml else "wb-ids-creditor-v1"
+    receipt = copy_receipt(receipt, parser_version=parser_version)
+    out = _IdsSeries(last_updated, url if xml else None)
+    expected = {"Country": "KEN", "Series": series, "Time": f"YR{year}"}
+    area_ids = set()
+    area_names = set()
     for index, record in enumerate(records):
-        if record.get("value") is None:
-            continue
-        dims = {v["concept"]: v for v in record.get("variable", [])}
-        area = dims.get("Counterpart-Area")
-        if not area:
-            continue
-        expected = {"Country": "KEN", "Series": series, "Time": f"YR{year}"}
+        try:
+            variables = record["variable"]
+            dims = {v["concept"]: v["id"] for v in variables}
+            area = next(v for v in variables if v["concept"] == "Counterpart-Area")
+            area_id = area["id"]
+            area_name = area["value"].strip()
+            raw = record["value"]
+            if len(variables) != 4 or len(dims) != 4 or not area_id or not area_name:
+                raise ValueError("invalid dimensions")
+            if (
+                not isinstance(area_id, str)
+                or area_id != area_id.strip()
+                or (area_id == "WLD") != (area_name == WORLD_ROW)
+            ):
+                raise ValueError("invalid counterpart identity")
+        except (AttributeError, KeyError, StopIteration, TypeError, ValueError) as exc:
+            raise IdsCreditorError(f"{series}: malformed IDS observation") from exc
         for concept, identity in expected.items():
-            if concept in dims and dims[concept].get("id") != identity:
+            if dims.get(concept) != identity:
                 raise IdsCreditorError(f"{series}: wrong {concept} in actual response")
-        raw = record["value"]
-        if isinstance(raw, bool) or not isinstance(raw, (int, Decimal)) or not Decimal(raw).is_finite() or raw < 0:
-            raise IdsCreditorError(f"{series}: invalid monetary observation")
-        if area["value"] in out:
+        if area_id in area_ids or area_name in area_names:
             raise IdsCreditorError(f"{series}: duplicate counterpart area")
-        out[area["value"]] = (area["id"], float(raw))
-        out.evidence[area["value"]] = [{
+        area_ids.add(area_id)
+        area_names.add(area_name)
+        if raw is None:
+            continue
+        if xml:
+            try:
+                if not isinstance(raw, str):
+                    raise ValueError("IDS XML amount must be text")
+                raw = Decimal(raw)
+            except (ValueError, InvalidOperation) as exc:
+                raise IdsCreditorError(f"{series}: invalid monetary observation") from exc
+        if (
+            isinstance(raw, bool) or not isinstance(raw, (int, Decimal))
+            or not Decimal(raw).is_finite() or raw < 0
+            or not math.isfinite(float(Decimal(raw)))
+            or last_updated.year < year
+        ):
+            raise IdsCreditorError(f"{series}: invalid monetary observation")
+        locator = (
+            {"xpath": f"/wb:data/wb:source/wb:data[{index + 1}]/wb:value"}
+            if xml else {"json_path": f"$.source.data[{index}].value"}
+        )
+        out[area_name] = (area_id, float(raw))
+        out.evidence[area_name] = [{
             "version": 1, "source_kind": "api", "_response_receipt": receipt,
             "receipt": {"digest": receipt["digest"]},
             "identity": {"measure": "outstanding", "entity_id": None, "geography": "KEN", "period": str(year),
                 "unit": "KES", "basis": "actual", "dimensions": {}},
             "raw_value": str(raw), "raw_unit": "USD", "unit": "KES", "value": None,
-            "locator": {"json_path": f"$.source.data[{index}].value", "indicator": series,
-                "country": "KEN", "date": str(year), "counterpart_area": area["id"]},
+            "locator": {**locator, "indicator": series,
+                "country": "KEN", "date": str(year), "counterpart_area": area_id},
             "transformation": {"operation": "currency_conversion", "factor": None, "rounding": 2},
-            "checks": {"identity": all(k in dims for k in expected), "value": False,
-                "transport": resp.status_code == 200 and receipt.get("acquired_at") is not None and payload.get("pages") == 1,
+            "checks": {"identity": True, "value": False, "transport": True,
                 "bytes": receipt["byte_check"]["status"] == "matched", "locator": True},
             "reconciliation": {"status": "not_checked", "reason": "independent_fx_operand_not_checked"},
         }]
+    if "WLD" not in area_ids or (out and WORLD_ROW not in out):
+        raise IdsCreditorError(f"{series}: no World row for {year}")
     # IDS supplies USD inputs. A normalized KES manifest would also need the
     # independent FX observation and resolved creditor identity; neither is
     # checked here. Retain the genuine acquisition without certifying a partial
@@ -308,6 +388,38 @@ def _fetch_series(
     receipt["observations"] = []
     seal_receipt(receipt)
     return out
+
+
+def _fetch_series(client: SeedingHttpClient, series: str, year: int) -> _IdsSeries:
+    """Try the documented IDS XML route after a transient JSON failure."""
+    endpoint = f"{_IDS_BASE}/{series}/counterpart-area/all/time/YR{year}"
+    url = f"{endpoint}?format=json&per_page={_IDS_PAGE_SIZE}"
+    request_options = {
+        "cache": False,
+        "follow_redirects": False,
+        "headers": {"Cache-Control": "no-cache"},
+    }
+    try:
+        resp = client.get(url, **request_options)
+        resp.raise_for_status()
+    except (httpx.HTTPStatusError, httpx.TransportError) as exc:
+        if isinstance(exc, httpx.HTTPStatusError) and not exc.response.is_server_error:
+            raise
+        # https://datahelpdesk.worldbank.org/knowledgebase/articles/1886686
+        logger.warning(
+            "IDS JSON unavailable for Kenya %s %s (%s); trying the World Bank's XML route",
+            series, year, exc,
+        )
+        xml_url = f"{endpoint}/data?format=xml&per_page={_IDS_PAGE_SIZE}"
+        resp = client.get(xml_url, timeout=10.0, **request_options)
+        resp.raise_for_status()
+        rows = _parse_series_response(client, resp, xml_url, series, year, xml=True)
+        logger.info(
+            "IDS XML validated for Kenya %s %s (release %s)",
+            series, year, rows.source_release,
+        )
+        return rows
+    return _parse_series_response(client, resp, url, series, year, xml=False)
 
 
 def latest_year_with_data(
@@ -319,16 +431,22 @@ def latest_year_with_data(
     Asking the API which year it has is the difference between a register that
     ages forward on its own and one that quietly freezes.
     """
-    from datetime import date
-
-    years = candidates or list(range(date.today().year, date.today().year - 6, -1))
+    current_year = date.today().year
+    years = candidates if candidates is not None else range(current_year, current_year - 6, -1)
     for year in years:
-        try:
-            if _fetch_series(client, TOTAL_SERIES, year).get(WORLD_ROW):
-                return year
-        except Exception as exc:  # noqa: BLE001 - try the next year
-            logger.debug("IDS %s unavailable for %s: %s", TOTAL_SERIES, year, exc)
+        # Only a qualified publisher response with no observations establishes
+        # that an edition has not published this year. A failed request cannot.
+        if _fetch_series(client, TOTAL_SERIES, year).get(WORLD_ROW):
+            return year
     return None
+
+
+def _record_series_acquisition(checks: dict, series: str, rows: _IdsSeries) -> None:
+    release = rows.source_release
+    if checks.setdefault("source_release", release) != release:
+        raise IdsCreditorError(f"{series}: IDS release differs from the other series")
+    if rows.recovery_url:
+        checks.setdefault("recovery_urls", {})[series] = rows.recovery_url
 
 
 def fetch_creditors(
@@ -343,7 +461,10 @@ def fetch_creditors(
     def rows_for(series: str) -> Dict[str, Tuple[str, float]]:
         """One request per series per run; callers get their own copy to pop."""
         if series not in cache:
-            cache[series] = _fetch_series(client, series, year)
+            rows = _fetch_series(client, series, year)
+            if isinstance(rows, _IdsSeries):
+                _record_series_acquisition(checks, series, rows)
+            cache[series] = rows
         return dict(cache[series])
 
     def world_usd(series: str) -> Decimal:
@@ -584,6 +705,8 @@ def fetch_interest_paid(
     checks: Dict[str, Any] = {"year": year, "series": {}}
     for stock_series, int_series in INTEREST_SERIES.items():
         rows = _fetch_series(client, int_series, year)
+        if isinstance(rows, _IdsSeries):
+            _record_series_acquisition(checks, int_series, rows)
         world = rows.pop(WORLD_ROW, None)
         if world is None:
             raise IdsCreditorError(
@@ -800,7 +923,10 @@ def fetch_external_creditors(
     interest: Optional[Dict[Tuple[str, str], float]] = None
     interest_unavailable_reason: Optional[str] = None
     try:
-        interest, interest_checks = fetch_interest_paid(client, year)
+        paid, interest_checks = fetch_interest_paid(client, year)
+        if interest_checks.get("source_release") != checks.get("source_release"):
+            raise IdsCreditorError("IDS interest release differs from the creditor stock release")
+        interest = paid
         checks["interest"] = interest_checks
     except Exception as exc:  # noqa: BLE001 - recorded on every row, not swallowed
         interest_unavailable_reason = f"{type(exc).__name__}: {exc}"[:200]

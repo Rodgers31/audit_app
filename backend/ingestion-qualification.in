@@ -1,0 +1,9 @@
+# Local qualification overlay only; never install into serving/runtime venvs.
+# Resolve with the exact ingestion-runtime.lock.json package pins as constraints.
+pytest==9.2.0
+pytest-asyncio==1.4.1
+pytest-cov==6.3.0
+pytest-mock==3.17.0
+schedule==1.2.2
+Pygments==2.20.0
+coverage>=7.5,<8

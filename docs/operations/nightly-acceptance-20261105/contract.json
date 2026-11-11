@@ -1,0 +1,139 @@
+{
+  "schema": "nightly-acceptance-contract-v1",
+  "baseline_commit": "0315cd8220e2a3ede99dbf92389dd4769f84aa47",
+  "baseline_tree": "cda4f46b2ae784bb1635d457e6fc69f2c06dd959",
+  "domains": [
+    "counties_budget",
+    "imf_weo",
+    "learning_hub",
+    "national_debt",
+    "national_gdp",
+    "population",
+    "stalled_projects",
+    "county_officials",
+    "debt_timeline",
+    "economic_indicators",
+    "fiscal_summary",
+    "revenue_by_source",
+    "pending_bills",
+    "national_budget",
+    "audits"
+  ],
+  "reference_run": 41953765083,
+  "reference_attempt": 1,
+  "original_evidence": {
+    "runs/41953765083/seed-job-complete.txt": {
+      "path": "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/nightly-comprehensive-20261105/runs/41953765083/seed-job-complete.txt",
+      "sha256": "9233d7f68fc0e1eee663a975c44e273ff983e30cba75b60b1313c7d85ec82c2f"
+    },
+    "runs/41953765083/jobs.json": {
+      "path": "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/nightly-comprehensive-20261105/runs/41953765083/jobs.json",
+      "sha256": "f7446e9de6d081dc3827ccf6a37d3d25dba67a7448b790a1a26c816c7e375280"
+    },
+    "seed-boundaries-v2.json": {
+      "path": "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/nightly-comprehensive-20261105/seed-boundaries-v2.json",
+      "sha256": "54381b505d9d2adddeea3b74d511ed8cb1390469c37bf4ee5b65a996d1bde049"
+    },
+    "github-observations-v1.json": {
+      "path": "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/nightly-comprehensive-20261105/github-observations-v1.json",
+      "sha256": "900e708d4b0f77f1357d06f8ed07b97ce0e94c7f677ba91d11982720076c8bf7"
+    },
+    "github-extra-v1.json": {
+      "path": "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/nightly-comprehensive-20261105/github-extra-v1.json",
+      "sha256": "5573202f45aad3b92a5e883e76a50381f6d360199849076b9e97fec20c8009b5"
+    }
+  },
+  "holds": [
+    "publishing",
+    "uploads",
+    "workers",
+    "financial_generation",
+    "drafts_shadow_master",
+    "auto_approval_scheduling_publishing",
+    "generation_hooks",
+    "native_financial_source_admission"
+  ],
+  "gates": [
+    {
+      "id": "combined-regression",
+      "scope": "local",
+      "criterion": "All four immutable engineering deliveries composed; exact relevant normal/-O inventories execute, including all 36 actual-PG cases; no skip/XPASS/collection-only passes."
+    },
+    {
+      "id": "workflow-semantics",
+      "scope": "local",
+      "criterion": "All workflow semantic validation plus actual preceding success/failure/skipped/cancelled controls; empty hosted check rollup is insufficient."
+    },
+    {
+      "id": "locked-python-runtime",
+      "scope": "local",
+      "criterion": "Offline install complete hash lock twice into fresh CPython3.12.16 Linux x86_64 venvs; compare distributions/installed files; pip check; parser/cache/proposal/receipt identities."
+    },
+    {
+      "id": "native-runtime",
+      "scope": "local",
+      "criterion": "Bind actual approved OS image/package inventory, linked libraries, OCR trained data, tesseract/poppler/JVM executable hashes; cached Debian13 lacks Poppler and differs from nightly Ubuntu24.04.5."
+    },
+    {
+      "id": "fiscal-authority",
+      "scope": "source-adoption",
+      "criterion": "Approve explicit fiscal period/basis/units/vintage and all five payload deltas; page/API/row/extraction/original official page chain; no null/borrowed/zero authority."
+    },
+    {
+      "id": "oag-authority",
+      "scope": "source-adoption",
+      "criterion": "Resolve paragraph778/2169 and cover authority; regenerate proposal against actual rows/dependencies; review every retirement/revision/addition; eleven original acquisitions/readbacks, ten distinct accepted origin gaps remain visible."
+    },
+    {
+      "id": "transport-dns-tls",
+      "scope": "local",
+      "criterion": "Actual bounded client DNS/connect/body recovery, bad TLS refusal, 47 unique CoG counties, retained last-good age; no pinned IP or TLS bypass."
+    },
+    {
+      "id": "cache-cold",
+      "scope": "local",
+      "criterion": "Cold parser/proposal/receipt/cache controls on exact source/corpus/runtime; held financial/audit evidence remains held."
+    },
+    {
+      "id": "cache-warm",
+      "scope": "local",
+      "criterion": "Same-source warm replay preserves identities and authority; byte/row/runtime mismatch invalidates reuse."
+    },
+    {
+      "id": "interruption-cleanup",
+      "scope": "local",
+      "criterion": "Bounded local interruption/partial failure proves exact owned process groups/containers/schema absence; no serving-host orphan claim."
+    },
+    {
+      "id": "refresh-acknowledgments",
+      "scope": "local-and-later-hosted",
+      "criterion": "Real inert HMAC server controls plus later original signed backend worker-census adoption acknowledgments before exact allowed frontend pages; bad/missing/duplicate/stale/partial ack refuses."
+    },
+    {
+      "id": "reviewed-release-admission",
+      "scope": "separate-authority",
+      "criterion": "Exact final reviewed commits/tree, approved source deltas, default-off controls, chosen runtime/native image, authorized ingestion pin/release and rollback packet. No dispatch here."
+    },
+    {
+      "id": "full15",
+      "scope": "later-authorized-hosted",
+      "criterion": "One exact comparable fifteen-domain ordinary CLI/PG inventory with source plan SHA/domains/run/attempt/admitted SHA/schema, all required terminal coverage, original captures/readbacks and backend-before-pages acknowledgments."
+    },
+    {
+      "id": "same-source-replay",
+      "scope": "later-authorized-hosted",
+      "criterion": "Distinct run/attempt with identical commit/tree/plan/runtime/schema/component and original source byte identities; compare observations, deltas, cache and acknowledgments. A narrow manual run cannot substitute."
+    },
+    {
+      "id": "ordinary-daily",
+      "scope": "later-ordinary-schedule",
+      "criterion": "Observe ordinary daily02UTC (now20:00 CST) after exact review/release/source adoption/admission; archive original run/jobs/full logs and all fifteen current IDs, no manual dispatch."
+    },
+    {
+      "id": "weekly-bootstrap-native",
+      "scope": "later-ordinary-schedule",
+      "criterion": "Separate Sunday03UTC (nowSaturday21:00 CST) weekly bootstrap/native opt-in plan including OpenData, cold-cache capacity, actual CLI/PG rows and refusal/refresh evidence; latest sampled weekly seed never executed."
+    }
+  ],
+  "schema_revision": "a756b20a0001"
+}
