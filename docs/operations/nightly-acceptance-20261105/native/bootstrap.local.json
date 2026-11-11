@@ -1,0 +1,6 @@
+{
+  "bundle_sha256": "643d1e9e2e728724d902e762db2bafd4ba20e067e53e218fec14c64e82046f42",
+  "job": "bootstrap",
+  "schema": "ingestion-native-job-v1",
+  "scope": "LOCAL_QUALIFICATION_ONLY"
+}

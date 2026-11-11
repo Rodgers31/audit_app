@@ -1,5 +1,7 @@
 # Controlled ingestion runtime candidate — 5 November 2026
 
+The November 10 candidate uses the [four local job profiles and hosted admission contract](JOB-PROFILES.md). The following sections describe the earlier November 5 delivery and its original holds.
+
 **The97-artifact image below has scoped37-case local evidence. The separately sealed104-artifact Git candidate remains unbuilt/unqualified.** Its1800-second resource queue expired without starting a build; the complete38-case rerun remains pending.
 
 **No writer profiles are approved.** The absent `migrate.json`, `bootstrap.json`, `seed.json` and `validate.json` remain an intentional admission hold. Do not copy an observed profile into those paths merely to satisfy the workflow's existence check.

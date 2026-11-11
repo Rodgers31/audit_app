@@ -103,8 +103,7 @@ env:
   PYTHON_DOTENV_DISABLED: '1'
   # Keep installed artifact identities stable across ordinary Python children.
   PYTHONDONTWRITEBYTECODE: '1'
-  # Shared database and seeding configuration
-  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  # Shared seeding configuration
   SEED_RATE_LIMIT: ${{ vars.SEED_RATE_LIMIT || '60/min' }}
   SEED_TIMEOUT_SECONDS: ${{ vars.SEED_TIMEOUT_SECONDS || '30.0' }}
   # Global wall-clock budget for `seed --all` (seconds). Kept below the
@@ -116,27 +115,13 @@ env:
   # CoB's indexed scan leaves parse reserve within its unchanged 600s domain
   # cap. Other PDF sources keep their own transfer limits.
   SEED_COB_PDF_DOWNLOAD_TIMEOUT_SECONDS: '420'
-  SEED_BUDGETS_DATASET_URL: ${{ secrets.SEED_BUDGETS_DATASET_URL }}
-  SEED_AUDITS_DATASET_URL: ${{ secrets.SEED_AUDITS_DATASET_URL }}
-  # OCR for scanned OAG audit-report PDFs (tesseract-ocr + poppler-utils
-  # are apt-installed in the seed job). Opt out by setting the repo
-  # Variable SEED_AUDITS_OCR_ENABLED=false.
+  # OCR for scanned OAG audit-report PDFs requires the admitted native runtime.
+  # Opt out with SEED_AUDITS_OCR_ENABLED=false.
   SEED_AUDITS_OCR_ENABLED: ${{ vars.SEED_AUDITS_OCR_ENABLED || 'true' }}
   SEED_AUDITS_OCR_MAX_PAGES: ${{ vars.SEED_AUDITS_OCR_MAX_PAGES || '30' }}
   # Source-qualified executive aging remains opt-in until bounded rollout.
   SEED_PENDING_BILLS_AGING_ENABLED: ${{ vars.SEED_PENDING_BILLS_AGING_ENABLED || 'false' }}
   SEED_PENDING_BILLS_ASSEMBLY_AGING_ENABLED: ${{ vars.SEED_PENDING_BILLS_ASSEMBLY_AGING_ENABLED || 'false' }}
-  SEED_POPULATION_DATASET_URL: ${{ secrets.SEED_POPULATION_DATASET_URL }}
-  SEED_ECONOMIC_INDICATORS_DATASET_URL: ${{ secrets.SEED_ECONOMIC_INDICATORS_DATASET_URL }}
-  # KRA FY-revenue page/PDF. The revenue_by_source domain overlays the live
-  # per-tax-head breakdown onto the fixture (gated by a plausibility check).
-  #
-  # This read `vars.SEED_KRA_REVENUE_URL` while the value was stored as a
-  # repository SECRET (set 2026-06-14) and no repository Variables exist at
-  # all — so it resolved to an empty string on every run and the overlay had
-  # never once executed. `secrets` first, `vars` kept as a fallback so either
-  # storage location works.
-  SEED_KRA_REVENUE_URL: ${{ secrets.SEED_KRA_REVENUE_URL || vars.SEED_KRA_REVENUE_URL }}
   # Listing pages used to DISCOVER the current edition of each periodically
   # republished document, so a new release is ingested automatically instead
   # of the pipeline re-reading a hardcoded path forever.
@@ -190,6 +175,12 @@ jobs:
           echo "$INGESTION_SCRATCH/runtime/bin" >> "$GITHUB_PATH"
       - name: Validate whitelisted plan
         id: plan
+        env:
+          SEED_BUDGETS_DATASET_URL: ${{ secrets.SEED_BUDGETS_DATASET_URL }}
+          SEED_AUDITS_DATASET_URL: ${{ secrets.SEED_AUDITS_DATASET_URL }}
+          SEED_POPULATION_DATASET_URL: ${{ secrets.SEED_POPULATION_DATASET_URL }}
+          SEED_ECONOMIC_INDICATORS_DATASET_URL: ${{ secrets.SEED_ECONOMIC_INDICATORS_DATASET_URL }}
+          SEED_KRA_REVENUE_URL: ${{ secrets.SEED_KRA_REVENUE_URL || vars.SEED_KRA_REVENUE_URL }}
         run: |
           cd backend
           python -m seeding.source_plan --check
@@ -604,33 +595,24 @@ jobs:
             *) exit 1 ;;
           esac
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
-          python-version: '3.12.16'
-      - name: Install reviewed ingestion runtime
-        run: |
-          # Native acceptance is separate from the Python artifact lock.
-          NATIVE_PROFILE="docs/operations/nightly-acceptance-20261105/native/$GITHUB_JOB.json"
-          if [ ! -f "$NATIVE_PROFILE" ] || [ ! -s "$NATIVE_PROFILE" ] || [ -L "$NATIVE_PROFILE" ]; then
-            echo "Reviewed native ingestion profile missing; writer remains held" >&2
-            exit 1
-          fi
-          for PROFILE_PARENT in docs docs/operations docs/operations/nightly-acceptance-20261105 docs/operations/nightly-acceptance-20261105/native; do
-            if [ -L "$PROFILE_PARENT" ]; then
-              echo "Reviewed native ingestion profile missing; writer remains held" >&2
-              exit 1
-            fi
-          done
-          INGESTION_SCRATCH="$RUNNER_TEMP/ingestion-$GITHUB_JOB"
-          python -B tools/nightly_acceptance_20261105/runtime.py acquire --wheelhouse "$INGESTION_SCRATCH/wheels"
-          python -B tools/nightly_acceptance_20261105/runtime.py wheels --wheelhouse "$INGESTION_SCRATCH/wheels"
-          python -B tools/nightly_acceptance_20261105/runtime.py install --wheelhouse "$INGESTION_SCRATCH/wheels" --venv "$INGESTION_SCRATCH/runtime"
-          "$INGESTION_SCRATCH/runtime/bin/python" -B tools/nightly_acceptance_20261105/runtime.py verify --native-profile "docs/operations/nightly-acceptance-20261105/native/$GITHUB_JOB.json"
-          echo "$INGESTION_SCRATCH/runtime/bin" >> "$GITHUB_PATH"
+          persist-credentials: false
+      - name: Record independent runner native diagnostics
+        run: >-
+          /usr/bin/env -i PATH=/usr/local/bin:/usr/bin:/bin LC_ALL=C.UTF-8
+          GITHUB_JOB="$GITHUB_JOB" /usr/bin/python3 -B
+          tools/nightly_acceptance_20261105/native_jobs.py runner-diagnostics
+      - name: Require hosted native writer admission
+        run: >-
+          /usr/bin/env -i PATH=/usr/local/bin:/usr/bin:/bin LC_ALL=C.UTF-8
+          GITHUB_JOB="$GITHUB_JOB" /usr/bin/python3 -B
+          tools/nightly_acceptance_20261105/native_jobs.py hosted-preflight --job migrate
       - name: Prepare verified writer TLS without copying credentials
         run: python -I -B scripts/verification/github_database_qualify.py --prepare-writer-tls
       - name: Qualify the stored target and require the accepted schema head
         timeout-minutes: 1
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           python -I -B scripts/verification/github_database_qualify.py --seed
           cd backend
@@ -650,6 +632,8 @@ jobs:
       # is worse than not writing.
       - name: Verify the deployed schema matches the models
         id: schema
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           cd backend
           python -c "
@@ -688,34 +672,32 @@ jobs:
       (github.event_name == 'schedule' && github.event.schedule == '0 3 * * 0')
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
-          python-version: '3.12.16'
-      - name: Install reviewed ingestion runtime
-        run: |
-          # Native acceptance is separate from the Python artifact lock.
-          NATIVE_PROFILE="docs/operations/nightly-acceptance-20261105/native/$GITHUB_JOB.json"
-          if [ ! -f "$NATIVE_PROFILE" ] || [ ! -s "$NATIVE_PROFILE" ] || [ -L "$NATIVE_PROFILE" ]; then
-            echo "Reviewed native ingestion profile missing; writer remains held" >&2
-            exit 1
-          fi
-          for PROFILE_PARENT in docs docs/operations docs/operations/nightly-acceptance-20261105 docs/operations/nightly-acceptance-20261105/native; do
-            if [ -L "$PROFILE_PARENT" ]; then
-              echo "Reviewed native ingestion profile missing; writer remains held" >&2
-              exit 1
-            fi
-          done
-          INGESTION_SCRATCH="$RUNNER_TEMP/ingestion-$GITHUB_JOB"
-          python -B tools/nightly_acceptance_20261105/runtime.py acquire --wheelhouse "$INGESTION_SCRATCH/wheels"
-          python -B tools/nightly_acceptance_20261105/runtime.py wheels --wheelhouse "$INGESTION_SCRATCH/wheels"
-          python -B tools/nightly_acceptance_20261105/runtime.py install --wheelhouse "$INGESTION_SCRATCH/wheels" --venv "$INGESTION_SCRATCH/runtime"
-          "$INGESTION_SCRATCH/runtime/bin/python" -B tools/nightly_acceptance_20261105/runtime.py verify --native-profile "docs/operations/nightly-acceptance-20261105/native/$GITHUB_JOB.json"
-          echo "$INGESTION_SCRATCH/runtime/bin" >> "$GITHUB_PATH"
+          persist-credentials: false
+      - name: Record independent runner native diagnostics
+        run: >-
+          /usr/bin/env -i PATH=/usr/local/bin:/usr/bin:/bin LC_ALL=C.UTF-8
+          GITHUB_JOB="$GITHUB_JOB" /usr/bin/python3 -B
+          tools/nightly_acceptance_20261105/native_jobs.py runner-diagnostics
+      - name: Require hosted native writer admission
+        run: >-
+          /usr/bin/env -i PATH=/usr/local/bin:/usr/bin:/bin LC_ALL=C.UTF-8
+          GITHUB_JOB="$GITHUB_JOB" /usr/bin/python3 -B
+          tools/nightly_acceptance_20261105/native_jobs.py hosted-preflight --job bootstrap
       - name: Prepare verified writer TLS without copying credentials
         run: python -I -B scripts/verification/github_database_qualify.py --prepare-writer-tls
       - name: Qualify this job's actual database connection
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: python -I -B scripts/verification/github_database_qualify.py --seed
       - name: Run bootstrap seeding
+        env:
+          SEED_BUDGETS_DATASET_URL: ${{ secrets.SEED_BUDGETS_DATASET_URL }}
+          SEED_AUDITS_DATASET_URL: ${{ secrets.SEED_AUDITS_DATASET_URL }}
+          SEED_POPULATION_DATASET_URL: ${{ secrets.SEED_POPULATION_DATASET_URL }}
+          SEED_ECONOMIC_INDICATORS_DATASET_URL: ${{ secrets.SEED_ECONOMIC_INDICATORS_DATASET_URL }}
+          SEED_KRA_REVENUE_URL: ${{ secrets.SEED_KRA_REVENUE_URL || vars.SEED_KRA_REVENUE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           cd backend
           python -c "
@@ -759,45 +741,33 @@ jobs:
       SEED_RECEIPT_MAX_BYTES: ${{ vars.SEED_RECEIPT_MAX_BYTES }}
       SEED_RECEIPT_PART_MAX_BYTES: ${{ vars.SEED_RECEIPT_PART_MAX_BYTES }}
       SEED_RECEIPT_STORAGE_TIMEOUT_SECONDS: ${{ vars.SEED_RECEIPT_STORAGE_TIMEOUT_SECONDS || '30' }}
-      RECEIPT_SUPABASE_SECRET_KEY: ${{ secrets.RECEIPT_SUPABASE_SECRET_KEY }}
-      RECEIPT_R2_ACCESS_KEY_ID: ${{ secrets.RECEIPT_R2_ACCESS_KEY_ID }}
-      RECEIPT_R2_SECRET_ACCESS_KEY: ${{ secrets.RECEIPT_R2_SECRET_ACCESS_KEY }}
-      RECEIPT_R2_CONTROL_TOKEN: ${{ secrets.RECEIPT_R2_CONTROL_TOKEN }}
     steps:
       - id: checkout
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
-      - id: python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
-          python-version: '3.12.16'
-      # OCR system deps for scanned OAG audit PDFs (SEED_AUDITS_OCR_ENABLED)
-      - id: ocr
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq tesseract-ocr poppler-utils
-      - id: dependencies
-        run: |
-          # Native acceptance is separate from the Python artifact lock.
-          NATIVE_PROFILE="docs/operations/nightly-acceptance-20261105/native/$GITHUB_JOB.json"
-          if [ ! -f "$NATIVE_PROFILE" ] || [ ! -s "$NATIVE_PROFILE" ] || [ -L "$NATIVE_PROFILE" ]; then
-            echo "Reviewed native ingestion profile missing; writer remains held" >&2
-            exit 1
-          fi
-          for PROFILE_PARENT in docs docs/operations docs/operations/nightly-acceptance-20261105 docs/operations/nightly-acceptance-20261105/native; do
-            if [ -L "$PROFILE_PARENT" ]; then
-              echo "Reviewed native ingestion profile missing; writer remains held" >&2
-              exit 1
-            fi
-          done
-          INGESTION_SCRATCH="$RUNNER_TEMP/ingestion-$GITHUB_JOB"
-          python -B tools/nightly_acceptance_20261105/runtime.py acquire --wheelhouse "$INGESTION_SCRATCH/wheels"
-          python -B tools/nightly_acceptance_20261105/runtime.py wheels --wheelhouse "$INGESTION_SCRATCH/wheels"
-          python -B tools/nightly_acceptance_20261105/runtime.py install --wheelhouse "$INGESTION_SCRATCH/wheels" --venv "$INGESTION_SCRATCH/runtime"
-          "$INGESTION_SCRATCH/runtime/bin/python" -B tools/nightly_acceptance_20261105/runtime.py verify --native-profile "docs/operations/nightly-acceptance-20261105/native/$GITHUB_JOB.json"
-          echo "$INGESTION_SCRATCH/runtime/bin" >> "$GITHUB_PATH"
+          persist-credentials: false
+      - name: Report the runner interpreter
+        id: python
+        run: /usr/bin/python3 -I -B --version
+      - name: Record independent runner native diagnostics
+        id: ocr
+        run: >-
+          /usr/bin/env -i PATH=/usr/local/bin:/usr/bin:/bin LC_ALL=C.UTF-8
+          GITHUB_JOB="$GITHUB_JOB" /usr/bin/python3 -B
+          tools/nightly_acceptance_20261105/native_jobs.py runner-diagnostics
+      - name: Require hosted native writer admission
+        id: dependencies
+        run: >-
+          /usr/bin/env -i PATH=/usr/local/bin:/usr/bin:/bin LC_ALL=C.UTF-8
+          GITHUB_JOB="$GITHUB_JOB" /usr/bin/python3 -B
+          tools/nightly_acceptance_20261105/native_jobs.py hosted-preflight --job seed
       - name: Prepare verified writer TLS without copying credentials
         id: writer_tls
         run: python -I -B scripts/verification/github_database_qualify.py --prepare-writer-tls
       - name: Qualify this job's actual database connection
         id: database
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: python -I -B scripts/verification/github_database_qualify.py --seed
 
       # Persist downloaded source PDFs across runs. The COB county BIRR PDF is
@@ -848,6 +818,8 @@ jobs:
 
       - name: Capture the native run's job boundary
         id: native_boundary
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           cd backend
           python <<'PY'
@@ -868,6 +840,17 @@ jobs:
       - name: Seed planned domains
         id: cli
         timeout-minutes: 45
+        env:
+          SEED_BUDGETS_DATASET_URL: ${{ secrets.SEED_BUDGETS_DATASET_URL }}
+          SEED_AUDITS_DATASET_URL: ${{ secrets.SEED_AUDITS_DATASET_URL }}
+          SEED_POPULATION_DATASET_URL: ${{ secrets.SEED_POPULATION_DATASET_URL }}
+          SEED_ECONOMIC_INDICATORS_DATASET_URL: ${{ secrets.SEED_ECONOMIC_INDICATORS_DATASET_URL }}
+          SEED_KRA_REVENUE_URL: ${{ secrets.SEED_KRA_REVENUE_URL || vars.SEED_KRA_REVENUE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RECEIPT_SUPABASE_SECRET_KEY: ${{ secrets.RECEIPT_SUPABASE_SECRET_KEY }}
+          RECEIPT_R2_ACCESS_KEY_ID: ${{ secrets.RECEIPT_R2_ACCESS_KEY_ID }}
+          RECEIPT_R2_SECRET_ACCESS_KEY: ${{ secrets.RECEIPT_R2_SECRET_ACCESS_KEY }}
+          RECEIPT_R2_CONTROL_TOKEN: ${{ secrets.RECEIPT_R2_CONTROL_TOKEN }}
         run: |
           cd backend
           echo "started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
@@ -918,7 +901,7 @@ jobs:
       # 2026-09-03 — and it makes test_workflow_inline_scripts.py skip the step
       # instead of checking it.
       - name: Fingerprint the PDF cache
-        if: always()
+        if: always() && steps.dependencies.outcome == 'success'
         id: pdf_cache_state
         env:
           PDF_CACHE_PERIOD: ${{ steps.pdf_cache_period.outputs.period }}
@@ -945,7 +928,7 @@ jobs:
         id: save_pdfs
         # Keep the ordinary all-source cache bank intact after a one-source
         # qualification; do not replace its latest snapshot with one PDF.
-        if: always() && env.SEED_PLAN_REACQUIRE_PENDING_BILLS_PDF != 'true' && env.SEED_PLAN_AUDITS_SOURCE_ACCEPTANCE == '' && steps.pdf_cache_state.outputs.files != '0' && steps.pdf_cache_state.outputs.key != steps.restore_pdfs.outputs.cache-matched-key
+        if: always() && steps.dependencies.outcome == 'success' && env.SEED_PLAN_REACQUIRE_PENDING_BILLS_PDF != 'true' && env.SEED_PLAN_AUDITS_SOURCE_ACCEPTANCE == '' && steps.pdf_cache_state.outputs.files != '0' && steps.pdf_cache_state.outputs.key != steps.restore_pdfs.outputs.cache-matched-key
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: backend/data/seeding/cache/pdfs
@@ -955,6 +938,7 @@ jobs:
         id: results
         if: ${{ !cancelled() && steps.database.outcome == 'success' && steps.native_boundary.outcome == 'success' }}
         env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
           SEED_ADMITTED_SHA: ${{ needs.migrate.outputs.source_sha }}
           SEED_SCHEMA_HEAD: ${{ needs.migrate.outputs.schema_head }}
           SEED_PLANNED_SHA: ${{ needs.source_plan.outputs.source_sha }}
@@ -1169,32 +1153,23 @@ jobs:
     if: ${{ !cancelled() && needs.migrate.result == 'success' && github.event.inputs.run_validation != 'false' }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
-          python-version: '3.12.16'
-      - name: Install reviewed ingestion runtime
-        run: |
-          # Native acceptance is separate from the Python artifact lock.
-          NATIVE_PROFILE="docs/operations/nightly-acceptance-20261105/native/$GITHUB_JOB.json"
-          if [ ! -f "$NATIVE_PROFILE" ] || [ ! -s "$NATIVE_PROFILE" ] || [ -L "$NATIVE_PROFILE" ]; then
-            echo "Reviewed native ingestion profile missing; writer remains held" >&2
-            exit 1
-          fi
-          for PROFILE_PARENT in docs docs/operations docs/operations/nightly-acceptance-20261105 docs/operations/nightly-acceptance-20261105/native; do
-            if [ -L "$PROFILE_PARENT" ]; then
-              echo "Reviewed native ingestion profile missing; writer remains held" >&2
-              exit 1
-            fi
-          done
-          INGESTION_SCRATCH="$RUNNER_TEMP/ingestion-$GITHUB_JOB"
-          python -B tools/nightly_acceptance_20261105/runtime.py acquire --wheelhouse "$INGESTION_SCRATCH/wheels"
-          python -B tools/nightly_acceptance_20261105/runtime.py wheels --wheelhouse "$INGESTION_SCRATCH/wheels"
-          python -B tools/nightly_acceptance_20261105/runtime.py install --wheelhouse "$INGESTION_SCRATCH/wheels" --venv "$INGESTION_SCRATCH/runtime"
-          "$INGESTION_SCRATCH/runtime/bin/python" -B tools/nightly_acceptance_20261105/runtime.py verify --native-profile "docs/operations/nightly-acceptance-20261105/native/$GITHUB_JOB.json"
-          echo "$INGESTION_SCRATCH/runtime/bin" >> "$GITHUB_PATH"
+          persist-credentials: false
+      - name: Record independent runner native diagnostics
+        run: >-
+          /usr/bin/env -i PATH=/usr/local/bin:/usr/bin:/bin LC_ALL=C.UTF-8
+          GITHUB_JOB="$GITHUB_JOB" /usr/bin/python3 -B
+          tools/nightly_acceptance_20261105/native_jobs.py runner-diagnostics
+      - name: Require hosted native writer admission
+        run: >-
+          /usr/bin/env -i PATH=/usr/local/bin:/usr/bin:/bin LC_ALL=C.UTF-8
+          GITHUB_JOB="$GITHUB_JOB" /usr/bin/python3 -B
+          tools/nightly_acceptance_20261105/native_jobs.py hosted-preflight --job validate
       - name: Prepare verified writer TLS without copying credentials
         run: python -I -B scripts/verification/github_database_qualify.py --prepare-writer-tls
       - name: Qualify this job's actual database connection
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: python -I -B scripts/verification/github_database_qualify.py --seed
 
       # Validation runs on a separate runner: the seed job's filesystem is
@@ -1209,6 +1184,8 @@ jobs:
             seed-pdf-cache-
 
       - name: Prepare reviewed retained county-source bytes
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           cd backend
           python -m seeding.source_cache \
@@ -1216,6 +1193,8 @@ jobs:
             --receipt ../retained-source-cache-validation.json
 
       - name: Validate seeded data
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           cd backend
           python -c "
