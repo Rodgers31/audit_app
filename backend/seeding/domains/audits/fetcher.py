@@ -371,7 +371,7 @@ def _download_and_parse_audit_pdf(
 
 
 def _ocr_pdf_text(pdf_path: Path, max_pages: int = 30) -> str:
-    """OCR a scanned PDF into text (pdf2image + pytesseract).
+    """OCR a scanned PDF into text using bounded Poppler and Tesseract calls.
 
     Returns "" when the OCR stack isn't installed or fails — callers
     treat that identically to a text-less PDF. Pages are rendered one
@@ -379,8 +379,8 @@ def _ocr_pdf_text(pdf_path: Path, max_pages: int = 30) -> str:
     hold hundreds of rasterised pages in memory.
     """
     try:
-        import pytesseract
-        from pdf2image import convert_from_path, pdfinfo_from_path
+        from pdf2image import pdfinfo_from_path
+        from ...native_ocr import NATIVE_TIMEOUT, read_page
     except ImportError:
         logger.warning(
             "OCR requested but pytesseract/pdf2image not installed — "
@@ -390,7 +390,7 @@ def _ocr_pdf_text(pdf_path: Path, max_pages: int = 30) -> str:
         return ""
 
     try:
-        info = pdfinfo_from_path(pdf_path)
+        info = pdfinfo_from_path(pdf_path, timeout=NATIVE_TIMEOUT)
         total_pages = int(info.get("Pages", 0)) or 1
     except Exception as exc:
         logger.warning("OCR: could not read PDF info: %s", exc)
@@ -407,13 +407,9 @@ def _ocr_pdf_text(pdf_path: Path, max_pages: int = 30) -> str:
     chunks: List[str] = []
     for page_no in range(1, pages_to_read + 1):
         try:
-            images = convert_from_path(
-                pdf_path, dpi=200, first_page=page_no, last_page=page_no
-            )
-            for image in images:
-                text = pytesseract.image_to_string(image)
-                if text.strip():
-                    chunks.append(text)
+            text = read_page(pdf_path, page_no)
+            if text.strip():
+                chunks.append(text)
         except Exception as exc:
             logger.warning("OCR failed on page %d: %s", page_no, exc)
             break

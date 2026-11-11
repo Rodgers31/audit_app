@@ -5,16 +5,28 @@ on:
   workflow_dispatch:
     inputs:
       purpose:
-        description: 'Existing writer-target qualification or archived reader-contract inspection'
+        description: 'Existing writer-target qualification, archived reader inspection, or native runner observation'
         type: choice
         default: github-writer-target
-        options: [github-writer-target, legacy-reader-inspection]
+        options: [github-writer-target, legacy-reader-inspection, native-runner-observation]
 permissions:
   contents: read
 concurrency:
   group: ingestion-read-only-preflight
   cancel-in-progress: false
 jobs:
+  observe_native_runner:
+    if: inputs.purpose == 'native-runner-observation' && github.repository == 'Rodgers31/audit_app' && github.ref == 'refs/heads/codex/consolidated-execution-20261104'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Observe the standard runner with an isolated digest-pinned base
+        timeout-minutes: 3
+        run: python3 -B tools/nightly_acceptance_20261105/hosted_runner_observation.py
   qualify_github_writer:
     if: inputs.purpose == 'github-writer-target'
     runs-on: ubuntu-latest

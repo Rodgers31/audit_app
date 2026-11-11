@@ -603,7 +603,7 @@ def _read_image_annex(page) -> str:
     pixels[:, vertical] = 255
     pixels[horizontal, :] = 255
     text = pytesseract.image_to_string(
-        Image.fromarray(pixels), config="--psm 6 -c preserve_interword_spaces=1", timeout=20,
+        Image.fromarray(pixels), lang="eng", config="--psm 6 -c preserve_interword_spaces=1", timeout=20,
     )
     if not isinstance(text, str) or not 1 <= len(text) <= 100_000:
         raise FiscalFrameworkError("ocr_text_bounds")

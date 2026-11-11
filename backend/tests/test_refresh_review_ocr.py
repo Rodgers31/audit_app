@@ -37,6 +37,7 @@ def harness(tmp_path,monkeypatch,*,partial=None,images=True,second=False,enabled
     def ocr(*args,**kwargs):
         state['calls']+=1
         require(kwargs.get('timeout')==20,'OCR must remain bounded to20seconds')
+        require(kwargs.get('lang') == 'eng', 'OCR must use a single fixed language')
         if state['error'] is not None:raise state['error']
         return state['ocr_text']
     fake.image_to_string=ocr

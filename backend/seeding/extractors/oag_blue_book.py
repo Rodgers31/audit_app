@@ -737,19 +737,10 @@ def read_pages(
 
 
 def _ocr_page(pdf_path: Path, page_number: int) -> str:
+    from ..native_ocr import read_page
+
     try:
-        import pytesseract
-        from pdf2image import convert_from_path
-    except ImportError:
-        logger.warning(
-            "OCR fallback requested but pytesseract/pdf2image not installed"
-        )
-        return ""
-    try:
-        images = convert_from_path(
-            pdf_path, dpi=200, first_page=page_number, last_page=page_number
-        )
-        return "\n".join(pytesseract.image_to_string(img) for img in images)
+        return read_page(pdf_path, page_number)
     except Exception as exc:
         logger.warning("OCR failed on page %d: %s", page_number, exc)
         return ""
