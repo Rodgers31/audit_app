@@ -194,7 +194,7 @@ def test_selected_full_source_preserves_unowned_columns_keys_and_histories(attac
 
 
 def test_real_fetch_writer_title_and_metadata_upsert_is_supported(monkeypatch, tmp_path):
-    """Run the writer itself; fake transport/byte identity, never its mutations."""
+    """Run the writer on an already-held contextless source; mutations are real."""
     from models import SourceDocument, DocumentType, DocumentStatus
     from seeding.config import SeedingSettings
     import seeding.fetch_documents as fetcher
@@ -202,8 +202,17 @@ def test_real_fetch_writer_title_and_metadata_upsert_is_supported(monkeypatch, t
     url = next(u for u, s in before["sources"].items() if s["id"] in before["selected_ids"])
     entry = images.accepted_editions()[url]
     old = before["sources"][url]
+    # This seam checks title/metadata preservation, without authorizing a
+    # change to the separately guarded acquisition-origin metadata key.
+    held_origin = {
+        "version": 1, "state": "held", "reason": "context_unavailable",
+        "source_document_id": old["id"], "ingestion_id": None,
+        "origin_extraction_id": None, "retained_bytes": None,
+        "origin_qualified": False, "native_publication_authority": False,
+    }
     old.update(md5=entry["md5"], status="FAILED", fetch_date="2026-10-01T00:00:00",
-               metadata={"independent_review": {"owner": "kept"}, "previous_titles": ["older"], "fetch_error": "old failure"})
+               metadata={"independent_review": {"owner": "kept"}, "previous_titles": ["older"],
+                         "fetch_error": "old failure", "audit_acquisition_origin_v1": held_origin})
     from datetime import datetime
     doc = SourceDocument(**{("meta" if k == "metadata" else k): copy.deepcopy(v) for k, v in old.items()})
     doc.doc_type = DocumentType.AUDIT; doc.status = DocumentStatus.FAILED
@@ -224,6 +233,7 @@ def test_real_fetch_writer_title_and_metadata_upsert_is_supported(monkeypatch, t
     assert after["sources"][url]["metadata"]["previous_titles"] == ["older", "Retained publisher title"]
     assert after["sources"][url]["metadata"]["independent_review"] == {"owner": "kept"}
     assert after["sources"][url]["metadata"]["fetch_error"] == "old failure"
+    assert after["sources"][url]["metadata"]["audit_acquisition_origin_v1"] == held_origin
 
 
 def _capture_cli(monkeypatch, tmp_path, result):

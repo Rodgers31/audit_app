@@ -25,6 +25,7 @@ REPOSITORY = 'Rodgers31/audit_app'
 REF = 'refs/heads/codex/consolidated-execution-20261104'
 COMPANION = '5a7ad4c5aa7ef3d52a3eff08df9cb325f45b7b5b'
 COMMON_BASE = 'fe6dc884f35997bbcda93a460d9f34d442726b5d'
+OFFLINE_FIXTURE_REVISION = '2d04e1c81c8e87dfd49f4a0fdf18d39e0f0f9050'
 TAG = 'native-qualification-915-20261111'
 IMAGE = 'auditgava-native-qualification:915-20261111'
 ASSET = 'auditgava-native-915-linux-amd64.tar'
@@ -300,10 +301,11 @@ def qualify_hosted():
     revision = git('rev-parse', 'HEAD').decode().strip()
     require(revision == digest(env.get('GITHUB_SHA'), length=40)
             and env.get('GITHUB_WORKFLOW_SHA') == revision, 'checkout source differs')
-    git('fetch', '--no-tags', '--depth=16', f'https://github.com/{REPOSITORY}.git', COMPANION, timeout=100)
-    require(git('merge-base', revision, COMPANION).decode().strip() == COMMON_BASE,
+    git('fetch', '--no-tags', '--depth=16', f'https://github.com/{REPOSITORY}.git',
+        OFFLINE_FIXTURE_REVISION, COMPANION, timeout=100)
+    require(git('merge-base', OFFLINE_FIXTURE_REVISION, COMPANION).decode().strip() == COMMON_BASE,
             'qualification companion base differs')
-    tree = digest(git('merge-tree', '--write-tree', revision, COMPANION).decode().strip(), length=40)
+    tree = digest(git('merge-tree', '--write-tree', OFFLINE_FIXTURE_REVISION, COMPANION).decode().strip(), length=40)
     with BoundEvidence(maximum_bytes=8192) as bound:
         manifest = loads(bound.read(runtime.ROOT / 'docs/operations/nightly-acceptance-20261105/native/candidate.json'))
     fields(manifest, ('archive_sha256', 'archive_bytes', 'manifest', 'config', 'layers', 'semantic_sha256'))
@@ -344,7 +346,8 @@ def qualify_hosted():
             wheels.chmod(0o755)
             inputs['/wheels-' + destination] = wheels
         result = run_candidate(docker, image['Id'], inputs, expected_semantics)
-    return {**result, 'source': revision, 'companion': COMPANION, 'tree': tree, 'manifest': manifest['manifest'], 'archive_sha256': manifest['archive_sha256'],
+    return {**result, 'source': OFFLINE_FIXTURE_REVISION, 'launcher_source': revision,
+            'companion': COMPANION, 'tree': tree, 'manifest': manifest['manifest'], 'archive_sha256': manifest['archive_sha256'],
             'runner_image': env.get('ImageOS'), 'runner_image_version': env.get('ImageVersion')}
 
 

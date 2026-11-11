@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 import logging
+import math
+import ssl
+import signal
+import threading
 import re
 import os
 import tempfile
 import time
-from contextlib import AbstractContextManager
+from contextlib import AbstractContextManager, contextmanager
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 from urllib.parse import urlparse
@@ -56,7 +60,60 @@ class PdfDownloadIncomplete(PdfDownloadError):
         self.resumable = resumable
 
 
+def _certificate_failure(exception: BaseException) -> bool:
+    """Certificate/authority refusal is permanent for this verified origin."""
+    seen = set()
+    while exception is not None and id(exception) not in seen:
+        seen.add(id(exception))
+        if isinstance(exception, ssl.SSLCertVerificationError):
+            return True
+        if "CERTIFICATE_VERIFY_FAILED" in str(exception) or "certificate verify failed" in str(exception).lower():
+            return True
+        exception = exception.__cause__ or exception.__context__
+    return False
+
+
+def _positive_bound(value, name, *, integer=False):
+    if (isinstance(value, bool) or not isinstance(value, (int, float))
+            or not math.isfinite(value) or value <= 0
+            or integer and type(value) is not int):
+        raise ValueError(f"{name} must be a finite positive {'integer' if integer else 'number'}")
+    return value
+
+
+@contextmanager
+def _wall_clock_budget(seconds):
+    """Interrupt DNS, rate-limit waits and body reads without extending CLI alarm.
+
+    The seeder runs synchronously in a main-thread process. Unsupported direct
+    callers refuse rather than silently offer a cooperative-only deadline.
+    """
+    if threading.current_thread() is not threading.main_thread() or not hasattr(signal, "setitimer"):
+        raise ValueError("Bounded acquisition requires a main-thread interval timer")
+    previous_handler = signal.getsignal(signal.SIGALRM)
+    previous_delay, previous_interval = signal.getitimer(signal.ITIMER_REAL)
+    started = time.monotonic()
+    # An earlier domain alarm retains its stronger refusal contract.
+    owns_timer = previous_delay == 0 or previous_delay > seconds
+    def expired(signum, frame):
+        raise httpx.TimeoutException("body acquisition wall-clock deadline exceeded")
+    if owns_timer:
+        signal.signal(signal.SIGALRM, expired)
+        signal.setitimer(signal.ITIMER_REAL, seconds)
+    try:
+        yield
+    finally:
+        if owns_timer:
+            signal.setitimer(signal.ITIMER_REAL, 0)
+            signal.signal(signal.SIGALRM, previous_handler)
+            if previous_delay:
+                signal.setitimer(signal.ITIMER_REAL,
+                    max(0.000001, previous_delay - (time.monotonic() - started)), previous_interval)
+
+
 def _is_retryable(exception: BaseException) -> bool:
+    if _certificate_failure(exception):
+        return False
     if isinstance(exception, httpx.HTTPStatusError):
         status = exception.response.status_code
         return status >= 500 or status == 429
@@ -144,6 +201,10 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
         cache: Optional[bool] = None,
         **kwargs: Any,
     ) -> httpx.Response:
+        if "max_seconds" in kwargs or "max_bytes" in kwargs or "allowed_hosts" in kwargs:
+            if method.upper() != "GET":
+                raise ValueError("Bounded body acquisition requires GET")
+            return self._bounded_get(url, raise_for_status=raise_for_status, **kwargs)
         method_upper = method.upper()
         params = kwargs.get("params")
         use_cache = cache if cache is not None else self._settings.http_cache_enabled
@@ -218,6 +279,107 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
             self._cache.set(response)
         return response
 
+    def _bounded_get(self, url, *, max_seconds, **kwargs):
+        _positive_bound(max_seconds, "max_seconds")
+        with _wall_clock_budget(max_seconds):
+            return self._bounded_get_body(url, max_seconds=max_seconds, **kwargs)
+
+    def _bounded_get_body(self, url, *, max_seconds, max_bytes, allowed_hosts,
+                     raise_for_status=True, **kwargs):
+        """Acquire a small official body under cumulative retry/deadline caps.
+
+        Partial bodies are discarded. Only the completed response is captured;
+        a cache cannot turn retained bytes into a fresh source observation.
+        """
+        _positive_bound(max_seconds, "max_seconds")
+        _positive_bound(max_bytes, "max_bytes", integer=True)
+        attempts = _positive_bound(self._settings.max_retries, "max_retries", integer=True)
+        backoff = _positive_bound(self._settings.retry_backoff, "retry_backoff")
+        if (type(allowed_hosts) not in (set, frozenset) or not allowed_hosts
+                or any(type(host) is not str or not host for host in allowed_hosts)):
+            raise ValueError("Explicit official host set required")
+        def check_origin(target):
+            parsed = urlparse(str(target))
+            if (parsed.scheme != "https" or parsed.hostname not in allowed_hosts
+                    or parsed.username is not None or parsed.password is not None
+                    or parsed.port not in (None, 443)):
+                raise ValueError("Official HTTPS origin required")
+        check_origin(url)
+        if kwargs.pop("cache", False) or kwargs.pop("stream", False):
+            raise ValueError("Bounded acquisition requires a fresh complete body")
+        kwargs.pop("follow_redirects", None)
+        supplied_timeout = kwargs.pop("timeout", self._settings.timeout_seconds)
+        _positive_bound(supplied_timeout, "timeout")
+        deadline = time.monotonic() + max_seconds
+        consumed = 0
+        for attempt in range(attempts):
+            target = httpx.URL(url)
+            try:
+                # Redirects consume the same deadline and bytes, and are checked
+                # before the next connection, not after an unsafe fetch.
+                for redirects in range(6):
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise httpx.TimeoutException("body acquisition deadline exceeded")
+                    with self._rate_limiter.context():
+                        remaining = deadline - time.monotonic()
+                        if remaining <= 0:
+                            raise httpx.TimeoutException("body acquisition deadline exceeded")
+                        transport_client = self._client_for(str(target))
+                        with transport_client.stream(
+                            "GET", target, follow_redirects=False,
+                            timeout=min(remaining, supplied_timeout), **kwargs
+                        ) as response:
+                            if response.status_code in (301, 302, 303, 307, 308):
+                                redirected = response.url.join(response.headers["location"])
+                                check_origin(redirected)
+                                if ((redirected.scheme, redirected.host, redirected.port)
+                                        != (target.scheme, target.host, target.port)
+                                        and (any(h in response.request.headers for h in
+                                                 ("authorization", "cookie", "proxy-authorization"))
+                                             or getattr(transport_client, "auth", None) is not None
+                                             or kwargs.get("auth") is not None
+                                             or bool(getattr(transport_client, "cookies", None)))):
+                                    # Manual stream() calls reapply client headers,
+                                    # auth flows and cookies (including Set-Cookie
+                                    # received on this redirect). Stripping only a
+                                    # local headers dict cannot prevent that leak.
+                                    raise ValueError("Credential-bearing official redirect refused")
+                                target = redirected
+                                continue
+                            if raise_for_status:
+                                response.raise_for_status()
+                            if response.status_code != 200:
+                                raise ValueError("Complete bounded acquisition requires HTTP 200")
+                            chunks = []
+                            for chunk in response.iter_bytes():
+                                consumed += len(chunk)
+                                if consumed > max_bytes:
+                                    raise ValueError("Cumulative response byte cap exceeded")
+                                if time.monotonic() >= deadline:
+                                    raise httpx.TimeoutException("body acquisition deadline exceeded")
+                                chunks.append(chunk)
+                            if time.monotonic() >= deadline:
+                                raise httpx.TimeoutException("body acquisition deadline exceeded")
+                            decoded_headers = {k: v for k, v in response.headers.items()
+                                               if k not in ("content-encoding", "content-length")}
+                            complete = httpx.Response(response.status_code, headers=decoded_headers,
+                                content=b"".join(chunks), request=response.request)
+                            complete.extensions["seeding_cache"] = False
+                            complete.extensions["response_receipt"] = capture_response(
+                                complete, getattr(self, "receipt_store", None), source_kind="web")
+                            return complete
+                raise ValueError("Official redirect limit exceeded")
+            except Exception as exc:
+                if not _is_retryable(exc) or attempt + 1 >= attempts:
+                    raise
+                delay = min(backoff * 2 ** attempt, backoff * 8)
+                if time.monotonic() + delay >= deadline:
+                    raise httpx.TimeoutException("body recovery deadline exhausted") from exc
+                self._logger.warning("Bounded body recovery attempt %d: %s", attempt + 1, type(exc).__name__)
+                time.sleep(delay)
+        raise RuntimeError("No acquisition attempted")
+
     def get(self, url: str, **kwargs: Any) -> httpx.Response:
         return self.request("GET", url, **kwargs)
 
@@ -261,10 +423,14 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
         without ever tripping it. This streams chunk-by-chunk and checks a
         monotonic deadline each iteration, so total elapsed time is bounded.
 
-        Single attempt, no tenacity retry: re-pulling a large, already-slow
-        body on a transient error would blow the very budget this guards. The
-        per-operation timeout below still fails a fully-stalled socket fast;
-        the loop deadline handles a slow trickle.
+        Reconnects share the wall-clock and cumulative byte caps, with at most
+        the configured transient attempts. Per-operation timeouts are capped
+        by remaining time; partial bodies may resume under the rules below.
+
+        Redirects are refused before their target is resolved or contacted,
+        regardless of the injected/default client's redirect policy. A caller
+        must separately review a publisher's replacement URL. A final receipt
+        URL check cannot undo an already-followed redirect.
 
         RESUMPTION (``resume_part``)
         ---------------------------
@@ -301,6 +467,9 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
         manual check during development, not a runtime guarantee; it has been
         replaced by the two checks above, which run on every resume.
         """
+        _positive_bound(max_seconds, "max_seconds")
+        if max_bytes is not None:
+            _positive_bound(max_bytes, "max_bytes", integer=True)
         dest = Path(dest_path)
         if not hasattr(self, "_download_receipts"):
             self._download_receipts = {}
@@ -309,8 +478,6 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
         base_headers = dict(headers or {})
         # Fail a dead connection fast (no bytes at all / no handshake), but let
         # a slow steady stream run up to the wall-clock cap the loop enforces.
-        per_op = min(float(max_seconds), 30.0)
-        timeout = httpx.Timeout(per_op, connect=min(float(max_seconds), 15.0))
         start = time.monotonic()
         dest.parent.mkdir(parents=True, exist_ok=True)
 
@@ -384,6 +551,8 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
         started_at = _on_disk()
         complete = False
         attempt = 0
+        transferred = 0
+        max_attempts = _positive_bound(getattr(getattr(self, "_settings", None), "max_retries", 3), "max_retries", integer=True)
         try:
             # Reconnect loop. A single stream is not enough on these CDNs: the
             # link both trickles (43 KB/s measured on cob.go.ke) and drops
@@ -396,6 +565,9 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
                 if remaining <= 0:
                     break
 
+                if max_bytes is not None and _on_disk() > max_bytes:
+                    tmp.unlink(missing_ok=True)
+                    raise PdfDownloadError(f"retained partial exceeded {max_bytes}-byte cap: {url}")
                 if _already_whole():
                     # Nothing left to fetch — a previous pass (or run) already
                     # brought down the whole document.
@@ -415,10 +587,17 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
 
                 mode = "ab" if offset else "wb"
                 try:
-                    with self._rate_limiter.context():
+                    # Interrupt blocking limiter, DNS/connect and read phases;
+                    # per-operation timeouts cannot bound total acquisition.
+                    with _wall_clock_budget(remaining), self._rate_limiter.context():
                         with self._client_for(url).stream(
-                            "GET", url, headers=request_headers, timeout=timeout
+                            "GET", url, headers=request_headers, follow_redirects=False,
+                            timeout=httpx.Timeout(min(remaining, 30.0), connect=min(remaining, 15.0))
                         ) as response:
+                            if 300 <= response.status_code < 400:
+                                # Even raise_for_status=False must not consume a
+                                # redirect body, retain it, or treat it as a PDF.
+                                raise PdfDownloadError("Source download redirects refused")
                             if raise_for_status:
                                 response.raise_for_status()
                             if offset and response.status_code != 206:
@@ -437,43 +616,16 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
                                 # 206 alone does not say WHICH bytes these are.
                                 # RFC 9110 requires Content-Range on a 206, and
                                 # Treasury sends it ("bytes 1000-1999/1473917").
-                                started_at = _range_start(response)
-                                if started_at is not None and started_at != offset:
-                                    logger.warning(
-                                        "Resume at byte %d got Content-Range "
-                                        "starting at %d (header: %r); "
-                                        "restarting from zero rather than "
-                                        "appending to the wrong offset: %s",
-                                        offset,
-                                        started_at,
-                                        response.headers.get("content-range"),
-                                        url,
-                                    )
-                                    mode = "wb"
-                                elif started_at is None:
-                                    # Non-compliant 206 with no Content-Range.
-                                    # Behave as before (append) rather than
-                                    # restart: cob.go.ke's TLS certificate is
-                                    # expired as of 2026-09-02 so its range
-                                    # behaviour could not be re-probed, and
-                                    # hard-restarting a server that DOES honour
-                                    # the offset would turn a working resume
-                                    # into an endless re-download of 12MB.
-                                    # Loud, because appending on an unverified
-                                    # offset is the risk the check exists for.
-                                    logger.warning(
-                                        "Resume at byte %d got a 206 with NO "
-                                        "Content-Range; appending unverified. "
-                                        "If this server ignores ranges the "
-                                        "result is spliced — the %%%%EOF check "
-                                        "is the only remaining guard: %s",
-                                        offset,
-                                        url,
-                                    )
+                                range_start = _range_start(response)
+                                if range_start != offset:
+                                    raise PdfDownloadError("Unverified Content-Range cannot resume a PDF")
                             if mode == "wb":
                                 _remember_validator(response)
                             with tmp.open(mode) as handle:
                                 for chunk in response.iter_bytes():
+                                    transferred += len(chunk)
+                                    if max_bytes is not None and transferred > max_bytes:
+                                        raise PdfDownloadError(f"cumulative transfer exceeded {max_bytes}-byte cap: {url}")
                                     if time.monotonic() - start > max_seconds:
                                         handle.flush()
                                         os.fsync(handle.fileno())
@@ -502,6 +654,13 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
                     complete = True
                     break
                 except (httpx.TransportError, httpx.StreamError) as exc:
+                    if _certificate_failure(exc):
+                        # Trust refusal is neither byte progress nor a resumable
+                        # outage. The PDF cache wrapper preserves last-good bytes.
+                        tmp.unlink(missing_ok=True)
+                        if validator_path is not None:
+                            validator_path.unlink(missing_ok=True)
+                        raise
                     # Bytes already written are valid (append-only, offsets
                     # server-verified), so this is progress, not corruption.
                     # Reconnect if there is budget left.
@@ -524,9 +683,8 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
                         _on_disk(),
                         url,
                     )
-                    if advanced <= 0 and attempt >= 3:
-                        # Three reconnects with zero progress: the endpoint is
-                        # not going to serve us. Stop burning the budget.
+                    if attempt >= max_attempts:
+                        # Progress never grants unlimited reconnect attempts.
                         raise PdfDownloadIncomplete(
                             f"download stalled at {_on_disk()} bytes after "
                             f"{attempt} attempts: {url}",

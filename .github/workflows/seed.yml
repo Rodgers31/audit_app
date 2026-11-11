@@ -602,11 +602,16 @@ jobs:
           /usr/bin/env -i PATH=/usr/local/bin:/usr/bin:/bin LC_ALL=C.UTF-8
           GITHUB_JOB="$GITHUB_JOB" /usr/bin/python3 -B
           tools/nightly_acceptance_20261105/native_jobs.py runner-diagnostics
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12.16'
+          architecture: x64
+          check-latest: false
       - name: Require hosted native writer admission
-        run: >-
-          /usr/bin/env -i PATH=/usr/local/bin:/usr/bin:/bin LC_ALL=C.UTF-8
-          GITHUB_JOB="$GITHUB_JOB" /usr/bin/python3 -B
-          tools/nightly_acceptance_20261105/native_jobs.py hosted-preflight --job migrate
+        env:
+          APPROVED_SHA: ${{ vars.INGESTION_WRITE_APPROVED_SHA }}
+          NIGHTLY_ENABLED: ${{ vars.INGESTION_NIGHTLY_ENABLED }}
+        run: python -I -B tools/nightly_acceptance_20261105/hosted_parser.py
       - name: Prepare verified writer TLS without copying credentials
         run: python -I -B scripts/verification/github_database_qualify.py --prepare-writer-tls
       - name: Qualify the stored target and require the accepted schema head
@@ -679,11 +684,16 @@ jobs:
           /usr/bin/env -i PATH=/usr/local/bin:/usr/bin:/bin LC_ALL=C.UTF-8
           GITHUB_JOB="$GITHUB_JOB" /usr/bin/python3 -B
           tools/nightly_acceptance_20261105/native_jobs.py runner-diagnostics
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12.16'
+          architecture: x64
+          check-latest: false
       - name: Require hosted native writer admission
-        run: >-
-          /usr/bin/env -i PATH=/usr/local/bin:/usr/bin:/bin LC_ALL=C.UTF-8
-          GITHUB_JOB="$GITHUB_JOB" /usr/bin/python3 -B
-          tools/nightly_acceptance_20261105/native_jobs.py hosted-preflight --job bootstrap
+        env:
+          APPROVED_SHA: ${{ vars.INGESTION_WRITE_APPROVED_SHA }}
+          NIGHTLY_ENABLED: ${{ vars.INGESTION_NIGHTLY_ENABLED }}
+        run: python -I -B tools/nightly_acceptance_20261105/hosted_parser.py
       - name: Prepare verified writer TLS without copying credentials
         run: python -I -B scripts/verification/github_database_qualify.py --prepare-writer-tls
       - name: Qualify this job's actual database connection
@@ -755,12 +765,17 @@ jobs:
           /usr/bin/env -i PATH=/usr/local/bin:/usr/bin:/bin LC_ALL=C.UTF-8
           GITHUB_JOB="$GITHUB_JOB" /usr/bin/python3 -B
           tools/nightly_acceptance_20261105/native_jobs.py runner-diagnostics
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12.16'
+          architecture: x64
+          check-latest: false
       - name: Require hosted native writer admission
         id: dependencies
-        run: >-
-          /usr/bin/env -i PATH=/usr/local/bin:/usr/bin:/bin LC_ALL=C.UTF-8
-          GITHUB_JOB="$GITHUB_JOB" /usr/bin/python3 -B
-          tools/nightly_acceptance_20261105/native_jobs.py hosted-preflight --job seed
+        env:
+          APPROVED_SHA: ${{ vars.INGESTION_WRITE_APPROVED_SHA }}
+          NIGHTLY_ENABLED: ${{ vars.INGESTION_NIGHTLY_ENABLED }}
+        run: python -I -B tools/nightly_acceptance_20261105/hosted_parser.py
       - name: Prepare verified writer TLS without copying credentials
         id: writer_tls
         run: python -I -B scripts/verification/github_database_qualify.py --prepare-writer-tls
@@ -1160,11 +1175,16 @@ jobs:
           /usr/bin/env -i PATH=/usr/local/bin:/usr/bin:/bin LC_ALL=C.UTF-8
           GITHUB_JOB="$GITHUB_JOB" /usr/bin/python3 -B
           tools/nightly_acceptance_20261105/native_jobs.py runner-diagnostics
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12.16'
+          architecture: x64
+          check-latest: false
       - name: Require hosted native writer admission
-        run: >-
-          /usr/bin/env -i PATH=/usr/local/bin:/usr/bin:/bin LC_ALL=C.UTF-8
-          GITHUB_JOB="$GITHUB_JOB" /usr/bin/python3 -B
-          tools/nightly_acceptance_20261105/native_jobs.py hosted-preflight --job validate
+        env:
+          APPROVED_SHA: ${{ vars.INGESTION_WRITE_APPROVED_SHA }}
+          NIGHTLY_ENABLED: ${{ vars.INGESTION_NIGHTLY_ENABLED }}
+        run: python -I -B tools/nightly_acceptance_20261105/hosted_parser.py
       - name: Prepare verified writer TLS without copying credentials
         run: python -I -B scripts/verification/github_database_qualify.py --prepare-writer-tls
       - name: Qualify this job's actual database connection

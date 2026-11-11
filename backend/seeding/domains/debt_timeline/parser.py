@@ -5,7 +5,8 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from typing import Any
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
+from datetime import date
 
 logger = logging.getLogger("seeding.debt_timeline.parser")
 
@@ -31,32 +32,34 @@ class DebtTimelineRecord:
 
 def parse_debt_timeline_payload(payload: dict[str, Any]) -> list[DebtTimelineRecord]:
     """Parse debt timeline JSON payload into records."""
-    timeline = payload.get("timeline", [])
-    if not timeline:
-        logger.warning("No timeline entries found in payload")
-        return []
-
-    records: list[DebtTimelineRecord] = []
+    from .fetcher import _timeline
+    timeline = _timeline(payload)
+    records = []
     for entry in timeline:
-        try:
-            records.append(
-                DebtTimelineRecord(
-                    year=int(entry["year"]),
-                    external=float(entry["external"]),
-                    domestic=float(entry["domestic"]),
-                    total=float(entry["total"]),
-                    gdp=Decimal(str(entry["gdp"])) if entry.get("gdp") is not None else None,
-                    gdp_ratio=(
-                        float(entry["gdp_ratio"]) if entry.get("gdp_ratio") is not None else None
-                    ),
-                    source=(entry.get("source") or None),
-                    source_evidence=entry.get("source_evidence"),
-                    source_url=entry.get("source_url"),
-                )
-            )
-        except (KeyError, ValueError, TypeError) as exc:
-            logger.warning(f"Skipping malformed timeline entry: {exc}")
-            continue
-
-    logger.info(f"Parsed {len(records)} debt timeline records")
+        if entry["year"] > date.today().year:
+            raise ValueError("Future calendar year is not an observed debt year")
+        values = {}
+        for key in ("external", "domestic", "total", "gdp", "gdp_ratio"):
+            value = entry.get(key)
+            if value is None and key in ("gdp", "gdp_ratio"):
+                values[key] = None
+                continue
+            if isinstance(value, bool) or not isinstance(value, (int, float, Decimal, str)):
+                raise ValueError(f"Invalid debt timeline {key}")
+            try:
+                number = Decimal(str(value))
+            except InvalidOperation as exc:
+                raise ValueError(f"Invalid debt timeline {key}") from exc
+            if not number.is_finite() or number < 0 or key == "gdp" and number <= 0:
+                raise ValueError(f"Invalid debt timeline {key}")
+            values[key] = number
+        if values["total"] <= 0:
+            raise ValueError("Debt stock total must be positive")
+        evidence = entry.get("source_evidence")
+        if evidence is not None and (type(evidence) is not list or any(not isinstance(item, dict) for item in evidence)):
+            raise ValueError("Debt evidence must be a list of objects")
+        records.append(DebtTimelineRecord(year=entry["year"], **values,
+            source=entry.get("source") or None, source_evidence=evidence,
+            source_url=entry.get("source_url")))
+    logger.info("Parsed %d debt timeline records", len(records))
     return records

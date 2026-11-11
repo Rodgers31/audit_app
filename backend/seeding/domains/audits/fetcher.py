@@ -39,14 +39,17 @@ from __future__ import annotations
 import logging
 import re
 import tempfile
+from importlib.util import find_spec
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import quote_plus, urljoin
 
 from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
+from ...isolated_parser import isolated
 from ...utils import load_json_resource, slugify_entity
 from ...freshness import mark_fixture, mark_live
+from .transport import PDF_MAX_BYTES, get_official_body
 
 logger = logging.getLogger("seeding.audits.fetcher")
 
@@ -146,7 +149,7 @@ def _fetch_from_oag(
         for url in _OAG_REPORTS_URLS:
             try:
                 logger.info("Fetching OAG reports page: %s", url)
-                response = client.get(url, raise_for_status=True)
+                response = get_official_body(client, url)
                 html = response.text
                 page_url = url
                 break
@@ -206,7 +209,7 @@ def _discover_audit_pdfs_via_wp_api(
             f"?per_page=100&search={quote_plus(term)}"
         )
         try:
-            response = client.get(api_url, raise_for_status=True)
+            response = get_official_body(client, api_url)
             items = response.json()
         except Exception as exc:
             logger.info("OAG WP media API query failed (%s): %s", term, exc)
@@ -304,10 +307,7 @@ def _download_and_parse_audit_pdf(
     back to OCR via pdf2image + pytesseract.
     """
     tmp_path: Optional[Path] = None
-    try:
-        # Try to use pdfplumber for text extraction
-        import pdfplumber
-    except ImportError:
+    if find_spec("pdfplumber") is None:
         logger.warning(
             "pdfplumber not available — cannot parse OAG PDFs. "
             "Install: pip install pdfplumber"
@@ -315,7 +315,9 @@ def _download_and_parse_audit_pdf(
         return None
 
     try:
-        response = client.get(pdf_url, raise_for_status=True)
+        response = get_official_body(client, pdf_url,
+            max_seconds=settings.pdf_download_timeout_seconds,
+            max_bytes=min(settings.pdf_download_max_bytes, PDF_MAX_BYTES))
 
         with tempfile.NamedTemporaryFile(
             suffix=".pdf", delete=False, prefix="oag_audit_"
@@ -329,30 +331,10 @@ def _download_and_parse_audit_pdf(
             tmp_path,
         )
 
-        findings: List[Dict[str, Any]] = []
-
-        with pdfplumber.open(tmp_path) as pdf:
-            full_text = ""
-            for page in pdf.pages[:50]:  # limit to first 50 pages
-                text = page.extract_text()
-                if text:
-                    full_text += text + "\n"
-
-        if not full_text.strip():
-            if settings.audits_ocr_enabled:
-                full_text = _ocr_pdf_text(
-                    tmp_path, max_pages=settings.audits_ocr_max_pages
-                )
-            else:
-                # OAG publishes scanned-image PDFs — enable
-                # SEED_AUDITS_OCR_ENABLED (and install tesseract-ocr +
-                # poppler-utils) to extract them. INFO not WARNING so
-                # the log doesn't suggest a new fault on every run.
-                logger.info(
-                    "PDF appears to contain no extractable text "
-                    "(scanned image; OCR disabled)"
-                )
-                return None
+        full_text = _read_audit_pdf_text(
+            tmp_path, ocr_enabled=settings.audits_ocr_enabled,
+            ocr_max_pages=settings.audits_ocr_max_pages,
+        )
 
         if not full_text.strip():
             return None
@@ -368,6 +350,27 @@ def _download_and_parse_audit_pdf(
                 tmp_path.unlink()
             except OSError:
                 pass
+
+
+@isolated("pdf_path")
+def _read_audit_pdf_text(
+    pdf_path: Path, *, ocr_enabled: bool, ocr_max_pages: int,
+) -> str:
+    import pdfplumber
+
+    chunks = []
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages[:50]:
+            text = page.extract_text()
+            if text:
+                chunks.append(text + "\n")
+    full_text = "".join(chunks)
+    if full_text.strip():
+        return full_text
+    if ocr_enabled:
+        return _ocr_pdf_text(pdf_path, max_pages=ocr_max_pages)
+    logger.info("PDF appears to contain no extractable text (scanned image; OCR disabled)")
+    return ""
 
 
 def _ocr_pdf_text(pdf_path: Path, max_pages: int = 30) -> str:

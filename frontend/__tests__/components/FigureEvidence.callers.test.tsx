@@ -14,7 +14,10 @@ jest.mock('framer-motion', () => ({ motion: new Proxy({}, { get: () => ({ childr
 jest.mock('@/components/dashboard/DebtExplainerModal', () => ({ __esModule: true, default: () => null }));
 jest.mock('@/lib/react-query/useDebt', () => ({
   useDebtTimeline: () => ({ data: undefined }),
-  useNationalDebtOverview: () => ({ data: { data: { total_outstanding: 0, gdp: 0, debt_to_gdp_ratio: 0, categories: {}, figure_qualifications: { loans: {}, gdp_data: {}, derived_ratio: { status: 'qualified', reason: 'published_imf_ratio_outside_seven_table_contract' } } } } }),
+  useNationalDebtOverview: () => ({ data: { data: { total_outstanding: 0, gdp: 0, debt_to_gdp_ratio: 0,
+    debt_to_gdp_year: 2025, debt_to_gdp_source: 'IMF World Economic Outlook',
+    debt_to_gdp_basis: 'IMF General Government Gross Debt, % of GDP (GGXWDG_NGDP)',
+    categories: {}, figure_qualifications: { loans: {}, gdp_data: {}, derived_ratio: { status: 'qualified', reason: 'published_imf_ratio_outside_seven_table_contract' } } } } }),
 }));
 jest.mock('@/lib/react-query/useFiscal', () => ({ useFiscalSummary: () => ({ data: undefined }) }));
 function Controls() { const { setLang } = useLang(); return <>{(['en', 'sw', 'plain'] as const).map(lang => <button key={lang} onClick={() => setLang(lang)}>{lang}</button>)}</>; }

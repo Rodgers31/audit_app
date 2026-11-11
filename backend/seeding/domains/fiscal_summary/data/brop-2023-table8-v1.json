@@ -1,0 +1,17 @@
+{
+  "contract": "brop-reviewed-transcription-v1",
+  "source_sha256": "a8d6d4f38c9e4ec74134b98b1ed6164d8b4cd152714006740add1c9923e22986",
+  "pdf_page": 21,
+  "table": "Table 8: Government Fiscal Projections",
+  "fiscal_year": "FY 2022/23",
+  "column": "Prel. Actual",
+  "printed_unit": "Ksh Billion",
+  "cells": {
+    "ordinary_revenue_billion": 2041,
+    "tax_revenue_billion": 1887,
+    "non_tax_revenue_billion": 154,
+    "aia_billion": 319,
+    "total_revenue_incl_aia_billion": 2361
+  },
+  "review_policy": "Exact edition candidate; independent visual source review required before adoption. No OCR pass or original acquisition is asserted by this transcription."
+}

@@ -239,14 +239,14 @@ def _workspace(tmp_path: Path, night: int) -> Path:
 
 # ── the tests ──────────────────────────────────────────────────────────
 
-def test_the_fingerprint_step_is_runnable_at_all():
+def test_the_fingerprint_step_is_runnable_at_all(tmp_path):
     """A step whose command cannot run keys every cache the same.
 
     ``find -printf`` is a GNU extension; on BSD/macOS it exits non-zero with
     "unknown primary or operator". The pre-fix step sent that to /dev/null and
     keyed the cache on the hash of an empty list.
     """
-    ws_root = Path(__file__).resolve().parent / "_fp_probe"
+    ws_root = tmp_path / "fp_probe"
     shutil.rmtree(ws_root, ignore_errors=True)
     (ws_root / CACHE_PATH).mkdir(parents=True)
     scripts = REPO_ROOT / ".github" / "scripts"

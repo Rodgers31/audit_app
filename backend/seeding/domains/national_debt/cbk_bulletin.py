@@ -38,6 +38,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import pdfplumber
 
 from ...config import SeedingSettings
+from ...isolated_parser import isolated
 from ...http_client import SeedingHttpClient
 
 logger = logging.getLogger("seeding.national_debt.cbk_bulletin")
@@ -234,13 +235,19 @@ def _download_pdf(client: SeedingHttpClient, url: str) -> bytes:
 
 
 def _extract_domestic_debt_page_text(pdf_bytes: bytes) -> Optional[str]:
+    result = _extract_domestic_debt_page_text_raw(bytes(pdf_bytes))
+    return _located_text(*result) if result is not None else None
+
+
+@isolated("pdf_bytes")
+def _extract_domestic_debt_page_text_raw(pdf_bytes: bytes) -> Optional[Tuple[str, int]]:
     """Walk pages, return the first one whose text contains the
     Table 4.1.4 anchor. Returns ``None`` if no page matches."""
     with pdfplumber.open(BytesIO(pdf_bytes)) as pdf:
         for number, page in enumerate(pdf.pages, 1):
             text = page.extract_text() or ""
             if _TABLE_TITLE_ANCHOR in text:
-                return _located_text(text, number)
+                return text, number
     return None
 
 
@@ -359,6 +366,12 @@ _MILLION = Decimal("1000000")
 
 
 def _find_public_debt_page_text(pdf_bytes: bytes) -> Optional[str]:
+    result = _find_public_debt_page_text_raw(bytes(pdf_bytes))
+    return _located_text(*result) if result is not None else None
+
+
+@isolated("pdf_bytes")
+def _find_public_debt_page_text_raw(pdf_bytes: bytes) -> Optional[Tuple[str, int]]:
     """First page that actually YIELDS Table 4.1.3 rows.
 
     Keyword matching alone selected the table of CONTENTS, which lists
@@ -374,7 +387,7 @@ def _find_public_debt_page_text(pdf_bytes: bytes) -> Optional[str]:
             if "4.1.3" not in text:
                 continue
             if parse_public_debt_table(text):
-                return _located_text(text, number)
+                return text, number
     return None
 
 
@@ -428,6 +441,9 @@ def parse_public_debt_table(page_text: str) -> Dict[int, Dict[str, Decimal]]:
         month = _MONTH_NUMBER[month_name]
         # FY label "2025/2026": Jul-Dec -> 2025, Jan-Jun -> 2026.
         year = fy_start if month >= 7 else fy_start + 1
+        if (year, month) > (date.today().year, date.today().month):
+            logger.warning("CBK 4.1.3 future month %04d-%02d refused as observed stock", year, month)
+            continue
         if year in best_month and best_month[year] >= month:
             continue
         best_month[year] = month

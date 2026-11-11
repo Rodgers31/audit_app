@@ -46,7 +46,10 @@ def _pages(name: str) -> List[str]:
 
 
 def _edition(name="fy2026_27", fy="FY 2026/27", pages=None):
-    return ff.read_edition(pages or _pages(name), fiscal_year=fy)
+    from dataclasses import replace
+    doc = json.loads((FIXTURES / f"{name}.json").read_text())
+    return replace(ff.read_edition(pages or _pages(name), fiscal_year=fy),
+                   source_sha256=doc["_source"]["sha256"])
 
 
 def _tamper(pages: List[str], page: int, old: str, new: str) -> List[str]:
@@ -446,6 +449,12 @@ def test_api_serves_the_split_with_its_total(db_session, seed_country):
     )
     # Stand in for the budget books step, which sets the enacted budget.
     row = next(r for r in payload["fiscal_years"] if r["fiscal_year"] == "FY 2026/27")
+    from fiscal_evidence import SYNTHETIC_SHA
+    row["fiscal_framework"]["source"]["sha256"] = SYNTHETIC_SHA
+    for proof in row["fiscal_measure_contract"]["measures"].values():
+        proof["source"]["sha256"] = SYNTHETIC_SHA
+    from fiscal_evidence import bind_framework
+    bind_framework(row["fiscal_framework"])
     row.update(
         appropriated_budget=5485.7,
         budget_basis="cob_gross",

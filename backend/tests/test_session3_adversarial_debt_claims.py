@@ -4,14 +4,19 @@ import asyncio
 from datetime import date, datetime, timezone
 
 import pytest
+from fiscal_evidence import isolated_fiscal_debt_peer_worker
 from models import DebtTimeline, FiscalSummary, ImfWeoObservation
 
 
 @pytest.fixture(autouse=True)
-def no_peer_network(monkeypatch):
+def no_peer_network(monkeypatch, db_session):
     import main
 
     monkeypatch.setattr(main, "_get_regional_peers", lambda **kwargs: [])
+    # PG cannot store infinity. The few such cases below assign it to the
+    # loaded ORM row after committing a valid row and exercise the reader.
+    with db_session.no_autoflush:
+        yield
 
 
 def read_response(client):
@@ -25,9 +30,16 @@ def seed_timeline(db_session, source_id=None, **values):
     fields = dict(year=2025, total=100, external=40, domestic=60,
                   gdp_ratio=70, unit="KES", source_document_id=source_id)
     fields.update(values)
+    import math
+    hostile = {key: value for key, value in fields.items()
+               if isinstance(value, float) and not math.isfinite(value)}
+    for key in hostile:
+        fields[key] = {'gdp_ratio': 70, 'external': 40}[key]
     row = DebtTimeline(**fields)
     db_session.add(row)
     db_session.commit()
+    for key, value in hostile.items():
+        setattr(row, key, value)
     return row
 
 
@@ -36,9 +48,30 @@ def seed_fiscal(db_session, source_id=None, **values):
                   debt_service_cost=20, page_ref="p.1", unit="KES",
                   source_document_id=source_id, meta=fiscal_input_sources())
     fields.update(values)
+    import math
+    hostile = {key: value for key, value in fields.items()
+               if isinstance(value, float) and not math.isfinite(value)}
+    for key in hostile:
+        fields[key] = {'debt_service_cost': 20, 'total_revenue': 100}[key]
+    fields['unit'] = 'KES'
     row = FiscalSummary(**fields)
+    original_meta = fields['meta']
+    if isinstance(original_meta, dict):
+        from fiscal_evidence import qualify_synthetic_row
+        qualify_synthetic_row(row)
+        measures = row.meta['fiscal_measure_contract']['measures']
+        for field, key in [('debt_service_cost', 'debt_service_source'),
+                           ('total_revenue', 'revenue_source'),
+                           ('appropriated_budget', 'budget_basis_source')]:
+            source = original_meta.get(key)
+            if not isinstance(source, dict) or not source.get('url') or not source.get('page'):
+                measures.pop(field, None)
+        if 'appropriated_budget' in measures:
+            row.meta['budget_basis'] = 'cob_gross'
     db_session.add(row)
     db_session.commit()
+    for key, value in hostile.items():
+        setattr(row, key, value)
     return row
 
 
@@ -89,7 +122,8 @@ def test_malformed_metadata_does_not_destroy_other_indicators(
     response = read_response(client)
     assert response.status_code == 200, response.text
     body = response.json()
-    assert body["debt_to_gdp"]["value"] == 70
+    assert body["debt_to_gdp"] is None
+    assert body["debt_to_gdp_absent_reason"]
     assert body["debt_service_to_revenue"] is None, body["debt_service_to_revenue"]
     assert body["debt_service_to_revenue_absent_reason"]
 
@@ -101,7 +135,8 @@ def test_missing_input_source_metadata_withholds_only_ratio(client, db_session, 
     response = read_response(client)
     assert response.status_code == 200, response.text
     body = response.json()
-    assert body["debt_to_gdp"]["value"] == 70
+    assert body["debt_to_gdp"] is None
+    assert body["debt_to_gdp_absent_reason"]
     assert body["debt_service_to_revenue"] is None, body["debt_service_to_revenue"]
     assert body["debt_service_to_revenue_absent_reason"]
 
@@ -125,18 +160,19 @@ def test_each_derived_ratio_operand_needs_its_own_source(
 
 
 def test_sourced_derived_ratio_retains_both_input_citations(client, db_session, seed_source_doc):
-    seed_fiscal(db_session, seed_source_doc.id)
+    row = seed_fiscal(db_session, seed_source_doc.id)
     body = read_response(client).json()
     ratio = body["debt_service_to_revenue"]
     assert ratio["value"] == 20
-    assert ratio["debt_service_source"] == fiscal_input_sources()["debt_service_source"]
-    assert ratio["revenue_source"] == fiscal_input_sources()["revenue_source"]
+    expected = row.meta['fiscal_measure_contract']['measures']
+    for field in ('debt_service_cost', 'total_revenue'):
+        assert ratio['measure_qualifications'][field]['source'] == expected[field]['source']
 
 
 def test_absent_revenue_is_nonapplicable_to_budget_only_provenance(
     client, db_session, seed_source_doc
 ):
-    seed_fiscal(db_session, seed_source_doc.id, appropriated_budget=100,
+    row = seed_fiscal(db_session, seed_source_doc.id, appropriated_budget=100,
                 total_revenue=None, meta={"budget_basis_source": {
                     "title": seed_source_doc.title, "url": seed_source_doc.url,
                     "page": "p.1",
@@ -146,9 +182,10 @@ def test_absent_revenue_is_nonapplicable_to_budget_only_provenance(
     assert response.status_code == 200, response.text
     body = response.json()
     assert body["value"] == "KES 100 appropriated budget (FY 2025/26)"
-    assert body["source_url"] == seed_source_doc.url
+    assert body['source_url'] == row.meta['fiscal_measure_contract']['measures']['appropriated_budget']['source']['url']
     assert body["verification_status"] == "publishable"
-    assert "not been fetched or validated" in body["reason"]
+    assert body['fiscal_measures']['appropriated_budget'] == 100
+    assert body['fiscal_measures']['total_revenue'] is None
 
 
 @pytest.mark.parametrize("field,bad_value", [
@@ -186,9 +223,9 @@ def test_valid_reported_zero_is_retained(client, db_session, seed_source_doc):
     response = read_response(client)
     assert response.status_code == 200
     body = response.json()
-    assert body["debt_to_gdp"]["value"] == 0
+    assert body['debt_to_gdp'] is None  # The legacy operands have no proof.
     assert body["debt_service_to_revenue"]["value"] == 0
-    assert body["external_debt_share"] == 0
+    assert body["external_debt_share"] is None
 
 
 def test_dsa_age_boundary_and_copy_isolation():

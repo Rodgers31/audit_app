@@ -1,0 +1,13 @@
+{
+  "path": "backend/tests/fixtures/budget_summary/fy2026_27_excerpt.pdf",
+  "sha256": "3217ec8fea8b2e6639b933b81964fcf2db30122a95bee45a22c63ce52530acfc",
+  "bytes": 450248,
+  "original_pdf_sha256": "1e24992d34cb4dddefd4ad04c3f77055e6be976b8b326256a17b5312725a550b",
+  "fixture_to_original_pdf_pages": {
+    "1": 1,
+    "2": 12,
+    "3": 13,
+    "4": 63
+  },
+  "warning": "page subset is a derivative fixture; its bytes are not publisher-original bytes"
+}

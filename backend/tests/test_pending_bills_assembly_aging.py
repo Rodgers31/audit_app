@@ -31,6 +31,27 @@ def test_executive_control_still_keeps_nandi_unavailable():
     assert result['scope']=='county_executive'
     assert next(r for r in result['rows'] if r['county']=='Nandi')['amounts']==[None]*5
 
+
+def test_decoder_can_receive_stock_from_a_fresh_parse(tmp_path, monkeypatch):
+    from seeding import isolated_parser
+    from seeding.parse_cache import content_digest, fresh_parse_matches, parse_with_cache
+
+    path = tmp_path / 'owned.pdf'
+    path.write_bytes(b'%PDF-unreviewed\n%%EOF')
+    monkeypatch.delenv('SEED_PARSER_ROOT', raising=False)
+    monkeypatch.delenv('AUDIT_GITHUB_DATABASE_TLS', raising=False)
+    stock = parse_with_cache(path, cache_dir=tmp_path, kind='owned-stock',
+                             parse_fn=payables_entries, enabled=False)
+    assert fresh_parse_matches(stock, content_digest(path))
+    monkeypatch.setenv('SEED_PARSER_ROOT', str(tmp_path))
+    monkeypatch.setattr(isolated_parser.tempfile, 'tempdir', str(tmp_path))
+    monkeypatch.setattr(isolated_parser, '_worker',
+                        lambda _root, request, _timeout: isolated_parser.worker_main(request))
+
+    with pytest.raises(ValueError, match='Unreviewed aging artifact/reissue'):
+        aging._parse_pdf_scopes(path, stock, [SCOPE])
+
+
 def test_genuine_assembly_source_bands_missing_and_printed_zero():
     result=parsed()
     assert result['version']==2 and result['scope']==SCOPE and result['table']=='Table 2.12'

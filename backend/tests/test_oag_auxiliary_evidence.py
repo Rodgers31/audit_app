@@ -145,3 +145,15 @@ def test_auxiliary_inventory_is_bounded(world,count):
         with pytest.raises(scope.AuditSourceScopeError):scope.verify_extraction_evidence(session,doc,entry)
     else:scope.verify_extraction_evidence(session,doc,entry)
 
+
+
+@pytest.mark.parametrize('value', [None, True, 'UNKNOWN', [], {}], ids=['null','boolean','unknown','list','object'])
+def test_auxiliary_receipts_do_not_mask_missing_or_malformed_finding_severity(world, value):
+    session, doc, entry = world
+    row = finding(session, doc, entry)
+    auxiliary(session, doc)
+    row.extracted_json = {**row.extracted_json, 'severity': value}
+    flag_modified(row, 'extracted_json')
+    session.flush()
+    with pytest.raises(scope.AuditSourceScopeError):
+        scope.verify_extraction_evidence(session, doc, entry)

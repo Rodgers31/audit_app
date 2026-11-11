@@ -19,10 +19,10 @@ import { buildDebtServiceSeries, yearMissingRevenue } from '@/lib/debt/debtServi
 const T = 1_000_000_000_000;
 
 const LIVE = [
-  { fiscal_year: 'FY 2022/23', debt_service_cost: 1.162 * T, total_revenue: 2.042 * T },
-  { fiscal_year: 'FY 2023/24', debt_service_cost: 1.64 * T, total_revenue: 2.406 * T },
-  { fiscal_year: 'FY 2024/25', debt_service_cost: 1.854 * T, total_revenue: 2.917 * T },
-  { fiscal_year: 'FY 2025/26', debt_service_cost: 1.9 * T, total_revenue: 2.91 * T },
+  { fiscal_year: 'FY 2022/23', debt_service_per_shilling: 56.9, debt_service_cost: 1.162 * T, total_revenue: 2.042 * T },
+  { fiscal_year: 'FY 2023/24', debt_service_per_shilling: 68.2, debt_service_cost: 1.64 * T, total_revenue: 2.406 * T },
+  { fiscal_year: 'FY 2024/25', debt_service_per_shilling: 63.6, debt_service_cost: 1.854 * T, total_revenue: 2.917 * T },
+  { fiscal_year: 'FY 2025/26', debt_service_per_shilling: 65.3, debt_service_cost: 1.9 * T, total_revenue: 2.91 * T },
   { fiscal_year: 'FY 2026/27', debt_service_cost: 2.3159 * T, total_revenue: null },
 ];
 

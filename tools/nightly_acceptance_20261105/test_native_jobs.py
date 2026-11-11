@@ -121,8 +121,7 @@ def test_cpu_requires_each_processor_and_unmodified_flags(source):
 
 
 @pytest.mark.parametrize('job', JOBS)
-@pytest.mark.parametrize('profile_kind', ('valid', 'missing', 'linked_parent'))
-def test_actual_hosted_workflow_refuses_before_db(source, job, profile_kind):
+def test_actual_hosted_workflow_admits_before_db(job):
     root = native.runtime.ROOT
     workflow = yaml.safe_load((root / '.github/workflows/seed.yml').read_text())
     writer = workflow['jobs'][job]
@@ -133,40 +132,16 @@ def test_actual_hosted_workflow_refuses_before_db(source, job, profile_kind):
     assert not any('secrets.' in str(value) for scope in scopes for value in scope.get('env', {}).values())
     assert all(s.get('with', {}).get('persist-credentials') is False
                for s in steps[:index] if s.get('uses', '').startswith('actions/checkout@'))
-    assert not any('setup-python' in s.get('uses', '') or 'apt-get' in s.get('run', '')
-                   or 'runtime.py acquire' in s.get('run', '') for s in steps)
-    assert '--job ' + job in step['run']
-    helpers = Path('tools/nightly_acceptance_20261105')
-    for module in ('native_jobs', 'common', 'native_corpus', 'native_environment', 'runtime'):
-        path = helpers / f'{module}.py'
-        shutil.copyfile(root / path, source / path)
-    native_dir = source / native.PROFILES
-    if profile_kind == 'missing':
-        (native_dir / f'{job}.local.json').unlink()
-    elif profile_kind == 'linked_parent':
-        elsewhere = source / 'elsewhere'
-        native_dir.rename(elsewhere)
-        native_dir.symlink_to(elsewhere, target_is_directory=True)
-    output = source / 'path'
-    output.touch()
-    env = {'GITHUB_JOB': job, 'DATABASE_URL': 'inert', 'PATH': '/usr/bin:/bin',
-           'GITHUB_PATH': str(output), 'RUNNER_TEMP': str(source / 'scratch'),
-           'MARKER': os.fspath(source / 'would-contact-database')}
-    # The pinned local Debian image's interpreter is installed under /usr/local.
-    # The separate Actions runner uses the system Python at /usr/bin/python3.
-    command = step['run']
-    if not Path('/usr/bin/python3').is_file():
-        command = command.replace('/usr/bin/python3', sys.executable, 1)
-    result = subprocess.run(['/bin/bash', '-e', '-c', command + '\nprintf bad > "$MARKER"'],
-                            cwd=source, env=env, text=True, capture_output=True, timeout=10)
-    reason = 'hosted native writer held' if profile_kind == 'valid' else 'original evidence symlink/absent'
-    assert result.returncode == 1 and reason in result.stderr, result
-    assert not Path(env['MARKER']).exists()
-    assert output.read_text() == '' and not Path(env['RUNNER_TEMP']).exists()
+    assert any(s.get('uses', '').startswith('actions/setup-python@')
+               and s['with']['python-version'] == '3.12.16' for s in steps[:index])
+    assert step['run'] == 'python -I -B tools/nightly_acceptance_20261105/hosted_parser.py'
+    assert step['env']['APPROVED_SHA'] == '${{ vars.INGESTION_WRITE_APPROVED_SHA }}'
+    assert steps[index + 1]['name'] == 'Prepare verified writer TLS without copying credentials'
     if job == 'seed':
         for step_id in ('pdf_cache_state', 'save_pdfs'):
             cache = next(s for s in steps if s.get('id') == step_id)
             assert "steps.dependencies.outcome == 'success'" in cache['if']
+
 
 
 def test_hosted_preflight_refuses_wrong_runner_context(monkeypatch):

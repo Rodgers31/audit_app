@@ -13,6 +13,7 @@ quarterly NG-BIRR reports.
 from __future__ import annotations
 
 import logging
+import os
 import re
 import time
 from dataclasses import dataclass
@@ -23,6 +24,7 @@ from ...cob_discovery import discover_latest_cob_pdf_url
 from ...config import SeedingSettings
 from ...native_financial_admission import source_admission_enabled
 from ...http_client import SeedingHttpClient
+from ...isolated_parser import isolated
 from ...utils import load_json_resource
 from .sector_expenditure import (
     ALLOCATION_MEASURE,
@@ -218,6 +220,7 @@ def discover_latest_annual_ng_birr(html: str, base_url: str) -> Optional[AnnualR
     return best
 
 
+@isolated("pdf_path")
 def _extract_page_texts(pdf_path: Path) -> List[Dict[str, Any]]:
     """Every page's text, 1-based. The slow step (~1 min for a 426-page
     report), and the only one the parse cache may skip — the verification in
@@ -258,7 +261,7 @@ def _fetch_annual_sector_expenditure(
     """Download the annual report, parse and verify its Sector Summaries, and
     return ``(records, status)``. ``status`` starts with ``promoted`` only when
     at least one sector passed verification."""
-    import pdfplumber
+    from importlib.metadata import version
 
     from ...parse_cache import parse_with_cache
     from ...pdf_download import get_or_download_pdf
@@ -273,14 +276,20 @@ def _fetch_annual_sector_expenditure(
         max_seconds=settings.pdf_download_timeout_seconds,
         max_bytes=settings.pdf_download_max_bytes,
     )
+    cache_identity = None
+    if os.environ.get("SEED_PARSER_ROOT"):
+        # parse_with_cache binds the provisioned worker's runtime itself.
+        cache_identity = ""
+    elif os.environ.get("AUDIT_GITHUB_DATABASE_TLS") != "1":
+        cache_identity = ";".join(f"{name}=={version(name)}" for name in ("pdfplumber", "pdfminer.six"))
     page_rows = parse_with_cache(
         pdf_path,
         cache_dir=cache_dir,
         kind="cob_ng_birr_page_text",
         parse_fn=lambda: _extract_page_texts(pdf_path),
-        enabled=not (source_admission_enabled()
+        enabled=cache_identity is not None and not (source_admission_enabled()
             and context is not None and context.dry_run is False and type(context.job_id) is int and context.job_id>0),
-        key_extra=f"pdfplumber=={pdfplumber.__version__}",
+        key_extra=cache_identity or "",
     )
     pages = {int(r["page"]): str(r["text"]) for r in page_rows}
 

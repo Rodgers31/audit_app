@@ -434,6 +434,13 @@ def load_blue_book_extractions(
             stats.errors.append(f"extraction {ext.id}: unsupported extractor/payload shape")
             stats.skipped += 1
             continue
+        if "layout_qualifications" in payload:
+            # Embedded marked-content ownership can resolve reading order while
+            # the publisher's clipped rendering still cannot confirm a title.
+            # Retain that evidence without creating/revising a public fact.
+            stats.errors.append(f"extraction {ext.id}: layout fidelity held; public source interpretation required")
+            stats.skipped += 1
+            continue
         fy = payload.get("fiscal_year")
         name = payload.get("entity_name")
         text = payload.get("finding_text")

@@ -101,8 +101,9 @@ class TestFourDigitParagraphs:
         ]
 
 
-#: Vote 1152, pdf p.575-576. ¶1813 appears nowhere in the report. Under the
-#: strict prev+1 rule, every later paragraph of the vote was lost (51).
+#: Reduced source-shaped fixture from vote 1152, PDF575-576. This omits the
+#: spaced marker "181 3." to exercise bounded gaps. Correction, 4 Nov 2026:
+#: the actual paragraph exists; test_oag_structural_fidelity pins its recovery.
 ENERGY_SKIP = _page(
     1,
     "STATE DEPARTMENT FOR ENERGY - VOTE 1152\n"

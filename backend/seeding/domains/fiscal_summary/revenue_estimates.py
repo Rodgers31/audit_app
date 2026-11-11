@@ -71,6 +71,8 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Dict, List, Optional, Tuple
 
+from ...isolated_parser import isolated
+
 logger = logging.getLogger("seeding.fiscal_summary.revenue_estimates")
 
 #: Ordinary revenue the Budget Policy Statement publishes for a fiscal year,
@@ -565,24 +567,28 @@ def extract_revenue_estimates(
 
     Raises ``RevenueEstimatesError`` on anything it cannot prove.
     """
+    table = extract_fiscal_framework_table(pdf_path)
+    if table is None:
+        raise RevenueEstimatesError(
+            "fiscal_framework_table_not_found",
+            f"no page matching '{_TABLE_MARKER}' in {pdf_path}",
+        )
+    return build_revenue_estimates(
+        fiscal_year=fiscal_year,
+        table=table,
+        known_prior_ordinary_billion=known_prior_ordinary_billion,
+        source_url=source_url,
+    )
+
+
+@isolated("pdf_path", types=(FiscalFrameworkTable,), errors=(RevenueEstimatesError,))
+def extract_fiscal_framework_table(pdf_path) -> Optional[FiscalFrameworkTable]:
+    """Read the first matching Treasury revenue table from the PDF."""
     import pdfplumber
 
     with pdfplumber.open(pdf_path) as pdf:
-        for i, page in enumerate(pdf.pages):
+        for number, page in enumerate(pdf.pages, 1):
             text = page.extract_text() or ""
-            # Both sides squashed: the table renderer letter-spaces its title
-            # ("M e d iu m -T e rm"), so only a whitespace-free compare finds it.
-            if _squash(_TABLE_MARKER) not in _squash(text):
-                continue
-            table = parse_fiscal_framework(page.extract_words(), page=i + 1)
-            return build_revenue_estimates(
-                fiscal_year=fiscal_year,
-                table=table,
-                known_prior_ordinary_billion=known_prior_ordinary_billion,
-                source_url=source_url,
-            )
-
-    raise RevenueEstimatesError(
-        "fiscal_framework_table_not_found",
-        f"no page matching '{_TABLE_MARKER}' in {pdf_path}",
-    )
+            if _squash(_TABLE_MARKER) in _squash(text):
+                return parse_fiscal_framework(page.extract_words(), page=number)
+    return None

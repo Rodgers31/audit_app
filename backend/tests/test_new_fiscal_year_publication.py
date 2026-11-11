@@ -85,6 +85,9 @@ def seed_years(db_session, seed_country, seed_source_doc):
         source_document_id=seed_source_doc.id,
         meta={"_source": "world_bank_api"},
     )
+    from fiscal_evidence import qualify_synthetic_row
+    qualify_synthetic_row(complete)
+    qualify_synthetic_row(enacted)
     db_session.add_all([complete, enacted, stub])
     db_session.commit()
     return {"complete": complete, "enacted": enacted, "stub": stub}

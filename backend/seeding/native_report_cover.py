@@ -8,10 +8,13 @@ with pages=[1, 2, 3]. The owned stream and every selected page close explicitly.
 """
 from io import BytesIO
 
+from pdfminer.pdfexceptions import PDFException
 from pdfminer.pdfpage import PDFPage
 from pdfplumber import PDF
 from pdfplumber.page import Page, PDFPageAggregatorWithMarkedContent, PDFPageInterpreter
 from pdfplumber.utils.exceptions import PdfminerException
+
+from .isolated_parser import isolated
 
 
 class _CoverTextDevice(PDFPageAggregatorWithMarkedContent):
@@ -37,7 +40,8 @@ class _CoverPage(Page):
         return self._layout
 
 
-def extract_cover_texts(body):
+@isolated('body', errors=(PDFException, PdfminerException))
+def extract_cover_texts(body: bytes) -> list[tuple[int, str]]:
     result = []
     with BytesIO(body) as stream:
         pdf = PDF(stream)

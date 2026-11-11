@@ -256,7 +256,7 @@ def verify_extraction_evidence(session, doc, entry):
     for (shape, extractor, version, source_kind, parser, method, request_url,
          requested, response_url, digest, size, key, byte_status, byte_digest, version_type, size_type) in metadata:
         parsers = (('native-report-authority-v1',) if extractor == 'native-report-authority-v1'
-                   else ('native-report-input-v1', 'native-report-authority-v1'))
+                   else ('native-report-input-v1', 'native-report-authority-v1', 'unparsed-acquisition-v1'))
         if (shape is not True or type(version) is not int or version != 1
                 or version_type != ('number' if postgres else 'integer')
                 or source_kind != 'pdf' or parser not in parsers or method != 'GET'

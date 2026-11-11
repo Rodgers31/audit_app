@@ -10,6 +10,8 @@ import subprocess
 import sys
 import tempfile
 
+from .isolated_parser import isolated
+
 from .native_parser_child import MAX_PIXELS, MAX_TEXT_BYTES
 
 
@@ -57,6 +59,7 @@ def _text(command, directory):
     return raw.decode("utf-8")
 
 
+@isolated("pdf_path", timeout=45)
 def page_count(pdf_path: Path) -> int:
     with tempfile.TemporaryDirectory(prefix="auditgava-pdf-count-") as directory:
         output = _text(_child("count", str(pdf_path.absolute())), directory)
@@ -87,6 +90,7 @@ def recognize_annex(image) -> str:
                                 "-c", "preserve_interword_spaces=1", "txt"), directory)
 
 
+@isolated("pdf_path", timeout=90)
 def read_page(pdf_path: Path, page_number: int) -> str:
     if type(page_number) is not int or page_number < 1:
         raise ValueError("OCR requires a positive physical page number")

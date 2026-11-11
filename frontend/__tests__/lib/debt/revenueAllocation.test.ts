@@ -19,11 +19,11 @@ describe('computeRevenueAllocation — the headline (Treasury APDMR ratio)', () 
     expect(r!.debtServicePerRev).toBe(65.3);
   });
 
-  it('falls back to ds/rev*100 only when debt_service_per_shilling is missing', () => {
+  it('withholds the ratio when the server has not qualified it', () => {
     const { debt_service_per_shilling, ...without } = FY_25_26;
     const r = computeRevenueAllocation(without);
     // 1900 / 2910 * 100 = 65.2921...
-    expect(r!.debtServicePerRev).toBeCloseTo(65.2921, 3);
+    expect(r).toBeNull();
   });
 
   it('the FY 2025/26 calculation 1.900 / 2.910 × 100 ≈ 65.3', () => {
@@ -57,7 +57,8 @@ describe('computeRevenueAllocation — the breakdown (issue #237)', () => {
     total_revenue_billion: 2985.7,
     debt_service_cost: 2315.9e9,
     debt_service_per_shilling: 77.6,
-    fiscal_framework: FF_2026_27,
+    fiscal_framework: { ...FF_2026_27, source: { ...FF_2026_27.source, sha256: "a".repeat(64), column: "Approved" } },
+    measure_qualifications: { total_revenue: { vintage: "Approved", source: { sha256: "a".repeat(64) } } },
   };
 
   it('counts interest — not interest plus principal — as the debt slice', () => {

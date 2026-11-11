@@ -24,6 +24,8 @@ import re
 from decimal import Decimal, InvalidOperation
 from typing import Optional
 
+from ...isolated_parser import isolated
+
 logger = logging.getLogger("seeding.national_budget.headline")
 
 # ── Anchors, confirmed against a live report ─────────────────────────
@@ -252,32 +254,28 @@ def extract_cob_headlines(
     summary pages to refuse conflicting original amounts.
     """
     try:
-        import pdfplumber
-
-        # Scan until the summary is found, not a fixed slice. The previous
-        # ``pages[:8]`` never reached it: in the FY2025/26 report the
-        # Executive Summary is on page 23, behind the cover, contents,
-        # foreword and abbreviations. That alone guaranteed (None, None)
-        # regardless of anchors — the third of three independent causes.
-        text_parts: list[str] = []
-        with pdfplumber.open(pdf_path) as pdf:
-            for page in pdf.pages[:_MAX_SUMMARY_PAGES]:
-                text_parts.append(page.extract_text() or "")
-                joined = "\n".join(text_parts)
-                if not original_budget_only and extract_budget_bases_from_text(joined)["gross"] is not None:
-                    break  # found it; do not read a 418-page report
-        text = "\n".join(text_parts)
+        text = _extract_headline_text(pdf_path, original_budget_only=original_budget_only)
         report_fy = extract_report_fiscal_year(text)
         budget = (extract_original_gross_budget_from_text(text, report_fy)
                   if original_budget_only else extract_overall_budget_billion_from_text(text))
-        return (
-            budget,
-            extract_total_revenue_billion_from_text(text),
-            report_fy,
-        )
+        return budget, extract_total_revenue_billion_from_text(text), report_fy
     except Exception as exc:  # pragma: no cover - defensive shim
         logger.warning("COB headline extraction failed: %s", exc)
         return None, None, None
+
+
+@isolated("pdf_path")
+def _extract_headline_text(pdf_path, *, original_budget_only: bool) -> str:
+    import pdfplumber
+
+    text_parts: list[str] = []
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages[:_MAX_SUMMARY_PAGES]:
+            text_parts.append(page.extract_text() or "")
+            joined = "\n".join(text_parts)
+            if not original_budget_only and extract_budget_bases_from_text(joined)["gross"] is not None:
+                break
+    return "\n".join(text_parts)
 
 
 def extract_original_gross_budget_from_text(text: str, fiscal_year: Optional[str]) -> Optional[Decimal]:

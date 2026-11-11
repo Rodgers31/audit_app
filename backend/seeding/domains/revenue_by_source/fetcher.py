@@ -12,10 +12,12 @@ from typing import Any, Dict, List, Optional
 import httpx
 
 from ...config import SeedingSettings
+from ...isolated_parser import isolated
 from ...http_client import SeedingHttpClient
 from ...utils import load_json_resource
 from ...observations import worldbank_observations
 from services.response_receipts import response_receipt, copy_receipt, seal_receipt
+
 
 logger = logging.getLogger("seeding.revenue_by_source.fetcher")
 
@@ -219,32 +221,19 @@ def fetch_revenue_payload(
     return [r for r in final_payload if r.get("_revenue_source") == "kra_live" or r in live_records]
 
 
+@isolated("content")
+def _pdf_response_text(content: bytes) -> str:
+    from io import BytesIO
+    import pdfplumber
+
+    with pdfplumber.open(BytesIO(content)) as pdf:
+        return "\n".join(page.extract_text() or "" for page in pdf.pages[:8])
+
+
 def _response_text(resp: Any, url: str) -> str:
     ctype = (resp.headers.get("content-type") or "").lower()
     if "pdf" in ctype or url.lower().endswith(".pdf"):
-        import tempfile
-        from pathlib import Path
-
-        import pdfplumber
-
-        tmp_path = None
-        try:
-            with tempfile.NamedTemporaryFile(
-                suffix=".pdf", delete=False, prefix="kra_rev_"
-            ) as tmp:
-                tmp.write(resp.content)
-                tmp_path = Path(tmp.name)
-            parts: List[str] = []
-            with pdfplumber.open(tmp_path) as pdf:
-                for page in pdf.pages[:8]:
-                    parts.append(page.extract_text() or "")
-            return "\n".join(parts)
-        finally:
-            if tmp_path and tmp_path.exists():
-                try:
-                    tmp_path.unlink()
-                except OSError:
-                    pass
+        return _pdf_response_text(resp.content)
     # HTML — strip tags to plain text so the money/anchor regexes see the prose.
     import re as _re
 

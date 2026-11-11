@@ -4,7 +4,8 @@ from datetime import datetime, timezone
 from seeding.registries import register_domain
 from seeding.types import DomainRunResult
 from seeding.freshness import mark_live, mark_refused
-from seeding import county_borrowing_contract as source, county_borrowing_contract as parser
+from seeding import county_borrowing_contract as source
+from .decoder import decode_publication
 from . import writer
 
 
@@ -25,7 +26,7 @@ def run(session, settings, context):
         acquired = []
         for key in source.EDITIONS:
             payload, fetched_at = source.fetch_publication(key)
-            parsed = parser.parse_publication(key, payload)
+            parsed = decode_publication(key, payload)
             acquired.append((key, payload, parsed, fetched_at))
         with session.begin_nested():
             for key, payload, parsed, fetched_at in acquired:

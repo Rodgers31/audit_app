@@ -143,6 +143,7 @@ def adopted(db, monkeypatch, tmp_path):
                     "auditee": auditee,
                     "pdf_page": 1,
                     "finding_text": "Actual fixture text",
+                    "severity": "WARNING",
                 }
                 ext = Extraction(
                     source_document_id=doc.id,

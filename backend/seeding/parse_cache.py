@@ -176,7 +176,8 @@ def parser_digest(parse_fn: Callable[..., Any]) -> Optional[str]:
     unversioned parser must not be cached at all.
     """
     try:
-        source_file = inspect.getsourcefile(parse_fn) or inspect.getfile(parse_fn)
+        implementation = inspect.unwrap(parse_fn)
+        source_file = inspect.getsourcefile(implementation) or inspect.getfile(implementation)
     except TypeError:
         return None
     if not source_file:
@@ -305,6 +306,11 @@ def parse_with_cache(
     """
     pdf_path = Path(pdf_path)
     cache_dir = Path(cache_dir)
+
+    from .isolated_parser import parser_identity
+    identity = parser_identity()
+    if identity is not None:
+        key_extra += f":isolated:{identity}"
 
     if not enabled:
         logger.info("%s parse cache disabled; parsing %s", kind, pdf_path.name)

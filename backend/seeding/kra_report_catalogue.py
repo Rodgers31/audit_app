@@ -11,6 +11,8 @@ import re
 from tempfile import TemporaryDirectory
 from urllib.parse import urljoin
 
+from .isolated_parser import isolated
+
 CATALOGUE_URL = 'https://www.kra.go.ke/component/search/?searchphrase=all&searchword=KRA+performance'
 VERSION = 'kra-publisher-catalogue-v1'
 MAX_METADATA_BYTES = 512 * 1024
@@ -48,10 +50,58 @@ def _aware(value):
     return parsed
 
 
+def _checked_html(body):
+    from bs4 import BeautifulSoup
+
+    guard = _Attributes()
+    guard.feed(body.decode('utf-8'))
+    guard.close()
+    return BeautifulSoup(body, 'html.parser')
+
+
+@isolated("body")
+def _wrapper_text(body: bytes) -> tuple[list[str], list[str]]:
+    page = _checked_html(body)
+    return ([t.get_text(' ', strip=True) for t in page.select('head > title')],
+            [h.get_text(' ', strip=True) for h in page.find_all('h2')])
+
+
+@isolated("listing")
+def _catalogue_entry(listing: bytes, document_url: str) -> tuple[str, str]:
+    entries = []
+    for entry in _checked_html(listing).select('div.content-wrapper'):
+        links = entry.select('p.title a')
+        matching = [a for a in links if urljoin(CATALOGUE_URL, a.get('href','')) == document_url]
+        if matching:
+            entries.append((entry, links, matching))
+    if len(entries) != 1:
+        raise ValueError('One exact catalogue entry required')
+    entry, links, matching = entries[0]
+    if len(links) != 1 or len(matching) != 1:
+        raise ValueError('Ambiguous catalogue report identity')
+    title = matching[0].get_text(' ',strip=True)
+    sections = entry.select('p.item-section')
+    if len(sections) != 1:
+        raise ValueError('One dated category required')
+    section = sections[0]
+    categories, markers = section.select('span.item-cat'), section.select('span.result-created')
+    if (len(categories) != 1 or categories[0].get_text(' ',strip=True) != '(KRA Revenue Performance)'
+            or len(markers) != 1 or markers[0].get_text(strip=True)):
+        raise ValueError('Reviewed catalogue category/date marker required')
+    # Remove only the two verified labels. No arbitrary date in the result
+    # description, footer, download size or another result may qualify.
+    categories[0].extract(); markers[0].extract()
+    if section.find(True) is not None:
+        raise ValueError('Unexpected catalogue date markup')
+    day_text = section.get_text(' ',strip=True)
+    if not re.fullmatch(r'\d{2}/\d{2}/\d{4}',day_text):
+        raise ValueError('Full catalogue day required')
+    return title, day_text
+
+
 def capture_catalogue_report(wrapper, catalogue, *, fiscal_year):
     """Exact title/link/category/full day, paired to parsed dashboard fiscal year."""
     try:
-        from bs4 import BeautifulSoup
         from .native_report_authority import retained_body, _capture
         body = retained_body(wrapper, 'revenue_by_source', 'text/html')
         listing = retained_body(catalogue, 'revenue_by_source', 'text/html')
@@ -60,44 +110,13 @@ def capture_catalogue_report(wrapper, catalogue, *, fiscal_year):
                 or catalogue['request_url'] != CATALOGUE_URL or catalogue['response_url'] != CATALOGUE_URL):
             raise ValueError('Exact bounded wrapper and catalogue required')
         period, start, end = annual_scope(wrapper['request_url'], fiscal_year)
-        for raw in (body, listing):
-            guard = _Attributes(); guard.feed(raw.decode('utf-8')); guard.close()
-        page = BeautifulSoup(body, 'html.parser')
-        titles = page.select('head > title')
+        titles, headings = _wrapper_text(body)
         year = int(start[:4])
-        if len(titles) != 1 or titles[0].get_text(' ',strip=True) != f'Annual Revenue Performance - FY {year}/{year+1} - KRA':
+        if titles != [f'Annual Revenue Performance - FY {year}/{year+1} - KRA']:
             raise ValueError('Exact annual wrapper title required')
-        entries = []
-        for entry in BeautifulSoup(listing, 'html.parser').select('div.content-wrapper'):
-            links = entry.select('p.title a')
-            matching = [a for a in links if urljoin(CATALOGUE_URL, a.get('href','')) == wrapper['request_url']]
-            if matching:
-                entries.append((entry, links, matching))
-        if len(entries) != 1:
-            raise ValueError('One exact catalogue entry required')
-        entry, links, matching = entries[0]
-        if len(links) != 1 or len(matching) != 1:
-            raise ValueError('Ambiguous catalogue report identity')
-        title = matching[0].get_text(' ',strip=True)
-        headings = [h.get_text(' ',strip=True) for h in page.find_all('h2')]
+        title, day_text = _catalogue_entry(listing, wrapper['request_url'])
         if not title or len(title) > 300 or headings.count(title) != 1:
             raise ValueError('Catalogue and visible wrapper title differ')
-        sections = entry.select('p.item-section')
-        if len(sections) != 1:
-            raise ValueError('One dated category required')
-        section = sections[0]
-        categories, markers = section.select('span.item-cat'), section.select('span.result-created')
-        if (len(categories) != 1 or categories[0].get_text(' ',strip=True) != '(KRA Revenue Performance)'
-                or len(markers) != 1 or markers[0].get_text(strip=True)):
-            raise ValueError('Reviewed catalogue category/date marker required')
-        # Remove only the two verified labels. No arbitrary date in the result
-        # description, footer, download size or another result may qualify.
-        categories[0].extract(); markers[0].extract()
-        if section.find(True) is not None:
-            raise ValueError('Unexpected catalogue date markup')
-        day_text = section.get_text(' ',strip=True)
-        if not re.fullmatch(r'\d{2}/\d{2}/\d{4}',day_text):
-            raise ValueError('Full catalogue day required')
         day = datetime.strptime(day_text,'%d/%m/%Y').date()
         metadata = dict(kind=VERSION, catalogue_url=CATALOGUE_URL, document_url=wrapper['request_url'],
             document_checksum=wrapper['digest'], title=title, category='KRA Revenue Performance',

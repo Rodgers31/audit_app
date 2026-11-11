@@ -36,6 +36,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import math
 import os
 import tempfile
 import time
@@ -46,6 +47,7 @@ from .http_client import (
     PdfDownloadError,
     PdfDownloadIncomplete,
     SeedingHttpClient,
+    _positive_bound,
 )
 
 logger = logging.getLogger("seeding.pdf_download")
@@ -146,7 +148,8 @@ def _fresh_cache_hit(
     expired, or future-dated state is treated as a miss (returns ``None``) so
     the caller re-downloads.
     """
-    if ttl_seconds <= 0 or not pdf_path.exists() or not meta_path.exists():
+    if (type(ttl_seconds) not in (int, float) or not math.isfinite(ttl_seconds)
+            or ttl_seconds <= 0 or not pdf_path.exists() or not meta_path.exists()):
         return None
     # Validate the BYTES, not just the bookkeeping. Reported by review on
     # PR #136: this returned on size + TTL alone, so an entry written by the
@@ -166,8 +169,14 @@ def _fresh_cache_hit(
         return None
     try:
         meta = json.loads(meta_path.read_text(encoding="utf-8"))
-        created_at = float(meta.get("created_at", 0.0))
+        created_at = meta.get("created_at")
+        if type(created_at) not in (int, float) or not math.isfinite(created_at):
+            return None
         size = pdf_path.stat().st_size
+        if "bytes" in meta and (type(meta["bytes"]) is not int or meta["bytes"] != size):
+            return None
+        if "sha256" in meta and (type(meta["sha256"]) is not str or meta["sha256"] != _sha256_of(pdf_path)):
+            return None
     except (OSError, ValueError, TypeError, AttributeError, json.JSONDecodeError):
         return None
     age = time.time() - created_at
@@ -277,6 +286,9 @@ def get_or_download_pdf(
     The returned file lives in the persistent cache — callers must NOT delete
     it.
     """
+    _positive_bound(max_seconds, "max_seconds")
+    if max_bytes is not None:
+        _positive_bound(max_bytes, "max_bytes", integer=True)
     cache_dir = Path(cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
     pdf_path, meta_path = _cache_paths(cache_dir, url)
@@ -347,6 +359,8 @@ def get_or_download_pdf(
     hit = None if superseded else _fresh_cache_hit(pdf_path, meta_path, ttl_seconds)
     if hit is not None:
         size, age = hit
+        if max_bytes is not None and size > max_bytes:
+            raise PdfDownloadError(f"cached PDF exceeded {max_bytes}-byte cap: {url}")
         logger.info(
             "PDF cache hit (%d bytes, age %.0fs): %s", size, age, url
         )

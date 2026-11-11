@@ -45,10 +45,12 @@ from ...extractors.knbs_census_population import (
     EXTRACTOR_ID,
     CensusPopulation,
     CensusPopulationError,
+    CountyPopulation,
     extract_census_population,
 )
 from ...fetch_documents import fetch_document
 from ...http_client import SeedingHttpClient
+from ...isolated_parser import isolated
 
 logger = logging.getLogger("seeding.population.census_counties")
 
@@ -86,6 +88,7 @@ class CensusLoadStats:
             self.errors = []
 
 
+@isolated("path", types=(CensusPopulation, CountyPopulation), errors=(CensusPopulationError,))
 def read_census_counties(path: Path) -> CensusPopulation:
     """Extract Table 2.2 from the downloaded volume."""
     import pdfplumber

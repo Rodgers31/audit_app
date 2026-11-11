@@ -20,6 +20,8 @@ from typing import Any, Dict, List, Optional, Tuple
 import pdfplumber
 from pdfplumber.page import Page
 
+from .isolated_parser import ParserIsolationError, isolated
+
 logger = logging.getLogger(__name__)
 
 
@@ -77,6 +79,7 @@ class TableNotFoundError(PDFParserError):
     pass
 
 
+@isolated("pdf_path", types=(ExtractedTable,), errors=(PDFParserError, PDFNotFoundError, PDFCorruptedError, CountyTableIncomplete, TableNotFoundError))
 def extract_all_tables(pdf_path: Path, *, pages: Optional[List[int]] = None) -> List[ExtractedTable]:
     """
     Extract all tables from a PDF document.
@@ -147,6 +150,7 @@ def extract_all_tables(pdf_path: Path, *, pages: Optional[List[int]] = None) -> 
     return extracted_tables
 
 
+@isolated("pdf_path", errors=(PDFParserError, PDFNotFoundError, PDFCorruptedError, CountyTableIncomplete, TableNotFoundError))
 def extract_text_from_pdf(pdf_path: Path, pages: Optional[List[int]] = None) -> str:
     """
     Extract plain text from PDF pages.
@@ -1457,6 +1461,7 @@ def group_revenue_tables_by_county(
     return grouped
 
 
+@isolated("pdf_path")
 def indexed_county_table_pages(pdf_path: Path) -> Optional[List[int]]:
     """Select a complete supported report from its own table index/captions.
 
@@ -1579,6 +1584,34 @@ def qualified_county_table_pages(pdf_path):
     except OSError:
         return None
     return indexed_county_table_pages(pdf_path) if digest in INDEXED_COUNTY_REPORT_SHA256 else None
+
+
+@isolated("pdf_path")
+def _revenue_captions(pdf_path, pages):
+    captions = {}
+    with pdfplumber.open(pdf_path) as pdf:
+        for number in pages:
+            if number > len(pdf.pages):
+                continue
+            page = pdf.pages[number - 1]
+            try:
+                match = _REVENUE_CAPTION_RE.search(page.extract_text() or "")
+            finally:
+                page.close()
+            if match:
+                captions[number] = match.group(1)
+    return captions
+
+
+@isolated("pdf_path")
+def _read_cob_period(pdf_path):
+    fy, sub, decided = None, None, False
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages[:3]:
+            decided, fy, sub = _cob_period_on_page(page.extract_text() or "")
+            if decided:
+                break
+    return fy, sub, decided
 
 
 class CoBQuarterlyReportParser:
@@ -2025,19 +2058,8 @@ class CoBQuarterlyReportParser:
         pages = sorted(
             {p for t in candidates for p in (t.page_number - 1, t.page_number) if p >= 1}
         )
-        captions: Dict[int, str] = {}
         try:
-            with pdfplumber.open(self.pdf_path) as pdf:
-                for number in pages:
-                    if number > len(pdf.pages):
-                        continue
-                    page = pdf.pages[number - 1]
-                    try:
-                        match = _REVENUE_CAPTION_RE.search(page.extract_text() or "")
-                    finally:
-                        page.close()
-                    if match:
-                        captions[number] = match.group(1)
+            captions = _revenue_captions(self.pdf_path, pages)
         except Exception as exc:  # noqa: BLE001 - no captions means no owners
             logger.warning("CoB revenue captions unreadable: %s", exc)
             for item in self.revenue_coverage.values():
@@ -2276,11 +2298,9 @@ class CoBQuarterlyReportParser:
         # this could not read).
         fy, sub, decided = None, None, False
         try:
-            with pdfplumber.open(self.pdf_path) as pdf:
-                for page in pdf.pages[:3]:
-                    decided, fy, sub = _cob_period_on_page(page.extract_text() or "")
-                    if decided:
-                        break
+            fy, sub, decided = _read_cob_period(self.pdf_path)
+        except ParserIsolationError:
+            raise
         except Exception:  # noqa: BLE001 - an unreadable cover is "no cover"
             fy, sub, decided = None, None, False
         if fy is None and not decided:
@@ -2683,6 +2703,7 @@ def fiscal_year_ending(as_at) -> str:
     return f"FY {as_at.year - 1}/{str(as_at.year)[2:]}"
 
 
+@isolated("pdf_path", errors=(NotAYearEndTable, PDFParserError, PDFNotFoundError, PDFCorruptedError, CountyTableIncomplete, TableNotFoundError))
 def cbirr_year_end_trade_payables(pdf_path: Path) -> List[Dict[str, Any]]:
     """Every county's trade payables at 30 June, from a full-year CBIRR.
 

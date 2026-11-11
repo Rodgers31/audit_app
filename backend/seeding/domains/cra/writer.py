@@ -22,7 +22,8 @@ from sqlalchemy import func, select, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from models import Country, DocumentStatus, DocumentType, Extraction, IngestionJob, IngestionStatus, SeedingDomainClaim, SourceDocument
-from .parser import EXTRACTOR, PAGE, parse_publication
+from .parser import EXTRACTOR, PAGE
+from .decoder import decode_publication
 from .source import CraSourceRefused, URL
 from seeding.exclusion import DomainExecution, entry_digest
 
@@ -116,7 +117,7 @@ def persist(session, context, payload, parsed, fetched_at):
             or not start - TOLERANCE <= fetched_at <= now + TOLERANCE):
         raise CraSourceRefused("CRA fetch time must be an aware time inside the owned run")
     # Direct callers must bind the observations to the actual publication too.
-    expected = parse_publication(payload)
+    expected = decode_publication(payload)
     if type(parsed) is not dict or canonical(parsed) != canonical(expected):
         raise CraSourceRefused("CRA parsed observations differ from publication bytes")
     country = session.scalar(select(Country).where(Country.iso_code == "KEN"))

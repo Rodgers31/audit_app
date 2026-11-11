@@ -668,7 +668,8 @@ def fiscal_summary_withheld_disclosure(rows: Iterable[Any]) -> Dict[str, Any]:
         "fiscal_years": years,
         "criterion": (
             "A fiscal year is published only if its row cites a page of the "
-            "document it came from (fiscal_summaries.page_ref)."
+            "document it came from (fiscal_summaries.page_ref). Each financial measure "
+            "also needs its own fiscal-measures-v1 evidence; a row locator does not qualify its amounts."
         ),
     }
 

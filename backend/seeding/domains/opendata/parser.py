@@ -9,6 +9,7 @@ from io import BytesIO
 import re
 from zipfile import ZipFile
 import xml.etree.ElementTree as ET
+from ...isolated_parser import isolated
 from .source import ARTIFACT_BYTES, SHA256, OpenDataSourceRefused
 
 EXTRACTOR = 'knbs-economic-survey-2026-table-5.13-v1'
@@ -61,6 +62,7 @@ def _read_cells(payload):
         return cells
 
 
+@isolated("payload", errors=(OpenDataSourceRefused,))
 def parse_publication(payload):
     if type(payload) is not bytes or len(payload) != ARTIFACT_BYTES or sha256(payload).hexdigest() != SHA256:
         raise OpenDataSourceRefused('OpenData requires exact reviewed KNBS workbook bytes; changed editions need review')

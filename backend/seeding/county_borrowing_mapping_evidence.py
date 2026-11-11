@@ -13,6 +13,7 @@ import re
 import pdfplumber
 
 from seeding.county_borrowing_contract import CountyBorrowingRefused, county_scope_key
+from seeding.isolated_parser import isolated
 
 _SCALES = {'units': Decimal(1), 'thousands': Decimal(1000),
            'millions': Decimal(1000000), 'billions': Decimal(1000000000)}
@@ -65,6 +66,7 @@ def _number(value, scale):
         _refuse()
 
 
+@isolated("payload", errors=(CountyBorrowingRefused,))
 def validate_mapping_source_evidence(records, payload):
     """Require one bounded, same-page labelled statement per nonempty mapping.
 
