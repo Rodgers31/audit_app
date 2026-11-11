@@ -227,15 +227,37 @@ def test_unqualified_year_data_still_requires_primitive_null_schema(field,value)
 @pytest.mark.parametrize('job', ['migrate','bootstrap','seed','validate'])
 @pytest.mark.parametrize('profile_kind', ['missing','linked_parent'])
 def test_writer_runtime_refuses_missing_reviewed_native_profile_before_acquisition(tmp_path,job,profile_kind):
+    import shutil
     import subprocess
-    doc=yaml.safe_load(WORKFLOW.read_text())
-    step=next(s for s in doc['jobs'][job]['steps'] if 'runtime.py install' in s.get('run',''))
-    if profile_kind=='linked_parent':
-        native=tmp_path/'elsewhere';native.mkdir();(native/f'{job}.json').write_text('{}')
-        parent=tmp_path/'docs/operations/nightly-acceptance-20261105';parent.mkdir(parents=True)
-        (parent/'native').symlink_to(native,target_is_directory=True)
-    output=tmp_path/'path';output.touch()
-    result=subprocess.run(['bash','-eo','pipefail','-c',step['run']],cwd=tmp_path,text=True,capture_output=True,timeout=10,
-        env={'PATH':os.environ['PATH'],'RUNNER_TEMP':str(tmp_path/'scratch'),'GITHUB_JOB':job,'GITHUB_PATH':str(output)})
-    assert result.returncode==1 and 'Reviewed native ingestion profile missing' in result.stderr,result.stdout+result.stderr
-    assert not (tmp_path/'scratch').exists() and output.read_text()==''
+    import sys
+
+    doc = yaml.safe_load(WORKFLOW.read_text())
+    step = next(s for s in doc['jobs'][job]['steps'] if s.get('name') == 'Require hosted native writer admission')
+    helpers = Path('tools/nightly_acceptance_20261105')
+    (tmp_path / helpers).mkdir(parents=True)
+    for name in ('native_jobs', 'common', 'runtime', 'native_corpus', 'native_environment'):
+        path = helpers / f'{name}.py'
+        shutil.copyfile(ROOT / path, tmp_path / path)
+
+    parent = tmp_path / 'docs/operations/nightly-acceptance-20261105'
+    parent.mkdir(parents=True)
+    if profile_kind == 'linked_parent':
+        native = tmp_path / 'elsewhere'
+        native.mkdir()
+        shutil.copyfile(ROOT / 'docs/operations/nightly-acceptance-20261105/native' / f'{job}.local.json',
+                        native / f'{job}.local.json')
+        (parent / 'native').symlink_to(native, target_is_directory=True)
+    else:
+        (parent / 'native').mkdir()
+
+    command = step['run']
+    if not Path('/usr/bin/python3').is_file():
+        command = command.replace('/usr/bin/python3', sys.executable, 1)
+    output = tmp_path / 'path'
+    output.touch()
+    result = subprocess.run(['/bin/bash', '-eo', 'pipefail', '-c', command], cwd=tmp_path,
+        text=True, capture_output=True, timeout=10, env={
+            'PATH': '/usr/bin:/bin', 'RUNNER_TEMP': str(tmp_path / 'scratch'),
+            'GITHUB_JOB': job, 'GITHUB_PATH': str(output)})
+    assert result.returncode == 1 and 'original evidence symlink/absent' in result.stderr, result
+    assert not (tmp_path / 'scratch').exists() and output.read_text() == ''

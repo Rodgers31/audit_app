@@ -1,16 +1,28 @@
-"""Dependency installation must not wait on an unavailable hosted pip cache."""
+"""Dependency installation must keep its reviewed runtime and avoid a hosted pip cache."""
 from pathlib import Path
 
 import pytest
 import yaml
 
 
-@pytest.mark.parametrize('job', ['source_plan', 'migrate', 'bootstrap', 'seed', 'validate'])
-def test_seed_python_setup_uses_direct_dependency_installation(job):
+def steps(job):
     workflow = yaml.safe_load((Path(__file__).resolve().parents[2] / '.github/workflows/seed.yml').read_text())
-    steps = workflow['jobs'][job]['steps']
-    setup = [step for step in steps if step.get('uses') == 'actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1']
-    assert len(setup) == 1
-    assert setup[0]['with']['python-version'] == '3.12'
-    assert not setup[0]['with'].get('cache')
-    assert any('pip install' in step.get('run', '') and '-r backend/requirements.txt' in step['run'] for step in steps)
+    return workflow['jobs'][job]['steps']
+
+
+def test_source_plan_uses_the_reviewed_runtime_without_a_hosted_pip_cache():
+    plan = steps('source_plan')
+    setup, = [step for step in plan if step.get('uses', '').startswith('actions/setup-python@')]
+    assert setup['with']['python-version'] == '3.12.16'
+    assert not setup['with'].get('cache')
+    install, = [step['run'] for step in plan if step.get('name') == 'Install reviewed ingestion runtime']
+    assert all(f'runtime.py {action}' in install for action in ('acquire', 'wheels', 'install', 'verify'))
+
+
+@pytest.mark.parametrize('job', ['migrate', 'bootstrap', 'seed', 'validate'])
+def test_writer_has_no_host_runtime_install_or_fallback(job):
+    writer = steps(job)
+    assert not any('setup-python' in step.get('uses', '') or 'runtime.py acquire' in step.get('run', '')
+                   or 'apt-get' in step.get('run', '') for step in writer)
+    gate, = [step for step in writer if step.get('name') == 'Require hosted native writer admission']
+    assert f'hosted-preflight --job {job}' in gate['run']

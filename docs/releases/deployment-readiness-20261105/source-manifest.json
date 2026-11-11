@@ -6,8 +6,8 @@
   "files": [
     {
       "path": ".github/workflows/seed.yml",
-      "bytes": 97866,
-      "sha256": "b64f0bd06f4f3015d138ab389e8ac5fc5ed14730f9d2d3d0953aae49141998a4"
+      "bytes": 94965,
+      "sha256": "48d30bbdf1be29a6578d455534cc43acaa9018bf9691035eb129ba005aebb775"
     },
     {
       "path": "backend/Dockerfile.prod",
@@ -241,8 +241,8 @@
     },
     {
       "path": "tools/nightly_acceptance_20261105/operational.py",
-      "bytes": 12712,
-      "sha256": "06c8a38c8e9eeb7dcb6bd585787a538c2e8093a1792b62c386fc667beebb3f07"
+      "bytes": 13683,
+      "sha256": "fc1e7be1713541777c47d63c644713199f40f49411ba1cfeb49472dcf732e2e7"
     },
     {
       "path": "tools/nightly_acceptance_20261105/record.py",

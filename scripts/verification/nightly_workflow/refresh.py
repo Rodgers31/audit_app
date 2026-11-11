@@ -8,6 +8,7 @@ serving topology; it does not discover other hosts behind a load balancer.
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
 import base64
 import hashlib
 import hmac
@@ -16,6 +17,7 @@ import os
 from pathlib import Path
 import re
 import secrets
+import signal
 import stat
 import subprocess
 import time
@@ -25,6 +27,7 @@ from urllib.request import Request, build_opener, HTTPRedirectHandler, ProxyHand
 PROTOCOL = 'nightly-refresh-v2'
 MAX_BYTES = 65536
 MAX_REQUESTS = 64
+PHASE_TIMEOUT_SECONDS = 90
 
 
 def require(condition, reason):
@@ -91,7 +94,7 @@ class SignedClient:
         require(context_valid(context), 'refresh context refused')
         self.secret, self.context, self.evidence = secret, context, evidence
         self.clock, self.now = clock, now
-        self.deadline, self.requests = clock() + 90, 0
+        self.deadline, self.requests = clock() + PHASE_TIMEOUT_SECONDS, 0
         self.opener = build_opener(NoRedirect(), ProxyHandler({}))
 
     def remaining(self):
@@ -173,7 +176,7 @@ def census_key(census):
     def identity(value):
         return type(value) is str and re.fullmatch('[1-9][0-9]{0,9}:[1-9][0-9]{0,19}', value) is not None
     workers = census['workers']
-    require(identity(census['supervisor']) and type(workers) is list and 1 <= len(workers) <= 64
+    require(identity(census['supervisor']) and type(workers) is list and 1 <= len(workers) < MAX_REQUESTS
             and all(identity(worker) for worker in workers) and len(set(workers)) == len(workers)
             and workers == sorted(workers) and census['worker'] in workers, 'serving worker inventory refused')
     return {k: census[k] for k in ('scope', 'instance', 'supervisor', 'workers')}
@@ -276,5 +279,24 @@ def main():
         return 1
 
 
+def _phase_timeout(_signum, _frame):
+    raise ValueError('refresh deadline exceeded')
+
+
+@contextmanager
+def _phase_deadline(seconds):
+    # urllib's socket timeout is an inactivity limit. The Unix workflow CLI
+    # also needs a whole-phase deadline that interrupts a slow response header.
+    previous = signal.signal(signal.SIGALRM, _phase_timeout)
+    signal.setitimer(signal.ITIMER_REAL, seconds)
+    try:
+        yield
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous)
+
+
 if __name__ == '__main__':
-    raise SystemExit(main())
+    with _phase_deadline(PHASE_TIMEOUT_SECONDS):
+        code = main()
+    raise SystemExit(code)

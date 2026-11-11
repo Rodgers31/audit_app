@@ -110,6 +110,32 @@ def test_client_deadline_and_request_allowance_are_aggregate(tmp_path):
     with pytest.raises(ValueError,match='deadline'):client.remaining()
 
 
+def test_worker_inventory_leaves_one_request_for_invalidation():
+    workers = sorted(f'{pid}:100' for pid in range(2, r.MAX_REQUESTS + 1))
+    supported = dict(CENSUS, workers=workers, worker='2:100')
+    assert r.census_key(supported)['workers'] == workers
+    unsupported = dict(supported, workers=sorted([*workers, '65:100']))
+    with pytest.raises(ValueError, match='worker inventory'):
+        r.census_key(unsupported)
+
+
+def test_cli_deadline_interrupts_a_blocking_socket_read():
+    import signal
+    import socket
+
+    original = signal.getsignal(signal.SIGALRM)
+    reader, writer = socket.socketpair()
+    with reader, writer:
+        # Keep a writer open without sending data, just as an incomplete
+        # response header leaves urllib waiting for the next byte.
+        reader.settimeout(1)
+        with pytest.raises(ValueError, match='refresh deadline exceeded'):
+            with r._phase_deadline(0.05):
+                reader.recv(1)
+    assert signal.getsignal(signal.SIGALRM) == original
+    assert signal.getitimer(signal.ITIMER_REAL) == (0.0, 0.0)
+
+
 def test_public_log_seals_replayable_signatures_but_preserves_private_originals(tmp_path,capsys):
     import base64
     import os
