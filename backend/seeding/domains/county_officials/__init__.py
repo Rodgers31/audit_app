@@ -31,7 +31,7 @@ from ...extractors.cog_governors import (
     parse_deputy_governors,
     parse_governors,
 )
-from ...freshness import mark_fixture, mark_live
+from ...freshness import mark_fixture, mark_live, mark_partial
 from ...http_client import create_http_client
 from ...registries import register_domain
 from ...types import DomainRunContext, DomainRunResult
@@ -51,6 +51,38 @@ _HTML_HEADERS = {
 }
 
 
+# Per page, across every DNS/connect/body retry. Both pages share the caller's
+# finite domain budget; no alternate resolver, authority or TLS policy is used.
+_BODY_LIMITS = {"max_seconds": 45.0, "max_bytes": 4 * 1024 * 1024,
+                "allowed_hosts": {"cog.go.ke", "www.cog.go.ke"}, "cache": False}
+
+
+def _last_good(session, now):
+    rows = session.execute(select(Entity).join(Country, Entity.country_id == Country.id).where(Entity.type == EntityType.COUNTY, Country.iso_code == "KEN")).scalars().all()
+    ages = []
+    retained = 0
+    for row in rows:
+        meta = row.meta if type(row.meta) is dict else {}
+        if not meta.get("governor"):
+            continue
+        retained += 1
+        provenance = meta.get("governor_provenance")
+        try:
+            stamp = datetime.fromisoformat(provenance["fetched_at"])
+            if stamp.tzinfo is None:
+                raise ValueError("unknown timezone")
+            age = (now - stamp).total_seconds()
+            if age >= 0:
+                ages.append(age)
+        except (TypeError, KeyError, ValueError):
+            continue
+    return {"state": "unavailable", "fixture_used": False,
+            "stored_governors_retained": retained,
+            "dated_stored_governors": len(ages),
+            "oldest_age_seconds": max(ages) if ages else None,
+            "newest_age_seconds": min(ages) if ages else None}
+
+
 def _ensure_source_document(
     session: Session,
     country_id: int,
@@ -60,7 +92,9 @@ def _ensure_source_document(
     from models import SourceDocument
 
     doc = session.execute(
-        select(SourceDocument).where(SourceDocument.url == url)
+        select(SourceDocument).where(SourceDocument.url == url,
+            SourceDocument.country_id == country_id, SourceDocument.publisher == PUBLISHER,
+            SourceDocument.doc_type == DocumentType.REPORT)
     ).scalar_one_or_none()
     now = datetime.now(timezone.utc)
     if doc is None:
@@ -84,9 +118,11 @@ def _fetch_deputies(client):
     """(parsed deputies, None) or (None, (reason, detail))."""
     try:
         response = client.get(
-            DEPUTIES_SOURCE_URL, headers=_HTML_HEADERS, raise_for_status=True
+            DEPUTIES_SOURCE_URL, headers=_HTML_HEADERS, raise_for_status=True, **_BODY_LIMITS
         )
-        return parse_deputy_governors(response.text), None
+        parsed = parse_deputy_governors(response.text)
+        parsed.response_receipt = getattr(response, "extensions", {}).get("response_receipt")
+        return parsed, None
     except GovernorsError as exc:
         return None, (f"cog_{exc.reason}", str(exc))
     except Exception as exc:  # noqa: BLE001 - network path
@@ -114,6 +150,8 @@ def _write_deputies(
         url=DEPUTIES_SOURCE_URL,
         title="Council of Governors — Current Deputy Governors",
     )
+    if deputies.response_receipt is not None:
+        doc.meta = {**(doc.meta or {}), "response_receipt": dict(deputies.response_receipt)}
     provenance = {
         "source": PUBLISHER,
         "source_url": DEPUTIES_SOURCE_URL,
@@ -125,7 +163,7 @@ def _write_deputies(
     for county_label, entity in entities.items():
         county = county_label.removesuffix(" County")
         name = deputies.by_county.get(county)
-        if name and name == governors.by_county.get(county):
+        if name and name.casefold() == governors.by_county.get(county, "").casefold():
             checks.append(f"dropped: {county} lists {name} as governor and deputy")
             name = None
         meta = dict(entity.meta or {})
@@ -166,7 +204,7 @@ def run(
     with create_http_client(settings) as client:
         try:
             response = client.get(
-                SOURCE_URL, headers=_HTML_HEADERS, raise_for_status=True
+                SOURCE_URL, headers=_HTML_HEADERS, raise_for_status=True, **_BODY_LIMITS
             )
             governors = parse_governors(response.text)
             # Deputies are fetched only once the governors have parsed, and
@@ -179,6 +217,7 @@ def run(
             mark_fixture(
                 "county_officials", reason=f"cog_{exc.reason}", detail=str(exc)
             )
+            metadata["source_status"] = _last_good(session, datetime.now(timezone.utc))
             metadata["quarantine_reason"] = exc.reason
             errors.append(str(exc))
             logger.warning("county officials quarantined: %s", exc)
@@ -199,6 +238,7 @@ def run(
                 reason="source_unreachable",
                 detail=f"{type(exc).__name__}: {exc}",
             )
+            metadata["source_status"] = _last_good(session, datetime.now(timezone.utc))
             metadata["quarantine_reason"] = "source_unreachable"
             errors.append(str(exc))
             logger.warning("Council of Governors unreachable: %s", exc)
@@ -214,11 +254,10 @@ def run(
                 metadata=metadata,
             )
 
-    doc = _ensure_source_document(session, country.id)
     entities = {
         e.canonical_name: e
         for e in session.execute(
-            select(Entity).where(Entity.type == EntityType.COUNTY)
+            select(Entity).where(Entity.type == EntityType.COUNTY, Entity.country_id == country.id)
         )
         .scalars()
         .all()
@@ -249,6 +288,10 @@ def run(
             metadata=metadata,
         )
 
+    doc = _ensure_source_document(session, country.id)
+    receipt = getattr(response, "extensions", {}).get("response_receipt")
+    if receipt is not None:
+        doc.meta = {**(doc.meta or {}), "response_receipt": dict(receipt)}
     updated = unchanged = 0
     for county, name in sorted(governors.by_county.items()):
         entity = entities[f"{county} County"]
@@ -267,6 +310,9 @@ def run(
             meta["governor"] = name
             meta["governor_provenance"] = provenance
             updated += 1
+        if deputies is None and str(meta.get("deputy_governor", "")).casefold() == name.casefold():
+            meta.pop("deputy_governor", None)
+            meta.pop("deputy_governor_provenance", None)
         entity.meta = meta
         session.add(entity)
     session.flush()
@@ -288,13 +334,17 @@ def run(
         errors.append(f"deputy governors not updated ({reason}): {detail}")
         logger.warning("deputy governors not updated (%s): %s", reason, detail)
 
-    mark_live(
-        "county_officials",
-        detail=(
-            f"{len(governors.by_county)} governors from the Council of "
-            f"Governors ({SOURCE_URL})"
-        ),
-    )
+    metadata["source_status"] = {"state": "live" if deputies is not None else "partial",
+                                 "fixture_used": False, "governors_observed": 47,
+                                 "deputies_state": "live" if deputies is not None else "unavailable"}
+    if deputies is None:
+        mark_partial("county_officials", reason="deputies_unavailable", detail=deputies_failure[1])
+    else:
+        mark_live(
+            "county_officials",
+            detail=(f"{len(governors.by_county)} governors from the Council of "
+                    f"Governors ({SOURCE_URL})"),
+        )
     for check in governors.checks:
         logger.info("Council of Governors check: %s", check)
     metadata.update(

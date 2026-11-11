@@ -251,6 +251,10 @@ class DataPointVerification(BaseModel):
     table: str
     qualifications: Dict[str, FigureQualification] = Field(default_factory=dict)
     value: Optional[str] = None
+    fiscal_measures: Optional[Dict[str, Any]] = None
+    fiscal_framework: Optional[Dict[str, Any]] = None
+    fiscal_framework_absent_reason: Optional[str] = None
+    debt_period: Optional[Dict[str, Any]] = None
     source_document: Optional[str] = None
     source_url: Optional[str] = None
     publisher: Optional[str] = None
@@ -1721,9 +1725,11 @@ async def verify_data_point(
                     "no_rows_for_year" if year else "no_rows"
                 )
             else:
-                verification.value = (
-                    f"KES {float(record.total or 0):,.0f} total (year {record.year})"
-                )
+                from seeding.domains.debt_timeline.publication import public_debt_rows
+                public = public_debt_rows(db, [record])[record.id]
+                verification.debt_period = public['period']
+                verification.value = (f"KES {public['total']:,.0f} total (year {record.year})"
+                                      if public['total'] is not None else None)
                 if getattr(record, "source_document_id", None):
                     doc = (
                         db.query(SourceDocument)
@@ -1753,25 +1759,23 @@ async def verify_data_point(
             if record is None:
                 verification.reason = "no_rows_for_year" if year else "no_rows"
             else:
-                # The money columns are nullable and correctly NULL for years
-                # nobody measured — FY 2021/22 and earlier carry no
-                # total_revenue. Reporting that as "KES 0 appropriated" would
-                # manufacture the zero this endpoint exists to expose, so
-                # absence is reported as absence.
-                if record.appropriated_budget is None:
-                    verification.value = None
-                    verification.reason = (
-                        "no appropriated budget recorded for "
-                        f"{record.fiscal_year}"
-                    )
-                else:
-                    verification.value = (
-                        f"KES {float(record.appropriated_budget):,.0f} "
-                        f"appropriated budget ({record.fiscal_year})"
-                    )
-                _attach_source_document(verification, db, record.source_document_id)
-                _grade_verification(verification)
-                _note_document_integrity(verification, db, record.source_document_id)
+                from services.fiscal_qualification import fiscal_values
+                qualified = fiscal_values(record)
+                verification.fiscal_measures = qualified
+                from services.fiscal_framework_qualification import qualified_framework
+                verification.fiscal_framework, verification.fiscal_framework_absent_reason = qualified_framework(record)
+                budget = qualified["appropriated_budget"]
+                verification.value = (
+                    f"KES {budget:,.0f} appropriated budget ({record.fiscal_year})"
+                    if budget is not None else None
+                )
+                proof = qualified["measure_qualifications"].get("appropriated_budget")
+                verification.verification_status = "publishable" if proof else "unverified"
+                verification.reason = qualified["absent_reasons"].get("appropriated_budget")
+                if proof:
+                    verification.source_document = proof["source"].get("title")
+                    verification.source_url = proof["source"]["url"]
+                    verification.publisher = proof["source"].get("publisher")
 
         elif table_name == "revenue_by_source":
             # One row is one tax head for one year, so identify WHICH — a
@@ -1931,7 +1935,11 @@ async def verify_data_point(
         "debt_timeline",
         "revenue_by_source",
     }:
-        qualifications = qualify_rows(db, table_name, [record])[record.id]
+        if table_name == "debt_timeline":
+            from seeding.domains.debt_timeline.publication import debt_qualifications
+            qualifications = debt_qualifications(db, [record])[record.id]
+        else:
+            qualifications = qualify_rows(db, table_name, [record])[record.id]
         # Keep existing coherent-GDP refusal; new receipts cannot rescue a
         # contradicting publisher/country/measure declaration.
         if (

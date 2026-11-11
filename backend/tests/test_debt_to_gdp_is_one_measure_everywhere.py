@@ -51,6 +51,7 @@ from datetime import datetime, timezone
 from unittest.mock import patch
 
 import pytest
+from fiscal_evidence import isolated_fiscal_debt_peer_worker
 from models import DebtTimeline, ImfWeoObservation
 
 VINTAGE = datetime(2026, 9, 7, tzinfo=timezone.utc)
@@ -163,7 +164,7 @@ def test_the_sustainability_headline_declares_its_basis(
     assert "status" not in d
 
 
-def test_without_imf_rows_the_fallback_basis_is_still_declared(
+def test_without_imf_rows_an_unqualified_fallback_is_withheld(
     client, db_session, seed_source_doc, imf_datamapper_live
 ):
     """DebtTimeline is a legitimate fallback. An UNdeclared basis is not."""
@@ -175,11 +176,9 @@ def test_without_imf_rows_the_fallback_basis_is_still_declared(
     )
     db_session.commit()
 
-    d = sustainability(client)["debt_to_gdp"]
-    assert d["value"] == pytest.approx(70.0)
-    assert "GGXWDG_NGDP" not in d["basis"]
-    assert d["source"] != "IMF World Economic Outlook"
-    assert d["basis"]
+    body = sustainability(client)
+    assert body["debt_to_gdp"] is None
+    assert body["debt_to_gdp_absent_reason"]
 
 
 # ── 2. One measure across the five countries ───────────────────────────────

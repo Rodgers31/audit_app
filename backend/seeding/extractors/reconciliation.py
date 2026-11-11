@@ -188,7 +188,9 @@ def require_review(session, doc, extractor_id, old, rows, matched, vanished, rev
     from models import Audit
 
     changed = [row.id for row, new in matched if _meaning(row) != _meaning(new)]
-    if not vanished and not changed:
+    layout_held = any(isinstance(row.extracted_json, dict)
+        and "layout_qualifications" in row.extracted_json for row in rows)
+    if not vanished and not changed and not layout_held:
         if not rows:
             raise IncompleteExtraction("no findings extracted")
         return
@@ -225,6 +227,12 @@ def require_review(session, doc, extractor_id, old, rows, matched, vanished, rev
             if r.id in changed
         ],
     }
+    if layout_held:
+        # Keep the exact unapproved proposal available, while direct L3 callers
+        # cannot use a review object to waive known source visibility holds.
+        if review is not None:
+            raise IncompleteExtraction("candidate layout fidelity held; exact review cannot authorize source adoption")
+        raise ReconciliationRequired(proposal)
     if isinstance(review, str):
         from .reviewed_proposals import approve
         review = approve(proposal, rows, review)

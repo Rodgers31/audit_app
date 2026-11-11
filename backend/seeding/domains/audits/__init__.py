@@ -52,6 +52,7 @@ from ...registries import register_domain
 from ...source_registry import SOURCE_REGISTRY, SourceDataset
 from ...types import DomainRunContext, DomainRunResult
 from . import fetcher  # retained for its FY-derivation helpers + tests
+from .transport import OfficialListingClient
 
 logger = logging.getLogger("seeding.audits")
 
@@ -472,7 +473,7 @@ def run(
                 discovery = (
                     discovery_for(source_entries)
                     if selected is not None
-                    else discover_county_audit_documents(client)
+                    else discover_county_audit_documents(OfficialListingClient(client))
                 )
                 if not context.audits_observe_listing:
                     metadata["oag_county_discovery"] = (
@@ -717,6 +718,7 @@ def run(
                             title=url.rsplit("/", 1)[-1],
                             doc_type=DocumentType[dataset.doc_type],
                             dataset_id=dataset_id,
+                            acquisition_context=context,
                             max_seconds=(
                                 settings.audits_volume_download_timeout_seconds
                                 if is_volume
@@ -749,6 +751,12 @@ def run(
                 doc_stat = {"dataset": dataset_id, "doc_id": doc.id, "url": url,
                             'parser_id': dataset.parser_id,
                             'extraction_outcome': 'pending' if parser is not None else 'not_requested'}
+                from .acquisition import KEY as ORIGIN_KEY
+                origin = doc.meta.get(ORIGIN_KEY) if isinstance(doc.meta, dict) else None
+                if origin is not None:
+                    doc_stat['acquisition_origin'] = deepcopy(origin)
+                    if origin.get('origin_qualified') is not True:
+                        errors.append(f"document {doc.id}: acquisition origin held ({origin.get('reason')})")
                 if parser is not None:
                     try:
                         from ...extractors.reconciliation import extract_and_load

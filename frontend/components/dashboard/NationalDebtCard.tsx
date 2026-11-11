@@ -1,6 +1,7 @@
 'use client';
 
 import FigureEvidence from '@/components/evidence/FigureEvidence';
+import { publishedHeadlineRatio, headlineRatioDisclosure, publishedTimelineRatio, debtRatioDisclosure } from '@/lib/debt/qualification';
 import { isModelledObservation, type Qualifications } from '@/lib/evidence/qualification';
 import { DebtTimelineEntry } from '@/lib/api/debt';
 import { dsaCitation, dsaHref, dsaIsAlarm, dsaSourceLabel, dsaVintageLabel, readDsaRating } from '@/lib/debt/dsaRating';
@@ -37,9 +38,9 @@ import {
 /* ── Transform API data to chart format ── */
 interface ChartEntry {
   year: string;
-  external: number;
-  domestic: number;
-  total: number;
+  external: number | null;
+  domestic: number | null;
+  total: number | null;
   gdpRatio: number | null;
   /** Explicit model origin supplied by the backend's measure qualification. */
   modelled: boolean;
@@ -48,7 +49,7 @@ interface ChartEntry {
 
 /** Legacy export retained for callers; numeric shape never establishes origin. */
 export function isRoundNumberEstimate(e: {
-  external: number; domestic: number; total: number; qualifications?: Qualifications;
+  external: number | null; domestic: number | null; total: number | null; qualifications?: Qualifications;
 }): boolean {
   return isModelledObservation(e.qualifications);
 }
@@ -72,9 +73,9 @@ export function isRoundNumberEstimate(e: {
  * applied to production on 2026-08-30 and rolled back within the hour.
  */
 function toChartData(timeline: DebtTimelineEntry[]): ChartEntry[] {
-  const toBillions = (v: number, unit?: string | null): number => {
+  const toBillions = (v: number | null, unit?: string | null): number | null => {
     const raw = toRawKES(v, unit);
-    return raw == null ? 0 : raw / 1e9;
+    return raw == null ? null : raw / 1e9;
   };
   return timeline.map((e) => {
     const row = {
@@ -83,7 +84,7 @@ function toChartData(timeline: DebtTimelineEntry[]): ChartEntry[] {
       external: toBillions(e.external, e.unit),
       domestic: toBillions(e.domestic, e.unit),
       total: toBillions(e.total, e.unit),
-      gdpRatio: e.gdp_ratio,
+      gdpRatio: publishedTimelineRatio(e),
     };
     return { ...row, modelled: isRoundNumberEstimate(row) };
   });
@@ -96,7 +97,8 @@ function toChartData(timeline: DebtTimelineEntry[]): ChartEntry[] {
 // hero displayed as "12.7T" here, plus the External + Domestic
 // breakdown ("6.5T + 6.2T") didn't add back up to the displayed
 // "12.7T" total. 2 decimals reconciles all three.
-function fmtT(val: number): string {
+function fmtT(val: number | null): string {
+  if (val == null) return '—';
   if (val >= 1000) return `${(val / 1000).toFixed(2)}T`;
   return `${val}B`;
 }
@@ -180,7 +182,7 @@ export default function NationalDebtCard() {
   const apiData = resp?.data || resp;
   const sustainability = apiData?.debt_sustainability || {};
   const debtServiceRatio =
-    fiscal?.current?.debt_service_per_shilling ?? sustainability.debt_service_ratio ?? null;
+    fiscal?.current?.debt_service_per_shilling ?? null;
 
   const firstYear = debtTimeline[0];
   const lastYear = debtTimeline[debtTimeline.length - 1];
@@ -190,8 +192,13 @@ export default function NationalDebtCard() {
   // detail page agree. Fall back to the last timeline year only if the
   // authoritative value is missing.
   const totalDebt =
-    apiData?.total_outstanding ?? apiData?.total_debt ?? (lastYear ? lastYear.total * 1_000_000_000 : null);
-  const gdpRatio = apiData?.debt_to_gdp_ratio ?? lastYear?.gdpRatio ?? null;
+    apiData?.total_outstanding ?? apiData?.total_debt ?? (lastYear?.total != null ? lastYear.total * 1_000_000_000 : null);
+  const headlineRatio = publishedHeadlineRatio(apiData);
+  const gdpRatio = headlineRatio ?? lastYear?.gdpRatio ?? null;
+  const rawLastYear = timelineResp?.timeline?.[timelineResp.timeline.length - 1];
+  const ratioBasis = headlineRatio != null
+    ? headlineRatioDisclosure(apiData)
+    : debtRatioDisclosure(rawLastYear);
 
   // Absence is not a risk band. This was `|| 'High'`, so an API that reported
   // no assessment rendered the WORST rating. That was a claim about the
@@ -256,10 +263,11 @@ export default function NationalDebtCard() {
   const firstSourced = debtTimeline.find((e) => ['qualified', 'verified'].includes(e.qualifications?.total?.status ?? '')) ?? null;
   // A "from X% in YEAR" comparison is only defensible when the base and the
   // displayed value are on the SAME basis — see lib/debt/debtCardBasis.
-  const gdpComparison = gdpRatioComparison(apiData?.debt_to_gdp_ratio, firstSourced);
+  const firstRatio = debtTimeline.find(e => e.gdpRatio != null);
+  const gdpComparison = gdpRatio == null ? null : gdpRatioComparison(headlineRatio, firstRatio);
   const modelledYears = debtTimeline.filter((e) => e.modelled);
   const growthMultiple =
-    firstSourced && lastYear && firstSourced.total > 0
+    firstSourced?.total != null && lastYear?.total != null && firstSourced.total > 0
       ? (lastYear.total / firstSourced.total).toFixed(1)
       : '—';
   const growthBaseYear = firstSourced?.year ?? '—';
@@ -342,13 +350,14 @@ export default function NationalDebtCard() {
               </div>
             }
             value={gdpRatio != null ? `${gdpRatio}%` : '—'}
-            sub={
+            sub={[
               gdpComparison
                 ? t('home.debt.from_year_sub')
                     .replace('{pct}', String(gdpComparison.pct))
                     .replace('{year}', String(gdpComparison.year))
-                : t('home.debt.gdp_basis_imf')
-            }
+                : null,
+              ratioBasis,
+            ].filter(Boolean).join(' · ') || 'No sourced stock/GDP pair available'}
             accent='gold'
           />
           <StatCard

@@ -35,19 +35,23 @@ FISCAL_MONEY_FIELDS = (
 
 def fiscal_history_entry(row):
     """Convert a raw-KES account independently; never fill gaps from another year."""
-    money = monetary_fields(
-        row, FISCAL_MONEY_FIELDS, scale=1e9, unit_valid=row.unit == "KES"
-    )
-    ratio = monetary_fields(row, ["borrowing_pct_of_budget"])
+    from services.fiscal_qualification import fiscal_values
+    qualified = fiscal_values(row)
+    money = {field: qualified[field] / 1e9 if qualified[field] is not None else None
+             for field in FISCAL_MONEY_FIELDS}
+    money["absent_reasons"] = qualified["absent_reasons"]
+    ratio = {"borrowing_pct_of_budget": qualified["borrowing_pct_of_budget"],
+             "absent_reasons": {}}
     meta = row.meta if isinstance(row.meta, dict) else {}
     return {
         "fiscal_year": row.fiscal_year,
+        "measure_qualifications": qualified["measure_qualifications"],
         "unit": "billion_kes",
         **money,
         "borrowing_pct_of_budget": ratio["borrowing_pct_of_budget"],
         "absent_reasons": {**money["absent_reasons"], **ratio["absent_reasons"]},
         "budget_basis": meta.get("budget_basis"),
-        "budget_basis_source": meta.get("budget_basis_source"),
+        "budget_basis_source": qualified["measure_qualifications"].get("appropriated_budget", {}).get("source"),
         "metadata_absent_reason": "invalid_metadata"
         if row.meta is not None and not isinstance(row.meta, dict)
         else None,

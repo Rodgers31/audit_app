@@ -1,4 +1,5 @@
 'use client';
+import { publishedHeadlineRatio, headlineRatioDisclosure } from '@/lib/debt/qualification';
 import PendingBillsAgingPanel from './PendingBillsAgingPanel';
 import FigureEvidence from '@/components/evidence/FigureEvidence';
 import { readDsaRating, dsaIsAlarm, dsaSourceLabel, dsaVintageLabel, dsaHref, dsaCitation } from '@/lib/debt/dsaRating';
@@ -30,6 +31,7 @@ import {
   formatHeadlineKes,
   ratioWorking,
 } from '@/lib/debt/revenueAllocation';
+import FiscalMeasureDisclosure from '@/components/budget/FiscalMeasureDisclosure';
 import { annualCostCell, rateCell, sortLoans } from '@/lib/debt/loanInterest';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import {
@@ -167,7 +169,7 @@ function Sparkline({
   color = '#C94A4A',
   height = 40,
 }: {
-  data: number[];
+  data: (number | null)[];
   color?: string;
   height?: number;
 }) {
@@ -340,10 +342,7 @@ export default function NationalDebtPage() {
     const gdp = api.gdp ?? null;
     // The API declares the ratio's measure and observation year. The register
     // total and GDP can be from different periods; they cannot fill its absence.
-    const gdpRatio =
-      typeof api.debt_to_gdp_ratio === 'number' &&
-      Number.isFinite(api.debt_to_gdp_ratio) && api.debt_to_gdp_ratio >= 0
-        ? api.debt_to_gdp_ratio : null;
+    const gdpRatio = publishedHeadlineRatio(api);
     const summary = api.summary || {};
     const categories = api.categories || {};
     const population = fetchedPopulation || api.population || null;
@@ -359,11 +358,11 @@ export default function NationalDebtPage() {
       gdp,
       gdpRatio,
       gdpRatioYear:
-        typeof api.debt_to_gdp_year === 'number' && Number.isInteger(api.debt_to_gdp_year) &&
+        gdpRatio != null && typeof api.debt_to_gdp_year === 'number' && Number.isInteger(api.debt_to_gdp_year) &&
         api.debt_to_gdp_year >= 1000 && api.debt_to_gdp_year <= 9999
           ? api.debt_to_gdp_year : null,
-      gdpRatioBasis: sourceText(api.debt_to_gdp_basis),
-      gdpRatioSource: sourceText(api.debt_to_gdp_source),
+      gdpRatioBasis: gdpRatio == null ? null : headlineRatioDisclosure(api),
+      gdpRatioSource: gdpRatio == null ? null : sourceText(api.debt_to_gdp_source),
       summary,
       categories,
       loanCount: api.loan_count ?? null,
@@ -394,10 +393,10 @@ export default function NationalDebtPage() {
     () =>
       (timelineResp?.timeline || []).map((t) => ({
         ...t,
-        external: toRawKES(t.external, t.unit) ?? 0,
-        domestic: toRawKES(t.domestic, t.unit) ?? 0,
-        total: toRawKES(t.total, t.unit) ?? 0,
-        gdp: t.gdp != null ? (toRawKES(t.gdp, t.unit) ?? 0) : t.gdp,
+        external: toRawKES(t.external, t.unit),
+        domestic: toRawKES(t.domestic, t.unit),
+        total: toRawKES(t.total, t.unit),
+        gdp: toRawKES(t.gdp, t.unit),
       })),
     [timelineResp]
   );
@@ -437,6 +436,7 @@ export default function NationalDebtPage() {
     if (timeline.length < 2) return null;
     const last = timeline[timeline.length - 1];
     const prev = timeline[timeline.length - 2];
+    if (last.total == null || prev.total == null || prev.total <= 0) return null;
     const change = ((last.total - prev.total) / prev.total) * 100;
     return { change, amount: last.total - prev.total, year: last.year };
   }, [timeline]);
@@ -645,7 +645,7 @@ export default function NationalDebtPage() {
                 <InfoTip term='debt-to-gdp' size={11} />
               </div>
               <div className='text-2xl sm:text-3xl font-bold text-white tabular-nums'>
-                {d.gdpRatio != null ? pct(d.gdpRatio) : 'Not published'}
+                {d.gdpRatio != null ? pct(d.gdpRatio) : 'Unavailable'}
               </div>
               {d.gdpRatio != null ? (
                 <p className='text-[11px] text-white/70 mt-1'>
@@ -800,6 +800,13 @@ export default function NationalDebtPage() {
           Restore per-metric, each against the indicator it actually names. */}
 
       {/* ═══════════ SECTION 6 — REVENUE ALLOCATION ═══════════ */}
+      {!taxAllocation && fiscal?.current && (
+        <section className='rounded-2xl border border-neutral-border/40 bg-white dark:bg-surface-base p-5 text-sm text-neutral-muted'>
+          <h2 className='font-semibold text-gov-dark dark:text-white'>Debt service and ordinary revenue · {fiscal.current.fiscal_year}</h2>
+          <p>The debt-service share is withheld until compatible source, period and vintage evidence is confirmed.</p>
+          <FiscalMeasureDisclosure qualifications={fiscal.current.measure_qualifications} absentReasons={fiscal.current.absent_reasons} taxObservation={fiscal.current.tax_split_observation} />
+        </section>
+      )}
       {taxAllocation && (
         <motion.section
           initial={{ opacity: 0, y: 20 }}

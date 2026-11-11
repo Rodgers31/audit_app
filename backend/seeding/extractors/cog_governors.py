@@ -42,6 +42,7 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass, field
+from bs4 import BeautifulSoup
 from typing import Dict, List, Optional, Tuple
 
 logger = logging.getLogger("seeding.extractors.cog_governors")
@@ -112,6 +113,7 @@ class GovernorsError(Exception):
 @dataclass
 class Governors:
     by_county: Dict[str, str]
+    response_receipt: Optional[dict] = None
     checks: List[str] = field(default_factory=list)
     #: Counties the page did not list. Always empty for governors, which
     #: must list all 47.
@@ -151,35 +153,50 @@ def clean_name(raw: str) -> Optional[str]:
 def _parse_pairs(html: str, source_url: str) -> Dict[str, str]:
     """county -> name for every block on a Council page, with the pairing
     gates applied. Completeness is the caller's rule."""
+    if type(html) is not str:
+        raise GovernorsError("invalid_body", "Nonempty HTML text required")
+    if re.search(r"just a moment|verify you are human|cf-chl-|captcha", html, re.I):
+        raise GovernorsError("challenge_body", "Publisher challenge is not an officials roster")
     by_county: Dict[str, str] = {}
     seen_names: Dict[str, str] = {}
     canonical = {_county_key(c): c for c in KENYAN_COUNTIES}
 
-    for match in _ENTRY_RE.finditer(html or ""):
+    soup = BeautifulSoup(html, "html.parser")
+    for block in soup.select("div.captions"):
+        # Only one person's name and county inside the same official card.
+        # A heading in another div cannot consume this card's county label.
+        heading = block.find("h3", recursive=False)
+        if heading is None:
+            continue
+        matches = list(_ENTRY_RE.finditer(str(block)))
+        if len(block.find_all("h3")) != 1 or len(matches) != 1:
+            raise GovernorsError("malformed_card", "Expected one name/county pair per captions card")
+        match = matches[0]
         county = canonical.get(_county_key(match.group("county")))
         if county is None:
-            continue
+            raise GovernorsError("unknown_county", match.group("county"))
         name = clean_name(match.group("name"))
         if name is None:
             continue
         if county in by_county:
             # The page repeats entries in a slider; the first wins, and a
             # DISAGREEING repeat is a parse that has gone wrong.
-            if by_county[county] != name:
+            if by_county[county].casefold() != name.casefold():
                 raise GovernorsError(
                     "county_has_two_governors",
                     f"{county}: {by_county[county]!r} and {name!r}",
                 )
             continue
-        if name in seen_names and seen_names[name] != county:
+        name_key = name.casefold()
+        if name_key in seen_names and seen_names[name_key] != county:
             raise GovernorsError(
                 "governor_of_two_counties",
-                f"{name} appears for both {seen_names[name]} and {county} — "
+                f"{name} appears for both {seen_names[name_key]} and {county} — "
                 "names and counties are probably paired by position rather "
                 "than within a block",
             )
         by_county[county] = name
-        seen_names[name] = county
+        seen_names[name_key] = county
 
     if not by_county:
         raise GovernorsError(

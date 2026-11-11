@@ -37,8 +37,17 @@ def has_source_locator(source):
 
 
 def fiscal_outturn(row):
+    from services.fiscal_framework_qualification import qualified_framework
+    framework, reason = qualified_framework(row)
+    result = _outturn_from_framework(row, framework)
+    if reason:
+        result['absent_reason'] = reason
+    return result
+
+
+def _outturn_from_framework(row, framework):
+    """Reconcile one supplied column; callers must qualify its cells first."""
     meta = row.meta if isinstance(row.meta, dict) else {}
-    framework = meta.get("fiscal_framework")
     framework = framework if isinstance(framework, dict) else {}
     source = framework.get("source")
     source = source if isinstance(source, dict) else {}
@@ -51,7 +60,11 @@ def fiscal_outturn(row):
         "measure": "Revenue includes A-i-A; expenditure and net lending includes county transfers and contingency; balance includes grants.",
         "absent_reason": "No complete, reconciled fiscal-framework column with a source is available.",
     }
-    if framework.get("basis") != "treasury_fiscal_framework" or not has_source_locator(source):
+    from services.fiscal_qualification import valid_source, fiscal_year_key
+    if (framework.get("basis") != "treasury_fiscal_framework"
+            or fiscal_year_key(row.fiscal_year) is None
+            or fiscal_year_key(framework.get("fiscal_year")) != fiscal_year_key(row.fiscal_year)
+            or not valid_source(source)):
         return result
     fields = {
         "revenue": "total_revenue_incl_aia_billion", "expenditure": "total_expenditure_billion",

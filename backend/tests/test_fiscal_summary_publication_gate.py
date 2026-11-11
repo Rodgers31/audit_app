@@ -110,6 +110,10 @@ def _seed_production_shape(db_session):
         )
     for fy in FY_EMPTY_SHELLS:
         db_session.add(FiscalSummary(fiscal_year=fy, unit="KES", page_ref=None))
+    from fiscal_evidence import qualify_synthetic_row
+    db_session.flush()
+    for row in db_session.query(FiscalSummary).filter(FiscalSummary.page_ref.isnot(None)):
+        qualify_synthetic_row(row)
     db_session.commit()
 
 

@@ -160,9 +160,11 @@ class BudgetEstimates:
     #: an unproven split is never published. This is the single largest reason
     #: the gross figure differs from the enacted headline.
     debt_redemption_kes: Optional[Decimal] = None
+    debt_service_kes: Optional[Decimal] = None
     prior_fiscal_year: Optional[str] = None
     prior_cfs_kes: Optional[Decimal] = None
     source_url: Optional[str] = None
+    source_sha256: Optional[str] = None
     page_refs: Dict[str, int] = field(default_factory=dict)
     checks: List[str] = field(default_factory=list)
 
@@ -305,6 +307,7 @@ class CfsSummary:
 
     totals: Dict[str, Decimal] = field(default_factory=dict)
     redemption: Dict[str, Decimal] = field(default_factory=dict)
+    debt_service: Dict[str, Decimal] = field(default_factory=dict)
 
     def __bool__(self) -> bool:
         return bool(self.totals)
@@ -438,6 +441,7 @@ def parse_cfs_summary_from_text(text: str) -> CfsSummary:
         if is_supp or label in out.totals:
             continue
         out.totals[label] = grand[idx]
+        out.debt_service[label] = interest[idx]
         if redemption:
             out.redemption[label] = redemption[idx]
     return out
@@ -536,6 +540,7 @@ def build_estimates(
         debt_redemption_kes=(
             getattr(cfs_by_year, "redemption", {}) or {}
         ).get(fiscal_year),
+        debt_service_kes=(getattr(cfs_by_year, "debt_service", {}) or {}).get(fiscal_year),
         prior_fiscal_year=prior,
         prior_cfs_kes=prior_cfs,
         page_refs=dict(page_refs or {}),

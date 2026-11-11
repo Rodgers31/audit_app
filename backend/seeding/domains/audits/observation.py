@@ -14,6 +14,7 @@ from sqlalchemy import select
 
 from ... import oag_discovery as od, pdf_artifact
 from .scope import AuditSourceScopeError, verify_extraction_evidence
+from .transport import get_official_body
 
 ACCEPTED_SHA256 = "62f26e0d93c8a3a25e1f2ae813c362aa0e10908e0ffff33fd496342674cf1dab"
 MAX_OBSERVATION_AGE_SECONDS = 86400
@@ -93,7 +94,7 @@ def observe_listing(client):
     }
 
     def read(url):
-        response = client.get(url, raise_for_status=True)
+        response = get_official_body(client, url)
         # Reject redirects to another page/host and non-HTML WAF responses.
         if (
             str(response.url) != url

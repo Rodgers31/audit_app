@@ -8,6 +8,7 @@ import { useDebtTimeline, useNationalDebtOverview } from '@/lib/react-query/useD
 import { useFiscalSummary } from '@/lib/react-query/useFiscal';
 import { useLang } from '@/lib/i18n/LangProvider';
 import { registerSourceLabel, summedRegisterRows } from '@/lib/debt/registerScope';
+import { publishedHeadlineRatio, headlineRatioDisclosure, publishedTimelineRatio, debtRatioDisclosure } from '@/lib/debt/qualification';
 import { frameworkOf, frameworkUses } from '@/lib/fiscal/framework';
 import { dsaCitation, dsaHref, dsaIsAlarm, dsaSourceLabel, dsaVintageLabel, readDsaRating } from '@/lib/debt/dsaRating';
 import { fmtBillionKES, toRawKES } from '@/lib/utils';
@@ -129,7 +130,11 @@ export function SummaryStrip() {
 
   // Debt-to-GDP — prefer overview's canonical ratio (uses fresher GDP base
   // than the timeline row, which can carry stale nominal-GDP figures).
-  const gdpPct = apiData?.debt_to_gdp_ratio ?? latest?.gdp_ratio ?? '—';
+  const headlineRatio = publishedHeadlineRatio(apiData);
+  const timelineRatio = publishedTimelineRatio(latest);
+  const gdpPct = headlineRatio ?? timelineRatio;
+  const ratioObservation = headlineRatio != null ? apiData?.debt_to_gdp_observation : latest;
+  const imfRatio = headlineRatio != null && apiData?.debt_to_gdp_source === 'IMF World Economic Outlook';
 
   // The debt-to-GDP ratio and the debt total beside it are on DIFFERENT
   // bases and are not two views of one number: `debt_to_gdp_ratio` is IMF
@@ -139,8 +144,8 @@ export function SummaryStrip() {
   // IDS data). Dividing the two figures on screen gives 77%, not 69.3%. Name
   // the basis rather than letting a reader assume they divide (credibility
   // audit F4/F8).
-  const gdpBasis: string | null = apiData?.debt_to_gdp_basis ?? null;
-  const gdpSource: string | null = apiData?.debt_to_gdp_source ?? null;
+  const gdpBasis: string | null = headlineRatio != null ? headlineRatioDisclosure(apiData) : debtRatioDisclosure(ratioObservation);
+  const gdpSource: string | null = imfRatio ? apiData.debt_to_gdp_source : gdpPct != null ? 'CBK / World Bank' : null;
 
   // What the headline total actually is. `total_outstanding` is the sum of the
   // debt rows in our loans table; `reconciliation.secondary_value_kes` is
@@ -233,7 +238,7 @@ export function SummaryStrip() {
         <div className='figure-cell border-b border-neutral-border p-5 md:border-b-0 md:border-r md:p-6'>
           <p className='figure-label'>Debt-to-GDP</p>
           <FigureEvidence label='GDP observations' labelKey='evidence.label.gdp_observations' rows={apiData?.figure_qualifications?.gdp_data} table='gdp_data' />
-          <FigureEvidence label='debt-to-GDP observation' labelKey='evidence.label.debt_to_gdp' note={apiData?.debt_to_gdp_ratio != null ? apiData?.figure_qualifications?.derived_ratio : undefined} qualifications={apiData?.debt_to_gdp_ratio == null && latest?.qualifications?.gdp_ratio ? { gdp_ratio: latest.qualifications.gdp_ratio } : undefined} />
+          <FigureEvidence label='debt-to-GDP observation' labelKey='evidence.label.debt_to_gdp' note={imfRatio ? apiData?.figure_qualifications?.derived_ratio : undefined} qualifications={!imfRatio && ratioObservation?.qualifications?.gdp_ratio ? { gdp_ratio: ratioObservation.qualifications.gdp_ratio } : undefined} />
           <p className={`figure-value figure-fluid mt-4 leading-none ${figureTone}`} data-figure>
             {typeof gdpPct === 'number' ? `${gdpPct.toFixed(1)}%` : '—'}
           </p>
@@ -241,8 +246,7 @@ export function SummaryStrip() {
             {gdpBasis ?? 'Basis not declared by the source'}
             {gdpSource && <span className='block mt-0.5'>Source: {gdpSource}</span>}
             <span className='block mt-0.5'>
-              A broader measure than the total on the left, so the two do not
-              divide into each other.
+              {imfRatio ? 'General-government debt and the loan-register total use separate scopes.' : 'Monthly stock and annual GDP are distinct observations; the register total has a separate source.'}
             </span>
           </p>
         </div>

@@ -206,7 +206,9 @@ class TestGateBackfill:
             url=None,
             fetch_date=datetime(2024, 12, 15, tzinfo=timezone.utc),
             doc_type=DocumentType.AUDIT,
-            status=DocumentStatus.AVAILABLE,
+            # Current PostgreSQL forbids AVAILABLE without a URL. A failed
+            # source still exercises the no-URL publication backfill guard.
+            status=DocumentStatus.FAILED,
         )
         entity = Entity(
             id=900,

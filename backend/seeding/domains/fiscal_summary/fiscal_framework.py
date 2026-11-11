@@ -102,8 +102,8 @@ logger = logging.getLogger("seeding.fiscal_summary.fiscal_framework")
 FISCAL_FRAMEWORK_BASIS = "treasury_fiscal_framework"
 
 #: Rows read from the annex, keyed by the label as the table prints it once
-#: whitespace is collapsed and case folded. The FIRST line matching a pattern
-#: wins, which matters for the three "Fiscal Balance (incl. grants)" variants.
+#: whitespace is collapsed and case folded. Full label matches distinguish
+#: the three fiscal-balance variants; repeated component labels are ambiguous.
 _ROW_PATTERNS: Tuple[Tuple[str, str], ...] = (
     ("total_revenue", r"total revenue"),
     ("ordinary_revenue", r"ordinary revenue( \(tax ?\+ ?non-tax revenue\))?"),
@@ -179,6 +179,10 @@ MIN_NARRATIVE_MATCHES = 6
 MIN_NARRATIVE_MARGIN = 3
 
 _ANNEX_MARKER = "fiscalframework(kshbillion)"
+_COVER_YEAR_PATTERN = (
+    r"budget\s+summary\s+for\s+the\s+(?:fy|fiscal\s+year)\s*"
+    r"(20\d{2}\s*/\s*(?:20\d{2}|\d{2}))(?!\d)"
+)
 _NUM = r"-?\(?[\d,]+\.\d+\)?|-?\d+"
 _NUM_RE = re.compile(rf"^(?:{_NUM})$")
 _AMOUNT_RE = re.compile(
@@ -235,20 +239,29 @@ def parse_annex_lines(lines: Sequence[str], *, page: int) -> AnnexTable:
     comes from such a row.
     """
     parsed: Dict[str, List[Decimal]] = {}
+    seen = set()
     widths: List[int] = []
     for raw in lines:
-        tokens = raw.split()
-        cut = len(tokens)
-        while cut > 0 and _NUM_RE.match(tokens[cut - 1]):
-            cut -= 1
-        numbers = tokens[cut:]
-        label = " ".join(tokens[:cut]).lower()
-        if not numbers or not label:
-            continue
-        for key, pattern in _ROW_PATTERNS:
-            if key in parsed:
-                continue
-            if re.fullmatch(pattern, label):
+        line = " ".join(raw.split()).lower()
+        # Identify the semantic label before inspecting cells. Otherwise a
+        # second row ending in '-', NaN or no cells vanishes behind the valid
+        # first copy. Longest labels distinguish cash-basis balance variants.
+        for key, pattern in sorted(_ROW_PATTERNS, key=lambda row: len(row[1]), reverse=True):
+            match = re.fullmatch(rf"(?:{pattern})(?:\s+(?P<cells>.*))?", line)
+            if match:
+                if key in seen:
+                    raise FiscalFrameworkError(
+                        "duplicate_annex_row", f"PDF p.{page}: repeated {key}"
+                    )
+                seen.add(key)
+                numbers = (match.group("cells") or "").split()
+                if not numbers or any(not _NUM_RE.fullmatch(n) for n in numbers):
+                    # An unreadable singleton optional row is unavailable,
+                    # not a reason to lose a sound spending table (the retained
+                    # FY2021/22 GDP row has an internal em dash). Required rows
+                    # still refuse below. All labels, including this one, stay
+                    # in seen so a malformed duplicate can never disappear.
+                    break
                 parsed[key] = [_to_decimal(n) for n in numbers]
                 widths.append(len(numbers))
                 break
@@ -481,6 +494,7 @@ class Edition:
     approved_index: int
     narrative_score: Tuple[int, int]
     narrative_pages: Tuple[int, int]
+    source_sha256: Optional[str] = None
 
 
 def _normalise_fy(label: str) -> Optional[str]:
@@ -503,7 +517,7 @@ def edition_fiscal_year(pages: Sequence[str], *, fiscal_year: Optional[str]) -> 
     """
     cover = " ".join(pages[:3])
     matches = re.findall(
-        r"budget\s+summary\s+for\s+the\s+(?:fy|fiscal\s+year)\s*(20\d{2}\s*/\s*(?:20\d{2}|\d{2}))(?!\d)",
+        _COVER_YEAR_PATTERN,
         cover,
         re.I,
     )
@@ -511,6 +525,10 @@ def edition_fiscal_year(pages: Sequence[str], *, fiscal_year: Optional[str]) -> 
     if None in years or len(years) > 1:
         raise FiscalFrameworkError("ambiguous_cover_year")
     cover_fy = next(iter(years), None)
+    if cover_fy is None:
+        raise FiscalFrameworkError(
+            "edition_cover_year_unknown", "the document cover does not identify its edition"
+        )
     if fiscal_year and _normalise_fy(fiscal_year) != fiscal_year:
         raise FiscalFrameworkError("invalid_link_year")
     if fiscal_year and cover_fy and cover_fy != fiscal_year:
@@ -633,8 +651,32 @@ def read_edition(pages: Sequence[str], *, fiscal_year: Optional[str]) -> Edition
 
     # The narrative lives before the annexes. Only prose amounts ("KSh N
     # billion") are read, which the debt schedules in between do not print.
-    front = "\n".join(pages[:annex_page])
+    cover_pages = {i for i, text in enumerate(pages[:3])
+                   if re.search(_COVER_YEAR_PATTERN, text, re.I)}
+    # Exclude the identified cover itself from both independent body proofs.
+    # Do not skip a fixed three pages: short PDF excerpts retain real narrative
+    # pages there. A cover-only policy caption cannot qualify a relabelled year.
+    front = "\n".join(text for i, text in enumerate(pages[:annex_page])
+                      if i not in cover_pages)
     index, score, runner_up = identify_approved_column(table, narrative_amounts(front))
+    # The cover/link and an arithmetic fit cannot identify a budget year on
+    # their own: the annex also prints neighbouring-year projections. Require
+    # the body to name the policy framework or the year whose expenditure
+    # comprises recurrent spending. These anchors occur in retained 2021/22,
+    # 2022/23, 2023/24 and 2026/27 editions; unknown layouts stay unqualified.
+    body = " ".join(front.split())
+    year = r"(20\d{2}\s*/\s*(?:20\d{2}|\d{2}))(?!\d)"
+    anchors = []
+    for pattern in (
+        rf"fiscal\s+policy\s+framework\s+for\s+(?:the\s+)?(?:FY|fiscal\s+year)\s*{year}",
+        rf"\bFY\s*{year}\s+(?:which\s+)?compris(?:e|es|ing)\b.{{0,160}}?\brecurrent\b",
+    ):
+        anchors.extend(_normalise_fy(m.group(1)) for m in re.finditer(pattern, body, re.I))
+    if set(anchors) != {fy}:
+        raise FiscalFrameworkError(
+            "narrative_edition_year_disagrees",
+            f"cover/link says {fy}; narrative budget anchors {sorted(set(anchors), key=str)}",
+        )
     return Edition(
         fiscal_year=fy,
         table=table,
@@ -705,6 +747,8 @@ def framework_payload(split: FrameworkSplit, *, source_url: Optional[str], page:
 
     out = {
         "basis": FISCAL_FRAMEWORK_BASIS,
+        "fiscal_year": split.fiscal_year,
+        "precision_kes": 100_000_000,
         "identified_by": split.identified_by,
         "total_expenditure_billion": b("expenditure"),
         "recurrent_billion": b("recurrent"),

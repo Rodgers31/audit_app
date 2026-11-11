@@ -99,7 +99,8 @@ class _FakeClient:
         self._responder = responder
         self.ranges: list[str | None] = []
 
-    def stream(self, method, url, headers=None, timeout=None):
+    def stream(self, method, url, headers=None, timeout=None, *, follow_redirects=None):
+        assert follow_redirects is False
         rng = (headers or {}).get("Range")
         self.ranges.append(rng)
         response = self._responder(rng)
@@ -164,7 +165,9 @@ class TestResumption:
         # Pass 2: server honours the range and serves the remainder.
         def responder(rng):
             assert rng == f"bytes={got}-", f"expected resume header, got {rng}"
-            return _FakeStream(WHOLE[got:], status=206)
+            return _FakeStream(WHOLE[got:], status=206, headers={
+                "Content-Range": f"bytes {got}-{len(WHOLE)-1}/{len(WHOLE)}",
+            })
 
         fake2 = _FakeClient(responder)
         client2 = _client_wrapper(fake2)

@@ -47,6 +47,7 @@ from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
 from ...utils import load_json_resource, slugify_entity
 from ...freshness import mark_fixture, mark_live
+from .transport import PDF_MAX_BYTES, get_official_body
 
 logger = logging.getLogger("seeding.audits.fetcher")
 
@@ -146,7 +147,7 @@ def _fetch_from_oag(
         for url in _OAG_REPORTS_URLS:
             try:
                 logger.info("Fetching OAG reports page: %s", url)
-                response = client.get(url, raise_for_status=True)
+                response = get_official_body(client, url)
                 html = response.text
                 page_url = url
                 break
@@ -206,7 +207,7 @@ def _discover_audit_pdfs_via_wp_api(
             f"?per_page=100&search={quote_plus(term)}"
         )
         try:
-            response = client.get(api_url, raise_for_status=True)
+            response = get_official_body(client, api_url)
             items = response.json()
         except Exception as exc:
             logger.info("OAG WP media API query failed (%s): %s", term, exc)
@@ -315,7 +316,9 @@ def _download_and_parse_audit_pdf(
         return None
 
     try:
-        response = client.get(pdf_url, raise_for_status=True)
+        response = get_official_body(client, pdf_url,
+            max_seconds=settings.pdf_download_timeout_seconds,
+            max_bytes=min(settings.pdf_download_max_bytes, PDF_MAX_BYTES))
 
         with tempfile.NamedTemporaryFile(
             suffix=".pdf", delete=False, prefix="oag_audit_"
