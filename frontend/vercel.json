@@ -7,7 +7,8 @@
   "git": {
     "deploymentEnabled": {
       "dependabot/**": false,
-      "codex/dependency-security-*": false
+      "codex/dependency-security-*": false,
+      "codex/consolidated-execution-20261104": false
     }
   },
   "redirects": [

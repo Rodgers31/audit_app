@@ -13,6 +13,7 @@ def steps(job):
 def test_source_plan_uses_the_reviewed_runtime_without_a_hosted_pip_cache():
     plan = steps('source_plan')
     setup, = [step for step in plan if step.get('uses', '').startswith('actions/setup-python@')]
+    assert setup['uses'] == 'actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1'
     assert setup['with']['python-version'] == '3.12.16'
     assert not setup['with'].get('cache')
     install, = [step['run'] for step in plan if step.get('name') == 'Install reviewed ingestion runtime']
