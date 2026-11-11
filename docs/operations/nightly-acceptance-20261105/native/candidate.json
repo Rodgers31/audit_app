@@ -1,0 +1,10 @@
+{
+  "archive_bytes": 166766080,
+  "archive_sha256": "93ae3bd32153ce50711cae65c7fc7c03a8c2c4720b23fda63867baf289e4eee7",
+  "config": "sha256:81e6c77d988633c08afdc01cd94aed3501ca4648071121aca655c2ceb72b92ae",
+  "layers": [
+    "sha256:21aadd0e7ab91a7f0030132975d24fee68b0f5e9c9dac7b1c04f333b3275a2d1"
+  ],
+  "manifest": "sha256:157f663999af4028c94af9bee589e035bb32dff38f6d8a23d7a2f580cf368e6b",
+  "semantic_sha256": "a63b65c3e577e508f3fc96e12d1dc6fdec80461fc1251ce5999569e7eb9e8214"
+}

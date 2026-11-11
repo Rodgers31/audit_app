@@ -5,10 +5,10 @@ on:
   workflow_dispatch:
     inputs:
       purpose:
-        description: 'Existing writer-target qualification, archived reader inspection, or native runner observation'
+        description: 'Existing writer-target qualification, archived reader inspection, native runner observation, or native candidate qualification'
         type: choice
         default: github-writer-target
-        options: [github-writer-target, legacy-reader-inspection, native-runner-observation]
+        options: [github-writer-target, legacy-reader-inspection, native-runner-observation, native-runner-qualification]
 permissions:
   contents: read
 concurrency:
@@ -27,6 +27,18 @@ jobs:
       - name: Observe the standard runner with an isolated digest-pinned base
         timeout-minutes: 3
         run: python3 -B tools/nightly_acceptance_20261105/hosted_runner_observation.py
+  qualify_native_candidate:
+    if: inputs.purpose == 'native-runner-qualification' && github.repository == 'Rodgers31/audit_app' && github.ref == 'refs/heads/codex/consolidated-execution-20261104'
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 24
+      - name: Qualify the sealed native image offline
+        run: python3 -B tools/nightly_acceptance_20261105/qualify_native_candidate.py
   qualify_github_writer:
     if: inputs.purpose == 'github-writer-target'
     runs-on: ubuntu-latest
