@@ -123,9 +123,11 @@ class BoundEvidence:
     @staticmethod
     def _file_identity(info):
         return (info.st_dev, info.st_ino, info.st_mode, info.st_nlink,
-                info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+                info.st_size, info.st_mtime_ns, info.st_ctime_ns, info.st_uid)
 
-    def read(self, path):
+    def read(self, path, *, private=False, maximum_bytes=None):
+        limit = self.maximum_bytes if maximum_bytes is None else min(
+            self.maximum_bytes, integer(maximum_bytes, 1))
         raw = os.fspath(path)
         require(type(raw) is str and raw and '\x00' not in raw, 'original path required')
         # Do not resolve: it erases the aliases this boundary must reject.
@@ -146,14 +148,17 @@ class BoundEvidence:
             before = os.fstat(fd)
             require(stat.S_ISREG(before.st_mode) and before.st_nlink == 1,
                     'original evidence must be regular and have no hardlink alias')
-            require(before.st_size <= self.maximum_bytes, 'original evidence byte ceiling')
+            if private:
+                require(before.st_uid == os.geteuid() and not (before.st_mode & 0o077),
+                        'private owned original evidence required')
+            require(before.st_size <= limit, 'original evidence byte ceiling')
             chunks, size = [], 0
             while True:
-                block = os.read(fd, min(1024 * 1024, self.maximum_bytes + 1 - size))
+                block = os.read(fd, min(1024 * 1024, limit + 1 - size))
                 if not block:
                     break
                 chunks.append(block); size += len(block)
-                require(size <= self.maximum_bytes, 'original evidence byte ceiling')
+                require(size <= limit, 'original evidence byte ceiling')
             require(size == before.st_size and self._file_identity(os.fstat(fd)) == self._file_identity(before),
                     'original evidence changed during read')
             data = b''.join(chunks)
@@ -164,8 +169,8 @@ class BoundEvidence:
             os.close(fd)
             raise
 
-    def json(self, path):
-        return loads(self.read(path))
+    def json(self, path, **options):
+        return loads(self.read(path, **options))
 
     def check(self):
         try:

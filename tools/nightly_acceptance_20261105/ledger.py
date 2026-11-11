@@ -74,8 +74,11 @@ if __name__ == '__main__':
     parser.add_argument('--corpus', type=Path, action='append', default=[])
     parser.add_argument('--backend-config', type=Path)
     parser.add_argument('--signing-key-file', type=Path)
+    parser.add_argument('--require-refresh-v2', action='store_true')
     args = parser.parse_args()
     try:
+        require(not args.require_refresh_v2 or (args.action == 'check-semantic-local'),
+                '--require-refresh-v2 requires semantic local observation')
         if args.action == 'prepare':
             prepare(args.repo, args.path, args.corpus)
             print('PREPARED_ALL_ACCEPTANCE_GATES_PENDING')
@@ -86,8 +89,11 @@ if __name__ == '__main__':
             from operational import observe_local
             require(args.backend_config is not None and args.signing_key_file is not None,
                     'explicit owned backend configuration and signing key originals required')
-            result = observe_local(args.path, backend_config=args.backend_config, signing_key_file=args.signing_key_file)
+            result = observe_local(args.path, backend_config=args.backend_config, signing_key_file=args.signing_key_file,
+                                   expected_refresh_protocol='nightly-refresh-v2' if args.require_refresh_v2 else None)
             print(result['verdict'])
+            if result['schema'] == 'nightly-semantic-local-observation-v2':
+                print(result['refresh']['verdict'])
         else:
             validate(args.path, args.repo)
             print('LOCAL_EXECUTION_VERIFIED; operational acceptance still pending')

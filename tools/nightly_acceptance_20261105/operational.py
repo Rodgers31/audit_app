@@ -17,7 +17,7 @@ from verify import fresh_time, valid_source
 CONTRACT = Path(__file__).resolve().parents[2] / 'docs/operations/nightly-acceptance-20261105/contract.json'
 
 
-def artifact(reference, root, originals=None):
+def _artifact_path(reference, root):
     fields(reference, ('path', 'sha256', 'size'))
     name = Path(string(reference['path']))
     require(not name.is_absolute() and '..' not in name.parts and name.as_posix() == reference['path']
@@ -26,13 +26,27 @@ def artifact(reference, root, originals=None):
     path = root / name
     for parent in [path, *path.parents]:
         require(not parent.is_symlink(), 'retained original symlink')
-    if originals is None:
-        with BoundEvidence() as bound:
-            data = bound.read(path)
-    else:
-        data = originals.read(path)
+    return path
+
+
+def _artifact_bytes(reference, path, originals, **options):
+    data = originals.read(path, **options)
     require(len(data) == integer(reference['size'], 1)
             and hashlib.sha256(data).hexdigest() == digest(reference['sha256']), 'retained original absent/empty/changed')
+    return data
+
+
+def read_artifact(reference, root, originals, **options):
+    return _artifact_bytes(reference, _artifact_path(reference, root), originals, **options)
+
+
+def artifact(reference, root, originals=None):
+    path = _artifact_path(reference, root)
+    if originals is None:
+        with BoundEvidence() as bound:
+            _artifact_bytes(reference, path, bound)
+    else:
+        _artifact_bytes(reference, path, originals)
     return path
 
 
@@ -175,10 +189,11 @@ def _validate(path, originals, kind='full15'):
     return value
 
 
-def observe_local(path, *, backend_config, signing_key_file):
+def observe_local(path, *, backend_config, signing_key_file, expected_refresh_protocol=None):
     """Supported local semantic importer; structural envelopes remain pending-only."""
     from acceptance_semantic import observe
-    return observe(path, backend_config=backend_config, signing_key_file=signing_key_file)
+    return observe(path, backend_config=backend_config, signing_key_file=signing_key_file,
+                   expected_refresh_protocol=expected_refresh_protocol)
 
 
 def replay(first_path, second_path):
@@ -207,13 +222,19 @@ if __name__ == '__main__':
     parser.add_argument('--semantic-local', action='store_true')
     parser.add_argument('--backend-config', type=Path)
     parser.add_argument('--signing-key-file', type=Path)
+    parser.add_argument('--require-refresh-v2', action='store_true')
     args = parser.parse_args()
     try:
+        require(not args.require_refresh_v2 or (args.semantic_local),
+                '--require-refresh-v2 requires semantic local observation')
         if args.semantic_local:
             require(args.replay is None and args.backend_config is not None and args.signing_key_file is not None,
                     'semantic local importer requires explicit backend config and signing key originals')
-            result = observe_local(args.first, backend_config=args.backend_config, signing_key_file=args.signing_key_file)
+            result = observe_local(args.first, backend_config=args.backend_config, signing_key_file=args.signing_key_file,
+                                   expected_refresh_protocol='nightly-refresh-v2' if args.require_refresh_v2 else None)
             print(result['verdict'])
+            if result['schema'] == 'nightly-semantic-local-observation-v2':
+                print(result['refresh']['verdict'])
         else:
             if args.replay:
                 require(args.kind == 'full15', 'weekly replay requires its distinct semantic contract')
