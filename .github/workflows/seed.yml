@@ -162,17 +162,26 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: '3.12.16'
       - name: Install reviewed ingestion runtime
         run: |
-          INGESTION_SCRATCH="$RUNNER_TEMP/ingestion-$GITHUB_JOB"
+          set -euo pipefail
+          : "${RUNNER_TEMP:?}" "${GITHUB_PATH:?}"
+          if [ "$RUNNER_TEMP" != "$(cd -- "$RUNNER_TEMP" && pwd -P)" ]; then
+            echo '::error::Expected an existing, canonical runner temp directory.'
+            exit 1
+          fi
+          # acquire/install require fresh destinations inside an existing private parent.
+          INGESTION_SCRATCH="$(mktemp -d -- "$RUNNER_TEMP/ingestion-source-plan.XXXXXXXX")"
           python -B tools/nightly_acceptance_20261105/runtime.py acquire --wheelhouse "$INGESTION_SCRATCH/wheels"
           python -B tools/nightly_acceptance_20261105/runtime.py wheels --wheelhouse "$INGESTION_SCRATCH/wheels"
           python -B tools/nightly_acceptance_20261105/runtime.py install --wheelhouse "$INGESTION_SCRATCH/wheels" --venv "$INGESTION_SCRATCH/runtime"
           "$INGESTION_SCRATCH/runtime/bin/python" -B tools/nightly_acceptance_20261105/runtime.py verify
-          echo "$INGESTION_SCRATCH/runtime/bin" >> "$GITHUB_PATH"
+          printf '%s\n' "$INGESTION_SCRATCH/runtime/bin" >> "$GITHUB_PATH"
       - name: Validate whitelisted plan
         id: plan
         env:

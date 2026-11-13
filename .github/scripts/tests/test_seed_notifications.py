@@ -97,6 +97,17 @@ const condition = fixture.condition.replace(/^\$\{\{\s*|\s*\}\}$/g,'');
 
 
 class NotificationTests(unittest.TestCase):
+    def test_source_plan_failure_does_not_name_blocked_jobs_as_failures(self):
+        needs = {key: {'result': 'skipped', 'outputs': {}} for key in KEYS}
+        needs['source_plan']['result'] = 'failure'
+        result = execute(needs)
+        issue = result['calls'][-1]['args']
+        self.assertEqual(issue['title'], 'Data pipeline failed: Source plan')
+        self.assertIn('**Failed Steps:** Source plan\n', issue['body'])
+        self.assertIn('Health check execution (`healthcheck`) | skipped | skipped — blocked by source_plan', issue['body'])
+        self.assertIn('Cache / page refresh (`revalidate`) | skipped | skipped — blocked by', issue['body'])
+        self.assertIn('not verified', result['failure'])
+
     def test_early_admission_rejection_pages_and_names_blocked_jobs(self):
         needs = healthy(True)
         needs['migrate']['result'] = 'failure'
@@ -113,9 +124,12 @@ class NotificationTests(unittest.TestCase):
 
     def test_bootstrap_only_failure_pages(self):
         needs = healthy(True); needs['bootstrap']['result'] = 'failure'
+        needs['revalidate']['result'] = 'skipped'
         result = execute(needs)
         self.assertEqual(result['calls'][-1]['method'], 'create')
-        self.assertIn('Bootstrap', result['calls'][-1]['args']['body'])
+        issue = result['calls'][-1]['args']
+        self.assertEqual(issue['title'], 'Data pipeline failed: Bootstrap')
+        self.assertIn('skipped — blocked by bootstrap', issue['body'])
 
     def test_source_plan_failure_and_independent_health_failure_page(self):
         for key in ('source_plan', 'healthcheck'):
@@ -306,6 +320,10 @@ class CurrentRunReportTests(unittest.TestCase):
         self.assertIn('required_source_incomplete',body)
         self.assertIn('backend acknowledged; pages acknowledged',body)
         self.assertIn('| fiscal_summary | 31 | partial |',body)
+        needs['revalidate'] = {'result': 'skipped', 'outputs': {}}
+        skipped = execute(needs)['calls'][-1]['args']
+        self.assertIn('Cache / page refresh', skipped['title'])
+        self.assertIn('skipped — unexpectedly skipped', skipped['body'])
 
     def test_successful_backend_and_failed_pages_are_reported_separately(self):
         needs=healthy(); needs['revalidate']['result']='failure'

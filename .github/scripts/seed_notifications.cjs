@@ -291,6 +291,7 @@ function assess(needs, inputs, receipt = null) {
     const result = state(key);
     let detail = result;
     let problem = result !== 'success';
+    let blocked = false;
     if (result === 'skipped') {
       // Explicit exclusions take precedence over blocked prerequisites. They
       // describe work that was never requested, even on an unsuccessful run.
@@ -300,15 +301,23 @@ function assess(needs, inputs, receipt = null) {
       if (key === 'revalidate' && inputs.dry_run === 'true') excluded = 'dry run excludes page refresh';
       if (key === 'revalidate' && inputs.run_validation === 'false') excluded = 'validation disabled; page refresh excluded';
       const dependencies = {
-        migrate: ['source_plan'], seed: ['migrate'], bootstrap: ['migrate', 'seed'],
+        healthcheck: ['source_plan'], migrate: ['source_plan'], seed: ['migrate'],
+        bootstrap: ['migrate', 'seed'],
         // Validation deliberately uses !cancelled(): seed failure does not
         // excuse a missing validation after admission succeeded.
-        validate: ['migrate'], revalidate: ['seed', 'validate'],
+        validate: ['migrate'], revalidate: ['source_plan', 'migrate', 'seed', 'validate'],
       }[key] || [];
-      const blocked = dependencies.filter(dep => state(dep) !== 'success');
+      const blockers = dependencies.filter(dep => {
+        if (key === 'revalidate' && dep === 'seed' && state(dep) === 'failure' &&
+            receipt?.classification === 'required_source_incomplete' && receipt.cache_eligible) return false;
+        return state(dep) !== 'success';
+      });
+      if (key === 'revalidate' &&
+          (plannedBootstrap === 'true' && state('bootstrap') !== 'success' ||
+           plannedBootstrap === 'false' && state('bootstrap') !== 'skipped')) blockers.push('bootstrap');
       if (excluded) { detail = `skipped — intentional: ${excluded}`; problem = false; }
+      else if (blockers.length) { detail = `skipped — blocked by ${blockers.join(', ')}`; blocked = true; }
       else if (key === 'bootstrap' && plannedBootstrap === null) detail = 'skipped — unverified plan';
-      else if (blocked.length) detail = `skipped — blocked by ${blocked.join(', ')}`;
       else detail = 'skipped — unexpectedly skipped';
     }
     if (key === 'source_plan' && result === 'success' && plannedBootstrap === null) {
@@ -322,7 +331,7 @@ function assess(needs, inputs, receipt = null) {
         !refreshAcknowledged(receipt, needs)) {
       detail = 'success — refresh acknowledgements unverified'; problem = true;
     }
-    return {key, label, result, detail, problem};
+    return {key, label, result, detail, problem, blocked};
   });
   return {rows, problems: rows.filter(row => row.problem)};
 }
@@ -389,7 +398,9 @@ async function report({github, context, core, env = process.env}) {
   const rawDomain = inputs.domain || 'all';
   const domain = typeof rawDomain === 'string' && /^[a-z][a-z_]{0,63}$/.test(rawDomain) ? rawDomain : 'unverified selection';
   const event = ['schedule', 'workflow_dispatch'].includes(context.eventName) ? context.eventName : 'unknown';
-  const failed = result.problems.map(row => row.label).join(', ');
+  // Keep downstream skips in the report and fail the run, but name the
+  // actual problems in the incident heading.
+  const failed = result.problems.filter(row => !row.blocked).map(row => row.label).join(', ');
   const state = incidentState(receipt,result,needs,{...context,runAttempt:env.PIPELINE_RUN_ATTEMPT});
   const previous = managed[0]?.body.match(/<!-- seed-pipeline-state:([0-9a-f]{64}) -->/)?.[1];
   const transition = previous ? previous === state ? 'unchanged' : 'changed' : 'first observation';
