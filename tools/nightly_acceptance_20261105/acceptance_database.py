@@ -66,9 +66,7 @@ def observe_catalog(session, tables, *, expected_revision, expected_role):
 
 def observe_current_run(session, plan_original, context, report_raw, *, kind='full15'):
     """Recompute the actual product classifier against actual unfiltered stored jobs."""
-    from sqlalchemy import select
-    from models import IngestionJob
-    from seeding.current_run import classify
+    from seeding.current_run import classify, load_current_jobs
     readonly(session)
     plan = plan_from_original(plan_original, kind)
     require(type(context) is dict, 'exact current-run context required')
@@ -77,10 +75,8 @@ def observe_current_run(session, plan_original, context, report_raw, *, kind='fu
     original = loads(report_raw)
     require(type(original) is dict, 'original current-run report object required')
     with session.no_autoflush:
-        jobs = list(session.scalars(select(IngestionJob).where(IngestionJob.id > floor)
-                                   .order_by(IngestionJob.id.desc()).limit(19)
-                                   .execution_options(populate_existing=True)))
-        recomputed = classify(jobs, plan, context)
+        jobs, job_times = load_current_jobs(session, floor)
+        recomputed = classify(jobs, plan, context, job_times=job_times)
     require(canonical(recomputed) == canonical(original), 'CLI/current-run report differs from actual PostgreSQL')
     require(original['classification'] != 'unsafe' and original['cache_eligible'] is True,
             'unsafe/unknown current-run cannot authorize refresh')
