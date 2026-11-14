@@ -154,7 +154,6 @@ jobs:
     outputs:
       domains: ${{ steps.plan.outputs.domains }}
       bootstrap: ${{ steps.plan.outputs.bootstrap }}
-      health_sources: ${{ steps.plan.outputs.health_sources }}
       dry_run: ${{ steps.plan.outputs.dry_run }}
       source_sha: ${{ steps.plan.outputs.source_sha }}
       plan_sha256: ${{ steps.plan.outputs.plan_sha256 }}
@@ -164,10 +163,12 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           persist-credentials: false
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+      - &source-plan-python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: '3.12.16'
-      - name: Install reviewed ingestion runtime
+      - &source-plan-runtime
+        name: Install reviewed ingestion runtime
         run: |
           set -euo pipefail
           : "${RUNNER_TEMP:?}" "${GITHUB_PATH:?}"
@@ -205,7 +206,10 @@ jobs:
     name: Data Source Health Check
     if: github.event_name != 'schedule' || vars.INGESTION_NIGHTLY_ENABLED == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # Allow time for the reviewed runtime plus the existing 240s probe budget.
+    timeout-minutes: 8
+    permissions:
+      contents: read
     outputs:
       report: ${{ steps.check.outputs.report }}
       has_failures: ${{ steps.check.outputs.has_failures }}
@@ -214,10 +218,25 @@ jobs:
       inventory_sha256: ${{ steps.check.outputs.inventory_sha256 }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+      - *source-plan-python
+      - *source-plan-runtime
+      - name: Prepare selected health inventory locally
+        id: inventory
+        env:
+          HC_PLAN_SHA: ${{ needs.source_plan.outputs.plan_sha256 }}
+          HC_SOURCE_SHA: ${{ needs.source_plan.outputs.source_sha }}
+          SEED_BUDGETS_DATASET_URL: ${{ secrets.SEED_BUDGETS_DATASET_URL }}
+          SEED_AUDITS_DATASET_URL: ${{ secrets.SEED_AUDITS_DATASET_URL }}
+          SEED_POPULATION_DATASET_URL: ${{ secrets.SEED_POPULATION_DATASET_URL }}
+          SEED_ECONOMIC_INDICATORS_DATASET_URL: ${{ secrets.SEED_ECONOMIC_INDICATORS_DATASET_URL }}
+          SEED_KRA_REVENUE_URL: ${{ secrets.SEED_KRA_REVENUE_URL || vars.SEED_KRA_REVENUE_URL }}
+        run: |
+          cd backend
+          python -B -m seeding.health_inventory
       - name: Check data source URLs
         id: check
-        env:
-          HC_SOURCE_INVENTORY: ${{ needs.source_plan.outputs.health_sources }}
         run: |
           #!/usr/bin/env bash
           # Actions runs this step with `bash -eo pipefail`, so every command
@@ -228,6 +247,11 @@ jobs:
           # No probe, including an edition probe, certifies financial acceptance.
           SOURCES=(
           )
+          inventory_file="${RUNNER_TEMP:?}/seed-health-inventory"
+          [ -f "$inventory_file" ] && [ ! -L "$inventory_file" ] && [ -O "$inventory_file" ] ||
+            { echo 'Selected source-health inventory missing or unsafe' >&2; exit 2; }
+          HC_SOURCE_INVENTORY=$(cat "$inventory_file")
+          rm -- "$inventory_file"
           if [ -z "${HC_SOURCE_INVENTORY:-}" ] || [ "${#HC_SOURCE_INVENTORY}" -gt 24000 ]; then
             echo 'Selected source-health inventory missing or exceeds bound' >&2
             exit 2
@@ -241,6 +265,7 @@ jobs:
             done
             SOURCES+=("$entry")
           done <<< "$HC_SOURCE_INVENTORY"
+          unset HC_SOURCE_INVENTORY
           if [ "${#SOURCES[@]}" -gt 128 ]; then exit 2; fi
           HC_TMP=$(mktemp -d)
           trap 'rm -rf -- "$HC_TMP"' EXIT
@@ -256,7 +281,7 @@ jobs:
           CRITICAL_OK=0
 
           # ── Time budgets (seconds) ────────────────────────────────
-          # The job is killed at `timeout-minutes: 5`, and a killed job
+          # The job has a hard timeout, and a killed job
           # writes NO outputs. Run 36211613362 (2026-09-26): five [OK] lines,
           # then OAG WP REST API went silent for 293s and the job was
           # cancelled. The old probe was `curl --max-time 60 --retry 2
@@ -268,7 +293,7 @@ jobs:
           #   HC_SOURCE_BUDGET  all attempts, both UAs, for one source
           #   HC_JOB_BUDGET     all sources; whatever is left when it runs out
           #                     is reported "not probed", and the outputs are
-          #                     still written before the 300s job cap.
+          #                     still written before the job cap.
           # Env-overridable so backend/tests/test_healthcheck_is_bounded.py
           # can run this script against a host that never answers.
           HC_ATTEMPT_MAX_TIME=${HC_ATTEMPT_MAX_TIME:-60}
@@ -396,23 +421,24 @@ jobs:
           }
 
           source_index=0
+          label_pattern='^[a-zA-Z0-9_ .:/-]+$'
           while [ "$source_index" -lt "${#SOURCES[@]}" ]; do
             entry=${SOURCES[$source_index]}
             source_index=$((source_index + 1))
             IFS='|' read -r label url critical discovery extra <<< "$entry"
-            if [ -z "$label" ] || [ -n "$extra" ] ||
+            if ! [[ "$label" =~ $label_pattern ]] || [ "${#label}" -gt 512 ] || [ -n "$extra" ] ||
                ! [[ "$critical" =~ ^(true|false)$ ]] ||
                ! [[ "${discovery:-none}" =~ ^(none|treasury_editions)$ ]]; then
               echo 'Malformed selected health source' >&2; exit 2
             fi
             if [ "$url" = reference ] && [ "$critical" = false ] &&
                [ "$label" = 'learning_hub curated learning reference' ]; then
-              REPORT="${REPORT}OK|${label}|reference|curated reference; no live publisher expected\n"
+              REPORT="${REPORT}OK|${label}|curated reference; no live publisher expected\n"
               OK_COUNT=$((OK_COUNT + 1))
               continue
             fi
             if [ "$url" = missing ]; then
-              REPORT="${REPORT}CRITICAL|${label}|missing|required diagnostic coverage unavailable\n"
+              REPORT="${REPORT}CRITICAL|${label}|required diagnostic coverage unavailable\n"
               FAILED_CRITICAL=$((FAILED_CRITICAL + 1))
               CRITICAL_TOTAL=$((CRITICAL_TOTAL + 1))
               continue
@@ -425,10 +451,10 @@ jobs:
             # Out of job budget: say so for every source still waiting,
             # rather than let the runner kill the job and drop the outputs.
             if [ $(( JOB_DEADLINE - SECONDS )) -lt 1 ]; then
-              echo "  [WARNING] $label → not probed: the ${HC_JOB_BUDGET}s health-check budget ran out ($url)"
+              echo "  [WARNING] $label → not probed: the ${HC_JOB_BUDGET}s health-check budget ran out"
               severity=WARNING
               if [ "$critical" = true ]; then severity=CRITICAL; fi
-              REPORT="${REPORT}${severity}|${label}|${url}|not probed - coverage unknown\n"
+              REPORT="${REPORT}${severity}|${label}|not probed - coverage unknown\n"
               NOT_PROBED=$((NOT_PROBED + 1))
               if [ "$critical" = true ]; then
                 FAILED_CRITICAL=$((FAILED_CRITICAL + 1))
@@ -444,7 +470,7 @@ jobs:
             if [ "$discovery" = treasury_editions ]; then
               # Parse only the bounded fetched listing. Missing/ambiguous
               # discovery becomes an explicit required diagnostic gap.
-              if [[ "$HTTP_CODE" =~ ^2 ]] && python3 - "$HC_BODY_FILE" "$url" > "$HC_TMP/editions" <<'PY'
+              if [[ "$HTTP_CODE" =~ ^2 ]] && python3 - "$HC_BODY_FILE" "$url" > "$HC_TMP/editions" 2>/dev/null <<'PY'
           from html.parser import HTMLParser
           from pathlib import Path
           from urllib.parse import urljoin, urlsplit, unquote
@@ -486,7 +512,7 @@ jobs:
 
             if [[ "$HTTP_CODE" =~ ^2 ]]; then
               echo "  [OK]   $label ($HTTP_CODE)"
-              REPORT="${REPORT}OK|${label}|${url}|${HTTP_CODE}\n"
+              REPORT="${REPORT}OK|${label}|${HTTP_CODE}\n"
               OK_COUNT=$((OK_COUNT + 1))
               if [ "$critical" = "true" ]; then CRITICAL_OK=$((CRITICAL_OK + 1)); fi
             else
@@ -499,11 +525,11 @@ jobs:
               fi
               outcome=${PROBE_ERROR:-$HTTP_CODE}
               if [ "$TIMED_OUT" = "1" ]; then
-                echo "  [${severity}] $label → timed out after $((SECONDS - started))s ($url)"
+                echo "  [${severity}] $label → timed out after $((SECONDS - started))s"
               else
-                echo "  [${severity}] $label → HTTP $HTTP_CODE ($outcome) ($url)"
+                echo "  [${severity}] $label → HTTP $HTTP_CODE ($outcome)"
               fi
-              REPORT="${REPORT}${severity}|${label}|${url}|${outcome}\n"
+              REPORT="${REPORT}${severity}|${label}|${outcome}\n"
             fi
           done
 
@@ -545,16 +571,16 @@ jobs:
           echo "Diagnostic scope: selected component reachability, including Treasury summary links. Runtime-discovered OAG/COB/PBB/KRA document and bundle URLs are not exhaustively probed here; inspect domain receipts. Reachability is not edition/content/coverage acceptance." >> "$GITHUB_STEP_SUMMARY"
           echo "## Data Source Health Check" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Status | Source | URL | HTTP Code |" >> $GITHUB_STEP_SUMMARY
-          echo "|--------|--------|-----|-----------|" >> $GITHUB_STEP_SUMMARY
-          echo -e "$REPORT" | while IFS='|' read -r status label url code; do
+          echo "| Status | Source | Outcome |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|--------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo -e "$REPORT" | while IFS='|' read -r status label code; do
             [ -z "$status" ] && continue
             if [ "$status" = "OK" ]; then
-              echo "| ✅ OK | $label | $url | $code |" >> $GITHUB_STEP_SUMMARY
+              echo "| ✅ OK | $label | $code |" >> $GITHUB_STEP_SUMMARY
             elif [ "$status" = "CRITICAL" ]; then
-              echo "| ❌ CRITICAL | **$label** | $url | $code |" >> $GITHUB_STEP_SUMMARY
+              echo "| ❌ CRITICAL | **$label** | $code |" >> $GITHUB_STEP_SUMMARY
             else
-              echo "| ⚠️ WARNING | $label | $url | $code |" >> $GITHUB_STEP_SUMMARY
+              echo "| ⚠️ WARNING | $label | $code |" >> $GITHUB_STEP_SUMMARY
             fi
           done
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -562,7 +588,7 @@ jobs:
 
           # Log a warning annotation if critical sources are down
           if [ "$FAILED_CRITICAL" -gt 0 ]; then
-            echo "::warning::$FAILED_CRITICAL critical data source(s) unreachable. Seeding will proceed but may produce incomplete data."
+            echo "::warning::$FAILED_CRITICAL critical data source(s) failed or have unknown coverage. Health diagnostics do not authorize seeding."
           fi
 
           # Always exit 0 — health check is informational only.
@@ -1594,11 +1620,15 @@ jobs:
             const failedSources = [];
             for (const line of lines) {
               const parts = line.split('|');
-              if (parts.length < 4) continue;
-              const [status, label, url, code] = parts;
+              const [status, label, code] = parts;
+              if (parts.length !== 3 || !/^(OK|WARNING|CRITICAL)$/.test(status) ||
+                  !/^[a-zA-Z0-9_ .:/-]{1,512}$/.test(label) ||
+                  !/^(\d{3}|timeout|connection refused|incomplete response|TLS certificate verification failed|bounded body probe refused or exceeds byte limit|transport error \d{1,3}|not probed - coverage unknown|required diagnostic coverage unavailable|curated reference; no live publisher expected)$/.test(code)) {
+                throw new Error('Health report contains an unverified row');
+              }
               if (status === 'CRITICAL' || status === 'WARNING') {
                 const icon = status === 'CRITICAL' ? '🔴' : '🟡';
-                tableRows += `| ${icon} ${status} | ${label} | ${url} | ${code} |\n`;
+                tableRows += `| ${icon} ${status} | ${label} | ${code} |\n`;
                 if (status === 'CRITICAL') failedSources.push(label);
               }
             }
@@ -1613,7 +1643,8 @@ jobs:
             });
 
             const today = new Date().toISOString().split('T')[0];
-            const title = `⚠️ Data source(s) unreachable: ${failedSources.join(', ')} — ${today}`;
+            if (!failedSources.length) throw new Error('Health failures missing from report');
+            const title = `⚠️ Data source health: ${failedSources.length} critical findings — ${today}`;
             const body = [
               `## Data Source Health Check Failed`,
               scopeMarker,
@@ -1622,8 +1653,8 @@ jobs:
               ``,
               `### Affected Sources`,
               ``,
-              `| Status | Source | URL | HTTP Code |`,
-              `|--------|--------|-----|-----------|`,
+              `| Status | Source | Outcome |`,
+              `|--------|--------|---------|`,
               tableRows,
               ``,
               `### What This Means`,
@@ -1633,7 +1664,7 @@ jobs:
               `- External APIs (World Bank, IMF) may have temporary outages`,
               ``,
               `### Action Required`,
-              `1. Check if the URLs load in a browser — if they redirect to a new path, update the fetcher`,
+              `1. Check the named source against its configured endpoint or the publisher catalogue`,
               `2. Look at the [workflow run logs](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for details`,
               `3. Keep the incident open until a completed probe verifies recovery; the pipeline retries nightly`,
               `4. If the URL has permanently changed, update the source URLs in:`,

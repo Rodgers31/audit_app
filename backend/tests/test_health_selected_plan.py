@@ -11,6 +11,13 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def _inventory_env(tmp_path, inventory):
+    path = tmp_path/'seed-health-inventory'
+    path.write_text(inventory + '\n')
+    path.chmod(0o600)
+    return {'RUNNER_TEMP': str(tmp_path)}
+
+
 @pytest.mark.parametrize('inventory', [
     'county_officials governors|reference|false',
     'unknown|reference|false',
@@ -20,7 +27,7 @@ def test_health_shell_rejects_reference_disguise_and_duplicate_inputs(tmp_path, 
     script = next(s['run'] for s in yaml.safe_load((ROOT/'.github/workflows/seed.yml').read_text())['jobs']['healthcheck']['steps'] if s.get('id') == 'check')
     curl = tmp_path/'curl'; curl.write_text('#!/bin/sh\nprintf 200\n'); curl.chmod(0o755)
     proc = subprocess.run(['bash','-eo','pipefail','-c',script],cwd=ROOT,text=True,capture_output=True,timeout=10,
-        env={'PATH':str(tmp_path)+':'+os.environ['PATH'],'HC_SOURCE_INVENTORY':inventory,
+        env={'PATH':str(tmp_path)+':'+os.environ['PATH'],**_inventory_env(tmp_path, inventory),
              'GITHUB_OUTPUT':str(tmp_path/'output'),'GITHUB_STEP_SUMMARY':str(tmp_path/'summary')})
     assert proc.returncode != 0, proc.stdout+proc.stderr
 
@@ -40,7 +47,7 @@ const github={rest:{issues:{
 }}};
 const context={repo:{owner:'fixture',repo:'fixture'},serverUrl:'https://github.com',runId:101};
 const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
-async function run(script,plan,inventory){process.env.HEALTH_PLAN=plan.repeat(64);process.env.HEALTH_INVENTORY=inventory.repeat(64);process.env.HEALTH_REPORT='CRITICAL|source|https://example.invalid|unavailable';await new AsyncFunction('github','context',script)(github,context);context.runId++;}
+async function run(script,plan,inventory){process.env.HEALTH_PLAN=plan.repeat(64);process.env.HEALTH_INVENTORY=inventory.repeat(64);process.env.HEALTH_REPORT='CRITICAL|source|404';await new AsyncFunction('github','context',script)(github,context);context.runId++;}
 (async()=>{await run(input.failure,'a','1');if(!input.legacy)await run(input.failure,'b','2');await run(input.recovery,'a','1');console.log(JSON.stringify(state));})().catch(e=>{console.error(e);process.exitCode=1;});
 '''
     proc = subprocess.run(['node','-e',program,json.dumps({'failure':scripts['Create issue on URL health-check failure'],
@@ -96,8 +103,8 @@ esac
     curl.chmod(0o755)
     output = tmp_path/'output'
     proc = subprocess.run(['bash','-eo','pipefail','-c',script],cwd=ROOT,text=True,capture_output=True,timeout=10,
-        env={'PATH':str(tmp_path)+':'+os.environ['PATH'],'HC_SOURCE_INVENTORY':
-             'fiscal_summary framework|https://www.treasury.go.ke/budget-summary-revenue-expenditure|true|treasury_editions',
+        env={'PATH':str(tmp_path)+':'+os.environ['PATH'],**_inventory_env(tmp_path,
+             'fiscal_summary framework|https://www.treasury.go.ke/budget-summary-revenue-expenditure|true|treasury_editions'),
              'HEALTH_TEST_CALLS':str(calls),'HEALTH_TEST_LISTING':str(listing),
              'GITHUB_OUTPUT':str(output),'GITHUB_STEP_SUMMARY':str(tmp_path/'summary')})
     assert proc.returncode == 0,proc.stderr
@@ -169,7 +176,7 @@ runpy.run_module('seeding.source_plan',run_name='__main__')
              'PYTHON_DOTENV_DISABLED':'1','DATABASE_URL':'inert-invalid-driver://no-network','GITHUB_OUTPUT':str(output),
              'SEED_PLAN_EVENT':'workflow_dispatch','SEED_PLAN_DOMAIN':'all'})
     assert proc.returncode==0,proc.stdout+proc.stderr
-    assert 'health_sources<<' in output.read_text()
+    assert set(line.split('=', 1)[0] for line in output.read_text().splitlines()) == {'domains', 'bootstrap'}
 
 
 def test_optional_settings_do_not_break_unrelated_selection_and_queries_are_well_formed():
@@ -262,10 +269,76 @@ def test_health_uses_only_the_selected_component_inventory(tmp_path):
     output = tmp_path/'output'
     result = subprocess.run(['bash','-eo','pipefail','-c',script], cwd=ROOT,
         env={'PATH':str(tmp_path)+':'+os.environ['PATH'],
-            'HC_SOURCE_INVENTORY':'county_officials governors|https://cog.go.ke/current-governors/|true',
+            **_inventory_env(tmp_path, 'county_officials governors|https://cog.go.ke/current-governors/|true'),
             'GITHUB_OUTPUT':str(output), 'GITHUB_STEP_SUMMARY':str(tmp_path/'summary')},
         text=True,capture_output=True,timeout=10)
     assert result.returncode == 0, result.stderr
     assert 'county_officials governors' in result.stdout
     assert 'Total: 1 | OK: 1' in result.stdout
     assert 'OAG' not in result.stdout and 'CBK' not in result.stdout
+
+
+def test_scheduled_health_probes_configured_url_without_publishing_it(tmp_path):
+    import sys
+
+    workflow = yaml.safe_load((ROOT/'.github/workflows/seed.yml').read_text())
+    plan_job = workflow['jobs']['source_plan']
+    health_job = workflow['jobs']['healthcheck']
+    plan = next(s for s in plan_job['steps'] if s.get('id') == 'plan')
+    output, summary, calls = (tmp_path/name for name in ('output', 'summary', 'calls'))
+    output.touch()
+    runner = tmp_path/'runner'
+    runner.mkdir()
+    private_url = 'https://private-source.invalid/feed?token=fixture-secret-17'
+    env = {
+        'PATH': f'{tmp_path}:{Path(sys.executable).parent}:{os.defpath}',
+        'RUNNER_TEMP': str(runner), 'GITHUB_OUTPUT': str(output),
+        'GITHUB_STEP_SUMMARY': str(summary), 'HEALTH_TEST_CALLS': str(calls),
+        'PYTHON_DOTENV_DISABLED': '1', 'PYTHONDONTWRITEBYTECODE': '1',
+        'SEED_PLAN_EVENT': 'schedule', 'SEED_PLAN_SCHEDULE': '0 2 * * 1-6',
+        'GITHUB_SHA': 'a'*40, 'SEED_AUDITS_DATASET_URL': private_url,
+        'HC_RETRY_DELAY': '0',
+    }
+    def run(step, **override):
+        return subprocess.run(['bash','-eo','pipefail','-c',step['run']], cwd=ROOT,
+            env=env | override, text=True, capture_output=True, timeout=12)
+
+    result = run(plan)
+    assert result.returncode == 0, result.stderr
+    assert private_url not in output.read_text()
+    assert 'health_sources' not in plan_job['outputs']
+    assert private_url not in result.stdout + result.stderr
+    fields = dict(line.split('=', 1) for line in output.read_text().splitlines())
+    output.unlink()
+    prepare = next(s for s in health_job['steps'] if s.get('id') == 'inventory')
+    assert prepare['env']['SEED_AUDITS_DATASET_URL'] == plan['env']['SEED_AUDITS_DATASET_URL']
+    assert prepare['env']['HC_PLAN_SHA'] == '${{ needs.source_plan.outputs.plan_sha256 }}'
+    assert prepare['env']['HC_SOURCE_SHA'] == '${{ needs.source_plan.outputs.source_sha }}'
+
+    binding = {'HC_PLAN_SHA': fields['plan_sha256'], 'HC_SOURCE_SHA': fields['source_sha']}
+    for mismatch in ({'HC_PLAN_SHA': '0'*64}, {'HC_SOURCE_SHA': '0'*40}):
+        refused = run(prepare, **(binding | mismatch))
+        assert refused.returncode != 0 and private_url not in refused.stdout + refused.stderr
+    malformed = run(prepare, **binding, SEED_KRA_REVENUE_URL='https://host.invalid/fixture-secret-17|bad')
+    assert malformed.returncode != 0 and 'fixture-secret-17' not in malformed.stdout + malformed.stderr
+    assert not (runner/'seed-health-inventory').exists()
+    result = run(prepare, **binding)
+    assert result.returncode == 0, result.stderr
+    assert private_url not in result.stdout + result.stderr
+    assert not output.exists()
+    inventory = runner/'seed-health-inventory'
+    assert (inventory.stat().st_mode & 0o777) == 0o600
+    assert private_url in inventory.read_text()
+
+    curl = tmp_path/'curl'
+    curl.write_text('#!/bin/sh\nfor url do :; done\nprintf "%s\\n" "$url" >> "$HEALTH_TEST_CALLS"\n'
+                    'case "$url" in *private-source.invalid*) printf 404;; *) printf 200;; esac\n')
+    curl.chmod(0o700)
+    check = next(s for s in health_job['steps'] if s.get('id') == 'check')
+    result = run(check, SEED_AUDITS_DATASET_URL='')
+    assert result.returncode == 0, result.stderr
+    assert private_url in calls.read_text().splitlines()
+    public = result.stdout + result.stderr + output.read_text() + summary.read_text()
+    assert 'CRITICAL|audits configured dataset|404' in public
+    assert 'private-source.invalid' not in public and 'fixture-secret-17' not in public
+    assert not inventory.exists()
