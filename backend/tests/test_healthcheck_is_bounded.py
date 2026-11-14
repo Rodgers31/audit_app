@@ -149,11 +149,14 @@ def _run(tmp_path: Path, sources: list[str], env: dict | None = None):
     script = HEALTHCHECK
     out_file = tmp_path / "github_output"
     out_file.write_text("")
+    inventory = tmp_path / "seed-health-inventory"
+    inventory.write_text('\n'.join(sources) + '\n')
+    inventory.chmod(0o600)
     run_env = {
         "PATH": "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin",
         "GITHUB_OUTPUT": str(out_file),
         "GITHUB_STEP_SUMMARY": str(tmp_path / "step_summary"),
-        "HC_SOURCE_INVENTORY": '\n'.join(sources),
+        "RUNNER_TEMP": str(tmp_path),
         **FAST,
         **(env or {}),
     }
@@ -217,7 +220,7 @@ def test_a_hung_host_is_reported_as_a_timeout_and_the_next_source_still_runs(tmp
     # Exhausted critical timeouts are actionable.
     assert outputs.get("has_failures") == "true"
     assert outputs.get("unprobed") == "0"
-    assert f"CRITICAL|Hung Host|{host}/hang|timeout" in outputs.get("report", "")
+    assert f"CRITICAL|Hung Host|timeout" in outputs.get("report", "")
     # Both UAs and every retry are charged to one source budget (3s here).
     assert secs < int(FAST["HC_SOURCE_BUDGET"]) + 5, f"one hung source took {secs:.1f}s"
 
@@ -227,7 +230,7 @@ def test_a_stalled_body_after_200_headers_is_a_timeout_not_ok(tmp_path, host):
     stdout, outputs, _ = _run(tmp_path, [f"Stalled Body|{host}/trickle|true"])
     assert "[OK]" not in stdout, stdout
     assert re.search(r"\[CRITICAL\] Stalled Body → timed out after \d+s", stdout), stdout
-    assert f"CRITICAL|Stalled Body|{host}/trickle|timeout" in outputs["report"]
+    assert f"CRITICAL|Stalled Body|timeout" in outputs["report"]
 
 
 def test_browser_refusal_after_primary_timeout_reports_the_final_transport_failure(tmp_path):
@@ -283,7 +286,8 @@ def test_healthy_sources_are_ok_and_fast(tmp_path, host):
 
 def test_a_gone_critical_url_still_pages(tmp_path, host):
     stdout, outputs, _ = _run(tmp_path, [f"Moved|{host}/gone|true"])
-    assert f"[CRITICAL] Moved → HTTP 404 (404) ({host}/gone)" in stdout, stdout
+    assert "[CRITICAL] Moved → HTTP 404 (404)" in stdout, stdout
+    assert host not in stdout
     assert outputs["has_failures"] == "true"
 
 
@@ -387,7 +391,7 @@ def test_exhausted_critical_timeout_pages_and_cannot_claim_recovery(tmp_path, ho
     _, outputs, _ = _run(tmp_path, [f'Critical|{host}/hang|true'])
     assert outputs['has_failures'] == 'true'
     assert outputs['critical_reachable'] == 'false'
-    assert f'CRITICAL|Critical|{host}/hang|timeout' in outputs['report']
+    assert f'CRITICAL|Critical|timeout' in outputs['report']
 
 
 def test_successful_critical_probe_is_a_recovery_control(tmp_path, host):

@@ -476,12 +476,10 @@ def write_plan_outputs(plan):
     if (not path.is_file() or path.is_symlink() or path.resolve().is_relative_to(root)
             or path.stat().st_size > 64 * 1024):
         raise ValueError('Source plan output must be an external Actions output file')
-    # All values derive from the whitelist/literal validators, never raw input.
-    health = health_source_lines(plan)
+    # Only selection metadata crosses the job boundary.
     with path.open('a', encoding='utf-8') as output:
         output.write('domains=' + json.dumps(plan.domains, separators=(',', ':')) + '\n')
         output.write('bootstrap=' + ('true' if plan.bootstrap else 'false') + '\n')
-        output.write('health_sources<<SELECTED_HEALTH_SOURCES_V1\n'+health+'\nSELECTED_HEALTH_SOURCES_V1\n')
 
 
 def main():
@@ -490,6 +488,11 @@ def main():
             raise ValueError('Expected --check or --execute')
         plan = environment_plan()
         if sys.argv[1] == '--check':
+            try:
+                health_source_lines(plan)
+            except (ValueError, OSError, SyntaxError):
+                # Settings validation can include the rejected secret in its error.
+                raise ValueError('Selected health source inventory refused') from None
             write_plan_outputs(plan)
         print(json.dumps({'domains': plan.domains, 'bootstrap': plan.bootstrap,
                           'dry_run': plan.dry_run, 'audits_review': plan.audits_review,

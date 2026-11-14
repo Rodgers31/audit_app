@@ -151,7 +151,7 @@ def test_sectigo_aia_is_not_an_approved_issuer_download(monkeypatch, scheme):
         )
 
 
-def _health_script(host=HOST):
+def _health_script(tmp_path, host=HOST):
     from seeding.source_plan import LEGACY_DOMAINS, SourcePlan, health_source_lines
     workflow = yaml.safe_load((REPO / '.github/workflows/seed.yml').read_text())
     step, = [s for s in workflow['jobs']['healthcheck']['steps']
@@ -174,14 +174,17 @@ def _health_script(host=HOST):
         f'{name}|https://{host}{path}|{str(critical).lower()}'
         for name, path, critical in TREASURY
     )
-    return 'export HC_SOURCE_INVENTORY=' + shlex.quote(inventory) + '\n' + script
+    inventory_file = tmp_path / 'seed-health-inventory'
+    inventory_file.write_text(inventory + '\n')
+    inventory_file.chmod(0o600)
+    return 'export RUNNER_TEMP=' + shlex.quote(str(tmp_path)) + '\n' + script
 
 
 @pytest.mark.parametrize('curl_exit,outcome', [(0, '200'), (60, 'TLS certificate verification failed'),
                                             (18, 'incomplete response'), (28, 'timeout')])
 def test_treasury_health_requires_successful_complete_transfer(tmp_path, curl_exit, outcome):
     """A misleading HTTP 200 must not hide certificate or body-transfer failure."""
-    script = _health_script()
+    script = _health_script(tmp_path)
     curl = tmp_path / 'curl'
     curl.write_text('#!/bin/sh\nprintf "__CALL__\\n" >> "$CURL_CALLS"\n'
                     'printf "%s\\n" "$@" >> "$CURL_CALLS"\nprintf 200\nexit "$CURL_EXIT"\n')
@@ -200,7 +203,7 @@ def test_treasury_health_requires_successful_complete_transfer(tmp_path, curl_ex
     assert f'critical_reachable={str(curl_exit == 0).lower()}\n' in output
     for name, path, critical in TREASURY:
         severity = 'OK' if curl_exit == 0 else ('CRITICAL' if critical else 'WARNING')
-        assert f'{severity}|{name}|https://{HOST}{path}|{outcome}\n' in output
+        assert f'{severity}|{name}|{outcome}\n' in output
     if curl_exit:
         assert '[OK]' not in result.stdout
     arguments = calls.read_text().splitlines()
@@ -244,7 +247,7 @@ def test_health_curl_verifies_a_real_local_https_peer(tmp_path, expired):
     thread.start()
     output_file = tmp_path / 'outputs'
     try:
-        result = subprocess.run(['/bin/bash', '-e', '-c', _health_script(f'localhost:{server.server_port}')],
+        result = subprocess.run(['/bin/bash', '-e', '-c', _health_script(tmp_path, f'localhost:{server.server_port}')],
             capture_output=True, text=True, timeout=20,
             env={'PATH': '/usr/local/bin:/usr/bin:/bin', 'HOME': str(tmp_path),
                  'LC_ALL': 'C', 'CURL_CA_BUNDLE': str(root_file),
@@ -265,4 +268,4 @@ def test_health_curl_verifies_a_real_local_https_peer(tmp_path, expired):
     for name, path, critical in TREASURY:
         severity = ('CRITICAL' if critical else 'WARNING') if expired else 'OK'
         outcome = 'TLS certificate verification failed' if expired else '200'
-        assert f'{severity}|{name}|https://localhost:{server.server_port}{path}|{outcome}\n' in output
+        assert f'{severity}|{name}|{outcome}\n' in output
