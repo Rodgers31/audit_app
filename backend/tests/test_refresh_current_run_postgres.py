@@ -83,3 +83,34 @@ def test_real_pg_invalid_rows_never_admit_refresh(fixture_db,mutation):
     report=parse_report(result)
     assert result.returncode==1,result.stdout+result.stderr
     assert report['cache_eligible'] is False and report['classification']=='unsafe'
+
+
+def test_workflow_reads_job_times_in_the_postgresql_session_timezone(fixture_db):
+    from datetime import datetime, timedelta, timezone
+    from sqlalchemy.engine import make_url
+
+    engine, url = fixture_db
+    chicago_url = make_url(url).update_query_dict({
+        'options': make_url(url).query['options'] + ' -c TimeZone=America/Chicago',
+    }).render_as_string(hide_password=False)
+    finished = datetime.now(timezone.utc) - timedelta(seconds=2)
+    with Session(engine) as db:
+        db.execute(text("SET LOCAL TIME ZONE 'America/Chicago'"))
+        job = db.scalar(select(IngestionJob).where(IngestionJob.domain == 'imf_weo'))
+        job.started_at = finished - timedelta(seconds=2)
+        job.finished_at = finished
+        job.meta = dict(job.meta, execution_plan={
+            'planned_domains': ['imf_weo'], 'execution_order': ['imf_weo'],
+        })
+        db.execute(IngestionJob.__table__.delete().where(IngestionJob.id != job.id))
+        db.commit()
+
+    accepted = _run_step(chicago_url, domain='imf_weo')
+    assert accepted.returncode == 0, accepted.stdout + accepted.stderr
+    assert parse_report(accepted)['cache_eligible'] is True
+
+    with engine.begin() as db:
+        db.execute(text("UPDATE ingestion_jobs SET finished_at = finished_at + interval '2 hours'"))
+    refused = _run_step(chicago_url, domain='imf_weo')
+    assert refused.returncode == 1, refused.stdout + refused.stderr
+    assert 'job_result_refused' in parse_report(refused)['refusals']

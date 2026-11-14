@@ -463,9 +463,10 @@ def test_complete_audits_receipt_requires_positive_coherent_document_inventory(a
     ('success','success','success',True), ('failure','failure','failure',False),
     ('failure','success','success',False), ('skipped','skipped','success',False),
     ('cancelled','cancelled','cancelled',False)])
-def test_real_classifier_previous_step_terminal_outcomes(outcome,conclusion,job_status,allowed):
+@pytest.mark.parametrize('step', ['setup_python', 'dependencies'])
+def test_real_classifier_previous_step_terminal_outcomes(outcome,conclusion,job_status,allowed,step):
     jobs,plan,context=execution_fixture()
-    context['prior_steps']['dependencies'].update(outcome=outcome,conclusion=conclusion)
+    context['prior_steps'][step].update(outcome=outcome,conclusion=conclusion)
     context['prior_job_status']=job_status
     report=classify(jobs,plan,context)
     assert report['cache_eligible'] is allowed

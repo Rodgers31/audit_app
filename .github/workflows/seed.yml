@@ -800,7 +800,8 @@ jobs:
           /usr/bin/env -i PATH=/usr/local/bin:/usr/bin:/bin LC_ALL=C.UTF-8
           GITHUB_JOB="$GITHUB_JOB" /usr/bin/python3 -B
           tools/nightly_acceptance_20261105/native_jobs.py runner-diagnostics
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+      - id: setup_python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: '3.12.16'
           architecture: x64
@@ -1032,17 +1033,13 @@ jobs:
           plan = environment_plan()
           domains = plan.domains
 
+          from seeding.current_run import classify, environment_context, load_current_jobs, publish, publish_diagnostics
           session = SessionLocal()
-          # The retained pre-seed ID floor bounds this invocation's results.
-          # A fixed age window would hide early jobs in a healthy 33–40 min run.
-          jobs = session.query(IngestionJob).filter(
-              IngestionJob.id > int(raw_floor),
-          ).order_by(IngestionJob.id.desc()).limit(19).all()
-
-          from seeding.current_run import classify, environment_context, publish, publish_diagnostics
+          # A captured job-ID floor bounds this invocation even in long runs.
+          jobs, job_times = load_current_jobs(session, int(raw_floor))
           context = environment_context()
-          current = classify(jobs, plan, context)
-          publish_diagnostics(jobs, current, context)
+          current = classify(jobs, plan, context, job_times=job_times)
+          publish_diagnostics(jobs, current, context, job_times=job_times)
           failed = 0
           print('\n--- Ingestion Job Results ---')
           missing = sorted(set(domains) - {job.domain for job in jobs})

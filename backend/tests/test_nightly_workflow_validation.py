@@ -80,9 +80,8 @@ def test_population_missing_stale_or_duplicate_newest_is_not_healthy(tmp_path, r
 ])
 def test_actual_result_shell_refuses_prior_cache_failure_even_if_continued(tmp_path, monkeypatch, status, outcome, conclusion):
     monkeypatch.setenv('SEED_PRIOR_JOB_STATUS', status)
-    names = ('checkout','python','ocr','dependencies','writer_tls','database','pdf_cache_period',
-             'restore_pdfs','native_boundary','cli','pdf_cache_state','save_pdfs')
-    steps = {name:{'outcome':'success','conclusion':'success','outputs':{}} for name in names}
+    from seeding.current_run import PRIOR_STEPS
+    steps = {name:{'outcome':'success','conclusion':'success','outputs':{}} for name in PRIOR_STEPS}
     steps['pdf_cache_state'].update(outcome=outcome,conclusion=conclusion)
     monkeypatch.setenv('SEED_PRIOR_STEPS', json.dumps(steps))
     result = _run_step(_write_db(tmp_path, HEALTHY_NIGHT))

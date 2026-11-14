@@ -21,7 +21,7 @@ from .refresh_completion import REQUIRED_DOMAINS, accepted_records, fiscal_compo
 
 SCHEMA_HEAD = 'a756b20a0001'
 MAX_JOBS = 18
-PRIOR_STEPS = frozenset(('checkout', 'python', 'ocr', 'dependencies', 'writer_tls',
+PRIOR_STEPS = frozenset(('checkout', 'python', 'ocr', 'setup_python', 'dependencies', 'writer_tls',
     'database', 'pdf_cache_period', 'restore_pdfs', 'native_boundary', 'cli',
     'pdf_cache_state', 'save_pdfs'))
 
@@ -295,7 +295,46 @@ def _fiscal_gap(job):
     return True
 
 
-def classify(jobs, plan, context):
+def load_current_jobs(session, floor):
+    """Read jobs and their timestamps in the same snapshot as each other."""
+    from sqlalchemy import func, select
+    from models import IngestionJob
+
+    fields = [IngestionJob]
+    postgres = session.get_bind().dialect.name == 'postgresql'
+    if postgres:
+        # As in the ownership check, PostgreSQL stores these columns in the
+        # session time zone. Recover the original instants before comparing
+        # them with the UTC workflow timestamps.
+        time_zone = func.current_setting('TimeZone')
+        fields.extend(func.timezone(time_zone, timestamp) for timestamp
+                      in (IngestionJob.started_at, IngestionJob.finished_at))
+    query = (select(*fields).where(IngestionJob.id > floor)
+             .order_by(IngestionJob.id.desc()).limit(MAX_JOBS + 1)
+             .execution_options(populate_existing=True))
+    rows = session.execute(query).all()
+    jobs = [row[0] for row in rows]
+    times = {job.id: (start, end) for job, start, end in rows} if postgres else None
+    return jobs, times
+
+
+def _within_cli_window(job, started, finished, job_times):
+    times = (job.started_at, job.finished_at) if job_times is None else job_times.get(job.id)
+    if times is None or started is None or finished is None:
+        return False
+    start, end = times
+    if not isinstance(start, datetime) or not isinstance(end, datetime):
+        return False
+
+    def utc_naive(value):
+        if value.utcoffset() is not None:
+            value = value.astimezone(timezone.utc)
+        return value.replace(tzinfo=None)
+
+    return started <= utc_naive(start) <= utc_naive(end) < finished.replace(microsecond=999999)
+
+
+def classify(jobs, plan, context, *, job_times=None):
     """Unknown/malformed execution is unsafe; required coverage remains independently red."""
     validate_plan(plan)
     reasons = []
@@ -346,11 +385,7 @@ def classify(jobs, plan, context):
                 or counts[1] + counts[2] > counts[0]
                 or job.dry_run is not plan.dry_run
                 or result not in ('completed', 'completed_with_errors')
-                or not isinstance(job.started_at, datetime) or not isinstance(job.finished_at, datetime)
-                or job.finished_at < job.started_at
-                or started is None or finished is None
-                or job.started_at.replace(tzinfo=None) < started
-                or job.finished_at.replace(tzinfo=None) >= finished.replace(microsecond=999999)):
+                or not _within_cli_window(job, started, finished, job_times)):
             reasons.append('job_result_refused'); continue
         if not source_diagnostics(job)[1]:
             reasons.append('source_diagnostic_refused')
@@ -458,7 +493,7 @@ def publish(report):
 
 
 
-def publish_diagnostics(jobs, report, context):
+def publish_diagnostics(jobs, report, context, *, job_times=None):
     """A separate diagnostic side channel; it never changes refresh eligibility.
 
     Preserve CoG last-good ages even when its zero-result makes execution unsafe.
@@ -479,9 +514,7 @@ def publish_diagnostics(jobs, report, context):
     try:
         started = datetime.strptime(context['cli_started'], '%Y-%m-%dT%H:%M:%SZ')
         finished = datetime.strptime(context['cli_finished'], '%Y-%m-%dT%H:%M:%SZ')
-        if finished < started or any(not isinstance(job.started_at, datetime) or not isinstance(job.finished_at, datetime)
-                or job.finished_at < job.started_at or job.started_at.replace(tzinfo=None) < started
-                or job.finished_at.replace(tzinfo=None) >= finished.replace(microsecond=999999) for job in jobs):
+        if finished < started or any(not _within_cli_window(job, started, finished, job_times) for job in jobs):
             return None
     except (KeyError, TypeError, ValueError):
         return None
