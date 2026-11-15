@@ -5,14 +5,19 @@ import { registerApiMocks } from './utils/mockApi';
 test.beforeEach(async ({ page }) => { await registerApiMocks(page); });
 
 type HeadlineFrame = { amount: string; visible: boolean };
-type HeadlineWindow = Window & { debtHeadlineFrames: HeadlineFrame[] };
+
+declare global {
+  interface Window {
+    debtHeadlineFrames?: HeadlineFrame[];
+  }
+}
 
 test('the first client frame shows the sourced national debt total', async ({ page }) => {
   // The fixture API refuses the SSR prefetch in this cohort. Observe the first
   // client commit after the browser receives the separate mocked loan balance.
   await page.addInitScript(() => {
     const frames: HeadlineFrame[] = [];
-    (window as HeadlineWindow).debtHeadlineFrames = frames;
+    window.debtHeadlineFrames = frames;
     new MutationObserver(() => {
       const amount = document.querySelector('[data-testid="national-debt-outstanding"]');
       if (!amount) return;
@@ -29,7 +34,7 @@ test('the first client frame shows the sourced national debt total', async ({ pa
   await expect(page.getByTestId('national-debt-outstanding')).toHaveText(expected);
   await expect(page.getByText('Balance date unavailable', { exact: true })).toBeVisible();
   await expect(page.getByText('Live national debt counter', { exact: true })).toHaveCount(0);
-  expect(await page.evaluate(() => (window as HeadlineWindow).debtHeadlineFrames)).toEqual([
+  expect(await page.evaluate(() => window.debtHeadlineFrames)).toEqual([
     { amount: expected, visible: true },
   ]);
 });
