@@ -29,7 +29,7 @@ it.each([
 ])('switches shared evidence prose to %s without changing source facts or links', (lang, prefix, status, source, details, checks) => {
   renderWithLanguage(<FigureEvidence label='publisher $& label' qualifications={{ allocated_amount: original }} table='budget_lines' recordId={1} />);
   fireEvent.click(screen.getByRole('button', { name: lang }));
-  expect(screen.getByRole('button', { name: `${prefix} publisher $& label` })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: name => name.endsWith(`${prefix} publisher $& label`) })).toBeInTheDocument();
   expect(screen.getByText(`allocated amount · ${status}`)).toBeInTheDocument();
   expect(screen.getByText(checks)).toBeInTheDocument();
   expect(screen.getByRole('link', { name: source, hidden: true })).toHaveAttribute('href', original.source_url);

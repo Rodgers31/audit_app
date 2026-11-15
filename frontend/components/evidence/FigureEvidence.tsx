@@ -55,7 +55,7 @@ export default function FigureEvidence({ label, labelKey, labelValues, qualifica
     <div className='min-w-0' data-figure-evidence={label}>
       <InfoSheet title={t('foundation.evidence_title')} trigger={props => (
         <button {...props} type='button' className='audit-receipt text-left'
-          aria-label={t('evidence.for').replace('{label}', () => displayLabel)}>
+          aria-label={`${chipLabel} · ${t('evidence.for').replace('{label}', () => displayLabel)}`}>
           <span aria-hidden='true' className={`h-2 w-2 shrink-0 ${dot}`} />
           <span className='min-w-0 break-words'>{chipLabel}</span>
           <ArrowUpRight size={15} aria-hidden='true' className='shrink-0' />

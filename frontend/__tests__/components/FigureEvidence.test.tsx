@@ -54,7 +54,7 @@ it('refuses malformed observation identity even when checks claim success',()=>{
 
 it('keeps an aggregate qualification qualified without promoting it to an observed value',()=>{
  render(<FigureEvidence label='ratio' note={{status:'qualified',reason:'published_imf_ratio_outside_seven_table_contract'}}/>);
- expect(screen.getByRole('button', { name: 'Evidence for ratio' })).toBeInTheDocument();
+ expect(screen.getByRole('button', { name: /Evidence for ratio$/ })).toBeInTheDocument();
  expect(screen.getByText('Source cited, with a caveat')).toBeInTheDocument();
  expect(screen.getByText(/published imf ratio outside seven table contract/)).toBeInTheDocument();
  expect(screen.queryByText(/Verified observation/)).not.toBeInTheDocument();
