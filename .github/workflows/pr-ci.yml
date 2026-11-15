@@ -14,10 +14,9 @@ permissions:
 jobs:
   test-backend:
     runs-on: ubuntu-latest
-    # Reserve time for both cohorts, coverage and fixture cleanup. The hosted
-    # suite took over 40 minutes to reach the Linux process-evidence cases
-    # before running the remaining core tests and the legacy cohort.
-    timeout-minutes: 70
+    # The hosted core suite reached 87% at the old 70-minute job limit.
+    # Keep a finite budget for both cohorts, coverage and fixture cleanup.
+    timeout-minutes: 90
 
     services:
       postgres:

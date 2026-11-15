@@ -28,7 +28,7 @@ class AuditEpochWorkflowTests(unittest.TestCase):
                 self.assertLess(names.index("Prepare owned reconciliation test fixture"), steps.index(prepare))
                 self.assertLess(steps.index(prepare), test_index)
                 self.assertGreater(steps.index(cleanup), test_index)
-                self.assertEqual(job["timeout-minutes"], 70 if name == "pr-ci.yml" else 60)
+                self.assertEqual(job["timeout-minutes"], 90 if name == "pr-ci.yml" else 60)
                 self.assertEqual(prepare["timeout-minutes"], 5)
                 self.assertEqual(cleanup["timeout-minutes"], 5)
                 self.assertEqual(cleanup["if"], "always()")

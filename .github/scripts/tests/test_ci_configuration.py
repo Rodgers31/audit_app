@@ -100,16 +100,16 @@ class ConfigurationTests(unittest.TestCase):
         # inventory, legacy tests, coverage and cleanup to finish.
         for name, workflow in self.workflows():
             with self.subTest(workflow=name):
-                self.assert_job_deadlines(workflow, 70 if name == "pr-ci.yml" else 60)
+                self.assert_job_deadlines(workflow, 90 if name == "pr-ci.yml" else 60)
 
     def test_deadline_policy_rejects_short_unbounded_or_broadened_budgets(self):
         for name, workflow in self.workflows():
-            backend_minutes = 70 if name == "pr-ci.yml" else 60
-            other_backend_timeout = 60 if name == "pr-ci.yml" else 70
+            backend_minutes = 90 if name == "pr-ci.yml" else 60
+            other_backend_timeout = 60 if name == "pr-ci.yml" else 90
             valid = deepcopy(workflow)
             valid["jobs"]["test-backend"]["timeout-minutes"] = backend_minutes
             self.assert_job_deadlines(valid, backend_minutes)
-            for minutes in (20, 30, 45, other_backend_timeout, 90, 0, -1, True,
+            for minutes in (20, 30, 45, 70, other_backend_timeout, 120, 0, -1, True,
                             float(backend_minutes), str(backend_minutes), None,
                             float("nan"), float("inf"), [], {}):
                 with self.subTest(workflow=name, backend_minutes=minutes):
