@@ -2,7 +2,9 @@
 from datetime import date
 
 import pytest
+from fiscal_evidence import isolated_fiscal_debt_peer_worker, qualify_synthetic_row
 from models import DebtTimeline, FiscalSummary
+from test_batch10_imf_actuals import observation
 
 
 @pytest.mark.parametrize("ratio", [0, 40, 55, 70])
@@ -11,21 +13,22 @@ def test_sustainability_ratios_do_not_invent_thresholds(client, db_session, seed
     monkeypatch.setattr(main, "_get_regional_peers", lambda **kwargs: [])
     db_session.add(DebtTimeline(year=2025, total=100, external=0, domestic=100,
                                 gdp_ratio=ratio, unit="KES", source_document_id=seed_source_doc.id))
-    db_session.add(FiscalSummary(fiscal_year="FY 2025/26", total_revenue=100,
-                                debt_service_cost=0, page_ref="p.1", unit="KES",
-                                source_document_id=seed_source_doc.id,
-                                meta={
-                                    "debt_service_source": {"url": "https://treasury.go.ke/debt.pdf", "page": "p.1"},
-                                    "revenue_source": {"url": "https://treasury.go.ke/revenue.pdf", "page": "p.2"},
-                                }))
+    db_session.add(qualify_synthetic_row(FiscalSummary(
+        fiscal_year="FY 2025/26", total_revenue=100, debt_service_cost=0,
+        page_ref="p.1", unit="KES", source_document_id=seed_source_doc.id,
+    )))
+    observation(db_session, year=2025, value=ratio, projection=False)
     db_session.commit()
     main.clear_all_caches()
-    body = client.get("/api/v1/debt/sustainability").json()
+    response = client.get("/api/v1/debt/sustainability")
+    assert response.status_code == 200, response.text
+    body = response.json()
     assert body["debt_to_gdp"]["value"] == ratio
     assert not {"threshold_imf", "threshold_eac", "status"} & body["debt_to_gdp"].keys()
     assert body["debt_service_to_revenue"]["value"] == 0
     assert not {"threshold", "status"} & body["debt_service_to_revenue"].keys()
-    assert body["external_debt_share"] == 0
+    assert body["external_debt_share"] is None  # the legacy stock split lacks source evidence
+    assert body["external_debt_share_absent_reason"]
     assert body["imf_dsa"]["source"]["published"] == "2024-11-01"
 
 
