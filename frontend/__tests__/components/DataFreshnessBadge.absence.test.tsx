@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, render, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { renderToString } from 'react-dom/server';
 
@@ -112,6 +112,9 @@ describe.each(VARIANTS)('DataFreshnessBadge (%s) with a measured fresh source', 
 
     expect(container.innerHTML).toMatch(/up to date/i);
     expect(container).toHaveTextContent('Controller of Budget');
+    const message = screen.getByText('Up to date').closest('p');
+    expect(message).toHaveClass('text-neutral-muted', variant === 'banner' ? 'text-sm' : 'text-xs');
+    if (variant === 'banner') expect(message).toHaveClass('audit-panel');
     expect(get).not.toHaveBeenCalled();
   });
 });

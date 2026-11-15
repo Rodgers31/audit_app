@@ -29,7 +29,7 @@ export const FOUNDATION_MESSAGES = {
   'foundation.show_less': { en: 'Show fewer', sw: 'Onyesha chache', plain: 'Show fewer' },
   'foundation.empty_list': { en: 'No results', sw: 'Hakuna matokeo', plain: 'No results' },
   'foundation.county_report_card': { en: 'County report card', sw: 'Muhtasari wa kaunti', plain: 'County report card' },
-  'foundation.grade_basis': { en: 'AuditGava estimates from published figures, not official ratings.', sw: 'Makadirio ya AuditGava yanayotokana na takwimu zilizochapishwa, si alama rasmi.', plain: 'These are AuditGava’s estimates from published figures.' },
+  'foundation.grade_basis': { en: 'AuditGava estimates from published figures, not official ratings.', sw: 'Makadirio ya AuditGava yanayotokana na takwimu zilizochapishwa, si alama rasmi.', plain: 'AuditGava estimates these scores from published figures. They are not official ratings.' },
   'foundation.county': { en: 'County', sw: 'Kaunti', plain: 'County' },
   'foundation.spent_share': { en: 'Share of budget spent', sw: 'Sehemu ya bajeti iliyotumika', plain: 'Share of budget spent' },
   'foundation.glossary_link': { en: 'Open the glossary', sw: 'Fungua kamusi ya istilahi', plain: 'Open the glossary' },
