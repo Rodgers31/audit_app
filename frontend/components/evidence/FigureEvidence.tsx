@@ -61,7 +61,6 @@ export default function FigureEvidence({ label, labelKey, labelValues, qualifica
           <ArrowUpRight size={15} aria-hidden='true' className='shrink-0' />
         </button>
       )}>
-        <p className='text-base font-semibold'>{displayLabel}</p>
         {explanation && <p>{explanation}</p>}
         <ul className='space-y-1 border-y border-neutral-border py-2'>
           {Array.from(statuses, key => <li key={key}>{t(statusKeys[key] ?? key)}</li>)}
