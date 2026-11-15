@@ -281,11 +281,36 @@ class TestCountyAccountability:
         # "unsupported_expenditure" appears in 2022 and 2023
         assert data["recurring_findings_count"] == 1
 
-    def test_unresolved_findings_counted(self, client, seed_county_with_audits):
+    def test_published_findings_do_not_create_a_resolution_penalty(
+        self, client, db_session, seed_county_with_audits, seed_source_doc,
+    ):
+        entity = seed_county_with_audits
+        db_session.query(Audit).filter_by(entity_id=entity.id).update({"status": "published_report"})
+        db_session.add_all([
+            Audit(
+                entity_id=entity.id,
+                period_id=10,
+                source_document_id=seed_source_doc.id,
+                finding_text=f"Published finding {index}",
+                severity=Severity.INFO,
+                page_ref=f"p. {index + 20}",
+                audit_year=2022,
+                status="published_report",
+            )
+            for index in range(13)
+        ])
+        db_session.commit()
+
         response = client.get("/api/v1/counties/047/accountability")
+        assert response.status_code == 200
         data = response.json()
-        # "Pending" + "Unresolved" = 2
-        assert data["unresolved_findings_count"] == 2
+        assert data["total_findings"] == 16
+        # The remaining deductions are for volume (-8), critical findings
+        # (-10) and the flagged share (-10). Publication is not resolution.
+        assert data["accountability_score"] == 72
+        assert data["accountability_grade"] == "B"
+        assert data["unresolved_findings_count"] is None
+        assert data["unresolved_findings_count_reason"] == "resolution_status_not_published"
 
     def test_absorption_rate_computed(self, client, seed_county_with_audits):
         response = client.get("/api/v1/counties/047/accountability")

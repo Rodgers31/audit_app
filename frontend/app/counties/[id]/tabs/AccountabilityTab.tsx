@@ -361,7 +361,10 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
             tone: 'amber' as const,
           },
           {
-            value: String(data.unresolved_findings_count),
+            value:
+              data.unresolved_findings_count == null
+                ? t('foundation.no_chart_value')
+                : String(data.unresolved_findings_count),
             label: t('county.acct.kpi.unresolved'),
             sub: `${data.recurring_findings_count} ${t('county.acct.kpi.recurring')}`,
             Icon: Clock,
