@@ -13,7 +13,7 @@ import type { Locator, Page } from '@playwright/test';
 export const nav = {
   root: (page: Page): Locator => page.getByRole('banner').locator('header, nav').first(),
   home: (page: Page): Locator =>
-    page.getByRole('link', { name: /^(AuditGava · Home|AuditGava · Mwanzo)$/i }).first(),
+    page.locator('header').first().getByRole('link', { name: 'AuditGava', exact: true }),
   debt: (page: Page): Locator =>
     page
       .getByRole('link', { name: /^(National Debt|Deni la Taifa|Money Kenya Owes)$/i })

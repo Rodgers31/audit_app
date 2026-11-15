@@ -141,7 +141,7 @@ test('wrapped desktop navigation retains keyboard order and control actions', as
   await page.keyboard.press('Tab');
   await expect(page.getByRole('link', { name: 'Skip to main content' })).toBeFocused();
   await page.keyboard.press('Tab');
-  await expect(header.getByRole('link', { name: 'AuditGava · Home' })).toBeFocused();
+  await expect(header.getByRole('link', { name: 'AuditGava', exact: true })).toBeFocused();
   for (const link of await header.getByRole('navigation', { name: 'Primary navigation', exact: true }).getByRole('link').all()) {
     await page.keyboard.press('Tab');
     await expect(link).toBeFocused();

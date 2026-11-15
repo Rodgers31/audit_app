@@ -56,7 +56,7 @@ describe('Navigation', () => {
 
   it('renders all nav items', () => {
     render(<Navigation />);
-    expect(screen.getByRole('link', { name: 'AuditGava · Home' })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: 'AuditGava' })).toHaveAttribute('href', '/');
     expect(screen.getByRole('link', { name: 'National debt' })).toHaveAttribute('href', '/debt');
     expect(screen.getByRole('link', { name: 'Budget' })).toHaveAttribute('href', '/budget');
     expect(screen.getByRole('link', { name: 'Counties' })).toHaveAttribute('href', '/counties');
@@ -65,7 +65,7 @@ describe('Navigation', () => {
 
   it('renders navigation links with correct hrefs', () => {
     render(<Navigation />);
-    const dashboardLinks = screen.getAllByRole('link', { name: /AuditGava · Home/i });
+    const dashboardLinks = screen.getAllByRole('link', { name: 'AuditGava' });
     expect(dashboardLinks.length).toBeGreaterThan(0);
   });
 

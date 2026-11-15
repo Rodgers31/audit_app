@@ -147,11 +147,11 @@ function PublicNavigation({ pathname }: { pathname: string }) {
     <>
       <header className='fixed inset-x-0 top-0 z-50 isolate border-b border-neutral-border bg-surface-base'>
         <div className='mx-auto flex h-16 max-w-screen-xl items-stretch justify-between gap-2 px-4 sm:px-6'>
-          <Link href='/' aria-label={`AuditGava · ${t('shell.home')}`} className='flex shrink-0 items-center gap-2'>
+          <Link href='/' className='flex shrink-0 items-center gap-2'>
             <span aria-hidden='true' className='grid h-9 w-9 shrink-0 place-items-center rounded border-l-[3px] border-gov-copper bg-gov-dark font-display text-xl font-semibold text-white'>AG</span>
             <span className='leading-none'>
               <span className='block font-display text-[22px] font-semibold uppercase'>AuditGava</span>
-              <span className='mt-1 hidden text-xs text-neutral-muted sm:block'>{t('shell.brand_line')}</span>
+              <span aria-hidden='true' className='mt-1 hidden text-xs text-neutral-muted sm:block'>{t('shell.brand_line')}</span>
             </span>
           </Link>
           <nav aria-label={t('shell.primary_nav')} className='hidden min-w-0 items-stretch justify-center gap-0.5 lg:flex xl:gap-2'>
