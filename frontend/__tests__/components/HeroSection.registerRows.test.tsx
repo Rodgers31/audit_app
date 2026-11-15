@@ -124,7 +124,17 @@ describe('hero source line — when the count cannot be established', () => {
 it('does not attach timeline verification to the separately published overview ratio', () => {
  const fixture = require('../fixtures/figure-qualifications.json');
  mockTimeline = { timeline: [{year:2024,total:100,external:50,domestic:50,gdp_ratio:75,unit:'billion_KES',qualifications:fixture.debt_timeline.qualifications}] };
- overview = {data:{...LIVE_OVERVIEW.data,figure_qualifications:{derived_ratio:{status:'qualified',reason:'published_imf_ratio_outside_seven_table_contract'}}}};
+ overview = {
+   data: {
+     ...LIVE_OVERVIEW.data,
+     debt_to_gdp_year: 2024,
+     debt_to_gdp_source: 'IMF World Economic Outlook',
+     debt_to_gdp_basis: 'General government gross debt (GGXWDG_NGDP)',
+     figure_qualifications: {
+       derived_ratio: { status: 'qualified', reason: 'published_imf_ratio_outside_seven_table_contract' },
+     },
+   },
+ };
  render(<SummaryStrip/>);
  const ratio = screen.getByText('Debt-to-GDP', {exact:true}).parentElement!;
  expect(within(ratio).getByRole('button', { name: /Evidence for debt-to-GDP observation$/ })).toBeInTheDocument();
