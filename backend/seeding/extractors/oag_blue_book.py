@@ -15,8 +15,8 @@ Document shape (verified against
   ``Kshs.1,234,567``.
 
 Everything extracted is verbatim report text plus its page number — the
-extractor never rewords a finding (kenya-legal: fact-plus-source or it
-does not ship).
+extractor never rewords a finding. One fingerprinted edition adds a visible
+annotation where the publisher clipped a title.
 
 Severity is mapped from the OAG's own structure, not from keywords:
 paragraphs under a Basis for Adverse/Disclaimer heading are CRITICAL,
@@ -37,7 +37,7 @@ import json
 import logging
 import math
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Literal, Dict, List, Optional, Tuple
 
@@ -61,6 +61,23 @@ EXTRACTOR_ID = "oag_blue_book"  # recorded on every extractions row
 #:    reporting context and lowered inline fraction glyphs.
 #: 5: marked historical table cells retain their own wrapped source glyphs.
 EXTRACTOR_VERSION = 5
+# Only this edition's rendering changes. Other editions retain their walk stamp.
+_CLIPPED_EDITION_MD5 = "7e6a6850102a3cadcba38e1f7af9cae3"
+_CLIPPED_EDITION_SHA256 = "d8c72b4fbda2c920f30f79b3e0554f9965165735d220a810e6ae3994e2dbf899"
+_CLIPPED_MARKER = "[remaining title not visible in the publisher PDF]"
+# Physical page, historical row, marked cell, visible title, clipped suffix.
+# These prefixes were checked against rendered pages 266 and 691. Text from
+# the preceding year's report is a separate citation, not a repair to this PDF.
+_CLIPPED_ROWS = (
+    (266, "10.", 13, "Delayed Completion of Pediatric Emergency Centre and Burns Management", "Centre"),
+    (266, "17.", 27, "Proposed Establishment of a NEURpsychiatric National Teaching and", "Referral Hospital"),
+    (691, "9.", 47, "Delayed Completion of the Construction of National Employment Promotion", "Centre"),
+    (691, "10.", 49, "Delayed Completion of Construction of Occupational Safety and Health (OSH)", "Institute Phase 1"),
+)
+
+
+def _walk_version(doc) -> int:
+    return 6 if doc.md5 == _CLIPPED_EDITION_MD5 else EXTRACTOR_VERSION
 
 # ── text integrity ───────────────────────────────────────────────────
 _CID_RE = re.compile(r"\(cid:\d+\)")
@@ -1191,7 +1208,7 @@ def extraction_is_current(doc) -> bool:
         doc.md5
         and meta.get("extracted_md5") == doc.md5
         and type(version) is int
-        and version == EXTRACTOR_VERSION
+        and version == _walk_version(doc)
     )
 
 
@@ -1340,6 +1357,59 @@ def _replace_extractions(session, doc, extractor_id: str, rows: list, key, *, re
     }
 
 
+def _represent_clipped_titles(pages: List[PageText], source_sha256: str) -> List[PageText]:
+    """Render only the visually checked titles, for one exact publisher PDF.
+
+    Do not down-rank arbitrary layout qualifications or approve any changes to
+    stored rows. The reconciliation gate still checks the resulting candidate.
+    """
+    if source_sha256 != _CLIPPED_EDITION_SHA256:
+        return pages
+    from .reconciliation import IncompleteExtraction
+
+    expected = {}
+    for number, row, mcid, visible, suffix in _CLIPPED_ROWS:
+        qualification = {
+            "kind": "tagged_table_cell_overlap",
+            "pdf_page": number,
+            "table_index": 0,
+            "row_label": row,
+            "cell_mcids": [mcid],
+            "cell_text": f"{visible} {suffix}",
+            "disposition": "qualified_embedded_text_visible_fidelity_unconfirmed",
+            "requires_human_review": True,
+        }
+        expected.setdefault(number, []).append(
+            (qualification, f"{row} {visible} {suffix}", f"{row} {visible} {_CLIPPED_MARKER}")
+        )
+    updated = []
+    seen = set()
+    for page in pages:
+        if page.page_number in seen:
+            raise IncompleteExtraction("Duplicate Blue Book physical page; rows kept")
+        seen.add(page.page_number)
+        rules = expected.pop(page.page_number, [])
+        if not rules:
+            if page.layout_qualifications:
+                raise IncompleteExtraction("Unexpected Blue Book layout qualification; rows kept")
+            updated.append(page)
+            continue
+        # JSON preserves the distinction between booleans and integers.
+        actual = json.dumps(page.layout_qualifications, sort_keys=True)
+        reviewed = json.dumps([q for q, _, _ in rules], sort_keys=True)
+        if actual != reviewed:
+            raise IncompleteExtraction("Reviewed Blue Book clipped cells differ; rows kept")
+        lines = page.text.splitlines()
+        for _, embedded, visible in rules:
+            if lines.count(embedded) != 1:
+                raise IncompleteExtraction("Reviewed Blue Book title is missing or ambiguous; rows kept")
+            lines[lines.index(embedded)] = visible
+        updated.append(replace(page, text="\n".join(lines), layout_qualifications=[]))
+    if expected:
+        raise IncompleteExtraction("Reviewed Blue Book pages missing; rows kept")
+    return updated
+
+
 def extract_blue_book(session, doc, settings, *, review=None) -> dict:
     """Extract ``doc`` (a fetched Blue Book) into ``extractions`` rows.
 
@@ -1355,10 +1425,18 @@ def extract_blue_book(session, doc, settings, *, review=None) -> dict:
     """
     from models import Extraction
 
-    if not doc.file_path or not Path(doc.file_path).exists():
+    from ..pdf_artifact import file_identity
+    from .reconciliation import IncompleteExtraction
+
+    path = Path(doc.file_path) if doc.file_path else None
+    if path is None or not path.exists():
         raise FileNotFoundError(
             f"source document {doc.id} has no local file — fetch it first"
         )
+
+    reviewed_edition = doc.md5 == _CLIPPED_EDITION_MD5
+    if reviewed_edition and file_identity(path)["sha256"] != _CLIPPED_EDITION_SHA256:
+        raise IncompleteExtraction("Reviewed Blue Book PDF fingerprint differs; rows kept")
 
     existing = (
         session.query(Extraction)
@@ -1375,7 +1453,7 @@ def extract_blue_book(session, doc, settings, *, review=None) -> dict:
             "(%d rows) — skipping",
             doc.id,
             doc.md5,
-            EXTRACTOR_VERSION,
+            _walk_version(doc),
             existing,
         )
         return {
@@ -1387,10 +1465,15 @@ def extract_blue_book(session, doc, settings, *, review=None) -> dict:
         }
 
     pages = read_pages(
-        Path(doc.file_path),
+        path,
         ocr_enabled=getattr(settings, "audits_ocr_enabled", False),
         ocr_max_pages=getattr(settings, "audits_ocr_max_pages", 30),
     )
+    if reviewed_edition:
+        actual_sha256 = file_identity(path)["sha256"]
+        if actual_sha256 != _CLIPPED_EDITION_SHA256:
+            raise IncompleteExtraction("Reviewed Blue Book PDF changed during extraction; rows kept")
+        pages = _represent_clipped_titles(pages, actual_sha256)
     result = parse_blue_book(pages, doc.url or "")
 
     if existing and not result.findings:
@@ -1401,8 +1484,6 @@ def extract_blue_book(session, doc, settings, *, review=None) -> dict:
             f"document {doc.id}: re-read found no finding where {existing} "
             f"row(s) exist (toc entries: {result.votes_seen}); rows kept"
         )
-
-    from .reconciliation import IncompleteExtraction
 
     if result.rejected_cid or any(p.method == "rejected" for p in pages):
         raise IncompleteExtraction(f"document {doc.id}: unreadable source text; rows kept")
@@ -1430,7 +1511,7 @@ def extract_blue_book(session, doc, settings, *, review=None) -> dict:
             "md5 changed"
             if doc_meta.get("extracted_md5") != doc.md5
             else f"walk version {doc_meta.get('extractor_version', 1)!r} -> "
-            f"{EXTRACTOR_VERSION}",
+            f"{_walk_version(doc)}",
             replaced["kept"],
             replaced["updated"],
             replaced["inserted"],
@@ -1440,7 +1521,7 @@ def extract_blue_book(session, doc, settings, *, review=None) -> dict:
 
     doc_meta.update(doc.meta or {})  # Keep the accepted reconciliation receipt.
     doc_meta["extracted_md5"] = doc.md5
-    doc_meta["extractor_version"] = EXTRACTOR_VERSION
+    doc_meta["extractor_version"] = _walk_version(doc)
     doc_meta["extraction_stats"] = {
         "findings": len(rows),
         "rejected_cid": result.rejected_cid,

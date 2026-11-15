@@ -269,12 +269,10 @@ jobs:
           if [ "${#SOURCES[@]}" -gt 128 ]; then exit 2; fi
           HC_TMP=$(mktemp -d)
           trap 'rm -rf -- "$HC_TMP"' EXIT
-          HC_BODY_FILE="$HC_TMP/body"
 
           REPORT=""
           FAILED_CRITICAL=0
           FAILED_WARN=0
-          TOTAL=${#SOURCES[@]}
           OK_COUNT=0
           NOT_PROBED=0
           CRITICAL_TOTAL=0
@@ -296,6 +294,9 @@ jobs:
           #                     still written before the job cap.
           # Env-overridable so backend/tests/test_healthcheck_is_bounded.py
           # can run this script against a host that never answers.
+          # Cover the inventory first: six workers, at most six seconds each
+          # per first attempt. 128 static entries need at most 22 waves.
+          # Discovery and its edition probes precede general retries.
           HC_ATTEMPT_MAX_TIME=${HC_ATTEMPT_MAX_TIME:-60}
           HC_SOURCE_BUDGET=${HC_SOURCE_BUDGET:-75}
           HC_JOB_BUDGET=${HC_JOB_BUDGET:-240}
@@ -327,7 +328,7 @@ jobs:
           # $1 = User-Agent, $2 = URL, $3 = seconds allowed. ONE attempt,
           # following redirects. Prints "<3-digit code> <curl exit status>".
           # No curl --retry: curl retries a --max-time timeout, which is how
-          # one probe outlived the job. Retries are made by probe_source,
+          # one probe outlived the job. Retries are made by retry_source,
           # which charges each one against the deadline.
           #
           # curl writes the code via -w; on a connection failure it prints
@@ -348,7 +349,7 @@ jobs:
             # A bounded prefix establishes transport only, never full edition
             # acceptance. Large reviewed PDFs must not require full downloads.
             case "$2" in *.pdf|*.PDF|*.xlsx) range_args=(--range 0-65535) ;; esac
-            code=$(curl -s -o "$HC_BODY_FILE" -w "%{http_code}" \
+            code=$(curl -q --globoff -s -o "$HC_BODY_FILE" -w "%{http_code}" \
               --max-filesize 8388608 "${range_args[@]}" --proto =https,http --proto-redir =https \
               -L --max-time "$3" \
               -A "$1" "$2" 2>/dev/null) || rc=$?
@@ -366,111 +367,124 @@ jobs:
           # to the browser UA below.
           is_retryable() { [[ "$1" =~ ^(000|408|429)$ || "$1" =~ ^5[0-9][0-9]$ ]]; }
 
-          # $1 = URL. Sets HTTP_CODE and the transport outcome of the latest
-          # completed probe. Up to 3 attempts per UA; returns by the
-          # earlier of its own deadline and the job's, whatever the host does.
-          #
-          # On a transient code, re-probe with the browser UA before
-          # concluding the source is unhealthy. Adopt the browser code
-          # whenever it is DEFINITIVE (i.e. not itself transient): a success
-          # (2xx/3xx) means the source is reachable and the block was just our
-          # UA, while a genuine 4xx-gone (404/410) revealed past the WAF means
-          # the URL migrated and must still surface via the critical-flag
-          # branch — not be masked behind the original transient code. Report
-          # the last attempted transport outcome if both UAs fail.
-          probe_source() {
-            local url=$1 deadline ua attempt left out code rc
-            deadline=$(( SECONDS + HC_SOURCE_BUDGET ))
-            if [ "$deadline" -gt "$JOB_DEADLINE" ]; then deadline=$JOB_DEADLINE; fi
-            HTTP_CODE="000"
-            TIMED_OUT=0
-            PROBE_ERROR=""
+          read_source() {
+            IFS='|' read -r label url critical discovery extra <<< "${SOURCES[$1]}"
+            if ! [[ "$label" =~ $label_pattern ]] || [ "${#label}" -gt 512 ] || [ -n "$extra" ] ||
+               ! [[ "$critical" =~ ^(true|false)$ ]] ||
+               ! [[ "${discovery:-none}" =~ ^(none|treasury_editions)$ ]] ||
+               ! { [[ "$url" =~ ^https?://[^[:space:]\|]+$ ]] ||
+                   { [ "$url" = missing ] && [ "$critical" = true ]; } ||
+                   { [ "$url" = reference ] && [ "$critical" = false ] &&
+                     [ "$label" = 'learning_hub curated learning reference' ]; }; }; then
+              echo 'Malformed selected health source' >&2; exit 2
+            fi
+          }
+
+          # Separate files prevent concurrent requests from sharing a body or
+          # result. The original source order is used to render the report.
+          probe_first() {
+            local index=$1 deadline=$2 left out started=$SECONDS
+            HC_BODY_FILE="$HC_TMP/body.$index"
+            left=$(( deadline - SECONDS ))
+            [ "$left" -gt 0 ] || return 0
+            [ "$left" -le 6 ] || left=6
+            [ "$left" -le "$HC_SOURCE_BUDGET" ] || left=$HC_SOURCE_BUDGET
+            [ "$left" -le "$HC_ATTEMPT_MAX_TIME" ] || left=$HC_ATTEMPT_MAX_TIME
+            out=$(probe_once "$PRIMARY_UA" "$url" "$left")
+            printf '%s %s\n' "$out" "$((SECONDS - started))" > "$HC_TMP/result.$index"
+            # Only Treasury listing discovery needs to retain a response body.
+            if [ "${discovery:-none}" != treasury_editions ]; then rm -f -- "$HC_BODY_FILE"; fi
+          }
+
+          retry_source() {
+            local index=$1 deadline=$2 code rc elapsed ua attempt left out started=$SECONDS
+            [ -s "$HC_TMP/result.$index" ] || return 0
+            read -r code rc elapsed < "$HC_TMP/result.$index"
+            if [ "$rc" = 51 ] || [ "$rc" = 60 ] || [ "$rc" = 63 ]; then return 0; fi
+            if ! is_transient "$code" && ! is_retryable "$code"; then return 0; fi
+            left=$(( SECONDS + HC_SOURCE_BUDGET - elapsed ))
+            [ "$deadline" -le "$left" ] || deadline=$left
+            HC_BODY_FILE="$HC_TMP/body.$index"
+            # The first-pass request was primary attempt 1. On a WAF
+            # rejection go straight to the browser UA; 408 only retries primary.
             for ua in "$PRIMARY_UA" "$BROWSER_UA"; do
-              for attempt in 1 2 3; do
+              if [ "$ua" = "$PRIMARY_UA" ]; then
+                if ! is_retryable "$code"; then continue; fi
+                attempt=2
+              else
+                if ! is_transient "$code"; then break; fi
+                attempt=1
+              fi
+              while [ "$attempt" -le 3 ]; do
                 left=$(( deadline - SECONDS ))
-                if [ "$left" -lt 1 ]; then return 0; fi
+                if [ "$ua" = "$PRIMARY_UA" ] || [ "$attempt" -gt 1 ]; then
+                  if [ "$left" -le "$HC_RETRY_DELAY" ]; then break; fi
+                  if [ "$HC_RETRY_DELAY" -gt 0 ]; then sleep "$HC_RETRY_DELAY"; fi
+                  left=$(( deadline - SECONDS ))
+                fi
+                if [ "$left" -lt 1 ]; then break; fi
                 if [ "$left" -gt "$HC_ATTEMPT_MAX_TIME" ]; then left=$HC_ATTEMPT_MAX_TIME; fi
                 out=$(probe_once "$ua" "$url" "$left")
                 code=${out% *}
                 rc=${out#* }
-                HTTP_CODE=$code
-                TIMED_OUT=0
-                PROBE_ERROR=""
-                case "$rc" in
-                  0) ;;
-                  7) PROBE_ERROR="connection refused" ;;
-                  18) PROBE_ERROR="incomplete response" ;;
-                  28) PROBE_ERROR="timeout"; TIMED_OUT=1 ;;
-                  51|60) PROBE_ERROR="TLS certificate verification failed"; return 0 ;;
-                  63) PROBE_ERROR="bounded body probe refused or exceeds byte limit"; return 0 ;;
-                  *) PROBE_ERROR="transport error $rc" ;;
-                esac
-                if [ "$ua" = "$BROWSER_UA" ] && ! is_transient "$code"; then
-                  return 0
-                fi
+                printf '%s %s\n' "$out" "$((elapsed + SECONDS - started))" > "$HC_TMP/result.$index"
+                if [ "$rc" = 51 ] || [ "$rc" = 60 ] || [ "$rc" = 63 ]; then break 2; fi
                 if ! is_retryable "$code"; then break; fi
-                # No wait after the last attempt: it only delayed the next UA
-                # (or source), so a fast failure (refused, DNS) cost 18s and a
-                # runner-wide DNS outage overran the job budget.
-                if [ "$attempt" -ge 3 ]; then break; fi
-                if [ $(( deadline - SECONDS )) -le "$HC_RETRY_DELAY" ]; then return 0; fi
-                sleep "$HC_RETRY_DELAY"
+                attempt=$((attempt + 1))
               done
-              if ! is_transient "$HTTP_CODE"; then return 0; fi
             done
+            if [ "${discovery:-none}" != treasury_editions ]; then rm -f -- "$HC_BODY_FILE"; fi
           }
 
-          source_index=0
-          label_pattern='^[a-zA-Z0-9_ .:/-]+$'
-          while [ "$source_index" -lt "${#SOURCES[@]}" ]; do
-            entry=${SOURCES[$source_index]}
-            source_index=$((source_index + 1))
-            IFS='|' read -r label url critical discovery extra <<< "$entry"
-            if ! [[ "$label" =~ $label_pattern ]] || [ "${#label}" -gt 512 ] || [ -n "$extra" ] ||
-               ! [[ "$critical" =~ ^(true|false)$ ]] ||
-               ! [[ "${discovery:-none}" =~ ^(none|treasury_editions)$ ]]; then
-              echo 'Malformed selected health source' >&2; exit 2
-            fi
-            if [ "$url" = reference ] && [ "$critical" = false ] &&
-               [ "$label" = 'learning_hub curated learning reference' ]; then
-              REPORT="${REPORT}OK|${label}|curated reference; no live publisher expected\n"
-              OK_COUNT=$((OK_COUNT + 1))
-              continue
-            fi
-            if [ "$url" = missing ]; then
-              REPORT="${REPORT}CRITICAL|${label}|required diagnostic coverage unavailable\n"
-              FAILED_CRITICAL=$((FAILED_CRITICAL + 1))
-              CRITICAL_TOTAL=$((CRITICAL_TOTAL + 1))
-              continue
-            fi
-            if ! [[ "$url" =~ ^https?://[^[:space:]\|]+$ ]]; then
-              echo 'Invalid health source URL' >&2; exit 2
-            fi
-            if [ "$critical" = "true" ]; then CRITICAL_TOTAL=$((CRITICAL_TOTAL + 1)); fi
-
-            # Out of job budget: say so for every source still waiting,
-            # rather than let the runner kill the job and drop the outputs.
-            if [ $(( JOB_DEADLINE - SECONDS )) -lt 1 ]; then
-              echo "  [WARNING] $label → not probed: the ${HC_JOB_BUDGET}s health-check budget ran out"
-              severity=WARNING
-              if [ "$critical" = true ]; then severity=CRITICAL; fi
-              REPORT="${REPORT}${severity}|${label}|not probed - coverage unknown\n"
-              NOT_PROBED=$((NOT_PROBED + 1))
-              if [ "$critical" = true ]; then
-                FAILED_CRITICAL=$((FAILED_CRITICAL + 1))
-              else
-                FAILED_WARN=$((FAILED_WARN + 1))
+          # Batch width is fixed instead of accepting a setting from the job
+          # environment. Check status from every worker rather than silently
+          # converting a local failure into a source outage.
+          run_batch() {
+            local worker=$1 index=$2 end=$3 deadline=$4 pid code
+            local pids=()
+            while [ "$index" -lt "$end" ] && [ "$SECONDS" -lt "$deadline" ]; do
+              read_source "$index"
+              if [[ "$url" =~ ^https?:// ]] &&
+                 { [ "$worker" = probe_first ] || [ "${discovery:-none}" != treasury_editions ]; }; then
+                if [ "$worker" = retry_source ] && [ -s "$HC_TMP/result.$index" ] &&
+                   read -r code _ < "$HC_TMP/result.$index" && [ "$code" = 429 ]; then
+                  # Drain in-flight requests and retry rate limits one at a
+                  # time. Simultaneous retries can keep a healthy publisher
+                  # rate-limited for the entire source budget.
+                  for pid in "${pids[@]}"; do wait "$pid"; done
+                  pids=()
+                  retry_source "$index" "$deadline"
+                else
+                  "$worker" "$index" "$deadline" &
+                  pids+=("$!")
+                fi
               fi
-              continue
-            fi
+              if [ "${#pids[@]}" -ge 6 ]; then
+                for pid in "${pids[@]}"; do wait "$pid"; done
+                pids=()
+              fi
+              index=$((index + 1))
+            done
+            for pid in "${pids[@]}"; do wait "$pid"; done
+          }
 
-            started=$SECONDS
-            : > "$HC_BODY_FILE"
-            probe_source "$url"
-            if [ "$discovery" = treasury_editions ]; then
-              # Parse only the bounded fetched listing. Missing/ambiguous
-              # discovery becomes an explicit required diagnostic gap.
-              if [[ "$HTTP_CODE" =~ ^2 ]] && python3 - "$HC_BODY_FILE" "$url" > "$HC_TMP/editions" 2>/dev/null <<'PY'
+          label_pattern='^[a-zA-Z0-9_ .:/-]+$'
+          initial_total=${#SOURCES[@]}
+          for ((i=0; i<initial_total; i++)); do read_source "$i"; done
+          run_batch probe_first 0 "$initial_total" "$JOB_DEADLINE"
+
+          # Retry a listing before processing its discovered sources. Reserve
+          # four waves for up to 24 editions if we still have the time.
+          for ((i=0; i<initial_total; i++)); do
+            read_source "$i"
+            [ "${discovery:-none}" = treasury_editions ] || continue
+            HC_BODY_FILE="$HC_TMP/body.$i"
+            retry_source "$i" "$((JOB_DEADLINE - 24))"
+            HTTP_CODE=000
+            if [ -s "$HC_TMP/result.$i" ]; then read -r HTTP_CODE _ < "$HC_TMP/result.$i"; fi
+            # Parse only the bounded fetched listing. Missing/ambiguous
+            # discovery becomes an explicit required diagnostic gap.
+            if [[ "$HTTP_CODE" =~ ^2 ]] && python3 - "$HC_BODY_FILE" "$url" > "$HC_TMP/editions" 2>/dev/null <<'PY'
           from html.parser import HTMLParser
           from pathlib import Path
           from urllib.parse import urljoin, urlsplit, unquote
@@ -501,15 +515,55 @@ jobs:
           for index, url in enumerate(sorted(links.urls), 1):
               print(f'fiscal_summary framework edition {index}|{url}|true')
           PY
-              then
-                while IFS= read -r edition; do SOURCES+=("$edition"); done < "$HC_TMP/editions"
-              else
-                SOURCES+=("fiscal_summary edition discovery|missing|true")
-              fi
-              if [ "${#SOURCES[@]}" -gt 152 ]; then echo 'Edition inventory exceeds bound' >&2; exit 2; fi
-              TOTAL=${#SOURCES[@]}
+            then
+              while IFS= read -r edition; do SOURCES+=("$edition"); done < "$HC_TMP/editions"
+            else
+              SOURCES+=("fiscal_summary edition discovery|missing|true")
             fi
+            if [ "${#SOURCES[@]}" -gt 152 ]; then echo 'Edition inventory exceeds bound' >&2; exit 2; fi
+          done
 
+          TOTAL=${#SOURCES[@]}
+          run_batch probe_first "$initial_total" "$TOTAL" "$JOB_DEADLINE"
+          run_batch retry_source 0 "$TOTAL" "$JOB_DEADLINE"
+
+          for ((i=0; i<TOTAL; i++)); do
+            read_source "$i"
+            if [ "$url" = reference ]; then
+              REPORT="${REPORT}OK|${label}|curated reference; no live publisher expected\n"
+              OK_COUNT=$((OK_COUNT + 1))
+              continue
+            fi
+            if [ "$critical" = true ]; then CRITICAL_TOTAL=$((CRITICAL_TOTAL + 1)); fi
+            if [ "$url" = missing ]; then
+              REPORT="${REPORT}CRITICAL|${label}|required diagnostic coverage unavailable\n"
+              FAILED_CRITICAL=$((FAILED_CRITICAL + 1))
+              continue
+            fi
+            if [ ! -s "$HC_TMP/result.$i" ]; then
+              echo "  [WARNING] $label → not probed: the ${HC_JOB_BUDGET}s health-check budget ran out"
+              severity=WARNING
+              if [ "$critical" = true ]; then
+                severity=CRITICAL
+                FAILED_CRITICAL=$((FAILED_CRITICAL + 1))
+              else
+                FAILED_WARN=$((FAILED_WARN + 1))
+              fi
+              REPORT="${REPORT}${severity}|${label}|not probed - coverage unknown\n"
+              NOT_PROBED=$((NOT_PROBED + 1))
+              continue
+            fi
+            read -r HTTP_CODE rc elapsed < "$HC_TMP/result.$i"
+            PROBE_ERROR=""
+            case "$rc" in
+              0) ;;
+              7) PROBE_ERROR="connection refused" ;;
+              18) PROBE_ERROR="incomplete response" ;;
+              28) PROBE_ERROR="timeout" ;;
+              51|60) PROBE_ERROR="TLS certificate verification failed" ;;
+              63) PROBE_ERROR="bounded body probe refused or exceeds byte limit" ;;
+              *) PROBE_ERROR="transport error $rc" ;;
+            esac
             if [[ "$HTTP_CODE" =~ ^2 ]]; then
               echo "  [OK]   $label ($HTTP_CODE)"
               REPORT="${REPORT}OK|${label}|${HTTP_CODE}\n"
@@ -524,8 +578,8 @@ jobs:
                 FAILED_WARN=$((FAILED_WARN + 1))
               fi
               outcome=${PROBE_ERROR:-$HTTP_CODE}
-              if [ "$TIMED_OUT" = "1" ]; then
-                echo "  [${severity}] $label → timed out after $((SECONDS - started))s"
+              if [ "$rc" = 28 ]; then
+                echo "  [${severity}] $label → timed out after ${elapsed}s"
               else
                 echo "  [${severity}] $label → HTTP $HTTP_CODE ($outcome)"
               fi
