@@ -82,6 +82,7 @@ jobs:
         env:
           SCHEMA_GUARD_CONTAINER: ${{ job.services.schema-guard-postgres.id }}
           PUBLIC_SCHEMA_GUARD_CI_URL: postgresql://postgres:postgres@127.0.0.1:55498/auditgava_schema_guard
+          PGHOSTADDR: 127.0.0.1
           PYTHON_DOTENV_DISABLED: '1'
         run: |
           docker exec -i "$SCHEMA_GUARD_CONTAINER" psql -U postgres -d auditgava_schema_guard -X -v ON_ERROR_STOP=1 <<'SQL'

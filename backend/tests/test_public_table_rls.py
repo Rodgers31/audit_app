@@ -64,9 +64,17 @@ def guard_cursor():
         pytest.skip("Requires the migrated disposable CI database")
     url = make_url(raw)
     if (url.drivername != "postgresql" or url.host != "127.0.0.1"
-            or url.database != "auditgava_schema_guard" or url.query):
+            or url.port != 55498 or url.database != "auditgava_schema_guard"
+            or not url.username or url.query):
         raise ValueError("The schema guard requires the dedicated loopback CI database")
-    with closing(psycopg2.connect(raw, connect_timeout=3)) as connection, connection.cursor() as cursor:
+    # Supplying the numeric address separately prevents libpq from supplying
+    # its own hostaddr from the connection environment.
+    with closing(psycopg2.connect(
+        host="127.0.0.1", hostaddr="127.0.0.1", port=55498,
+        dbname="auditgava_schema_guard", user=url.username, password=url.password or "",
+        passfile="/nonexistent-schema-guard-passfile", connect_timeout=3,
+        sslmode="disable", gssencmode="disable", options="-c search_path=pg_catalog",
+    )) as connection, connection.cursor() as cursor:
         cursor.execute("SELECT current_database(), to_regclass('public.alembic_version') IS NOT NULL")
         assert cursor.fetchone() == ("auditgava_schema_guard", True)
         cursor.execute("SELECT count(*) FROM pg_roles WHERE rolname IN ('anon', 'authenticated')")
@@ -83,6 +91,34 @@ def test_security_guard_rls_on_every_public_table(guard_cursor):
     )
     if violations:
         pytest.fail(pytest_assertion, pytrace=False)
+
+
+@pytest.mark.parametrize("port", ["", ":5432"])
+def test_guard_refuses_other_ports_before_connecting(monkeypatch, port):
+    monkeypatch.setenv("PUBLIC_SCHEMA_GUARD_CI_URL", f"postgresql://postgres@127.0.0.1{port}/auditgava_schema_guard")
+    monkeypatch.setattr(psycopg2, "connect", lambda *_a, **_kw: pytest.fail("Unexpected connection"))
+    with pytest.raises(ValueError, match="dedicated loopback CI database"):
+        next(guard_cursor.__wrapped__())
+
+
+def test_guard_pins_driver_address_despite_pg_environment(monkeypatch):
+    monkeypatch.setenv("PUBLIC_SCHEMA_GUARD_CI_URL", "postgresql://postgres@127.0.0.1:55498/auditgava_schema_guard")
+    monkeypatch.setenv("PGHOSTADDR", "192.0.2.10")
+    monkeypatch.setenv("PGPORT", "5432")
+
+    class StopBeforeConnect(Exception):
+        pass
+
+    def connect(*args, **kwargs):
+        assert not args
+        assert kwargs["host"] == kwargs["hostaddr"] == "127.0.0.1"
+        assert kwargs["port"] == 55498
+        assert kwargs["dbname"] == "auditgava_schema_guard"
+        raise StopBeforeConnect
+
+    monkeypatch.setattr(psycopg2, "connect", connect)
+    with pytest.raises(StopBeforeConnect):
+        next(guard_cursor.__wrapped__())
 
 
 def test_guard_detects_disabled_rls_and_inherited_column_privilege(guard_cursor):

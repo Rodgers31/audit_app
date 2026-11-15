@@ -84,6 +84,7 @@ class ConfigurationTests(unittest.TestCase):
         self.assertEqual(schema_guard["env"], {
             "SCHEMA_GUARD_CONTAINER": "${{ job.services.schema-guard-postgres.id }}",
             "PUBLIC_SCHEMA_GUARD_CI_URL": "postgresql://postgres:postgres@127.0.0.1:55498/auditgava_schema_guard",
+            "PGHOSTADDR": "127.0.0.1",
             "PYTHON_DOTENV_DISABLED": "1",
         })
         self.assertIn(
