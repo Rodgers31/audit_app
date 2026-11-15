@@ -48,10 +48,7 @@ test.describe('Navigation — desktop header', () => {
     await page.goto('/counties');
     await waitForAppReady(page);
 
-    const logo = page
-      .getByRole('link')
-      .filter({ hasText: /AuditGava|Kenya Public Money/i })
-      .first();
+    const logo = nav.home(page);
     await logo.click();
     await expect(page).toHaveURL(/\/$/);
   });
@@ -69,49 +66,51 @@ test.describe('Navigation — mobile menu', () => {
 
     // The open state should surface the close-label and all routes.
     await expect(
-      page.getByRole('button', { name: /close navigation menu|Funga menyu/i })
+      page.getByRole('dialog').getByRole('button', { name: /close navigation menu|Funga menyu/i })
     ).toBeVisible();
     // Each primary route appears somewhere in the overlay.
     await expect(page.getByRole('link', { name: /National Debt|Deni la Taifa/i }).last()).toBeVisible();
-    await expect(page.getByRole('link', { name: /County Explorer|Kaunti/i }).last()).toBeVisible();
+    await expect(page.getByRole('link', { name: /Counties|Kaunti/i }).last()).toBeVisible();
   });
 });
 
 test.describe('Language switcher', () => {
-  test('3-way pill renders with EN active by default', async ({ page }) => {
+  test('the language control opens with English active', async ({ page }) => {
     // Ensure a clean localStorage for a deterministic starting state.
     await page.addInitScript(() => window.localStorage.removeItem('auditgava-lang'));
     await page.goto('/');
     await waitForAppReady(page);
 
+    await page.locator('header summary').filter({ hasText: /^Language$/ }).click();
     await expect(langSwitcher.root(page)).toBeVisible();
-    await expect(langSwitcher.en(page)).toHaveAttribute('aria-checked', 'true');
+    await expect(langSwitcher.en(page)).toBeChecked();
   });
 
   test('switching to SW re-labels nav to Kiswahili', async ({ page }) => {
     await page.goto('/');
     await waitForAppReady(page);
 
-    await langSwitcher.sw(page).click();
-    await expect(langSwitcher.sw(page)).toHaveAttribute('aria-checked', 'true');
+    await page.locator('header summary').filter({ hasText: /^Language$/ }).click();
+    await langSwitcher.sw(page).check();
+    await expect(langSwitcher.sw(page)).toBeChecked();
 
     await expect(
-      page.getByRole('link', { name: /^Deni la Taifa$/ }).first()
+      page.getByRole('link', { name: /^Deni la taifa$/ }).first()
     ).toBeVisible({ timeout: 5_000 });
     await expect(
-      page.getByRole('link', { name: /^Bajeti na Matumizi$/ }).first()
+      page.getByRole('link', { name: /^Bajeti$/ }).first()
     ).toBeVisible();
   });
 
-  test('switching to plain English uses Aa pill', async ({ page }) => {
+  test('switching to plain English keeps the main routes', async ({ page }) => {
     await page.goto('/');
     await waitForAppReady(page);
 
-    await langSwitcher.plain(page).click();
-    await expect(langSwitcher.plain(page)).toHaveAttribute('aria-checked', 'true');
-    // "Money Kenya Owes" is the plain-English swap for "National Debt".
+    await page.locator('header summary').filter({ hasText: /^Language$/ }).click();
+    await langSwitcher.plain(page).check();
+    await expect(langSwitcher.plain(page)).toBeChecked();
     await expect(
-      page.getByRole('link', { name: /^Money Kenya Owes$/ }).first()
+      page.getByRole('link', { name: /^National debt$/ }).first()
     ).toBeVisible();
   });
 
@@ -119,12 +118,14 @@ test.describe('Language switcher', () => {
     await page.goto('/');
     await waitForAppReady(page);
 
-    await langSwitcher.plain(page).click();
-    await expect(langSwitcher.plain(page)).toHaveAttribute('aria-checked', 'true');
+    await page.locator('header summary').filter({ hasText: /^Language$/ }).click();
+    await langSwitcher.plain(page).check();
+    await expect(langSwitcher.plain(page)).toBeChecked();
 
     await page.reload();
     await waitForAppReady(page);
-    await expect(langSwitcher.plain(page)).toHaveAttribute('aria-checked', 'true');
+    await page.locator('header summary').filter({ hasText: /^Language$/ }).click();
+    await expect(langSwitcher.plain(page)).toBeChecked();
   });
 });
 
@@ -137,5 +138,34 @@ test.describe('Footer', () => {
     await expect(footer).toBeVisible();
     await expect(footer).toContainText(/AuditGava/);
     await expect(footer).toContainText(/20\d{2}/);
+  });
+});
+
+
+test('a missing page offers working county search and primary routes', async ({ page }) => {
+  const response = await page.goto('/missing-foundation-test-page');
+  expect(response?.status()).toBe(404);
+  await expect(page).toHaveTitle(/We can’t find that page/);
+  await page.getByRole('searchbox', { name: 'Search counties or glossary terms' }).fill('Bari');
+  await expect(page.getByRole('link', { name: 'Baringo', exact: true })).toHaveAttribute('href', '/counties/baringo');
+  await page.getByRole('searchbox', { name: 'Search counties or glossary terms' }).fill('muranga');
+  const muranga = page.getByRole('link', { name: "Murang'a", exact: true });
+  await expect(muranga).toHaveAttribute('href', '/counties/Murang%27a');
+  await expect(page.getByRole('main').getByRole('link', { name: 'Audit findings' })).toHaveAttribute('href', '/audits');
+  await muranga.click();
+  await expect(page).toHaveURL(/\/counties\/Murang%27a\/?$/);
+  await expect(page.getByRole('heading', { level: 1, name: "Murang'a County" })).toBeVisible();
+});
+
+test.describe('Kiswahili browser preference', () => {
+  test.use({ locale: 'sw-KE' });
+  test('offers Kiswahili on a first visit and remembers the choice', async ({ page }) => {
+    await page.goto('/missing-foundation-test-page');
+    await expect(page.getByText('Ukurasa huu unapatikana kwa Kiswahili.')).toBeVisible();
+    await page.getByRole('button', { name: 'Tumia Kiswahili' }).click();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'sw');
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'sw');
+    await expect(page.getByText('Ukurasa huu unapatikana kwa Kiswahili.')).not.toBeVisible();
   });
 });

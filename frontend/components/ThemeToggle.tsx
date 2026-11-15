@@ -72,7 +72,7 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
   }
 
   const baseClass =
-    'tap-44 h-9 w-9 rounded-sm border border-neutral-border bg-surface-base text-gov-dark hover:border-gov-sage hover:text-gov-sage dark:bg-surface-base dark:text-white dark:hover:text-emerald-100 flex items-center justify-center';
+    'tap-44 h-11 w-11 rounded-sm border border-neutral-border bg-surface-base text-gov-dark hover:border-gov-sage hover:text-gov-sage dark:bg-surface-base dark:text-white dark:hover:text-emerald-100 flex items-center justify-center';
 
   if (!mounted) {
     return (

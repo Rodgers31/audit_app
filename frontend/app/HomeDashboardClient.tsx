@@ -56,7 +56,7 @@ export default function HomeDashboardClient() {
 
         <LearningHubCTA />
 
-        <NewsletterBanner />
+        <div id='newsletter' className='scroll-mt-20'><NewsletterBanner /></div>
       </div>
     </div>
   );

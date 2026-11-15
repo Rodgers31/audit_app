@@ -2,13 +2,13 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 
 async function useFallbackTextSpacing(page: Page) {
   await page.addStyleTag({ content: `
-    header nav[aria-label="Primary navigation"] a {
+    header nav a {
       font-family: Arial, sans-serif !important;
       font-size: 14px !important;
       letter-spacing: 0.12em !important;
       word-spacing: 0.16em !important;
     }
-    [aria-label="Mobile primary navigation"] a {
+    [role="dialog"] nav a {
       font-family: Arial, sans-serif !important;
       letter-spacing: 0.12em !important;
       word-spacing: 0.16em !important;
@@ -36,26 +36,27 @@ async function expectOwnedHitTarget(target: Locator) {
   );
 }
 
-for (const lang of ['en', 'sw', 'plain']) {
+const choices = { en: 'English', sw: 'Kiswahili', plain: 'Plain English' };
+
+for (const [lang, choice] of Object.entries(choices)) {
   test(`header hit targets and routes stay reachable with fallback fonts: ${lang}`, async ({ page }, testInfo) => {
     await page.addInitScript((value) => localStorage.setItem('auditgava-lang', value), lang);
     await page.route(/fonts\.(?:googleapis|gstatic)\.com/, (route) => route.abort());
     await page.goto('/learn');
-    const header = page.getByRole('banner');
+    const header = page.locator('header').first();
     await expect(header.getByRole('button', { name: /Switch to .* theme/ })).toBeVisible();
     // A wider fallback and WCAG text-spacing stress must not make sibling
     // navigation links paint over language, theme or authentication controls.
     await useFallbackTextSpacing(page);
 
-    for (const width of [1280, 1281, 1366, 1439, 1440, 1536, 1920, 2560]) {
+    for (const width of [1024, 1280, 1281, 1366, 1439, 1440, 1536, 1920, 2560]) {
       await page.setViewportSize({ width, height: 900 });
-      const navigation = header.getByRole('navigation', { name: 'Primary navigation', exact: true });
-      for (const name of ['EN', 'SW', 'Aa']) {
-        await expectOwnedHitTarget(header.getByRole('radio', { name, exact: true }));
-      }
+      const navigation = header.getByRole('navigation');
+      const language = header.locator('summary').first();
+      await expectOwnedHitTarget(language);
       const theme = header.getByRole('button', { name: /Switch to .* theme/ });
       await expectOwnedHitTarget(theme);
-      await expectOwnedHitTarget(header.getByRole('button', { name: /^(Sign In|Ingia)$/ }));
+      await expectOwnedHitTarget(header.getByRole('button', { name: /^(Sign in|Ingia)$/ }));
       const links = navigation.getByRole('link');
       await expect(links).toHaveCount(6);
       const navBox = (await navigation.boundingBox())!;
@@ -69,9 +70,12 @@ for (const lang of ['en', 'sw', 'plain']) {
       }
       // Actual clicks, without force or timeout exceptions, exercise the
       // language controls that the original hosted cases could not reach.
-      const active = header.getByRole('radio', { name: lang === 'en' ? 'EN' : lang === 'sw' ? 'SW' : 'Aa', exact: true });
-      await active.click();
-      await expect(active).toHaveAttribute('aria-checked', 'true');
+      await language.click();
+      for (const name of Object.values(choices)) {
+        await expectOwnedHitTarget(header.getByRole('radio', { name, exact: true }));
+      }
+      await expect(header.getByRole('radio', { name: choice, exact: true })).toBeChecked();
+      await language.click();
       if (width === 1280) {
         await header.screenshot({ path: testInfo.outputPath(`header-${lang}-1280.png`) });
       }
@@ -82,20 +86,20 @@ for (const lang of ['en', 'sw', 'plain']) {
     await page.addInitScript((value) => localStorage.setItem('auditgava-lang', value), lang);
     await page.route(/fonts\.(?:googleapis|gstatic)\.com/, (route) => route.abort());
     await page.goto('/learn');
-    const header = page.getByRole('banner');
+    const header = page.locator('header').first();
     await useFallbackTextSpacing(page);
     for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 },
-      { width: 768, height: 1024 }, { width: 1279, height: 900 }]) {
+      { width: 768, height: 1024 }, { width: 1023, height: 900 }]) {
       await page.setViewportSize(viewport);
-      await expectOwnedHitTarget(header.getByRole('button', { name: /Switch to .* theme/ }));
-      await expectOwnedHitTarget(header.getByRole('button', { name: /^(Sign In|Ingia)$/ }));
-      const toggle = header.getByRole('button', { name: 'Open navigation menu' });
+      await expect(header.getByRole('button', { name: /Switch to .* theme/ })).not.toBeVisible();
+      await expect(header.getByRole('button', { name: /^(Sign in|Ingia)$/ })).not.toBeVisible();
+      const toggle = header.getByRole('button', { name: /Open navigation menu|Fungua menyu/ });
       await expectOwnedHitTarget(toggle);
       await toggle.click();
-      const menu = page.getByRole('dialog', { name: 'Mobile navigation' });
+      const menu = page.getByRole('dialog', { name: /Mobile navigation|Urambazaji wa simu/ });
       await expect(menu).toBeVisible();
       const links = menu.getByRole('navigation').getByRole('link');
-      await expect(links).toHaveCount(6);
+      await expect(links).toHaveCount(9);
       for (const link of await links.all()) {
         await link.scrollIntoViewIfNeeded();
         await expectOwnedHitTarget(link);
@@ -103,16 +107,17 @@ for (const lang of ['en', 'sw', 'plain']) {
       if (viewport.width === 320) {
         // A mouse user must be able to scroll the drawer itself, with the
         // underlying page still locked, to reach its language/auth controls.
-        await menu.getByRole('link').last().hover();
+        const bounds = (await menu.boundingBox())!;
+        await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
         await page.mouse.wheel(0, viewport.height);
-        await expect(menu.getByRole('button', { name: 'Sign in or register', exact: true })).toBeInViewport();
+        await expect(menu.getByRole('button', { name: /^(Sign in|Ingia)$/ })).toBeInViewport();
       }
-      const active = menu.getByRole('radio', { name: lang === 'en' ? 'EN' : lang === 'sw' ? 'SW' : 'Aa', exact: true });
+      const active = menu.getByRole('radio', { name: choice, exact: true });
       await active.scrollIntoViewIfNeeded();
       await expectOwnedHitTarget(active);
-      await active.click();
-      await expect(active).toHaveAttribute('aria-checked', 'true');
-      const signIn = menu.getByRole('button', { name: 'Sign in or register', exact: true });
+      await active.check();
+      await expect(active).toBeChecked();
+      const signIn = menu.getByRole('button', { name: /^(Sign in|Ingia)$/ });
       await signIn.scrollIntoViewIfNeeded();
       await expectOwnedHitTarget(signIn);
       if (viewport.width === 320) {
@@ -131,24 +136,29 @@ test('wrapped desktop navigation retains keyboard order and control actions', as
   await page.route(/fonts\.(?:googleapis|gstatic)\.com/, (route) => route.abort());
   await page.goto('/learn');
   await useFallbackTextSpacing(page);
-  const header = page.getByRole('banner');
+  const header = page.locator('header').first();
   await expect(header.getByRole('button', { name: /Switch to .* theme/ })).toBeVisible();
   await page.keyboard.press('Tab');
   await expect(page.getByRole('link', { name: 'Skip to main content' })).toBeFocused();
   await page.keyboard.press('Tab');
-  await expect(header.getByRole('link', { name: 'AuditGava dashboard' })).toBeFocused();
+  await expect(header.getByRole('link', { name: 'AuditGava', exact: true })).toBeFocused();
   for (const link of await header.getByRole('navigation', { name: 'Primary navigation', exact: true }).getByRole('link').all()) {
     await page.keyboard.press('Tab');
     await expect(link).toBeFocused();
     await expectOwnedHitTarget(link);
   }
-  for (const name of ['EN', 'SW', 'Aa']) {
-    await page.keyboard.press('Tab');
-    const language = header.getByRole('radio', { name, exact: true });
-    await expect(language).toBeFocused();
-    await page.keyboard.press('Space');
-    await expect(language).toHaveAttribute('aria-checked', 'true');
-  }
+  await page.keyboard.press('Tab');
+  const chooser = header.locator('summary').first();
+  await expect(chooser).toBeFocused();
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Tab');
+  await expect(header.getByRole('radio', { name: 'English', exact: true })).toBeFocused();
+  await page.keyboard.press('ArrowRight');
+  await expect(header.getByRole('radio', { name: 'Kiswahili', exact: true })).toBeChecked();
+  await page.keyboard.press('ArrowLeft');
+  await expect(header.getByRole('radio', { name: 'English', exact: true })).toBeChecked();
+  await page.keyboard.press('Escape');
+  await expect(chooser).toBeFocused();
   await page.keyboard.press('Tab');
   const theme = header.getByRole('button', { name: /Switch to .* theme/ });
   await expect(theme).toBeFocused();
@@ -156,7 +166,7 @@ test('wrapped desktop navigation retains keyboard order and control actions', as
   await page.keyboard.press('Enter');
   await expect(theme).not.toHaveAttribute('aria-label', before!);
   await page.keyboard.press('Tab');
-  await expect(header.getByRole('button', { name: 'Sign In', exact: true })).toBeFocused();
+  await expect(header.getByRole('button', { name: 'Sign in', exact: true })).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('heading', { name: 'Welcome back', exact: true })).toBeVisible();
   await page.keyboard.press('Escape');

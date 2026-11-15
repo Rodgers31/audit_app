@@ -179,7 +179,7 @@ export default function InteractiveGlossary({
                 const Icon = term.icon;
                 const isOpen = openId === term.id;
                 return (
-                  <li key={term.id}>
+                  <li key={term.id} id={`term-${term.id}`} className='scroll-mt-20'>
                     <button
                       type='button'
                       onClick={() => setOpenId((v) => (v === term.id ? null : term.id))}

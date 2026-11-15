@@ -1,6 +1,9 @@
 'use client';
 
 import { Info } from 'lucide-react';
+import Link from 'next/link';
+import InfoSheet from '@/components/ui/InfoSheet';
+import { glossaryTerms } from '@/data/glossaryTerms';
 import { useState, useRef, useEffect, useCallback, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { useLang } from '@/lib/i18n/LangProvider';
@@ -156,6 +159,15 @@ interface InfoTipProps {
 export default function InfoTip({ term, size = 14, className = '' }: InfoTipProps) {
   const { t } = useLang();
   const tooltipId = useId();
+  const [touch, setTouch] = useState(false);
+  useEffect(() => {
+    if (!window.matchMedia) return;
+    const coarsePointer = window.matchMedia('(hover: none), (pointer: coarse)');
+    const update = () => setTouch(coarsePointer.matches);
+    update();
+    coarsePointer.addEventListener('change', update);
+    return () => coarsePointer.removeEventListener('change', update);
+  }, []);
   const [open, setOpen] = useState(false);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -164,9 +176,12 @@ export default function InfoTip({ term, size = 14, className = '' }: InfoTipProp
   const translatedKeys = Object.prototype.hasOwnProperty.call(TRANSLATED_GLOSSARY, term)
     ? TRANSLATED_GLOSSARY[term]
     : undefined;
+  const termRecord = glossaryTerms.find(record => record.id === term);
   const entry = translatedKeys
     ? { title: t(translatedKeys.title), body: t(translatedKeys.body) }
-    : Object.prototype.hasOwnProperty.call(GLOSSARY, term) ? GLOSSARY[term] : undefined;
+    : Object.prototype.hasOwnProperty.call(GLOSSARY, term)
+      ? GLOSSARY[term]
+      : termRecord && { title: termRecord.term, body: termRecord.longDef };
 
   const clearClose = () => {
     if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; }
@@ -208,6 +223,26 @@ export default function InfoTip({ term, size = 14, className = '' }: InfoTipProp
 
   // Unknown terms have no explanation to offer; omit the optional help control.
   if (!entry) return null;
+  const label = translatedKeys ? t('glossary.info_label').replace('{title}', () => entry.title) : `What is ${entry.title}?`;
+
+  if (touch) {
+    return (
+      <span className={`inline-flex align-middle ${className}`}>
+        <InfoSheet title={entry.title} trigger={props => (
+          <button {...props} type='button' aria-label={label} onClick={event => {
+            event.preventDefault();
+            event.stopPropagation();
+            props.onClick();
+          }} className='inline-grid min-h-11 min-w-11 place-items-center text-neutral-muted hover:text-neutral-text'>
+            <Info size={24} aria-hidden='true' />
+          </button>
+        )}>
+          <p className='text-base'>{entry.body}</p>
+          {termRecord && <Link href={`/learn/glossary#term-${termRecord.id}`} className='audit-receipt'>{t('foundation.glossary_link')}</Link>}
+        </InfoSheet>
+      </span>
+    );
+  }
 
   // The description reference and its portal must appear and disappear together.
   const tooltipVisible = open && rect !== null && typeof document !== 'undefined';
@@ -236,9 +271,7 @@ export default function InfoTip({ term, size = 14, className = '' }: InfoTipProp
       <button
         ref={btnRef}
         type='button'
-        aria-label={translatedKeys
-          ? t('glossary.info_label').replace('{title}', entry.title)
-          : `What is ${entry.title}?`}
+        aria-label={label}
         aria-describedby={tooltipVisible ? tooltipId : undefined}
         onClick={(e) => {
           e.preventDefault();
@@ -253,9 +286,9 @@ export default function InfoTip({ term, size = 14, className = '' }: InfoTipProp
         onMouseLeave={scheduleClose}
         onFocus={show}
         onBlur={scheduleClose}
-        className='tap-24 ml-1 p-0.5 text-gray-400 dark:text-neutral-muted/80 hover:text-blue-500 transition-colors rounded-full cursor-pointer'
+        className='tap-44 ml-1 p-0.5 text-neutral-muted hover:text-neutral-text transition-colors cursor-pointer'
       >
-        <Info size={size} />
+        <Info size={Math.max(size, 20)} aria-hidden='true' />
       </button>
       {tooltipVisible && createPortal(
         <div
@@ -265,10 +298,10 @@ export default function InfoTip({ term, size = 14, className = '' }: InfoTipProp
           onMouseEnter={clearClose}
           onMouseLeave={scheduleClose}
           style={getStyle()}
-          className='w-[min(18rem,calc(100vw-1rem))] bg-white dark:bg-surface-base border border-gray-200 dark:border-neutral-border rounded-xl shadow-xl p-3.5 text-left pointer-events-auto animate-fade-in'
+          className='w-[min(18rem,calc(100vw-1rem))] bg-white dark:bg-surface-base border border-gray-200 dark:border-neutral-border rounded shadow-elevated p-3.5 text-left pointer-events-auto'
         >
           <div className='text-xs font-semibold text-gray-800 dark:text-neutral-text mb-1.5'>{entry.title}</div>
-          <div className='text-[11px] text-gray-600 dark:text-neutral-muted leading-relaxed'>{entry.body}</div>
+          <div className='text-sm text-gray-600 dark:text-neutral-muted leading-relaxed'>{entry.body}</div>
         </div>,
         document.body
       )}

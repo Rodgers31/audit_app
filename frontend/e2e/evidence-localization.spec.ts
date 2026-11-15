@@ -9,22 +9,29 @@ test('exact observation evidence responds to the actual language controls withou
   });
   await page.goto('/sources/figures/budget_lines/1');
   await expect(page.getByText('Stored value: 0')).toBeVisible();
-  for (const [pill, title, value, summary, source, bytes] of [
-    ['EN', 'Observation evidence', 'Stored value: 0', 'Evidence for this observation', 'Open source document', 'Source bytes: checked · Value: matched'],
-    ['SW', 'Ushahidi wa takwimu', 'Thamani iliyohifadhiwa: 0', 'Ushahidi wa takwimu hii', 'Fungua hati chanzo', 'Baiti za chanzo: zimekaguliwa · Thamani: imelingana'],
-    ['Aa', 'Evidence for this observation', 'Saved value: 0', 'Evidence for this observation', 'Open the source document', 'Source bytes: checked · Value: matched'],
+  await page.locator('header summary').filter({ hasText: /^Language$/ }).click();
+  for (const [name, title, value, technical, source, bytes] of [
+    ['English', 'Observation evidence', 'Stored value: 0', 'Technical details', 'Open source document', 'Source bytes: checked · Value: matched'],
+    ['Kiswahili', 'Ushahidi wa takwimu', 'Thamani iliyohifadhiwa: 0', 'Maelezo ya kiufundi', 'Fungua hati chanzo', 'Baiti za chanzo: zimekaguliwa · Thamani: imelingana'],
+    ['Plain English', 'Evidence for this observation', 'Saved value: 0', 'Technical details', 'Open the source document', 'Source bytes: checked · Value: matched'],
   ]) {
-    await page.getByRole('radio', { name: pill, exact: true }).click();
+    await page.getByRole('radio', { name, exact: true }).check();
     await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible();
     await expect(page.getByText(value, { exact: true })).toBeVisible();
-    const details = page.locator('details[data-figure-evidence]');
-    await expect(details.locator('summary')).toContainText(summary);
-    if (!await details.evaluate(el => (el as HTMLDetailsElement).open)) await details.locator('summary').click();
-    await expect(details.getByText(bytes, { exact: true })).toBeVisible();
-    await expect(details.getByText('Nairobi · FY2024/25 · KES · actual', { exact: true }).first()).toBeVisible();
-    await expect(details.getByText(/Central Bank of Kenya/).first()).toBeVisible();
-    await expect(details.getByText(/json path \$\.observation/)).toBeVisible();
-    await expect(details.getByRole('link', { name: source, exact: true }).first()).toHaveAttribute('href', 'https://www.centralbank.go.ke/data');
+    const receipt = page.locator('[data-figure-evidence]').getByRole('button');
+    await receipt.click();
+    const sheet = page.getByRole('dialog');
+    await expect(sheet).toBeVisible();
+    const disclosure = sheet.getByText(technical, { exact: true });
+    const technicalDetails = sheet.locator('details');
+    if (!await technicalDetails.evaluate(el => (el as HTMLDetailsElement).open)) await disclosure.click();
+    await expect(sheet.getByText(bytes, { exact: true })).toBeVisible();
+    await expect(sheet.getByText('Nairobi · FY2024/25 · KES · actual', { exact: true }).first()).toBeVisible();
+    await expect(sheet.getByText(/^Central Bank of Kenya/).first()).toBeVisible();
+    await expect(sheet.getByText(/json path \$\.observation/)).toBeVisible();
+    await expect(sheet.getByRole('link', { name: source, exact: true }).first()).toHaveAttribute('href', 'https://www.centralbank.go.ke/data');
+    await page.keyboard.press('Escape');
+    await expect(receipt).toBeFocused();
   }
   expect(requests).toBe(1);
 });
@@ -33,7 +40,8 @@ test('invalid exact references show a localized accessible refusal without a ver
   let requests = 0;
   await page.route('**/api/v1/provenance/verify/**', route => { requests += 1; return route.abort(); });
   await page.goto('/sources/figures/unknown/0');
-  await page.getByRole('radio', { name: 'SW', exact: true }).click();
+  await page.locator('header summary').filter({ hasText: /^Language$/ }).click();
+  await page.getByRole('radio', { name: 'Kiswahili', exact: true }).check();
   await expect(page.getByRole('alert').filter({ hasText: 'Rejeo hili la takwimu si halali.' })).toHaveText('Rejeo hili la takwimu si halali.');
   await expect(page.getByRole('link', { name: 'Vyanzo vyote vya takwimu' })).toHaveAttribute('href', '/sources');
   expect(requests).toBe(0);
