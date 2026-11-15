@@ -25,7 +25,7 @@ test('real list filters, pagination, history and keyboard detail navigation',asy
   await page.getByRole('button',{name:'Next',exact:true}).click();
   await expect(page).toHaveURL(/page=2/);
   await expect(page.getByText('Page 2',{exact:true})).toBeVisible();
-  await page.getByLabel('Outcome',{exact:true}).selectOption('failed');
+  await page.getByRole('combobox',{name:'Outcome',exact:true}).selectOption('failed');
   await expect(page).toHaveURL(/status=failed/);
   await expect(page).not.toHaveURL(/page=/);
   await expect(page.getByText('15 matching jobs in the last 7 days.')).toBeVisible();
@@ -41,11 +41,11 @@ test('real list filters, pagination, history and keyboard detail navigation',asy
   await page.getByRole('link',{name:'Back to data updates'}).click();
   await expect(page).toHaveURL(/\/admin\/ingestion\?page=2$/);
   await expect(page.getByText('Page 2',{exact:true})).toBeVisible();
-  await page.getByLabel('Source',{exact:true}).selectOption('audits');
+  await page.getByRole('combobox',{name:'Source',exact:true}).selectOption('audits');
   await expect(page).toHaveURL(/domain=audits/);
   await expect(page).not.toHaveURL(/page=/);
   await expect(page.getByText('22 matching jobs in the last 7 days.')).toBeVisible();
-  await page.getByLabel('Time window',{exact:true}).selectOption('30');
+  await page.getByRole('combobox',{name:'Time window',exact:true}).selectOption('30');
   await expect(page).toHaveURL(/days=30/);
   await expect(page.getByText('22 matching jobs in the last 30 days.')).toBeVisible();
   await page.getByRole('button',{name:'Clear filters',exact:true}).click();

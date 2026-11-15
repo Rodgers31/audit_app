@@ -155,7 +155,7 @@ test('actual confirmed real run completes with persisted actor audit and ingesti
   expect(actual.counts).toEqual({ commands: 1, audits: 1, jobs: 1, effects: 1 });
   expect(actual.audits[0]).toEqual({ actor_id: actor, action: 'etl.trigger', target_id: id, payload: { dry_run: false } });
   expect(actual.observations[0]).toMatchObject({ status: 'COMPLETED', dry_run: false, command_id: id, items_created: 1 });
-  await expect(page.getByRole('link', { name: /View ingestion observation/ })).toHaveAttribute('href', '/admin/ingestion/' + actual.observations[0].id);
+  await expect(page.getByRole('link', { name: /Inspect data and draft outcomes/ })).toHaveAttribute('href', '/admin/ingestion/' + actual.observations[0].id);
   await snapshot(page, info.outputPath('actual-completed.png'));
 });
 

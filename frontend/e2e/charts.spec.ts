@@ -170,8 +170,8 @@ test.describe('Chart Accessibility', () => {
     // Independently supplied fixture API values, not values derived from the UI.
     const rows = table.locator('tbody tr');
     await expect(rows).toHaveCount(2);
-    for (const [index, year] of ['FY 2024/25', 'FY 2025/26'].entries()) {
-      const row = rows.nth(index);
+    for (const year of ['FY 2024/25', 'FY 2025/26']) {
+      const row = rows.filter({ has: page.getByRole('rowheader', { name: year, exact: true }) });
       await expect(row.getByRole('rowheader')).toHaveText(year);
       await expect(row.getByRole('cell')).toHaveText([
         /^50,000,000,000Approved;/, /^100,000,000,000Approved;/, '50.0%',
