@@ -117,6 +117,15 @@ JUDGEMENT_WORDS = (
 )
 
 SUPPRESSION = "counties-literal-ok:"
+# Exact alternate labels used in KNBS Economic Survey 2026, Table 5.13.
+WORKBOOK_COUNTY_ALIASES = {
+    "Taita/Taveta": "Taita-Taveta",
+    "Elgeyo/Marakwet": "Elgeyo-Marakwet",
+    "Nairobi City": "Nairobi",
+}
+_COUNTY_ALIAS_KEYS = {
+    alias.lower(): name.lower() for alias, name in WORKBOOK_COUNTY_ALIASES.items()
+}
 
 
 def _canonical(text: str) -> str:
@@ -129,20 +138,12 @@ def _canonical(text: str) -> str:
     key = text.strip().lower().replace("’", "'")
     if key.endswith(" county"):
         key = key[: -len(" county")]
+    key = _COUNTY_ALIAS_KEYS.get(key, key)
     return key.replace("-", " ").replace("'", "").replace("  ", " ").strip()
 
 
 CANON_TO_COUNTY = {_canonical(name): name for name in COUNTIES_47}
 assert len(CANON_TO_COUNTY) == 47, "county canonicalisation collided"
-# Exact alternate labels used in KNBS Economic Survey 2026, Table 5.13.
-WORKBOOK_COUNTY_ALIASES = {
-    "Taita/Taveta": "Taita-Taveta",
-    "Elgeyo/Marakwet": "Elgeyo-Marakwet",
-    "Nairobi City": "Nairobi",
-}
-CANON_TO_COUNTY.update(
-    (_canonical(alias), name) for alias, name in WORKBOOK_COUNTY_ALIASES.items()
-)
 
 
 def _labels(tree: ast.AST) -> dict[int, str]:

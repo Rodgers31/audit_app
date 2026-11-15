@@ -55,7 +55,8 @@ PRIMARY = dict(
 
 
 def observation(
-    db, country, entity, period, table, tmp_path, *, value=0, kind="api", county=False
+    db, country, entity, period, table, tmp_path, *, value=0, kind="api", county=False,
+    locator=None,
 ):
     from seeding.domains.national_gdp import _ensure_gdp_source_document
 
@@ -197,13 +198,13 @@ def observation(
         "raw_unit": identity.unit,
         "value": str(value),
         "unit": identity.unit,
-        "locator": {"page": 1, "table": "Table 1", "cell": measure}
+        "locator": locator or ({"page": 1, "table": "Table 1", "cell": measure}
         if kind == "pdf"
         else (
             {"table": "revenueStreams", "cell": measure, "edition": "FY 2024/25"}
             if kind == "web"
             else {"json_path": "$.observation"}
-        ),
+        )),
         "transformation": {"operation": "identity"},
         "checks": dict.fromkeys(
             ("identity", "value", "transport", "bytes", "locator"), True
@@ -412,10 +413,13 @@ def test_debt_ratio_requires_gdp_receipt(
         "debt_timeline",
         tmp_path,
         value=7,
+        kind="pdf",
+        locator={"page": 1, "table": "Table 1", "cell": "2024-12 / total"},
     )
-    ratio = client.get("/api/v1/debt/timeline").json()["timeline"][0]["qualifications"][
-        "gdp_ratio"
-    ]
+    year = client.get("/api/v1/debt/timeline").json()["timeline"][0]
+    assert year["period"]["stock_as_of_month"] == "2024-12"
+    assert year["gdp_ratio"] is None
+    ratio = year["qualifications"]["gdp_ratio"]
     assert ratio["status"] == "qualified"
     assert ratio["reason"] == "ratio_operands_not_independently_checked"
 

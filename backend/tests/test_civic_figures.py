@@ -19,6 +19,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 import pytest
+from fiscal_evidence import bind_framework, qualify_synthetic_row
 from models import (
     DebtCategory,
     Entity,
@@ -52,20 +53,9 @@ def seed_civic_data(db_session, seed_country, seed_source_doc):
         )
     )
 
-    # Fiscal summary — national budget + county equitable share.
-    # NOTE: FiscalSummary stores BILLION-KES (4190 = KES 4.19T), unlike
-    # GDPData/Loan which store raw KES. The endpoint must normalise to raw
-    # KES; we seed billions here to lock that conversion (matches production).
-    db_session.add(
-        FiscalSummary(
-            fiscal_year="FY2025/26",
-            appropriated_budget=4190,
-            county_allocation=405,
-            source_document_id=seed_source_doc.id,
-            # Tier B (#137): a published fiscal row cites a page.
-            page_ref="s.3.2, report p.16 (PDF p.37)",
-        )
-    )
+    fiscal = _framework_row("FY2025/26", 405, 405, budget_b=4190)
+    fiscal.source_document_id = seed_source_doc.id
+    db_session.add(fiscal)
 
     # Two real debt loans (counted) + one pending bill (must be excluded).
     issued = datetime(2024, 7, 1, tzinfo=timezone.utc)
@@ -167,20 +157,33 @@ def test_civic_figures_empty_db_is_unavailable_not_zero(client):
 # publish transfers under that label.
 
 
-def _framework_row(fy, county_transfers_b, equitable_share_b, page="Annex Table 2a, PDF p.63"):
-    return FiscalSummary(
+def _framework_row(fy, county_transfers_b, equitable_share_b, *, budget_b=5485.7):
+    page = "Annex Table 2a, PDF p.63"
+    expenditure = 200 + county_transfers_b
+    framework = bind_framework({
+        "basis": "treasury_fiscal_framework", "fiscal_year": fy,
+        "total_expenditure_billion": expenditure,
+        "recurrent_billion": 150, "development_billion": 50, "contingency_billion": 0,
+        "county_transfers_billion": county_transfers_b,
+        "county_equitable_share_billion": equitable_share_b,
+        "total_revenue_incl_aia_billion": expenditure - 10,
+        "fiscal_deficit_incl_grants_billion": 10, "total_financing_billion": 10,
+        "grants_billion": 0, "adjustment_to_cash_basis_billion": 0,
+        "statistical_discrepancy_billion": 0,
+        "source": {"url": "https://www.treasury.go.ke/synthetic-test-fixture.pdf",
+                   "page": page, "column": "Approved", "title": "SYNTHETIC TEST EVIDENCE"},
+    })
+    return qualify_synthetic_row(FiscalSummary(
         fiscal_year=fy,
-        appropriated_budget=5485.7,
-        county_allocation=county_transfers_b,
+        appropriated_budget=budget_b * 1e9,
+        county_allocation=county_transfers_b * 1e9,
+        unit="KES",
         page_ref=page,
         meta={
             "split_basis": "treasury_fiscal_framework",
-            "fiscal_framework": {
-                "county_transfers_billion": county_transfers_b,
-                "county_equitable_share_billion": equitable_share_b,
-            },
+            "fiscal_framework": framework,
         },
-    )
+    ))
 
 
 def test_equitable_share_is_the_framework_line_not_the_transfers(client, db_session, seed_source_doc):
@@ -197,13 +200,8 @@ def test_equitable_share_is_the_framework_line_not_the_transfers(client, db_sess
 def test_a_transfers_row_without_a_share_line_is_not_published_as_the_share(
     client, db_session, seed_source_doc
 ):
-    older = FiscalSummary(
-        fiscal_year="FY2022/23",
-        appropriated_budget=3300,
-        county_allocation=370,  # pre-#260 rows: the equitable share itself
-        source_document_id=seed_source_doc.id,
-        page_ref="p. 12",
-    )
+    older = _framework_row("FY2022/23", 380, 370, budget_b=3300)
+    older.source_document_id = seed_source_doc.id
     newer = _framework_row("FY2026/27", 495.5, None)
     newer.source_document_id = seed_source_doc.id
     db_session.add_all([older, newer])
