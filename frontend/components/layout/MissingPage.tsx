@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import PageShell from './PageShell';
 import { COUNTY_LINKS } from '@/lib/counties/lookup';
+import { normalizeCountyName } from '@/lib/counties/regions';
 import { glossaryTerms } from '@/data/glossaryTerms';
 import { useLang } from '@/lib/i18n/LangProvider';
 
@@ -19,7 +20,8 @@ export default function MissingPage() {
   const { t } = useLang();
   const [query, setQuery] = useState('');
   const term = query.trim().toLowerCase();
-  const counties = term ? COUNTY_LINKS.filter(county => county.name.toLowerCase().includes(term)).slice(0, 6) : [];
+  const countyTerm = normalizeCountyName(term);
+  const counties = countyTerm ? COUNTY_LINKS.filter(county => normalizeCountyName(county.name).includes(countyTerm)).slice(0, 6) : [];
   const glossary = term ? glossaryTerms.filter(entry => entry.term.toLowerCase().includes(term)).slice(0, 6) : [];
 
   return (

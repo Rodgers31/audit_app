@@ -9,7 +9,7 @@
  */
 
 import '@testing-library/jest-dom';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 
 // Mock next/navigation
 const mockPathname = jest.fn().mockReturnValue('/');
@@ -105,6 +105,17 @@ describe('Navigation', () => {
     mockPathname.mockReturnValue(path);
     render(<Navigation />);
     expect(screen.getByRole('navigation', { name: 'Primary navigation' })).toBeInTheDocument();
+  });
+
+  it('names the mobile toggle according to its expanded state', () => {
+    render(<Navigation />);
+    const toggle = screen.getByRole('button', { name: 'Open navigation menu' });
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(toggle).toHaveAccessibleName('Close navigation menu');
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Close navigation menu' }));
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).toHaveAccessibleName('Open navigation menu');
   });
 
   it('retires the open public menu and scroll lock across private route transitions', () => {

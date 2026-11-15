@@ -66,7 +66,7 @@ test.describe('Navigation — mobile menu', () => {
 
     // The open state should surface the close-label and all routes.
     await expect(
-      page.getByRole('button', { name: /close navigation menu|Funga menyu/i })
+      page.getByRole('dialog').getByRole('button', { name: /close navigation menu|Funga menyu/i })
     ).toBeVisible();
     // Each primary route appears somewhere in the overlay.
     await expect(page.getByRole('link', { name: /National Debt|Deni la Taifa/i }).last()).toBeVisible();
@@ -148,7 +148,13 @@ test('a missing page offers working county search and primary routes', async ({ 
   await expect(page).toHaveTitle(/We can’t find that page/);
   await page.getByRole('searchbox', { name: 'Search counties or glossary terms' }).fill('Bari');
   await expect(page.getByRole('link', { name: 'Baringo', exact: true })).toHaveAttribute('href', '/counties/baringo');
+  await page.getByRole('searchbox', { name: 'Search counties or glossary terms' }).fill('muranga');
+  const muranga = page.getByRole('link', { name: "Murang'a", exact: true });
+  await expect(muranga).toHaveAttribute('href', '/counties/Murang%27a');
   await expect(page.getByRole('main').getByRole('link', { name: 'Audit findings' })).toHaveAttribute('href', '/audits');
+  await muranga.click();
+  await expect(page).toHaveURL(/\/counties\/Murang%27a\/?$/);
+  await expect(page.getByRole('heading', { level: 1, name: "Murang'a County" })).toBeVisible();
 });
 
 test.describe('Kiswahili browser preference', () => {

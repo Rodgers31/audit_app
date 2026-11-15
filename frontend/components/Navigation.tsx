@@ -196,7 +196,7 @@ function PublicNavigation({ pathname }: { pathname: string }) {
           </div>
           <button ref={mobileToggle} type='button' className='audit-control self-center lg:hidden'
             disabled={!hydrated} onClick={() => setMobileOpen(open => !open)} aria-expanded={mobileOpen}
-            aria-controls={mobileOpen ? 'auditgava-mobile-menu' : undefined} aria-label={t('shell.open_menu')}>
+            aria-controls={mobileOpen ? 'auditgava-mobile-menu' : undefined} aria-label={t(mobileOpen ? 'shell.close_menu' : 'shell.open_menu')}>
             <Menu size={19} aria-hidden='true' /> {t('shell.menu')}
           </button>
         </div>

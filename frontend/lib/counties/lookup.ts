@@ -1,11 +1,7 @@
-import { REGION_COUNTIES, normalizeCountyName } from './regions';
+import { REGION_COUNTIES } from './regions';
 
 export const COUNTY_LINKS = Object.values(REGION_COUNTIES).flat().map(name => ({
   name,
-  slug: name.toLowerCase().replace(/'/g, '').replace(/\s+/g, '-'),
+  // The county API accepts the official name with its apostrophe preserved.
+  slug: name === "Murang'a" ? 'Murang%27a' : name.toLowerCase().replace(/'/g, '').replace(/\s+/g, '-'),
 }));
-
-export function findCounty(name: string) {
-  const key = normalizeCountyName(name);
-  return COUNTY_LINKS.find(county => normalizeCountyName(county.name) === key || (key === 'nairobicity' && county.slug === 'nairobi'));
-}
