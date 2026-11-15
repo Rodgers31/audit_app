@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[3]
 
 class AuditEpochWorkflowTests(unittest.TestCase):
     def test_unchanged_epoch_cohort_has_required_prerequisite_and_cleanup(self):
-        for name in ("ci.yml", "verification.yml"):
+        for name in ("pr-ci.yml", "verification.yml"):
             with self.subTest(workflow=name):
                 job = yaml.safe_load((ROOT / ".github/workflows" / name).read_text())["jobs"]["test-backend"]
                 steps = job["steps"]

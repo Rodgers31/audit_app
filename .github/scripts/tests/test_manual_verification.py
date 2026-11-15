@@ -24,7 +24,7 @@ FULL_QUALITY_SCOPE = "${{ always() && inputs.verification_scope == 'full' }}"
 
 class ManualWorkflowBoundaryTests(unittest.TestCase):
     def test_required_reconciliation_fixture_is_ready_before_tests_and_always_cleaned(self):
-        for filename in ("ci.yml", "verification.yml"):
+        for filename in ("pr-ci.yml", "verification.yml"):
             steps = yaml.safe_load((ROOT / ".github/workflows" / filename).read_text())["jobs"]["test-backend"]["steps"]
             images = next(i for i, step in enumerate(steps) if step.get("name") == "Prepare pinned owned PostgreSQL test images")
             preparation = next(step for step in steps if step.get("name") == "Prepare owned reconciliation test fixture")
@@ -78,7 +78,7 @@ class ManualWorkflowBoundaryTests(unittest.TestCase):
             self.assertEqual(selected, expected)
 
     def test_owned_postgres_images_are_prepared_before_backend_tests(self):
-        for filename in ("ci.yml", "verification.yml"):
+        for filename in ("pr-ci.yml", "verification.yml"):
             job = yaml.safe_load((ROOT / ".github/workflows" / filename).read_text())["jobs"]["test-backend"]
             steps = job["steps"]
             preparation = next(step for step in steps if step.get("name") == "Prepare pinned owned PostgreSQL test images")
@@ -89,12 +89,14 @@ class ManualWorkflowBoundaryTests(unittest.TestCase):
             self.assertLess(steps.index(preparation), next(i for i, step in enumerate(steps) if step.get("id") == "backend_tests"))
 
     def test_manual_jobs_keep_the_required_ci_contract(self):
-        ci = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
+        ci = yaml.safe_load((ROOT / ".github/workflows/pr-ci.yml").read_text())
         manual = yaml.safe_load((ROOT / ".github/workflows/verification.yml").read_text())
-        self.assertEqual(manual["permissions"], ci["permissions"])
+        self.assertEqual(manual["permissions"], ci["jobs"]["security-scan"]["permissions"])
         for name in JOBS:
             with self.subTest(job=name):
-                expected = ci["jobs"][name]
+                expected = deepcopy(ci["jobs"][name])
+                if name == "security-scan":
+                    del expected["permissions"]
                 actual = deepcopy(manual["jobs"][name])
                 if name != "test-backend":
                     self.assertEqual(actual.pop("if"),
@@ -160,6 +162,11 @@ class ManualWorkflowBoundaryTests(unittest.TestCase):
                     })
                     del checkouts[0]["with"]
                     steps.remove(guards[0])
+                # PR CI pins actions to commits. The dormant manual workflow
+                # still uses the same action paths with its existing version tags.
+                for step in expected["steps"] + actual["steps"]:
+                    if "uses" in step:
+                        step["uses"] = step["uses"].partition("@")[0]
                 self.assertEqual(actual, expected)
 
 

@@ -1,21 +1,15 @@
-name: CI/CD Pipeline
+name: Pull Request CI
 
 on:
-  push:
-    branches: [main, develop]
   pull_request:
     branches: [main, develop]
 
+concurrency:
+  group: pr-ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
-  # Trivy's upload-sarif step uploads results here.
-  security-events: write
-  # upload-sarif@v4 calls the workflow-runs API under the hood to
-  # fingerprint SARIF entries (so re-runs don't create duplicate
-  # alerts). Without actions:read it logs "Resource not accessible by
-  # integration" and the step exits non-zero, which fails the
-  # security-scan job and blocks the quality-gate.
-  actions: read
 
 jobs:
   test-backend:
@@ -47,10 +41,10 @@ jobs:
           - 6379:6379
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
           cache: 'pip'
@@ -113,7 +107,7 @@ jobs:
 
       - name: Preserve backend test receipts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: backend-test-receipts
           include-hidden-files: true
@@ -151,7 +145,7 @@ jobs:
         id: coverage_upload
         if: steps.coverage_upload_prepare.outputs.status == 'ready'
         continue-on-error: true
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5
         with:
           files: backend/coverage.xml
           disable_search: true
@@ -183,10 +177,10 @@ jobs:
       NEXT_PUBLIC_API_URL: http://127.0.0.1:8000
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '24.x'
           cache: 'npm'
@@ -246,10 +240,10 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
 
@@ -277,9 +271,14 @@ jobs:
   security-scan:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write
+      # SARIF upload fingerprints results using the workflow-runs API.
+      actions: read
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
 
       - name: Install Trivy
         run: |
@@ -296,7 +295,7 @@ jobs:
 
       - name: Upload Trivy results to GitHub Security tab
         if: always() && hashFiles('trivy-results.sarif') != ''
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:
           sarif_file: 'trivy-results.sarif'
 
@@ -305,13 +304,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '24.x'
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
           cache: pip
@@ -335,7 +334,7 @@ jobs:
 
       - name: Preserve browser failure receipts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: browser-publication-acceptance
           path: |
@@ -350,13 +349,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '24.x'
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
           cache: pip
@@ -374,7 +373,7 @@ jobs:
         run: npm run test:e2e:legacy
       - name: Preserve original suite receipts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: browser-original-chromium
           path: |
@@ -382,7 +381,7 @@ jobs:
             frontend/legacy-results/
           retention-days: 14
 
-  # Quality Gate - All tests must pass before deployment
+  # The main ruleset checks security-scan independently.
   quality-gate:
     timeout-minutes: 5
     runs-on: ubuntu-latest
@@ -414,89 +413,3 @@ jobs:
           fi
 
           echo "✅ Quality Gate PASSED - All tests successful"
-
-  # ── Database Migrations ─────────────────────────────────────────────
-  # Runs Alembic migrations against the real database AFTER tests pass
-  # but BEFORE deployment, so the schema is always in sync with code.
-  # Only runs on pushes to main/develop (not on PRs).
-  run-migrations:
-    needs: [quality-gate]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
-
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-          cache: 'pip'
-
-      - name: Install migration dependencies
-        run: |
-          cd backend
-          python -m pip install --upgrade pip
-          # Take the SQLAlchemy spec from requirements.txt: an unpinned install
-          # pulled 2.1, which needs psycopg v3 for postgresql:// URLs (issue #228).
-          pip install alembic psycopg2-binary "$(grep -iE '^sqlalchemy' requirements.txt)"
-
-      - name: Run Alembic migrations
-        run: |
-          cd backend
-          # Debug: verify the DATABASE_URL points to the pooler (not direct)
-          python3 -c "
-          import os
-          url = os.environ.get('DATABASE_URL', '')
-          if 'pooler.supabase.com' in url:
-              print('✅ Using Supabase connection pooler (IPv4)')
-          elif 'db.' in url and 'supabase.co' in url:
-              print('❌ ERROR: DATABASE_URL points to direct connection (IPv6). Use the pooler URL instead.')
-              print('   Expected host: aws-*-*.pooler.supabase.com:6543')
-              exit(1)
-          elif not url:
-              print('❌ ERROR: DATABASE_URL is empty. Set the DATABASE_POOLER_URL secret.')
-              exit(1)
-          else:
-              print(f'⚠️  Unknown host format — attempting connection anyway')
-          "
-          echo "Running database migrations..."
-          alembic upgrade head
-          echo "✅ Migrations applied successfully"
-        env:
-          # Use the Supabase connection POOLER URL (IPv4, port 6543) for CI.
-          # The direct connection (port 5432) resolves to IPv6 which GitHub
-          # Actions runners cannot reach.
-          # Set this secret to: postgresql://postgres.[project-ref]:[password]@aws-1-ap-south-1.pooler.supabase.com:6543/postgres
-          DATABASE_URL: ${{ secrets.DATABASE_POOLER_URL }}
-
-  deploy-staging:
-    needs: [quality-gate, run-migrations]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/develop'
-
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Deploy to Staging
-        run: |
-          echo "✅ Quality gate passed - deploying to staging environment"
-          # Add actual deployment steps here
-          # Example: Deploy to Railway, Render, or AWS
-
-  deploy-production:
-    needs: [quality-gate, run-migrations]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    environment:
-      name: production
-      url: https://your-production-url.com
-
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Deploy to Production
-        run: |
-          echo "✅ Quality gate passed - deploying to production environment"
-          # Add actual deployment steps here
-          # Example: Deploy to AWS ECS, Vercel, etc.

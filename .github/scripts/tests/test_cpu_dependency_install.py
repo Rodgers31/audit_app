@@ -40,7 +40,7 @@ def validate_cpu_installs(workflow):
 class CpuDependencyInstallTests(unittest.TestCase):
     def workflows(self):
         return [(name, yaml.safe_load((ROOT / ".github/workflows" / name).read_text()))
-                for name in ("ci.yml", "verification.yml")]
+                for name in ("pr-ci.yml", "verification.yml")]
 
     def test_canonical_and_manual_cpu_installs_keep_lifecycle_scripts(self):
         for filename, workflow in self.workflows():

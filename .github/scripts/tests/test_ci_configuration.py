@@ -2,6 +2,7 @@
 from copy import deepcopy
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import unittest
@@ -16,7 +17,7 @@ class ConfigurationTests(unittest.TestCase):
         step = next(step for step in workflow["jobs"]["test-backend"]["steps"]
                     if step.get("name") == "Preserve backend test receipts")
         self.assertEqual(step["if"], "always()")
-        self.assertEqual(step["uses"], "actions/upload-artifact@v4")
+        self.assertEqual(step["uses"].partition("@")[0], "actions/upload-artifact")
         self.assertIs(step["with"].get("include-hidden-files"), True)
         self.assertEqual(step["with"]["path"].splitlines(), [
             "backend/.ci-test-results/collection-*.json",
@@ -46,8 +47,33 @@ class ConfigurationTests(unittest.TestCase):
                     self.assert_backend_receipts(bad)
 
     def workflows(self):
-        for name in ("ci.yml", "verification.yml"):
+        for name in ("pr-ci.yml", "verification.yml"):
             yield name, yaml.safe_load((ROOT / ".github/workflows" / name).read_text())
+
+    def test_pull_request_ci_boundary(self):
+        paths = ROOT / ".github/workflows"
+        self.assertFalse((paths / "ci.yml").exists())
+        raw = (paths / "pr-ci.yml").read_text()
+        workflow = yaml.safe_load(raw)
+        self.assertEqual(workflow.get("on", workflow.get(True)), {"pull_request": {"branches": ["main", "develop"]}})
+        self.assertEqual(workflow["permissions"], {"contents": "read"})
+        jobs = workflow["jobs"]
+        required = {"test-backend", "test-frontend", "test-etl", "security-scan", "quality-gate"}
+        browser = {"test-browser", "test-browser-legacy"}
+        self.assertEqual(set(jobs), required | browser)
+        self.assertEqual(set(jobs["quality-gate"]["needs"]), (required | browser) - {"quality-gate"})
+        self.assertEqual(jobs["security-scan"]["permissions"], {
+            "contents": "read", "security-events": "write", "actions": "read",
+        })
+        for name, job in jobs.items():
+            self.assertNotIn("environment", job)
+            if name != "security-scan":
+                self.assertNotIn("permissions", job)
+            for step in job["steps"]:
+                if "uses" in step:
+                    self.assertRegex(step["uses"], r"^[^@]+@[0-9a-f]{40}$")
+        self.assertEqual(set(re.findall(r"secrets\.([A-Z0-9_]+)", raw)), {"CODECOV_TOKEN"})
+        self.assertNotIn("alembic upgrade head", raw)
 
     def assert_job_deadlines(self, workflow):
         expected = {
@@ -164,7 +190,7 @@ class ConfigurationTests(unittest.TestCase):
 
     def test_browser_cohort_verdicts_execute_with_negative_controls(self):
         result = subprocess.run(
-            ["node", "--test", "scripts/ci-browser-cohorts.test.mjs", "scripts/run-legacy-e2e.test.mjs"],
+            ["node", "--test", "--test-reporter=tap", "scripts/ci-browser-cohorts.test.mjs", "scripts/run-legacy-e2e.test.mjs"],
             cwd=ROOT / "frontend", text=True, capture_output=True,
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)

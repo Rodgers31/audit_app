@@ -90,6 +90,10 @@ jobs:
         pip install -r requirements-dev.txt
 
         '
+    - name: Test bounded worker host fixture controls
+      timeout-minutes: 2
+      run: python -m unittest discover -s tools/worker_host_fixture/tests -p 'test_*.py' -v
+
     - name: Lint with flake8 (Critical Errors Only)
       run: 'cd backend
 
