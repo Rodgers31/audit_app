@@ -62,6 +62,22 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
 
+      - name: Check migrated public table access
+        env:
+          PGPASSWORD: postgres
+          PUBLIC_SCHEMA_GUARD_CI_URL: postgresql://postgres:postgres@127.0.0.1:5432/auditgava_schema_guard
+          PYTHON_DOTENV_DISABLED: '1'
+        run: |
+          createdb -h 127.0.0.1 -U postgres auditgava_schema_guard
+          psql "$PUBLIC_SCHEMA_GUARD_CI_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE ROLE anon;
+          CREATE ROLE authenticated;
+          CREATE ROLE service_role BYPASSRLS;
+          SQL
+          cd backend
+          DATABASE_URL="$PUBLIC_SCHEMA_GUARD_CI_URL" python -m alembic upgrade head
+          python -m pytest --noconftest -q tests/test_public_table_rls.py
+
       - name: Test bounded worker host fixture controls
         timeout-minutes: 2
         # Pure unit controls use temporary files and mocked process boundaries;
