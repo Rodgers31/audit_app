@@ -15,6 +15,7 @@
  * pages keep English until a reader requests translation.
  */
 
+import { DEBT_MESSAGES } from './messages/debt';
 import { FOUNDATION_MESSAGES } from './messages/foundation';
 import { SHELL_MESSAGES } from './messages/shell';
 
@@ -27,6 +28,7 @@ export interface Translation {
 }
 
 export const MESSAGES = {
+  ...DEBT_MESSAGES,
   ...FOUNDATION_MESSAGES,
   ...SHELL_MESSAGES,
   // Source-scoped pending-bill aging. Publisher identities and source values stay verbatim.
