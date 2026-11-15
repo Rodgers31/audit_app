@@ -35,12 +35,12 @@ test('list pagination, global email search, detail and browser history', async (
   await expect(page).toHaveURL(/page=2/);
   await page.goBack();
   await expect(page).toHaveURL(/\/admin\/users$/);
-  await page.getByRole('textbox', { name: 'Search users by email' }).fill('user40');
+  await page.getByRole('textbox', { name: 'Email address' }).fill('user40');
   await expect(page.getByRole('link').filter({ hasText: 'user40@example.invalid' })).toBeVisible();
   await page.getByRole('link').filter({ hasText: 'user40@example.invalid' }).click();
   await expect(page.getByText('Roles', { exact: true })).toBeVisible();
   await page.goBack();
-  await expect(page.getByRole('textbox', { name: 'Search users by email' })).toHaveValue('user40');
+  await expect(page.getByRole('textbox', { name: 'Email address' })).toHaveValue('user40');
 });
 test('roles, reset accepted acknowledgment and inert delete confirmation', async ({
   page,
@@ -50,6 +50,7 @@ test('roles, reset accepted acknowledgment and inert delete confirmation', async
   await page.getByRole('button', { name: 'admin', exact: true }).click();
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByText('Roles updated.')).toBeVisible();
+  await page.getByText('Password recovery and account removal', { exact: true }).click();
   await page.getByRole('button', { name: 'Send', exact: true }).click();
   await expect(page.getByText(/Reset request accepted/)).toBeVisible();
   await page.getByRole('button', { name: 'Delete…' }).click();

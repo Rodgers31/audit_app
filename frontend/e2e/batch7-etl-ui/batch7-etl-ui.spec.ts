@@ -69,7 +69,7 @@ test('dry run lost response commits once, recovery retains key after worker expi
   await expect(page.getByRole('button',{name:'Run Now · oag'})).toBeDisabled();
   await page.getByRole('button',{name:'Recover same intent'}).click();
   await expect(page.getByText('Original receipt recovered. No second command was accepted.')).toBeVisible();
-  await expect(page.getByText('oag · Dry Run — no publication',{exact:true})).toBeVisible();
+  await expect(page.getByText(/Dry Run — no publication · accepted/)).toBeVisible();
   requests=await (await request.get(fixture+'/fixture/requests')).json();
   expect(requests).toHaveLength(2);
   expect(requests[1].key).toBe(requests[0].key);
@@ -87,7 +87,7 @@ test('history filters, page size, next/back, detail and safe return preserve nav
   await page.getByLabel('Command status',{exact:true}).selectOption('completed');
   await page.getByLabel('Commands per page',{exact:true}).selectOption('10');
   await expect(page.getByText('10 on this page · 45 commands matching')).toBeVisible();
-  await page.getByRole('link',{name:/View command /}).first().click();
+  await page.getByRole('link',{name:/view command /i}).first().click();
   await expect(page).toHaveURL(/\/admin\/etl\/commands\/[0-9a-f-]+\?/);
   await expect(page.getByRole('heading',{name:'Command receipt',exact:true})).toBeVisible();
   await expect(page.getByText('Completed — recorded ingestion observation.')).toBeVisible();
@@ -110,11 +110,11 @@ test('malformed history and mismatched detail hide successful observation links'
   await page.route('**/api/v1/admin/etl/commands?**',route=>route.fulfill({json:{entries:[],page:1,page_size:20,total:45,has_more:true}}));
   await page.goto('/admin/etl');
   await expect(page.getByText('Could not load command history. Refresh to retry.')).toBeVisible();
-  expect(await page.getByRole('link',{name:/View command /}).count()).toBe(0);
+  expect(await page.getByRole('link',{name:/view command /i}).count()).toBe(0);
   await page.unroute('**/api/v1/admin/etl/commands?**');
   await page.getByRole('button',{name:'Refresh command history'}).click();
   await expect(page.getByText('20 on this page · 45 commands matching')).toBeVisible();
-  const link=page.getByRole('link',{name:/View command /}).first();
+  const link=page.getByRole('link',{name:/view command /i}).first();
   const href=await link.getAttribute('href');
   await page.route('**/api/v1/admin/etl/commands/*',async route=>{
     const response=await route.fetch();const body=await response.json();
@@ -180,7 +180,7 @@ for(const status of [401,403]) {
     await page.getByRole('button',{name:'Dry Run · oag'}).click();
     await expect(page.getByText('Administrator access expired. Renew your session to verify access.')).toBeVisible();
     await expect(page.getByRole('button',{name:'Run Now · oag'})).toBeDisabled();
-    expect(await page.getByRole('link',{name:/View command /}).count()).toBe(0);
+    expect(await page.getByRole('link',{name:/view command /i}).count()).toBe(0);
   });
   test('review regression '+status+' first-submission refusal cannot recover the denied key after renewal',async({page,request})=>{
     const keys:string[]=[];
@@ -243,12 +243,12 @@ for(const transition of ['actor','renewal','role','hidden','unmount']) {
     if(transition==='renewal') await renew(page);
     if(transition==='role') {await request.post(fixture+'/fixture/config',{data:{role:'citizen'}});await renew(page);await expect(page).toHaveURL(/\/$/);}
     if(transition==='hidden') await visibility(page,false);
-    if(transition==='unmount') {await page.getByRole('link',{name:'Ingestion',exact:true}).click();await expect(page).toHaveURL(/\/admin\/ingestion$/);await expect(page.getByRole('button',{name:'Run Now · oag'})).toHaveCount(0);}
+    if(transition==='unmount') {await page.getByRole('link',{name:'Data updates',exact:true}).click();await expect(page).toHaveURL(/\/admin\/ingestion$/);await expect(page.getByRole('button',{name:'Run Now · oag'})).toHaveCount(0);}
     release();
     await expect(page.getByText('Command accepted. Queued acceptance is not completed work.')).toHaveCount(0);
     expect(await (await request.get(fixture+'/fixture/requests')).json()).toHaveLength(1);
     if(transition==='hidden') await visibility(page,true);
-    if(transition==='unmount') await page.getByRole('link',{name:'ETL Schedule',exact:true}).click();
+    if(transition==='unmount') await page.getByRole('link',{name:'Run & recover',exact:true}).click();
     if(['renewal','hidden','unmount'].includes(transition)) {
       await page.getByRole('button',{name:'Recover same intent'}).click();
       await expect(page.getByText('Original receipt recovered. No second command was accepted.')).toBeVisible();

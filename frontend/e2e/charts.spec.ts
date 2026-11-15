@@ -168,10 +168,16 @@ test.describe('Chart Accessibility', () => {
     await expect(table).toBeVisible();
     await expect(table.getByRole('columnheader')).toHaveText(['Fiscal year', 'Debt service (KES)', 'Revenue (KES)', 'Service / revenue (%)']);
     // Independently supplied fixture API values, not values derived from the UI.
-    await expect(table.locator('tbody tr')).toHaveText([
-      'FY 2024/2550,000,000,000100,000,000,00050.0%',
-      'FY 2025/2650,000,000,000100,000,000,00050.0%',
-    ]);
+    const rows = table.locator('tbody tr');
+    await expect(rows).toHaveCount(2);
+    for (const [index, year] of ['FY 2024/25', 'FY 2025/26'].entries()) {
+      const row = rows.nth(index);
+      await expect(row.getByRole('rowheader')).toHaveText(year);
+      await expect(row.getByRole('cell')).toHaveText([
+        /^50,000,000,000Approved;/, /^100,000,000,000Approved;/, '50.0%',
+      ]);
+      await expect(row.getByRole('link', { name: 'Synthetic browser fiscal framework · p. 1' })).toHaveCount(2);
+    }
   });
   test('charts support keyboard navigation', async ({ page }) => {
     await registerApiMocks(page); await page.goto('/debt');
@@ -199,15 +205,15 @@ test.describe('Chart Accessibility', () => {
                 - columnheader "Revenue (KES)"
                 - columnheader "Service / revenue (%)"
             - rowgroup:
-              - row "FY 2024/25 50,000,000,000 100,000,000,000 50.0%":
+              - row:
                 - rowheader "FY 2024/25"
-                - cell "50,000,000,000"
-                - cell "100,000,000,000"
+                - cell: /^50,000,000,000 Approved;.*/
+                - cell: /^100,000,000,000 Approved;.*/
                 - cell "50.0%"
-              - row "FY 2025/26 50,000,000,000 100,000,000,000 50.0%":
+              - row:
                 - rowheader "FY 2025/26"
-                - cell "50,000,000,000"
-                - cell "100,000,000,000"
+                - cell: /^50,000,000,000 Approved;.*/
+                - cell: /^100,000,000,000 Approved;.*/
                 - cell "50.0%"
     `);
     await page.keyboard.press('Space');

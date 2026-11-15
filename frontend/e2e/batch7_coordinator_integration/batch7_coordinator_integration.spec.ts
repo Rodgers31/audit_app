@@ -57,7 +57,9 @@ async function snapshot(page: Page, path: string) {
   await page.screenshot({ path, fullPage: true, animations: 'disabled' });
 }
 async function calendarBoundary(page: Page) {
-  await expect(page.getByRole('status').filter({ hasText: 'The calendar controls below are not connected to worker dispatch. Use the dedicated worker controls and command receipts above when available.' })).toBeVisible();
+  const calendar = page.locator('details').filter({ has: page.getByText('Source calendar · planning evidence', { exact: true }) });
+  if (await calendar.getAttribute('open') === null) await calendar.locator('summary').click();
+  await expect(calendar.getByText(/This calendar predicts source checks/)).toBeVisible();
   await expect(page.getByText('No job was accepted.')).toHaveCount(0);
   await expect(page.getByText('no dedicated worker dispatch is connected')).toHaveCount(0);
   for (const name of ['Trigger', 'Dry-run']) {
@@ -194,7 +196,7 @@ test('lost actual acceptance acknowledgment recovers same key after lease expiry
   await expect(page.getByRole('button', { name: 'Run Now · oag' })).toBeDisabled();
   await page.getByRole('button', { name: 'Recover same intent' }).click();
   await expect(page.getByText('Original receipt recovered. No second command was accepted.')).toBeVisible();
-  await expect(page.getByLabel('Dedicated worker dispatch', { exact: true }).getByText('Interrupted — execution unverified. Do not automatically repeat.')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Request a data check', exact: true }).getByText('Interrupted — execution unverified. Do not automatically repeat.')).toBeVisible();
   expect(keys).toHaveLength(2);
   expect(keys[1]).toBe(keys[0]);
   expect((await state(request)).counts).toEqual({ commands: 1, audits: 1, jobs: 1, effects: 0 });

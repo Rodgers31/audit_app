@@ -27,7 +27,7 @@ test('actual audit API, filters, snapshot pagination, back history, payload and 
   expect(response.headers()['cache-control']).toBe('private, no-store');
   expect(await response.text()).not.toContain('INERT_SECRET');
   await page.goto('/admin/audit-log?days=0');
-  await expect(page.getByRole('heading', { name: 'Audit Log', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Activity', exact: true })).toBeVisible();
   await expect(page.getByText('28 actions recorded.')).toBeVisible();
   await expect(page.locator('main li').last()).toHaveCSS('opacity', '1');
   await page.screenshot({ path: '/tmp/admin-overview-audit-desktop.png', fullPage: true });
@@ -55,15 +55,14 @@ test('actual audit API, filters, snapshot pagination, back history, payload and 
 test('overview cards and mobile keyboard navigation preserve shell and truthful scope', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/admin');
-  await expect(page.getByText('Worker execution unverified', { exact: true })).toBeVisible();
-  await expect(page.getByText('Auth identities', { exact: true })).toBeVisible();
-  await expect(page.getByText('Auth identities', { exact: true }).locator('..').getByText('3', { exact: true })).toBeVisible();
-  await expect(page.getByText('Publishing disabled', { exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Manage people and access.*3 accounts/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Review social drafts.*Publishing paused.*Worker evidence: unavailable/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Run or recover a data check/ })).toBeVisible();
   await expect(page.locator('main section').last()).toHaveCSS('opacity', '1');
   await page.screenshot({ path: '/tmp/admin-overview-audit-mobile.png', fullPage: true });
   const nav = page.getByRole('navigation', { name: 'Admin navigation' });
   await expect(nav.getByRole('link', { name: 'Overview', exact: true })).toHaveAttribute('aria-current', 'page');
-  const audit = nav.getByRole('link', { name: 'Audit Log', exact: true });
+  const audit = nav.getByRole('link', { name: 'Activity', exact: true });
   await audit.focus(); await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/admin\/audit-log/);
   await expect(audit).toHaveAttribute('aria-current', 'page');
@@ -92,8 +91,9 @@ test('documented Operations health contract keeps available plan distinct from u
     timestamp: new Date().toISOString(), scheduler_status: 'unverified', plan_status: 'available', worker_status: 'unverified', data_freshness: 'unverified',
   } }));
   await page.goto('/admin');
-  await expect(page.getByText('Schedule calculated', { exact: true })).toBeVisible();
-  await expect(page.getByText('Worker execution unverified', { exact: true })).toBeVisible();
+  await page.getByText('Calendar and system evidence', { exact: true }).click();
+  await expect(page.getByText('Calendar calculation: available.', { exact: true })).toBeVisible();
+  await expect(page.getByText('Calendar planning does not prove worker execution or current financial data.')).toBeVisible();
   await expect(page.locator('main').getByRole('alert')).toHaveCount(0);
 });
 
