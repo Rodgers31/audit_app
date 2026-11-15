@@ -116,9 +116,15 @@ class ManualWorkflowBoundaryTests(unittest.TestCase):
                     self.assertTrue(tools["run"].endswith(" ffmpeg tini\n"))
                     tools["run"] = tools["run"].removesuffix(" tini\n") + "\n"
                     tools["name"] = "Install media acceptance tools"
+                    expected["steps"].remove({
+                        "name": "Build isolated refresh census fixture",
+                        "timeout-minutes": 5,
+                        "run": "docker build --platform linux/amd64 --file .github/scripts/refresh-census.Dockerfile --tag auditgava-ci-refresh-census:local backend",
+                    })
                     launcher = next(step for step in expected["steps"] if step.get("id") == "backend_tests")
                     self.assertEqual(launcher["run"], "tini -s -- python .github/scripts/run_backend_tests.py")
                     launcher["run"] = launcher["run"].removeprefix("tini -s -- ")
+                    self.assertEqual(launcher["env"].pop("TEST_REFRESH_CENSUS_CONTAINER"), "1")
                     validator_path = ROOT / ".github/scripts/tests/test_backend_acquisition_workflow.py"
                     spec = importlib.util.spec_from_file_location("backend_acquisition_contract", validator_path)
                     validator = importlib.util.module_from_spec(spec)

@@ -97,6 +97,10 @@ jobs:
         timeout-minutes: 3
         run: bash .github/scripts/prepare_nightly_test_fixture.sh prepare
 
+      - name: Build isolated refresh census fixture
+        timeout-minutes: 5
+        run: docker build --platform linux/amd64 --file .github/scripts/refresh-census.Dockerfile --tag auditgava-ci-refresh-census:local backend
+
       - name: Run Core Backend Tests (REQUIRED)
         id: backend_tests
         # Reap terminated orphans from process-evidence tests on Linux.
@@ -107,6 +111,7 @@ jobs:
           REDIS_URL: redis://localhost:6379
           TESTING: true
           PYTHON_DOTENV_DISABLED: '1'
+          TEST_REFRESH_CENSUS_CONTAINER: '1'
 
       - name: Remove owned nightly test databases
         if: always()

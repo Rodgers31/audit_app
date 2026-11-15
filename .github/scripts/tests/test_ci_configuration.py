@@ -186,10 +186,19 @@ class ConfigurationTests(unittest.TestCase):
                 prefix = "tini -s -- " if name == "pr-ci.yml" else ""
                 self.assertEqual(step["run"], prefix + "python .github/scripts/run_backend_tests.py")
                 self.assertNotIn("continue-on-error", step)
+                census = [item for item in job["steps"] if item.get("name") == "Build isolated refresh census fixture"]
+                if name == "pr-ci.yml":
+                    self.assertEqual(len(census), 1)
+                    self.assertLess(job["steps"].index(census[0]), job["steps"].index(step))
+                    self.assertEqual(census[0]["timeout-minutes"], 5)
+                    self.assertNotIn("continue-on-error", census[0])
+                else:
+                    self.assertEqual(census, [])
                 self.assertEqual(step["env"], {
                     "DATABASE_URL": "postgresql://postgres:postgres@localhost:5432/audit_app_test",
                     "REDIS_URL": "redis://localhost:6379", "TESTING": True,
                     "PYTHON_DOTENV_DISABLED": "1",
+                    **({"TEST_REFRESH_CENSUS_CONTAINER": "1"} if name == "pr-ci.yml" else {}),
                 })
 
     def test_browser_cohort_verdicts_execute_with_negative_controls(self):
