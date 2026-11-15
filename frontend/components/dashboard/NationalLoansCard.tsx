@@ -17,22 +17,14 @@ import DebtExplainerModal from './DebtExplainerModal';
 
 // fmtKES imported from @/lib/utils — expects raw KES input (Loan table data)
 
-function shortLender(name: string): string {
+function creditorName(name: string): string {
   // IDS rows are "<class> (<creditor>)": the parenthetical IS the creditor,
-  // and the type badge beside it already says the class. Stripping every
+  // and the type badge already says the class. Stripping every
   // parenthetical (the old rule, written for the fixture's bucket names)
   // left fourteen rows reading "Bilateral" and "Multilateral )".
   const clean = displayLenderName(name);
   const creditor = /^(?:Multilateral|Bilateral|Commercial banks)\s*\((.+)\)$/.exec(clean);
-  if (creditor) return creditor[1];
-  return clean
-    .replace(/\s*\(.*?\)\s*/g, ' ')
-    .replace('Treasury Bonds ', 'T-Bonds ')
-    .replace('Treasury Bills ', 'T-Bills ')
-    .replace('Central Bank of Kenya Advance', 'CBK Advance')
-    .replace('Pre-1997 Government Debt', 'Legacy Debt')
-    .replace('Standard Chartered Syndicated Loan', 'StanChart Syndicated')
-    .trim();
+  return creditor?.[1] ?? clean;
 }
 
 const FLAG_EMOJI: Record<string, string> = {
@@ -172,6 +164,10 @@ export default function NationalLoansCard() {
         <div className='space-y-1.5'>
           {topLoans.map((loan: NationalLoan, i: number) => {
             const typeInfo = TYPE_LABEL[loan.lender_type] || TYPE_LABEL.domestic_legacy;
+            const lender = creditorName(loan.lender);
+            // Absent is "—" with the reason on hover, never 0.00% / KES 0.
+            const rate = rateCell(loan);
+            const cost = annualCostCell(loan);
             return (
               <motion.div
                 key={loan.lender + i}
@@ -179,57 +175,51 @@ export default function NationalLoansCard() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.4, delay: 0.05 * i }}
-                className='flex flex-wrap items-center gap-2 rounded-lg border border-neutral-border/25 bg-white/40 dark:bg-surface-elevated hover:bg-gov-sand/30 transition-colors px-3 py-2'>
-                <span className='text-sm leading-none flex-shrink-0' suppressHydrationWarning>
-                  {lenderEmoji(loan.lender)}
-                </span>
-                <span className='text-xs font-semibold text-gov-dark dark:text-white truncate min-w-0 flex-1'>
-                  {shortLender(loan.lender)}
-                </span>
-                <div className='flex items-center gap-1 flex-shrink-0'>
-                  <span
-                    className={`text-[11px] font-medium px-1.5 py-0.5 rounded-full ${typeInfo.color}`}>
-                    {t(typeInfo.key)}
+                className='min-w-0 space-y-1 rounded-lg border border-neutral-border/25 bg-white/40 dark:bg-surface-elevated hover:bg-gov-sand/30 transition-colors px-3 py-2'>
+                <div className='flex min-w-0 items-start gap-2'>
+                  <span className='shrink-0 text-sm' aria-hidden='true' suppressHydrationWarning>
+                    {lenderEmoji(loan.lender)}
                   </span>
-                  {(typeInfo.key === 'home.loans.type.multilateral' ||
-                    typeInfo.key === 'home.loans.type.bilateral' ||
-                    typeInfo.key === 'home.loans.type.commercial') && (
-                    <InfoTip
-                      term={
-                        typeInfo.key === 'home.loans.type.multilateral'
-                          ? 'multilateral'
-                          : typeInfo.key === 'home.loans.type.bilateral'
-                            ? 'bilateral'
-                            : 'commercial'
-                      }
-                      size={10}
-                    />
-                  )}
+                  <span className='min-w-0 text-sm font-semibold text-gov-dark dark:text-white [overflow-wrap:anywhere]'>
+                    {lender}
+                  </span>
                 </div>
-                <span className='text-xs font-bold text-gov-dark dark:text-white tabular-nums flex-shrink-0'>
-                  {fmtKES(loan.outstanding_numeric)}
-                </span>
-                {(() => {
-                  // Absent is "—" with the reason on hover, never 0.00% / KES 0.
-                  const rate = rateCell(loan);
-                  const cost = annualCostCell(loan);
-                  return (
-                    <>
-                      <span
-                        className='text-[11px] text-neutral-muted tabular-nums flex-shrink-0'
-                        title={rate.title}>
-                        {rate.value != null ? `${rate.value.toFixed(2)}%` : '—'}
-                      </span>
-                      <span
-                        className='text-[11px] font-semibold text-gov-copper tabular-nums flex-shrink-0 w-12 text-right'
-                        title={cost.tag ? `${cost.tag}: ${cost.title}` : cost.title}>
-                        {cost.value != null ? fmtKES(cost.value) : '—'}
-                        {cost.tag === 'modelled' ? '*' : ''}
-                      </span>
-                    </>
-                  );
-                })()}
-                <div className='w-full min-w-0'><FigureEvidence label={shortLender(loan.lender)} qualifications={loan.qualifications} table='loans' recordId={loan.record_id ?? loan.id} /></div>
+                <div className='flex flex-wrap items-center gap-x-3 gap-y-1'>
+                  <div className='flex min-w-0 items-center gap-1'>
+                    <span
+                      className={`min-w-0 break-words text-xs font-medium px-1.5 py-0.5 rounded-full ${typeInfo.color}`}>
+                      {t(typeInfo.key)}
+                    </span>
+                    {(typeInfo.key === 'home.loans.type.multilateral' ||
+                      typeInfo.key === 'home.loans.type.bilateral' ||
+                      typeInfo.key === 'home.loans.type.commercial') && (
+                      <InfoTip
+                        term={
+                          typeInfo.key === 'home.loans.type.multilateral'
+                            ? 'multilateral'
+                            : typeInfo.key === 'home.loans.type.bilateral'
+                              ? 'bilateral'
+                              : 'commercial'
+                        }
+                        size={10}
+                        className='[&>button]:min-h-11 [&>button]:min-w-11'
+                      />
+                    )}
+                  </div>
+                  <span className='text-xs font-bold text-gov-dark dark:text-white tabular-nums'>
+                    {fmtKES(loan.outstanding_numeric)}
+                  </span>
+                  <span className='text-xs text-neutral-muted tabular-nums' title={rate.title}>
+                    {rate.value != null ? `${rate.value.toFixed(2)}%` : '—'}
+                  </span>
+                  <span
+                    className='text-xs font-semibold text-gov-copper tabular-nums'
+                    title={cost.tag ? `${cost.tag}: ${cost.title}` : cost.title}>
+                    {cost.value != null ? fmtKES(cost.value) : '—'}
+                    {cost.tag === 'modelled' ? '*' : ''}
+                  </span>
+                </div>
+                <FigureEvidence label={lender} qualifications={loan.qualifications} table='loans' recordId={loan.record_id ?? loan.id} />
               </motion.div>
             );
           })}
