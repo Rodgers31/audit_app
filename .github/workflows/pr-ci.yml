@@ -82,7 +82,6 @@ jobs:
         env:
           SCHEMA_GUARD_CONTAINER: ${{ job.services.schema-guard-postgres.id }}
           PUBLIC_SCHEMA_GUARD_CI_URL: postgresql://postgres:postgres@127.0.0.1:55498/auditgava_schema_guard
-          PGHOSTADDR: 127.0.0.1
           PYTHON_DOTENV_DISABLED: '1'
         run: |
           docker exec -i "$SCHEMA_GUARD_CONTAINER" psql -U postgres -d auditgava_schema_guard -X -v ON_ERROR_STOP=1 <<'SQL'
@@ -90,7 +89,7 @@ jobs:
           CREATE ROLE authenticated;
           CREATE ROLE service_role BYPASSRLS;
           SQL
-          DATABASE_URL="$PUBLIC_SCHEMA_GUARD_CI_URL" python -m alembic upgrade head
+          DATABASE_URL="$PUBLIC_SCHEMA_GUARD_CI_URL?hostaddr=127.0.0.1" python -m alembic upgrade head
           python -m pytest --noconftest -q tests/test_public_table_rls.py
 
       - name: Install backend acceptance tools

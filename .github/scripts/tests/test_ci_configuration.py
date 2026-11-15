@@ -84,11 +84,10 @@ class ConfigurationTests(unittest.TestCase):
         self.assertEqual(schema_guard["env"], {
             "SCHEMA_GUARD_CONTAINER": "${{ job.services.schema-guard-postgres.id }}",
             "PUBLIC_SCHEMA_GUARD_CI_URL": "postgresql://postgres:postgres@127.0.0.1:55498/auditgava_schema_guard",
-            "PGHOSTADDR": "127.0.0.1",
             "PYTHON_DOTENV_DISABLED": "1",
         })
         self.assertIn(
-            'DATABASE_URL="$PUBLIC_SCHEMA_GUARD_CI_URL" python -m alembic upgrade head',
+            'DATABASE_URL="$PUBLIC_SCHEMA_GUARD_CI_URL?hostaddr=127.0.0.1" python -m alembic upgrade head',
             schema_guard["run"].splitlines(),
         )
         service = jobs["test-backend"]["services"]["schema-guard-postgres"]
