@@ -234,7 +234,7 @@ test('actual persisted command history filters, pagination, detail and safe back
   await page.getByRole('button', { name: 'Next commands' }).click();
   await expect(page).toHaveURL(/page=2/);
   await expect(page.getByText('Page 2', { exact: true })).toBeVisible();
-  await page.getByRole('link', { name: /View command / }).first().click();
+  await page.getByRole('link', { name: /view command /i }).first().click();
   await expect(page.getByRole('heading', { name: 'Command receipt', exact: true })).toBeVisible();
   await expect(page.getByText('Completed — recorded ingestion observation.')).toBeVisible();
   await page.getByRole('link', { name: 'Back to command history' }).click();
