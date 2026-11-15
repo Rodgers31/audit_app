@@ -28,7 +28,7 @@ class AuditEpochWorkflowTests(unittest.TestCase):
                 self.assertLess(names.index("Prepare owned reconciliation test fixture"), steps.index(prepare))
                 self.assertLess(steps.index(prepare), test_index)
                 self.assertGreater(steps.index(cleanup), test_index)
-                self.assertEqual(job["timeout-minutes"], 60)
+                self.assertEqual(job["timeout-minutes"], 70 if name == "pr-ci.yml" else 60)
                 self.assertEqual(prepare["timeout-minutes"], 5)
                 self.assertEqual(cleanup["timeout-minutes"], 5)
                 self.assertEqual(cleanup["if"], "always()")
@@ -37,7 +37,8 @@ class AuditEpochWorkflowTests(unittest.TestCase):
                 state = '\"$RUNNER_TEMP/audit-epoch-fixture-state.json\"'
                 self.assertEqual(prepare["run"], f"python .github/scripts/prepare_audit_epoch_test_fixture.py prepare --state {state} --port 55534")
                 self.assertIn(f"python .github/scripts/prepare_audit_epoch_test_fixture.py cleanup --state {state}", cleanup["run"])
-                self.assertEqual(steps[test_index]["run"], "python .github/scripts/run_backend_tests.py")
+                prefix = "tini -s -- " if name == "pr-ci.yml" else ""
+                self.assertEqual(steps[test_index]["run"], prefix + "python .github/scripts/run_backend_tests.py")
                 self.assertEqual(steps[test_index]["env"]["DATABASE_URL"], "postgresql://postgres:postgres@localhost:5432/audit_app_test")
 
 

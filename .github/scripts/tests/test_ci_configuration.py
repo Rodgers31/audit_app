@@ -75,9 +75,9 @@ class ConfigurationTests(unittest.TestCase):
         self.assertEqual(set(re.findall(r"secrets\.([A-Z0-9_]+)", raw)), {"CODECOV_TOKEN"})
         self.assertNotIn("alembic upgrade head", raw)
 
-    def assert_job_deadlines(self, workflow):
+    def assert_job_deadlines(self, workflow, backend_minutes):
         expected = {
-            "test-backend": 60, "test-frontend": 20, "test-etl": 10,
+            "test-backend": backend_minutes, "test-frontend": 20, "test-etl": 10,
             "security-scan": 10, "test-browser": 20,
             "test-browser-legacy": 20, "quality-gate": 5,
         }
@@ -96,29 +96,32 @@ class ConfigurationTests(unittest.TestCase):
         self.assertEqual(preparation["timeout-minutes"], 5)
 
     def test_complete_backend_has_finite_budget_without_relaxing_other_deadlines(self):
-        # Run 38666663428 needed 42 minutes for the first cohort alone,
-        # then hit 45 minutes before legacy tests, coverage and API smoke.
+        # Keep each workflow bounded while allowing PR CI's current core
+        # inventory, legacy tests, coverage and cleanup to finish.
         for name, workflow in self.workflows():
             with self.subTest(workflow=name):
-                self.assert_job_deadlines(workflow)
+                self.assert_job_deadlines(workflow, 70 if name == "pr-ci.yml" else 60)
 
     def test_deadline_policy_rejects_short_unbounded_or_broadened_budgets(self):
         for name, workflow in self.workflows():
+            backend_minutes = 70 if name == "pr-ci.yml" else 60
+            other_workflow_budget = 60 if name == "pr-ci.yml" else 70
             valid = deepcopy(workflow)
-            valid["jobs"]["test-backend"]["timeout-minutes"] = 60
-            self.assert_job_deadlines(valid)
-            for minutes in (20, 30, 45, 90, 0, -1, True, 60.0, "60", None,
+            valid["jobs"]["test-backend"]["timeout-minutes"] = backend_minutes
+            self.assert_job_deadlines(valid, backend_minutes)
+            for minutes in (20, 30, 45, other_workflow_budget, 90, 0, -1, True,
+                            float(backend_minutes), str(backend_minutes), None,
                             float("nan"), float("inf"), [], {}):
                 with self.subTest(workflow=name, backend_minutes=minutes):
                     mutated = deepcopy(valid)
                     mutated["jobs"]["test-backend"]["timeout-minutes"] = minutes
                     with self.assertRaises(AssertionError):
-                        self.assert_job_deadlines(mutated)
+                        self.assert_job_deadlines(mutated, backend_minutes)
             with self.subTest(workflow=name, missing_backend_limit=True):
                 mutated = deepcopy(valid)
                 del mutated["jobs"]["test-backend"]["timeout-minutes"]
                 with self.assertRaises(AssertionError):
-                    self.assert_job_deadlines(mutated)
+                    self.assert_job_deadlines(mutated, backend_minutes)
             for job in valid["jobs"]:
                 if job == "test-backend":
                     continue
@@ -126,7 +129,7 @@ class ConfigurationTests(unittest.TestCase):
                     mutated = deepcopy(valid)
                     mutated["jobs"][job]["timeout-minutes"] = 30
                     with self.assertRaises(AssertionError):
-                        self.assert_job_deadlines(mutated)
+                        self.assert_job_deadlines(mutated, backend_minutes)
             with self.subTest(workflow=name, broadened_image_preparation=True):
                 mutated = deepcopy(valid)
                 preparation = next(
@@ -135,7 +138,7 @@ class ConfigurationTests(unittest.TestCase):
                 )
                 preparation["timeout-minutes"] = 30
                 with self.assertRaises(AssertionError):
-                    self.assert_job_deadlines(mutated)
+                    self.assert_job_deadlines(mutated, backend_minutes)
 
     def test_services_use_exact_official_ecr_pins_and_preserve_cached_role_fixture(self):
         postgres = "public.ecr.aws/docker/library/postgres@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3"
@@ -180,7 +183,8 @@ class ConfigurationTests(unittest.TestCase):
             with self.subTest(workflow=name):
                 job = workflow["jobs"]["test-backend"]
                 step = next(step for step in job["steps"] if step.get("id") == "backend_tests")
-                self.assertEqual(step["run"], "python .github/scripts/run_backend_tests.py")
+                prefix = "tini -s -- " if name == "pr-ci.yml" else ""
+                self.assertEqual(step["run"], prefix + "python .github/scripts/run_backend_tests.py")
                 self.assertNotIn("continue-on-error", step)
                 self.assertEqual(step["env"], {
                     "DATABASE_URL": "postgresql://postgres:postgres@localhost:5432/audit_app_test",

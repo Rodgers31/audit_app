@@ -105,6 +105,20 @@ class ManualWorkflowBoundaryTests(unittest.TestCase):
                         actual["if"] = "always()"
                 steps = actual["steps"]
                 if name == "test-backend":
+                    # Normalize only the PR runner's process supervisor and
+                    # bounded job time. Manual dispatch keeps its existing
+                    # contract; both still execute the same test launcher.
+                    self.assertEqual(expected["timeout-minutes"], 70)
+                    self.assertEqual(actual["timeout-minutes"], 60)
+                    expected["timeout-minutes"] = 60
+                    tools = next(step for step in expected["steps"]
+                                 if step.get("name") == "Install backend acceptance tools")
+                    self.assertTrue(tools["run"].endswith(" ffmpeg tini\n"))
+                    tools["run"] = tools["run"].removesuffix(" tini\n") + "\n"
+                    tools["name"] = "Install media acceptance tools"
+                    launcher = next(step for step in expected["steps"] if step.get("id") == "backend_tests")
+                    self.assertEqual(launcher["run"], "tini -s -- python .github/scripts/run_backend_tests.py")
+                    launcher["run"] = launcher["run"].removeprefix("tini -s -- ")
                     validator_path = ROOT / ".github/scripts/tests/test_backend_acquisition_workflow.py"
                     spec = importlib.util.spec_from_file_location("backend_acquisition_contract", validator_path)
                     validator = importlib.util.module_from_spec(spec)

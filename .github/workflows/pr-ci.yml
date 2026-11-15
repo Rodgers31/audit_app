@@ -14,7 +14,10 @@ permissions:
 jobs:
   test-backend:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # Reserve time for both cohorts, coverage and fixture cleanup. The hosted
+    # suite took over 40 minutes to reach the Linux process-evidence cases
+    # before running the remaining core tests and the legacy cohort.
+    timeout-minutes: 70
 
     services:
       postgres:
@@ -61,11 +64,11 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
 
-      - name: Install media acceptance tools
+      - name: Install backend acceptance tools
         timeout-minutes: 5
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ffmpeg
+          sudo apt-get install -y --no-install-recommends ffmpeg tini
 
       - name: Test bounded worker host fixture controls
         timeout-minutes: 2
@@ -97,7 +100,9 @@ jobs:
 
       - name: Run Core Backend Tests (REQUIRED)
         id: backend_tests
-        run: python .github/scripts/run_backend_tests.py
+        # Reap terminated orphans from process-evidence tests on Linux.
+        # The tests still have to detect and terminate their own survivors.
+        run: tini -s -- python .github/scripts/run_backend_tests.py
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/audit_app_test
           REDIS_URL: redis://localhost:6379
