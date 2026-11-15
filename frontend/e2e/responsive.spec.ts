@@ -52,7 +52,9 @@ test.describe('Mobile — 390×844', () => {
     await expect(page.getByRole('button', { name: /Overview|Muhtasari/i })).toBeVisible();
     // Budget & Debt is the last tab now that Projects has been withdrawn —
     // reaching it is what proves the row still scrolls horizontally.
-    await expect(page.getByRole('button', { name: /Budget|Bajeti/i })).toBeVisible();
+    const budgetAndDebt = page.getByRole('button', { name: /^(Budget & Debt|Bajeti na Deni)$/i });
+    await budgetAndDebt.click();
+    await expect(budgetAndDebt).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByRole('button', { name: /^(Projects|Miradi)$/i })).toHaveCount(0);
   });
 });

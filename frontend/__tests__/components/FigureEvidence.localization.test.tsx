@@ -29,12 +29,13 @@ it.each([
 ])('switches shared evidence prose to %s without changing source facts or links', (lang, prefix, status, source, details, checks) => {
   renderWithLanguage(<FigureEvidence label='publisher $& label' qualifications={{ allocated_amount: original }} table='budget_lines' recordId={1} />);
   fireEvent.click(screen.getByRole('button', { name: lang }));
-  expect(screen.getByText(`${prefix} publisher $& label · ${status}`)).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: name => name.endsWith(`${prefix} publisher $& label`) })).toBeInTheDocument();
+  expect(screen.getByText(`allocated amount · ${status}`)).toBeInTheDocument();
   expect(screen.getByText(checks)).toBeInTheDocument();
   expect(screen.getByRole('link', { name: source, hidden: true })).toHaveAttribute('href', original.source_url);
   expect(screen.getByRole('link', { name: details, hidden: true })).toHaveAttribute('href', '/sources/figures/budget_lines/1');
   expect(screen.getByText(/Nairobi · FY2024\/25 · KES · actual/)).toBeInTheDocument();
-  expect(screen.getByText(/Central Bank of Kenya/)).toBeInTheDocument();
+  expect(screen.getByText(/^Central Bank of Kenya ·/)).toBeInTheDocument();
   expect(screen.getByText(/retained source and observation matched/)).toBeInTheDocument();
   expect(screen.getByText(/json path \$\.observation/)).toBeInTheDocument();
   expect(screen.getByText(new RegExp(original.digest!))).toBeInTheDocument();
@@ -62,7 +63,7 @@ it('switches invalid-reference and absent-evidence fallbacks to Kiswahili', () =
   renderWithLanguage(<><FigureEvidencePage table='unknown' id='0' /><FigureEvidence label='raw label' /></>);
   fireEvent.click(screen.getByRole('button', { name: 'sw' }));
   expect(screen.getByRole('alert')).toHaveTextContent('Rejeo hili la takwimu si halali.');
-  expect(screen.getByText(/Ushahidi haupatikani/)).toBeInTheDocument();
+  expect(screen.getByText('Bado hakuna hati chanzo')).toBeInTheDocument();
   expect(screen.getByText(/Hakuna maelezo ya uthibitisho wa kipimo yaliyotolewa/)).toBeInTheDocument();
   expect(api.get).not.toHaveBeenCalled();
 });

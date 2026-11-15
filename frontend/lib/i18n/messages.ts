@@ -15,6 +15,9 @@
  * pages keep English until a reader requests translation.
  */
 
+import { FOUNDATION_MESSAGES } from './messages/foundation';
+import { SHELL_MESSAGES } from './messages/shell';
+
 export type Lang = 'en' | 'sw' | 'plain';
 
 export interface Translation {
@@ -24,6 +27,8 @@ export interface Translation {
 }
 
 export const MESSAGES = {
+  ...FOUNDATION_MESSAGES,
+  ...SHELL_MESSAGES,
   // Source-scoped pending-bill aging. Publisher identities and source values stay verbatim.
   "pending_aging.title": { en: "Aging — how long bills have gone unpaid", sw: "Muda ambao bili hazijalipwa", plain: "How long bills have been unpaid" },
   "pending_aging.population": { en: "Aging population", sw: "Kundi la bili", plain: "Whose unpaid bills" },

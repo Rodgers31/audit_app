@@ -117,10 +117,11 @@ test.describe('Learn Page Accessibility', () => {
     // Learn currently keeps English copy in all three supported language modes.
     // Check the real hierarchy without inventing unreviewed translations.
     await page.goto('/learn');
-    for (const name of ['EN', 'SW', 'Aa']) {
+    await page.locator('header summary').filter({ hasText: /^Language$/ }).click();
+    for (const name of ['English', 'Kiswahili', 'Plain English']) {
       const language = page.getByRole('radio', { name, exact: true });
-      await language.click();
-      await expect(language).toHaveAttribute('aria-checked', 'true');
+      await language.check();
+      await expect(language).toBeChecked();
       await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
       await expect(page.getByRole('heading', { level: 1 })).toHaveText('Learning Hub');
       await expect(page.getByRole('heading', { level: 2, name: 'Understand Kenya’s money, law & power' })).toBeVisible();

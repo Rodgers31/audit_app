@@ -1,48 +1,32 @@
-/**
- * Compact language switcher — 3-way radio rendered as a pill group.
- * Sits in the header next to the auth button. Small enough not to
- * crowd the nav but visible enough to invite exploration.
- */
 'use client';
 
+import { useId } from 'react';
 import { useLang } from '@/lib/i18n/LangProvider';
 import type { Lang } from '@/lib/i18n/messages';
 
-const OPTIONS: Array<{ value: Lang; short: string; title: string }> = [
-  { value: 'en', short: 'EN', title: 'English' },
-  { value: 'sw', short: 'SW', title: 'Kiswahili' },
-  { value: 'plain', short: 'Aa', title: 'Plain English' },
+const OPTIONS: Array<{ value: Lang; text: string; language?: string }> = [
+  { value: 'en', text: 'English', language: 'en' },
+  { value: 'sw', text: 'Kiswahili', language: 'sw' },
+  { value: 'plain', text: 'Plain English', language: 'en' },
 ];
 
-export default function LangSwitcher({ compact = false }: { compact?: boolean }) {
+export default function LangSwitcher() {
   const { lang, setLang, t } = useLang();
-
+  const name = useId();
   return (
-    <div
-      role='radiogroup'
-      aria-label={t('lang.label')}
-      className={`inline-flex items-center rounded-sm border border-neutral-border bg-surface-base p-0.5 dark:bg-surface-base ${
-        compact ? 'text-[11px]' : 'text-[11px]'
-      }`}>
-      {OPTIONS.map((opt) => {
-        const active = lang === opt.value;
-        return (
-          <button
-            key={opt.value}
-            type='button'
-            role='radio'
-            aria-checked={active}
-            title={opt.title}
-            onClick={() => setLang(opt.value)}
-            className={`min-h-7 px-2 py-1 rounded-[2px] font-mono font-semibold tracking-wide ${
-              active
-                ? 'bg-gov-sage text-white'
-                : 'text-neutral-muted hover:bg-surface-sunken hover:text-gov-dark dark:hover:text-white'
-            }`}>
-            {opt.short}
-          </button>
-        );
-      })}
+    <div className='min-w-0'>
+      <p id={`${name}-label`} className='mb-2 text-sm font-semibold'>{t('lang.label')}</p>
+      <div role='radiogroup' aria-labelledby={`${name}-label`} className='flex flex-wrap gap-1'>
+        {OPTIONS.map(({ value, text, language }) => (
+          <label key={value} className='relative inline-flex min-h-11 items-center'>
+            <input type='radio' name={name} className='peer absolute inset-0 h-full w-full cursor-pointer opacity-0' value={value} checked={lang === value} onChange={() => setLang(value)} />
+            <span lang={language} className='audit-control cursor-pointer px-2 peer-checked:border-gov-sage peer-checked:bg-gov-sage peer-checked:text-white peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2'>
+              {text}
+            </span>
+          </label>
+        ))}
+      </div>
+      <p className='mt-2 text-xs text-neutral-muted'>{t('shell.language_explained')}</p>
     </div>
   );
 }

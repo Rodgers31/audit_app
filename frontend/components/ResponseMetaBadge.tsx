@@ -75,13 +75,13 @@ const QUALITY_TONE: Record<string, { dot: string; text: string; bg: string }> = 
   },
   estimated: {
     dot: 'bg-amber-400',
-    text: 'text-amber-900',
-    bg: 'bg-amber-50 border-amber-200',
+    text: 'text-signal-caution',
+    bg: 'bg-surface-base border-neutral-border',
   },
   projected: {
     dot: 'bg-amber-400',
-    text: 'text-amber-900',
-    bg: 'bg-amber-50 border-amber-200',
+    text: 'text-signal-caution',
+    bg: 'bg-surface-base border-neutral-border',
   },
   historical: {
     dot: 'bg-slate-400',
@@ -90,8 +90,8 @@ const QUALITY_TONE: Record<string, { dot: string; text: string; bg: string }> = 
   },
   mixed: {
     dot: 'bg-amber-400',
-    text: 'text-amber-900',
-    bg: 'bg-amber-50 border-amber-200',
+    text: 'text-signal-caution',
+    bg: 'bg-surface-base border-neutral-border',
   },
   unknown: {
     dot: 'bg-gray-300',
@@ -125,8 +125,8 @@ export default function ResponseMetaBadge({
         type='button'
         onClick={() => setOpen((v) => !v)}
         disabled={!hasNotes && !hasScope}
-        className={`inline-flex items-center gap-2 rounded-md border px-2.5 py-1 text-xs ${tone.bg} ${tone.text} ${
-          hasNotes || hasScope ? 'cursor-pointer hover:brightness-95' : 'cursor-default'
+        className={`inline-flex items-center gap-2 min-h-11 rounded border px-2.5 py-1 text-xs ${tone.bg} ${tone.text} ${
+          hasNotes || hasScope ? 'cursor-pointer hover:border-current' : 'cursor-default'
         }`}
         aria-expanded={open}
         aria-label={`Data quality: ${label}${ago ? `, updated ${ago}` : ''}${
@@ -173,7 +173,7 @@ export default function ResponseMetaBadge({
             </ul>
           )}
           {typeof meta.cache_ttl_seconds === 'number' && (
-            <p className='mt-2 text-[11px] opacity-60'>
+            <p className='mt-2 text-xs'>
               Cached up to {Math.round(meta.cache_ttl_seconds / 60)} min.
             </p>
           )}

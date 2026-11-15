@@ -27,13 +27,13 @@ const SOCIAL_LINKS = [
   },
 ];
 
-export default function FooterSocialLinks() {
+export default function FooterSocialLinks({ label = 'Follow AuditGava' }: { label?: string }) {
   return (
-    <nav aria-label='AuditGava social media' className='mt-6'>
-      <p className='font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-white/60'>
-        Follow AuditGava
+    <nav aria-label='AuditGava social media' className='mt-1'>
+      <p className='text-sm font-semibold text-white'>
+        {label}
       </p>
-      <div className='mt-3 flex flex-wrap gap-2'>
+      <div className='mt-2 flex flex-wrap gap-2'>
         {SOCIAL_LINKS.map(({ name, href, path }) => (
           <a
             key={name}

@@ -137,7 +137,8 @@ it('does not attach timeline verification to the separately published overview r
  };
  render(<SummaryStrip/>);
  const ratio = screen.getByText('Debt-to-GDP', {exact:true}).parentElement!;
- expect(within(ratio).getByText(/Evidence for debt-to-GDP observation · Qualified citation/)).toBeInTheDocument();
+ expect(within(ratio).getByRole('button', { name: /Evidence for debt-to-GDP observation$/ })).toBeInTheDocument();
+ expect(within(ratio).getByText('Source cited, with a caveat')).toBeInTheDocument();
  expect(within(ratio).queryByText(/Verified observation/)).not.toBeInTheDocument();
  expect(ratio).toHaveTextContent('69.3%');
 });

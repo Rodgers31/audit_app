@@ -11,6 +11,7 @@ import type { Metadata } from 'next';
 import Script from 'next/script';
 import { HISTORY_BRIDGE_BOOTSTRAP } from '@/lib/navigation/historyBridge';
 import './globals.css';
+import { barlowCondensed, ibmPlexMono, publicSans } from './fonts';
 
 export const metadata: Metadata = {
   title: {
@@ -67,7 +68,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     // Swallow URL parse errors — falls back to no preconnect.
   }
   return (
-    <html lang='en' suppressHydrationWarning>
+    <html lang='en' className={`${publicSans.variable} ${barlowCondensed.variable} ${ibmPlexMono.variable}`} suppressHydrationWarning>
       <head>
         <Script id='auditgava-history-bridge' strategy='beforeInteractive'>
           {HISTORY_BRIDGE_BOOTSTRAP}
