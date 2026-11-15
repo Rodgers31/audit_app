@@ -2,90 +2,118 @@
 
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useLang } from '@/lib/i18n/LangProvider';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { Bell, Bookmark, LogIn, LogOut, Menu, Settings, X } from 'lucide-react';
+import type { TranslationKey } from '@/lib/i18n/messages';
+import { Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import AuthModal from './AuthModal';
 import LangSwitcher from './LangSwitcher';
 import ThemeToggle from './ThemeToggle';
 
-function BrandMark() {
+type NavItem = { href: string; name: TranslationKey; hint: TranslationKey; short?: TranslationKey };
+
+const GROUPS: { label: TranslationKey; items: NavItem[] }[] = [
+  { label: 'shell.explore', items: [
+    { href: '/debt', name: 'shell.debt', hint: 'shell.debt_hint' },
+    { href: '/budget', name: 'shell.budget_full', short: 'shell.budget', hint: 'shell.budget_hint' },
+    { href: '/counties', name: 'shell.counties', hint: 'shell.counties_hint' },
+    { href: '/transparency', name: 'shell.transparency', hint: 'shell.transparency_hint' },
+    { href: '/audits', name: 'shell.audits', short: 'shell.audits_short', hint: 'shell.audits_hint' },
+  ] },
+  { label: 'shell.understand', items: [
+    { href: '/learn', name: 'shell.learn_full', short: 'shell.learn', hint: 'shell.learn_hint' },
+    { href: '/learn/glossary', name: 'shell.glossary', hint: 'shell.glossary_hint' },
+  ] },
+  { label: 'shell.about_data', items: [
+    { href: '/sources', name: 'shell.sources', hint: 'shell.sources_hint' },
+    { href: '/about', name: 'shell.about', hint: 'shell.about_hint' },
+  ] },
+];
+const PRIMARY = [...GROUPS[0].items, GROUPS[1].items[0]];
+const subscribeToHydration = () => () => {};
+const hydratedSnapshot = () => true;
+const serverSnapshot = () => false;
+
+const ACCOUNT_LINKS = [
+  { href: '/account', name: 'shell.account_settings' },
+  { href: '/account?tab=watchlist', name: 'shell.watchlist' },
+  { href: '/account?tab=alerts', name: 'shell.alerts' },
+] as const;
+
+function KiswahiliOffer() {
+  const { ready, setLang, t } = useLang();
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    if (!ready || !navigator.languages.some(language => /^sw(?:-|$)/i.test(language))) return;
+    try {
+      setVisible(!localStorage.getItem('auditgava-lang') && !localStorage.getItem('auditgava-sw-offer'));
+    } catch {
+      setVisible(true);
+    }
+  }, [ready]);
+  if (!visible) return null;
+
+  const choose = (language: 'en' | 'sw') => {
+    setLang(language);
+    setVisible(false);
+    try { localStorage.setItem('auditgava-sw-offer', '1'); } catch { /* Choice remains in memory. */ }
+  };
+
   return (
-    <span
-      aria-hidden='true'
-      className='relative grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-sm bg-gov-dark ring-1 ring-gov-dark'>
-      <span className='absolute inset-y-0 left-0 w-1 bg-gov-copper' />
-      <span className='absolute left-2 right-1.5 top-[11px] h-px bg-gov-cream/75' />
-      <span className='absolute left-2 right-1.5 top-[17px] h-px bg-gov-cream/75' />
-      <span className='absolute left-2 right-1.5 top-[23px] h-px bg-gov-gold' />
-    </span>
+    <aside lang='sw' className='fixed inset-x-0 top-16 z-40 border-b border-neutral-border bg-surface-base px-4 py-3'>
+      <div className='mx-auto flex max-w-screen-xl flex-wrap items-center gap-2 text-sm'>
+        <p className='grow font-semibold'>{t('shell.sw_offer')}</p>
+        <button type='button' className='audit-control' onClick={() => choose('sw')}>{t('shell.use_sw')}</button>
+        <button type='button' className='audit-control' onClick={() => choose('en')}>{t('shell.keep_english')}</button>
+      </div>
+    </aside>
   );
 }
 
 export default function Navigation() {
   const pathname = usePathname() ?? '';
-  // Private routes own their complete navigation in AdminNav. Unmount the
-  // public header (including its menus and body-scroll effects) on entry.
-  const privateShell = ['/admin', '/status'].some(
-    route => pathname === route || pathname.startsWith(`${route}/`)
-  );
-  return privateShell ? null : <PublicNavigation />;
+  const privateShell = ['/admin', '/status'].some(route => pathname === route || pathname.startsWith(`${route}/`));
+  return privateShell ? null : <PublicNavigation pathname={pathname} />;
 }
 
-function PublicNavigation() {
-  const pathname = usePathname();
-  const reduceMotion = useReducedMotion();
+function PublicNavigation({ pathname }: { pathname: string }) {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const hydrated = useSyncExternalStore(subscribeToHydration, hydratedSnapshot, serverSnapshot);
   const { t } = useLang();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const userMenuRef = useRef<HTMLDivElement>(null);
-  const mobileToggleRef = useRef<HTMLButtonElement>(null);
-  const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const mobileToggle = useRef<HTMLButtonElement>(null);
+  const mobilePanel = useRef<HTMLDivElement>(null);
+  const account = useRef<HTMLDetailsElement>(null);
 
   useEffect(() => {
-    const handleClick = (event: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
-        setUserMenuOpen(false);
-      }
-    };
-    if (userMenuOpen) document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [userMenuOpen]);
-
-  useEffect(() => {
-    const openModal = () => setAuthModalOpen(true);
-    window.addEventListener('open-auth-modal', openModal);
-    return () => window.removeEventListener('open-auth-modal', openModal);
+    const openAuth = () => { setMobileOpen(false); setAuthOpen(true); };
+    window.addEventListener('open-auth-modal', openAuth);
+    return () => window.removeEventListener('open-auth-modal', openAuth);
   }, []);
 
   useEffect(() => {
-    if (!mobileMenuOpen) return;
+    setMobileOpen(false);
+    if (account.current) account.current.open = false;
+  }, [pathname]);
 
-    const panel = mobileMenuRef.current;
-    const getFocusable = () =>
-      panel
-        ? Array.from(
-            panel.querySelectorAll<HTMLElement>(
-              'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
-            ),
-          )
-        : [];
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const controls = () => Array.from(mobilePanel.current?.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input[type="radio"]:checked',
+    ) ?? []);
+    controls()[0]?.focus();
+    const bodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
 
-    const focusTimer = window.setTimeout(() => getFocusable()[0]?.focus(), 0);
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setMobileMenuOpen(false);
-        return;
-      }
+    const keys = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMobileOpen(false);
       if (event.key !== 'Tab') return;
-      const focusable = getFocusable();
-      if (!focusable.length) return;
+      const focusable = controls();
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
+      if (!first || !last) return;
       if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();
         last.focus();
@@ -94,264 +122,124 @@ function PublicNavigation() {
         first.focus();
       }
     };
-
-    document.addEventListener('keydown', onKey);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const desktop = window.matchMedia?.('(min-width: 1024px)');
+    const resize = () => { if (desktop?.matches) setMobileOpen(false); };
+    desktop?.addEventListener('change', resize);
+    document.addEventListener('keydown', keys);
 
     return () => {
-      window.clearTimeout(focusTimer);
-      document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = previousOverflow;
-      mobileToggleRef.current?.focus();
+      document.body.style.overflow = bodyOverflow;
+      document.removeEventListener('keydown', keys);
+      desktop?.removeEventListener('change', resize);
+      mobileToggle.current?.focus();
     };
-  }, [mobileMenuOpen]);
+  }, [mobileOpen]);
 
-  useEffect(() => setMobileMenuOpen(false), [pathname]);
-
-  const navItems = [
-    { href: '/', label: t('nav.dashboard') },
-    { href: '/debt', label: t('nav.debt') },
-    { href: '/budget', label: t('nav.budget') },
-    { href: '/counties', label: t('nav.counties') },
-    { href: '/transparency', label: t('nav.transparency') },
-    { href: '/learn', label: t('nav.learn') },
-  ];
-  const isActive = (href: string) =>
-    href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`);
+  const active = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  function signIn() { setMobileOpen(false); setAuthOpen(true); }
+  function signOut() {
+    logout();
+    if (account.current) account.current.open = false;
+    setMobileOpen(false);
+  }
 
   return (
     <>
-      <motion.header
-        initial={false}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-        className='ledger-nav-enter fixed inset-x-0 top-0 z-50 isolate border-b border-neutral-border bg-gov-cream/95 dark:bg-gov-dark/95'>
-        <div className='mx-auto flex h-16 max-w-[1480px] items-stretch px-4 sm:px-6 lg:px-8'>
-          <Link
-            href='/'
-            aria-label='AuditGava dashboard'
-            className='group flex shrink-0 items-center gap-3 border-r border-neutral-border pr-4 sm:pr-6'>
-            <BrandMark />
-            <span className='hidden sm:block'>
-              <span className='block font-display text-[22px] font-semibold uppercase leading-none tracking-[0.02em] text-gov-dark dark:text-white'>
-                AuditGava
-              </span>
-              <span className='mt-1 block font-mono text-[11px] font-medium uppercase tracking-[0.15em] text-neutral-muted'>
-                Public money · evidence first
-              </span>
+      <header className='fixed inset-x-0 top-0 z-50 isolate border-b border-neutral-border bg-surface-base'>
+        <div className='mx-auto flex h-16 max-w-screen-xl items-stretch justify-between gap-2 px-4 sm:px-6'>
+          <Link href='/' aria-label={`AuditGava · ${t('shell.home')}`} className='flex shrink-0 items-center gap-2'>
+            <span aria-hidden='true' className='grid h-9 w-9 shrink-0 place-items-center rounded border-l-[3px] border-gov-copper bg-gov-dark font-display text-xl font-semibold text-white'>AG</span>
+            <span className='leading-none'>
+              <span className='block font-display text-[22px] font-semibold uppercase'>AuditGava</span>
+              <span className='mt-1 hidden text-xs text-neutral-muted sm:block'>{t('shell.brand_line')}</span>
             </span>
           </Link>
-
-          {/* Keep every route visible when fallback fonts or translated labels
-              need more space; wrap within the nav's own 64px header column. */}
-          <nav aria-label='Primary navigation' className='hidden min-w-0 flex-1 flex-wrap items-stretch xl:flex'>
-            {navItems.map((item) => {
-              const active = isActive(item.href);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  aria-current={active ? 'page' : undefined}
-                  className={`relative flex shrink-0 items-center whitespace-nowrap px-3 text-[12px] font-semibold min-[1440px]:px-4 min-[1440px]:text-[13px] ${
-                    active
-                      ? 'text-gov-dark dark:text-white'
-                      : 'text-neutral-muted hover:bg-surface-sunken/55 hover:text-gov-dark dark:hover:text-white'
-                  }`}>
-                  {item.label}
-                  {active && (
-                    <motion.span
-                      layoutId='nav-underline'
-                      className='absolute inset-x-3 bottom-0 h-[3px] origin-left bg-gov-sage min-[1440px]:inset-x-4'
-                      transition={{ duration: reduceMotion ? 0 : 0.2, ease: 'easeOut' }}
-                    />
-                  )}
-                </Link>
-              );
-            })}
+          <nav aria-label={t('shell.primary_nav')} className='hidden min-w-0 items-stretch justify-center gap-0.5 lg:flex xl:gap-2'>
+            {PRIMARY.map(({ href, name, short }) => (
+              <Link key={href} href={href} aria-current={active(href) ? 'page' : undefined}
+                className={`grid min-h-11 place-items-center border-b-2 px-2 text-center text-audit-label font-semibold hover:bg-surface-sunken ${active(href) ? 'border-gov-sage' : 'border-transparent'}`}>
+                {t(short ?? name)}
+              </Link>
+            ))}
           </nav>
-
-          <div className='ml-auto flex shrink-0 items-center gap-2 border-l border-neutral-border pl-3 sm:pl-4'>
-            <div className='hidden xl:block'>
-              <LangSwitcher />
-            </div>
+          <div className='hidden shrink-0 items-center gap-2 lg:flex'>
+            <details className='group relative' onKeyDown={event => {
+              if (event.key === 'Escape') {
+                event.currentTarget.open = false;
+                event.currentTarget.querySelector('summary')?.focus();
+              }
+            }}>
+              <summary className='audit-control cursor-pointer list-none px-2'>{t('lang.label')}</summary>
+              <div className='audit-panel absolute right-0 top-full mt-1 w-max max-w-[calc(100vw-2rem)] p-3 shadow-elevated'><LangSwitcher /></div>
+            </details>
             <ThemeToggle />
+            {!isLoading && (isAuthenticated && user ? (
+              <details ref={account} className='relative' onBlur={event => {
+                if (!event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false;
+              }} onKeyDown={event => {
+                if (event.key === 'Escape') {
+                  event.currentTarget.open = false;
+                  event.currentTarget.querySelector('summary')?.focus();
+                }
+              }}>
+                <summary aria-label={t('shell.account')} className='audit-control min-w-11 cursor-pointer list-none px-1'>
+                  {(user.display_name || user.email || '?').charAt(0).toUpperCase()}
+                </summary>
+                <div className='audit-panel absolute right-0 top-full mt-1 w-60 p-3 text-sm shadow-elevated'>
+                  <p className='truncate font-semibold'>{user.display_name || t('shell.citizen')}</p>
+                  <p className='truncate text-neutral-muted'>{user.email}</p>
+                  {ACCOUNT_LINKS.map(({ href, name }) => <Link className='audit-receipt flex' href={href} key={href}>{t(name)}</Link>)}
+                  <button type='button' className='audit-control' onClick={signOut}>{t('shell.sign_out')}</button>
+                </div>
+              </details>
+            ) : <button type='button' className='audit-control px-2' onClick={signIn}>{t('shell.sign_in')}</button>)}
+          </div>
+          <button ref={mobileToggle} type='button' className='audit-control self-center lg:hidden'
+            disabled={!hydrated} onClick={() => setMobileOpen(open => !open)} aria-expanded={mobileOpen}
+            aria-controls={mobileOpen ? 'auditgava-mobile-menu' : undefined} aria-label={t('shell.open_menu')}>
+            <Menu size={19} aria-hidden='true' /> {t('shell.menu')}
+          </button>
+        </div>
+      </header>
+      <KiswahiliOffer />
 
-            {isLoading ? (
-              <div className='h-9 w-20 animate-pulse rounded-sm bg-surface-sunken' aria-hidden='true' />
-            ) : isAuthenticated && user ? (
-              <div className='relative' ref={userMenuRef}>
-                <button
-                  type='button'
-                  onClick={() => setUserMenuOpen((open) => !open)}
-                  aria-haspopup='menu'
-                  aria-expanded={userMenuOpen}
-                  aria-label='User menu'
-                  className='relative grid h-9 min-w-9 place-items-center rounded-sm border border-gov-sage bg-gov-sage px-2 font-mono text-sm font-semibold text-white hover:bg-gov-forest'>
-                  {(user.display_name || user.email)[0].toUpperCase()}
-                </button>
-                <AnimatePresence>
-                  {userMenuOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 6 }}
-                      transition={{ duration: reduceMotion ? 0 : 0.14, ease: 'easeOut' }}
-                      className='absolute right-0 top-12 w-64 overflow-hidden rounded-sm border border-neutral-border bg-surface-elevated shadow-elevated'
-                      role='menu'
-                      aria-label='User menu'>
-                      <div className='border-b border-neutral-border p-4'>
-                        <p className='truncate text-sm font-semibold text-gov-dark dark:text-white'>
-                          {user.display_name || 'Citizen'}
-                        </p>
-                        <p className='mt-1 truncate font-mono text-[11px] text-neutral-muted'>
-                          {user.email}
-                        </p>
-                      </div>
-                      <div className='py-1'>
-                        {[
-                          { href: '/account', label: 'Account & settings', Icon: Settings },
-                          { href: '/account?tab=watchlist', label: 'My watchlist', Icon: Bookmark },
-                          { href: '/account?tab=alerts', label: 'Alerts', Icon: Bell },
-                        ].map(({ href, label, Icon }) => (
-                          <Link
-                            key={href}
-                            href={href}
-                            role='menuitem'
-                            onClick={() => setUserMenuOpen(false)}
-                            className='flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-muted hover:bg-surface-sunken hover:text-gov-dark dark:hover:text-white'>
-                            <Icon className='h-4 w-4' aria-hidden='true' />
-                            {label}
-                          </Link>
-                        ))}
-                      </div>
-                      <div className='border-t border-neutral-border p-2'>
-                        <button
-                          type='button'
-                          role='menuitem'
-                          onClick={() => {
-                            logout();
-                            setUserMenuOpen(false);
-                          }}
-                          className='flex w-full items-center gap-3 rounded-[2px] px-3 py-2.5 text-sm font-semibold text-gov-copper hover:bg-gov-copper/10'>
-                          <LogOut className='h-4 w-4' aria-hidden='true' />
-                          Sign out
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+      {mobileOpen && (
+        <div className='fixed inset-0 z-[60] bg-gov-dark/55 lg:hidden' onMouseDown={event => {
+          if (event.target === event.currentTarget) setMobileOpen(false);
+        }}>
+          <div ref={mobilePanel} id='auditgava-mobile-menu' role='dialog' aria-modal='true' aria-label={t('shell.mobile_nav')}
+            className='ml-auto flex h-full w-[min(100%,25rem)] flex-col overflow-y-auto overscroll-contain scroll-pt-16 border-l border-neutral-border bg-surface-base px-4 pb-5'>
+            <div className='sticky top-0 z-10 flex min-h-16 items-center justify-between border-b border-neutral-border bg-surface-base'>
+              <span className='text-base font-semibold'>{t('shell.menu')}</span>
+              <button type='button' className='audit-control min-w-11 px-0' aria-label={t('shell.close_menu')} onClick={() => setMobileOpen(false)}><X size={20} aria-hidden='true' /></button>
+            </div>
+            <nav aria-label={t('shell.mobile_nav')}>
+              {GROUPS.map(({ label, items }) => (
+                <div className='my-4' key={label}>
+                  <h2 className='border-b border-neutral-border pb-2 text-sm font-semibold text-neutral-muted'>{t(label)}</h2>
+                  {items.map(({ href, name, hint }) => (
+                    <Link key={href} href={href} aria-current={active(href) ? 'page' : undefined}
+                      onClick={() => setMobileOpen(false)}
+                      className='block min-h-14 border-b border-neutral-border py-2 hover:bg-surface-sunken'>
+                      <span className='block text-base font-semibold'>{t(name)}</span>
+                      <span className='block text-sm text-neutral-muted'>{t(hint)}</span>
+                    </Link>
+                  ))}
+                </div>
+              ))}
+            </nav>
+            <LangSwitcher />
+            <div className='my-3'><ThemeToggle /></div>
+            {!isLoading && (isAuthenticated ? (
+              <div className='flex flex-wrap gap-2 border-t border-neutral-border pt-3'>
+                <Link href='/account' className='audit-control' onClick={() => setMobileOpen(false)}>{t('shell.account')}</Link>
+                <button type='button' className='audit-control' onClick={signOut}>{t('shell.sign_out')}</button>
               </div>
-            ) : (
-              <button
-                type='button'
-                onClick={() => setAuthModalOpen(true)}
-                aria-label={t('nav.sign_in')}
-                className='flex h-9 items-center gap-2 rounded-sm bg-gov-sage px-3 text-sm font-semibold text-white hover:bg-gov-forest active:translate-y-px'>
-                <LogIn className='h-4 w-4' aria-hidden='true' />
-                <span className='hidden sm:inline'>{t('nav.sign_in')}</span>
-              </button>
-            )}
-
-            <button
-              ref={mobileToggleRef}
-              type='button'
-              className='tap-44 grid h-9 w-9 place-items-center rounded-sm border border-neutral-border bg-surface-base text-gov-dark hover:border-gov-sage hover:text-gov-sage dark:text-white xl:hidden'
-              onClick={() => setMobileMenuOpen((open) => !open)}
-              aria-expanded={mobileMenuOpen}
-              aria-controls='mobile-menu'
-              aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}>
-              {mobileMenuOpen ? <X className='h-5 w-5' /> : <Menu className='h-5 w-5' />}
-            </button>
+            ) : <button type='button' className='audit-control self-start' onClick={signIn}>{t('shell.sign_in')}</button>)}
           </div>
         </div>
-      </motion.header>
-
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            id='mobile-menu'
-            role='dialog'
-            aria-modal='true'
-            aria-label='Mobile navigation'
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: reduceMotion ? 0 : 0.16 }}
-            className='fixed inset-0 z-40 bg-gov-dark/60 pt-16 xl:hidden'
-            onMouseDown={(event) => {
-              if (event.target === event.currentTarget) setMobileMenuOpen(false);
-            }}>
-            <motion.div
-              ref={mobileMenuRef}
-              initial={reduceMotion ? false : { x: 28 }}
-              animate={{ x: 0 }}
-              exit={{ x: 28 }}
-              transition={{ duration: reduceMotion ? 0 : 0.2, ease: 'easeOut' }}
-              className='ml-auto flex h-full w-[min(88vw,390px)] flex-col overflow-y-auto overscroll-contain border-l border-neutral-border bg-gov-cream p-6 dark:bg-gov-dark'>
-              <p className='source-label mb-5'>Navigate the public record</p>
-              <nav aria-label='Mobile primary navigation' className='shrink-0 border-t border-neutral-border'>
-                {navItems.map((item, index) => {
-                  const active = isActive(item.href);
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      aria-current={active ? 'page' : undefined}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={`group flex min-h-14 items-center justify-between border-b border-neutral-border py-3 ${
-                        active ? 'text-gov-sage' : 'text-gov-dark dark:text-white'
-                      }`}>
-                      <span className='font-display text-2xl font-semibold uppercase tracking-[0.02em]'>
-                        {item.label}
-                      </span>
-                      <span className='font-mono text-[11px] text-neutral-muted'>
-                        {String(index + 1).padStart(2, '0')}
-                      </span>
-                    </Link>
-                  );
-                })}
-              </nav>
-              <div className='mt-6'>
-                <LangSwitcher />
-              </div>
-              <div className='mt-auto border-t border-neutral-border pt-5'>
-                {isAuthenticated ? (
-                  <div className='flex gap-3'>
-                    <Link href='/account' className='btn-secondary flex-1 text-center' onClick={() => setMobileMenuOpen(false)}>
-                      My account
-                    </Link>
-                    <button
-                      type='button'
-                      onClick={() => {
-                        logout();
-                        setMobileMenuOpen(false);
-                      }}
-                      className='btn border border-gov-copper/35 text-gov-copper'>
-                      Sign out
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type='button'
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      setAuthModalOpen(true);
-                    }}
-                    className='btn-primary w-full'>
-                    Sign in or register
-                  </button>
-                )}
-                <p className='mt-4 font-mono text-[11px] uppercase tracking-[0.13em] text-neutral-muted'>
-                  Republic of Kenya · independent civic technology
-                </p>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+      )}
+      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
     </>
   );
 }

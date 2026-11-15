@@ -13,7 +13,7 @@ import type { Locator, Page } from '@playwright/test';
 export const nav = {
   root: (page: Page): Locator => page.getByRole('banner').locator('header, nav').first(),
   home: (page: Page): Locator =>
-    page.getByRole('link', { name: /^(Dashboard|Home|Dashibodi)$/i }).first(),
+    page.getByRole('link', { name: /^(AuditGava · Home|AuditGava · Mwanzo)$/i }).first(),
   debt: (page: Page): Locator =>
     page
       .getByRole('link', { name: /^(National Debt|Deni la Taifa|Money Kenya Owes)$/i })
@@ -21,7 +21,7 @@ export const nav = {
   budget: (page: Page): Locator =>
     page
       .getByRole('link', {
-        name: /^(Budget & Spending|Bajeti na Matumizi|The Budget)$/i,
+        name: /^(Budget|Bajeti|Budget & Spending|Bajeti na Matumizi)$/i,
       })
       .first(),
   counties: (page: Page): Locator =>
@@ -46,11 +46,11 @@ export const langSwitcher = {
   root: (page: Page): Locator =>
     page.getByRole('radiogroup', { name: /Language|Lugha/i }).first(),
   en: (page: Page): Locator =>
-    langSwitcher.root(page).getByRole('radio', { name: /^EN$/ }),
+    langSwitcher.root(page).getByRole('radio', { name: /^English$/ }),
   sw: (page: Page): Locator =>
-    langSwitcher.root(page).getByRole('radio', { name: /^SW$/ }),
+    langSwitcher.root(page).getByRole('radio', { name: /^Kiswahili$/ }),
   plain: (page: Page): Locator =>
-    langSwitcher.root(page).getByRole('radio', { name: /^Aa$/ }),
+    langSwitcher.root(page).getByRole('radio', { name: /^Plain English$/ }),
 };
 
 /* ═══════════ County detail tabs ═══════════ */

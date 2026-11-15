@@ -56,15 +56,16 @@ describe('Navigation', () => {
 
   it('renders all nav items', () => {
     render(<Navigation />);
-    expect(screen.getByText('Dashboard')).toBeInTheDocument();
-    expect(screen.getByText('National Debt')).toBeInTheDocument();
-    expect(screen.getByText('Budget & Spending')).toBeInTheDocument();
-    expect(screen.getByText('County Explorer')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'AuditGava · Home' })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: 'National debt' })).toHaveAttribute('href', '/debt');
+    expect(screen.getByRole('link', { name: 'Budget' })).toHaveAttribute('href', '/budget');
+    expect(screen.getByRole('link', { name: 'Counties' })).toHaveAttribute('href', '/counties');
+    expect(screen.getByRole('link', { name: 'Audits' })).toHaveAttribute('href', '/audits');
   });
 
   it('renders navigation links with correct hrefs', () => {
     render(<Navigation />);
-    const dashboardLinks = screen.getAllByRole('link', { name: /dashboard/i });
+    const dashboardLinks = screen.getAllByRole('link', { name: /AuditGava · Home/i });
     expect(dashboardLinks.length).toBeGreaterThan(0);
   });
 
@@ -89,9 +90,9 @@ describe('Navigation', () => {
     expect(countyLink).toBeDefined();
   });
 
-  it('renders the evidence-first brand line', () => {
+  it('renders the brand line', () => {
     render(<Navigation />);
-    expect(screen.getByText(/Public money · evidence first/i)).toBeInTheDocument();
+    expect(screen.getByText(/Kenya public money tracker/i)).toBeInTheDocument();
   });
 
   it.each(['/admin', '/admin/social/new', '/admin/users/123', '/admin/', '/status', '/status/'])('leaves navigation ownership to the guarded shell at %s', path => {

@@ -53,6 +53,10 @@ export function LangProvider({ children }: { children: ReactNode }) {
     setReady(true);
   }, []);
 
+  useEffect(() => {
+    if (ready) document.documentElement.lang = lang === 'sw' ? 'sw' : 'en';
+  }, [lang, ready]);
+
   const setLang = useCallback((next: Lang) => {
     setLangState(next);
     try {
