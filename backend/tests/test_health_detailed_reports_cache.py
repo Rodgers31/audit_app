@@ -42,6 +42,20 @@ def _reset_cache_counters():
     rc.cache._last_unserialisable = None
 
 
+@pytest.fixture
+def local_cache_client(client, monkeypatch):
+    """Exercise cache and database health without a pending Redis limiter."""
+    import cache.redis_cache as rc
+
+    monkeypatch.setattr(rc.cache, "client", None)
+    monkeypatch.setattr(rc.cache, "redis_url_configured", False)
+    limits = dict(client.app.state.security_limits, rate_limit_mode="memory")
+    # The shared TestClient does not run the lifespan that settles the mode.
+    # Keep an independent snapshot for this probe, even on a cold middleware stack.
+    monkeypatch.setattr(client.app.state, "security_limits", limits)
+    return client
+
+
 class TestHealthDetailedIsReachable:
     def test_it_answers_at_all(self, client):
         """RED before this change: 404 — the router was never imported."""
@@ -51,14 +65,14 @@ class TestHealthDetailedIsReachable:
             "live surface to report on"
         )
 
-    def test_it_reports_the_database_as_healthy_when_it_is(self, client):
+    def test_it_reports_the_database_as_healthy_when_it_is(self, local_cache_client):
         """The DB probe used a raw ``db.execute("SELECT 1")``.
 
         SQLAlchemy 2.0 raises ArgumentError for a bare string, so the component
         would have reported ``unhealthy`` — and the whole report ``degraded`` —
         against a perfectly good database, on every single call.
         """
-        body = client.get("/health/detailed").json()
+        body = local_cache_client.get("/health/detailed").json()
         db_component = body["components"]["database"]
         assert db_component["status"] == "healthy", (
             "the database is up in this test, but the health report says "
@@ -185,32 +199,23 @@ class TestTheCacheComponentCannotHideAnOutage:
     whether or not the variable was ever set.
     """
 
-    def test_no_redis_configured_is_not_an_incident(self, client):
-        import cache.redis_cache as rc
-
-        rc.cache.client = None
-        rc.cache.redis_url_configured = False
-        body = client.get("/health/detailed").json()
+    def test_no_redis_configured_is_not_an_incident(self, local_cache_client):
+        body = local_cache_client.get("/health/detailed").json()
         assert body["components"]["cache"]["redis_configured"] is False
         assert body["status"] == "healthy", (
             "running on the in-memory cache with no Redis configured is the "
             f"normal development mode, not a degraded service: {body!r}"
         )
 
-    def test_configured_but_unreachable_redis_is_reported_degraded(self, client):
+    def test_configured_but_unreachable_redis_is_reported_degraded(self, local_cache_client, monkeypatch):
         """RED before this change: reported healthy while nothing was cached."""
         import cache.redis_cache as rc
 
-        original = getattr(rc.cache, "redis_url_configured", False)
-        rc.cache.client = None
-        rc.cache.redis_url_configured = True
-        try:
-            body = client.get("/health/detailed").json()
-            assert body["components"]["cache"]["redis_configured"] is True
-            assert body["status"] == "degraded", (
-                "REDIS_URL is set but the client never connected, so every "
-                "endpoint is running uncached — and the health endpoint calls "
-                f"that healthy: {body!r}"
-            )
-        finally:
-            rc.cache.redis_url_configured = original
+        monkeypatch.setattr(rc.cache, "redis_url_configured", True)
+        body = local_cache_client.get("/health/detailed").json()
+        assert body["components"]["cache"]["redis_configured"] is True
+        assert body["status"] == "degraded", (
+            "REDIS_URL is set but the client never connected, so every "
+            "endpoint is running uncached — and the health endpoint calls "
+            f"that healthy: {body!r}"
+        )

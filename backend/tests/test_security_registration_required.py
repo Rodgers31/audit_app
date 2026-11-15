@@ -17,13 +17,15 @@ def child(script, **overrides):
     return subprocess.run([sys.executable,*optimization,'-c',script],env=env,text=True,capture_output=True,timeout=15)
 
 
-def test_ordinary_startup_retains_required_security_layers():
-    result = child("""import main
-names={m.cls.__name__ for m in main.app.user_middleware}
-missing={'RateLimitMiddleware','AuditLogMiddleware','SecurityHeadersMiddleware','RequestResourceMiddleware'}-names
+@pytest.mark.parametrize('redis_url', ['', 'redis://127.0.0.1:9/0'])
+def test_ordinary_startup_retains_required_security_layers(redis_url):
+    limiter = 'RedisRateLimitMiddleware' if redis_url else 'RateLimitMiddleware'
+    result = child(f"""import main
+names={{m.cls.__name__ for m in main.app.user_middleware}}
+missing={{{limiter!r},'AuditLogMiddleware','SecurityHeadersMiddleware','RequestResourceMiddleware'}}-names
 if missing: raise SystemExit('REQUIRED_SECURITY_MISSING:'+','.join(sorted(missing)))
 print('REQUIRED_SECURITY_PRESENT')
-""",WEB_CONCURRENCY='1')
+""",WEB_CONCURRENCY='1',SECRET_BACKEND='env',REDIS_URL=redis_url,PYTHON_DOTENV_DISABLED='1')
     assert result.returncode == 0,result.stdout+result.stderr
     assert 'REQUIRED_SECURITY_PRESENT' in result.stdout
 
@@ -92,7 +94,7 @@ asyncio.run(run())
         assert 'LOCAL_BUDGET_NEW_PROCESS_200_200_429' in result.stdout
 
 
-@pytest.mark.parametrize('missing', ['RateLimitMiddleware', 'AuditLogMiddleware',
+@pytest.mark.parametrize('missing', ['RateLimitMiddleware', 'RedisRateLimitMiddleware', 'AuditLogMiddleware',
                                      'SecurityHeadersMiddleware', 'RequestResourceMiddleware'])
 def test_startup_probe_rejects_each_missing_required_layer(monkeypatch, missing):
     original = child
@@ -105,7 +107,8 @@ FastAPI.add_middleware = omit
 """
     monkeypatch.setitem(globals(), 'child', lambda script, **overrides: original(prefix + script, **overrides))
     with pytest.raises(AssertionError, match='REQUIRED_SECURITY_MISSING:' + missing):
-        test_ordinary_startup_retains_required_security_layers()
+        redis_url = 'redis://127.0.0.1:9/0' if missing == 'RedisRateLimitMiddleware' else ''
+        test_ordinary_startup_retains_required_security_layers(redis_url)
 
 
 def test_restart_probe_rejects_a_limiter_that_never_refuses(monkeypatch):
