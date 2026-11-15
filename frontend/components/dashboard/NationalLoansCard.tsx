@@ -18,12 +18,10 @@ import DebtExplainerModal from './DebtExplainerModal';
 // fmtKES imported from @/lib/utils — expects raw KES input (Loan table data)
 
 function creditorName(name: string): string {
-  // IDS rows are "<class> (<creditor>)": the parenthetical IS the creditor,
-  // and the type badge already says the class. Stripping every
-  // parenthetical (the old rule, written for the fixture's bucket names)
-  // left fourteen rows reading "Bilateral" and "Multilateral )".
+  // A register row can wrap the creditor in the category shown by the badge.
+  // Preserve the spelling and any qualifiers inside that wrapper.
   const clean = displayLenderName(name);
-  const creditor = /^(?:Multilateral|Bilateral|Commercial banks)\s*\((.+)\)$/.exec(clean);
+  const creditor = /^(?:Multilateral|Bilateral|Commercial banks)\s*\((.+)\)$/i.exec(clean);
   return creditor?.[1] ?? clean;
 }
 
