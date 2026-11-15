@@ -29,6 +29,7 @@ LEGACY_ETL_TESTS = frozenset({
     "tests/test_financial_absence_publication.py",
     "tests/test_knbs_parser_year_column.py",
     "tests/test_national_pending_bills_one_source.py",
+    "tests/test_shared_terminal_inventory.py",
 })
 
 

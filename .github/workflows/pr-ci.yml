@@ -179,6 +179,9 @@ jobs:
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
 
+      - name: Fetch the frozen admin paint test fixture
+        run: git fetch --no-tags --depth=1 origin 924f1a4f27e1952f97d2291d8878d88603132237
+
       - name: Set up Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:

@@ -210,6 +210,9 @@ jobs:
       env:
         VERIFICATION_COMMIT: ${{ inputs.commit_sha }}
         VERIFICATION_SCOPE: ${{ inputs.verification_scope }}
+    - name: Fetch the frozen admin paint test fixture
+      run: git fetch --no-tags --depth=1 origin 924f1a4f27e1952f97d2291d8878d88603132237
+
     - name: Set up Node.js
       uses: actions/setup-node@v6
       with:

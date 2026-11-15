@@ -15,6 +15,9 @@ async function nationalObservation(page: Page, patch: Record<string, unknown> = 
         debt_to_gdp_year: 2025,
         debt_to_gdp_basis: 'IMF General Government Gross Debt, % of GDP (GGXWDG_NGDP) — vintage-consistent',
         debt_to_gdp_source: 'IMF World Economic Outlook',
+        figure_qualifications: {
+          derived_ratio: { status: 'qualified', reason: 'published_imf_ratio_outside_seven_table_contract' },
+        },
         categories: {},
         summary: {},
         debt_sustainability: {
@@ -57,7 +60,7 @@ test('missing ratio and assessment stay absent despite register and GDP inputs',
   await nationalObservation(page, { debt_to_gdp_ratio: null, debt_sustainability: {} });
   await page.goto('/debt');
   const ratio = page.getByText('Debt-to-GDP', { exact: true }).locator('..');
-  await expect(ratio).toContainText('Not published');
+  await expect(ratio).toContainText('No debt-to-GDP observation received.');
   await expect(ratio).not.toContainText('60.0%');
   await expect(page.getByText('Not assessed', { exact: true })).toBeVisible();
   await expect(page.getByText('vs PFM Act 55%')).toHaveCount(0);
