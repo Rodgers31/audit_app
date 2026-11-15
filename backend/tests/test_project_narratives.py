@@ -352,7 +352,7 @@ def test_parse_cache_reuses_then_invalidates_actual_parser_source(monkeypatch, t
 
     module_path = tmp_path / "owned_parser.py"
     module_path.write_text(Path(cp.__file__).read_text())
-    spec = importlib.util.spec_from_file_location("round14_owned_parser", module_path)
+    spec = importlib.util.spec_from_file_location(f"{cp.__package__}.round14_owned_parser", module_path)
     module = importlib.util.module_from_spec(spec)
     monkeypatch.setitem(sys.modules, spec.name, module)
     spec.loader.exec_module(module)

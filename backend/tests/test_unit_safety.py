@@ -8,6 +8,7 @@ Phase 18: Unit Safety & Trust Safeguards Audit
 from datetime import datetime
 
 import pytest
+from fiscal_evidence import qualify_synthetic_row
 from models import (
     BudgetLine,
     DebtTimeline,
@@ -73,29 +74,30 @@ def seed_unit_test_data(db_session, seed_country, seed_source_doc):
         )
     )
 
-    # FiscalSummary — billion KES
-    db_session.add(
+    # FiscalSummary publishes qualified amounts in raw KES.
+    db_session.add(qualify_synthetic_row(
         FiscalSummary(
             fiscal_year="FY 2024/25",
-            appropriated_budget=3310,
-            total_revenue=2810,
-            tax_revenue=2100,
-            non_tax_revenue=710,
-            total_borrowing=800,
+            unit="KES",
+            appropriated_budget=3_310_000_000_000,
+            total_revenue=2_810_000_000_000,
+            tax_revenue=2_100_000_000_000,
+            non_tax_revenue=710_000_000_000,
+            total_borrowing=800_000_000_000,
             borrowing_pct_of_budget=24.2,
-            debt_service_cost=1050,
+            debt_service_cost=1_050_000_000_000,
             debt_service_per_shilling=37,
             debt_ceiling=10000,
             actual_debt=11500,
             debt_ceiling_usage_pct=115,
-            development_spending=700,
-            recurrent_spending=2610,
-            county_allocation=410,
+            development_spending=700_000_000_000,
+            recurrent_spending=2_610_000_000_000,
+            county_allocation=410_000_000_000,
             source_document_id=seed_source_doc.id,
             # Tier B (#137): a published fiscal row cites a page.
             page_ref="s.3.2, report p.16 (PDF p.37)",
         )
-    )
+    ))
 
     # DebtTimeline — billion KES
     db_session.add(
@@ -228,17 +230,13 @@ class TestMetaPresence:
 class TestPlausibilityBounds:
     """Monetary values must stay within order-of-magnitude bounds."""
 
-    def test_fiscal_summary_values_are_billions(self, client, seed_unit_test_data):
-        """FiscalSummary values should be smallish numbers (< 20,000 billion)."""
+    def test_fiscal_summary_values_are_raw_kes(self, client, seed_unit_test_data):
+        """The qualified budget matches its source in raw KES."""
         r = client.get("/api/v1/fiscal/summary")
         assert r.status_code == 200
         current = r.json().get("current", {})
-        budget = current.get("appropriated_budget", 0)
-        # Must be in billions: 3310 not 3_310_000_000_000
-        assert (
-            budget < 20_000
-        ), f"appropriated_budget={budget} too large for billion_kes"
-        assert budget > 100, f"appropriated_budget={budget} too small — wrong unit?"
+        assert current["unit"] == "KES"
+        assert current["appropriated_budget"] == 3_310_000_000_000
 
     def test_debt_timeline_values_are_billions(self, client, seed_unit_test_data):
         r = client.get("/api/v1/debt/timeline")

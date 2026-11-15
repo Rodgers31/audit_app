@@ -212,6 +212,7 @@ def db_session(_setup_tables):
 @pytest.fixture()
 def client(db_session):
     """FastAPI TestClient with the DB dependency overridden to use test session."""
+    from services.endpoint_resources import SingleWorker
 
     def _override_get_db():
         try:
@@ -237,8 +238,14 @@ def client(db_session):
     # The rate limiter is bypassed session-wide in pytest_configure above —
     # patching it here would be a no-op (the middleware instance binds
     # dispatch_func at construction, before this fixture ever runs).
-    with patch("main.get_db", _override_get_db):
-        yield TestClient(app, raise_server_exceptions=False)
+    # This client bypasses lifespan, which ordinarily creates this worker.
+    # A previous lifespan test may have closed the process-global instance.
+    peer_worker = SingleWorker()
+    try:
+        with patch("main.get_db", _override_get_db), patch("main._peer_worker", peer_worker):
+            yield TestClient(app, raise_server_exceptions=False)
+    finally:
+        peer_worker.close()
 
     # Restore handlers so subsequent test parametrisations still work
     app.router.on_startup = _saved_startup

@@ -244,6 +244,6 @@ def test_debt_timeline_verification_honours_the_year_parameter(
     db_session.commit()
 
     body = client.get("/api/v1/provenance/verify/debt_timeline?year=2019").json()
-    assert "year 2019" in (body.get("value") or ""), (
-        f"asked about 2019 and got: {body.get('value')!r}"
-    )
+    assert body["debt_period"]["gdp_calendar_year"] == 2019
+    assert body["qualifications"]["total"]["identity"]["period"] == "2019"
+    assert body["value"] is None  # this legacy row supplied no source receipt

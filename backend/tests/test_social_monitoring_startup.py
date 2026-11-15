@@ -76,9 +76,9 @@ if startup_error is None:
     assert [r.status_code for r in responses] == [200,500,401]
     assert all(r.headers['cache-control'] == 'private, no-store' for r in responses)
     routes = social_route_inventory(main.app.routes)
-    assert len(routes) == len(set(routes)) == 35, 'Social route inventory must contain 35 unique registrations'
-    assert not any('/privacy/' in path for _,path in routes)
-    assert not vars(main.app.state)['_state']
+    assert len(routes) == len(set(routes)) == 107, 'Social route inventory must contain 107 unique registrations'
+    assert not hasattr(main.app.state, 'social_privacy_registration')
+    assert main.app.state.social_privacy_deletion_ledger is None
     assert client.post('/_runtime-fixture/error', data={'signed_request':'INERT-549-PRIVATE-MARKER'}).status_code == 500
 sentry_sdk.flush()
 transactions = [e for kind,e in sent if kind == 'transaction']
@@ -127,7 +127,7 @@ def test_explicit_actual_app_startup_preserves_healthy_and_failed_captures():
 
 
 def test_duplicate_actual_social_router_registration_is_detected():
-    with pytest.raises(AssertionError, match='Social route inventory must contain 35 unique registrations'):
+    with pytest.raises(AssertionError, match='Social route inventory must contain 107 unique registrations'):
         capture(CI_DUPLICATE_SOCIAL_ROUTER='true')
 
 

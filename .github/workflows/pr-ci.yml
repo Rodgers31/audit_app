@@ -49,6 +49,11 @@ jobs:
           python-version: '3.12'
           cache: 'pip'
 
+      - name: Set up Node for workflow contract tests
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24.x'
+
       - name: Install dependencies
         run: |
           cd backend

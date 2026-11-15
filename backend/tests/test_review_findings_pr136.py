@@ -306,9 +306,10 @@ class _RecordingClient:
         self._responder = responder
         self.sent_headers: list[dict] = []
 
-    def stream(self, method, url, headers=None, timeout=None):
+    def stream(self, method, url, headers=None, timeout=None, *, follow_redirects=False):
         import httpx
 
+        assert follow_redirects is False
         self.sent_headers.append(dict(headers or {}))
         response = self._responder(dict(headers or {}))
         response.request = httpx.Request(method, url, headers=headers)
@@ -338,7 +339,7 @@ WHOLE = b"%PDF-1.7\n" + b"x" * 400 + b"\ntrailer\n%%EOF\n"
 
 
 class TestResumeRangeSafety:
-    def test_a_206_starting_at_the_wrong_offset_restarts(self, tmp_path):
+    def test_a_206_starting_at_the_wrong_offset_is_refused(self, tmp_path):
         """RED before the fix: only ``status_code != 206`` was checked, so a
         server answering 206 from a DIFFERENT offset had its bytes appended at
         the wrong position. The spliced file still begins with ``%PDF-`` and
@@ -356,15 +357,12 @@ class TestResumeRangeSafety:
             )
 
         client = _wrap(_RecordingClient(responder))
-        client.download_to_file("u", dest, max_seconds=5, resume_part=part,
-                                completion_check=lambda p: False)
-        # Restarted from zero => exactly the body, not 200 bytes of prefix
-        # plus the whole document spliced on the end.
-        got = dest.read_bytes()
-        assert got == WHOLE, (
-            f"expected a clean restart; got {len(got)} bytes (a spliced "
-            f"prefix + body would be {200 + len(WHOLE)})"
-        )
+        from seeding.http_client import PdfDownloadError
+        with pytest.raises(PdfDownloadError, match="Unverified Content-Range"):
+            client.download_to_file("u", dest, max_seconds=5, resume_part=part,
+                                    completion_check=lambda p: False)
+        assert not dest.exists()
+        assert not part.exists() or part.read_bytes() == WHOLE[:200]
 
     def test_a_206_at_the_right_offset_still_appends(self, tmp_path):
         """POSITIVE CONTROL — the fix must not disable resumption, which is
@@ -384,16 +382,8 @@ class TestResumeRangeSafety:
                                 completion_check=lambda p: False)
         assert dest.read_bytes() == WHOLE
 
-    def test_a_206_without_content_range_appends_but_warns(self, tmp_path, caplog):
-        """A non-compliant 206 must NOT hard-restart.
-
-        cob.go.ke — the server the whole resume feature exists for — could not
-        be re-probed (its TLS certificate expired 2026-09-02), and turning a
-        working resume into an endless 12MB re-download would be a worse bug
-        than the one being fixed. So an absent Content-Range keeps the previous
-        behaviour and says so loudly; only a header that DISAGREES restarts.
-        """
-        import logging
+    def test_a_206_without_content_range_cannot_complete_the_file(self, tmp_path):
+        from seeding.http_client import PdfDownloadError
 
         part = tmp_path / "doc.part"
         dest = tmp_path / "doc.pdf"
@@ -402,11 +392,11 @@ class TestResumeRangeSafety:
         client = _wrap(_RecordingClient(
             lambda h: _HeaderedStream(WHOLE[200:], status=206)  # no header
         ))
-        with caplog.at_level(logging.WARNING):
+        with pytest.raises(PdfDownloadError, match="Unverified Content-Range"):
             client.download_to_file("u", dest, max_seconds=5, resume_part=part,
                                     completion_check=lambda p: False)
-        assert dest.read_bytes() == WHOLE          # appended, not restarted
-        assert "NO Content-Range" in caplog.text   # and not silently
+        assert not dest.exists()
+        assert not part.exists() or part.read_bytes() == WHOLE[:200]
 
     def test_if_range_is_sent_so_a_reissued_document_cannot_be_spliced(self, tmp_path):
         """RED before the fix: no validator was persisted or sent, so a

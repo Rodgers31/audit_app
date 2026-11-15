@@ -202,7 +202,7 @@ def test_federal_findings_sum_uses_recorded_amount_coverage(
     ((None, None), (Decimal("0"), Decimal("0")), (Decimal("1000"), Decimal("65.5"))),
     ids=("null", "sourced-zero", "positive"),
 )
-def test_debt_timeline_keeps_recorded_zero_gdp_and_ratio(
+def test_debt_timeline_preserves_recorded_gdp_but_withholds_unqualified_ratio(
     client, db_session, synthetic_source_doc, gdp, gdp_ratio,
 ):
     db_session.add(
@@ -222,7 +222,8 @@ def test_debt_timeline_keeps_recorded_zero_gdp_and_ratio(
     assert response.status_code == 200, response.text
     row = response.json()["timeline"][0]
     assert row["gdp"] == (float(gdp) if gdp is not None else None)
-    assert row["gdp_ratio"] == (float(gdp_ratio) if gdp_ratio is not None else None)
+    assert row["gdp_ratio"] is None
+    assert row["absent_reasons"]["gdp_ratio"]
     if gdp_ratio == 0:
         assert client.get("/api/v1/debt/timeline").json() == response.json()
 
