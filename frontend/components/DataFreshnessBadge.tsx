@@ -70,7 +70,7 @@ export default function DataFreshnessBadge({ sources, className = '', variant = 
     const oldest = measured.map(entry => entry.last_updated).sort()[0];
     const warning = worst.status !== 'fresh';
     return (
-      <p className={`${warning ? 'text-signal-caution' : 'text-neutral-muted'} ${variant === 'banner' && warning ? 'audit-panel p-3 text-sm' : 'text-xs'} ${className}`}>
+      <p className={`${warning ? 'text-signal-caution' : 'text-neutral-muted'} ${variant === 'banner' ? 'audit-panel p-3 text-sm' : 'text-xs'} ${className}`}>
         <strong>{t(`foundation.${worst.status}`)}</strong>{' · '}
         {t('foundation.published_date').replace('{date}', format(oldest))}{' · '}
         {measured.map(entry => entry.label || entry.source).join(' / ')}
