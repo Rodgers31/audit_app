@@ -134,6 +134,15 @@ def _canonical(text: str) -> str:
 
 CANON_TO_COUNTY = {_canonical(name): name for name in COUNTIES_47}
 assert len(CANON_TO_COUNTY) == 47, "county canonicalisation collided"
+# Exact alternate labels used in KNBS Economic Survey 2026, Table 5.13.
+WORKBOOK_COUNTY_ALIASES = {
+    "Taita/Taveta": "Taita-Taveta",
+    "Elgeyo/Marakwet": "Elgeyo-Marakwet",
+    "Nairobi City": "Nairobi",
+}
+CANON_TO_COUNTY.update(
+    (_canonical(alias), name) for alias, name in WORKBOOK_COUNTY_ALIASES.items()
+)
 
 
 def _labels(tree: ast.AST) -> dict[int, str]:
@@ -379,6 +388,14 @@ def test_the_detector_does_not_flag_a_full_roster_or_a_lookup():
     ) + "]\n"
     assert not find_county_selections(roster, "roster.py"), (
         "the full 47 are a reference table and must not trip the guard"
+    )
+
+    workbook_roster = roster
+    for alias, name in WORKBOOK_COUNTY_ALIASES.items():
+        workbook_roster = workbook_roster.replace(f'"{name}"', f'"{alias}"')
+    assert not find_county_selections(workbook_roster, "workbook_roster.py")
+    assert find_county_selections(
+        workbook_roster.replace('    "Kwale",\n', ''), "partial_workbook_roster.py"
     )
 
     assert not find_county_selections(

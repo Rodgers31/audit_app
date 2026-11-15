@@ -25,6 +25,12 @@ os.environ.update(
     DISABLE_RATE_LIMIT="true",
 )
 
+import request_database
+
+# The production request pool protects a shared service. This SQLite fixture
+# also serves Next's parallel build-time reads, so reserve local-only capacity.
+request_database.POOL_SIZE = 32
+
 import database
 from dev_fixtures import block_external_http, seed_local_fixture
 from models import BudgetLine

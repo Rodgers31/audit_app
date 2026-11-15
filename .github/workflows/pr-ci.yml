@@ -56,6 +56,12 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
 
+      - name: Install media acceptance tools
+        timeout-minutes: 5
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg
+
       - name: Test bounded worker host fixture controls
         timeout-minutes: 2
         # Pure unit controls use temporary files and mocked process boundaries;
@@ -80,6 +86,10 @@ jobs:
         timeout-minutes: 5
         run: python .github/scripts/prepare_audit_epoch_test_fixture.py prepare --state "$RUNNER_TEMP/audit-epoch-fixture-state.json" --port 55534
 
+      - name: Prepare owned nightly test databases
+        timeout-minutes: 3
+        run: bash .github/scripts/prepare_nightly_test_fixture.sh prepare
+
       - name: Run Core Backend Tests (REQUIRED)
         id: backend_tests
         run: python .github/scripts/run_backend_tests.py
@@ -88,6 +98,11 @@ jobs:
           REDIS_URL: redis://localhost:6379
           TESTING: true
           PYTHON_DOTENV_DISABLED: '1'
+
+      - name: Remove owned nightly test databases
+        if: always()
+        timeout-minutes: 3
+        run: bash .github/scripts/prepare_nightly_test_fixture.sh cleanup
 
       - name: Remove owned audit epoch test fixture
         if: always()
