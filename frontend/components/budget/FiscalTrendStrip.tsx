@@ -1,28 +1,10 @@
 'use client';
 
-/**
- * FiscalTrendStrip
- *
- * Compact multi-year view: three paired sparklines for Budget, Revenue,
- * and Borrowing across the fiscal years we have in `fiscal_history`.
- * Designed to sit below the hero — answers "is the fiscal gap widening
- * or narrowing?" at a glance.
- *
- * Each card shows:
- *   — a sparkline + year labels
- *   — the latest value (tabular-nums, KES)
- *   — the CAGR-style delta across the series
- *
- * Clicking a year pill below the sparklines could drive a year selector
- * upstream, but for now we keep it read-only — the hero anchors on the
- * latest fiscal year.
- */
-
-import { motion } from 'framer-motion';
-import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
-import { useMemo } from 'react';
-
-import { FISCAL_FRAMEWORK_BASIS, FiscalFramework } from '@/lib/fiscal/framework';
+import { useId } from 'react';
+import InfoSheet from '@/components/ui/InfoSheet';
+import ResponsiveTable from '@/components/ui/ResponsiveTable';
+import { FISCAL_FRAMEWORK_BASIS, type FiscalFramework } from '@/lib/fiscal/framework';
+import { useLang } from '@/lib/i18n/LangProvider';
 
 export interface FiscalHistoryRow {
   fiscal_year: string;
@@ -38,179 +20,193 @@ export interface FiscalHistoryRow {
   measure_qualifications?: Record<string, { vintage: string; source: { title?: string } }>;
 }
 
-interface Props {
-  history: FiscalHistoryRow[];
+const MEASURES = ['appropriated_budget', 'total_revenue', 'total_borrowing', 'debt_service_cost'] as const;
+const BASIS_LABELS = {
+  Approved: 'approved',
+  Actual: 'actual',
+  Preliminary: 'preliminary',
+  'Supplementary I': 'supplementary',
+} as const;
+
+type Basis = (typeof BASIS_LABELS)[keyof typeof BASIS_LABELS];
+type Observation = { year: string; value: number | null; basis?: Basis; source?: string };
+
+function observation(row: FiscalHistoryRow, measure: (typeof MEASURES)[number]): Observation {
+  const proof = row.measure_qualifications?.[measure];
+  const amount = row[measure];
+  const value = typeof amount === 'number' && Number.isFinite(amount) && amount >= 0 ? amount : null;
+  return {
+    year: row.fiscal_year.replace(/^FY\s*/i, ''),
+    value,
+    basis: proof && Object.hasOwn(BASIS_LABELS, proof.vintage)
+      ? BASIS_LABELS[proof.vintage as keyof typeof BASIS_LABELS]
+      : undefined,
+    source: proof?.source?.title ?? (measure === 'debt_service_cost' ? row.debt_service_source?.title : undefined),
+  };
 }
 
-function fmtB(v?: number | null): string {
-  if (v == null) return '—';
-  if (v >= 1000) return `${(v / 1000).toFixed(2)}T`;
-  return `${v.toFixed(0)}B`;
+function abbreviatedYear(year: string) {
+  return year.replace(/^\d{2}(?=\d{2}\/\d{2}$)/, '');
 }
 
-function pctChange(a?: number | null, b?: number | null): number | null {
-  if (a == null || b == null || b === 0) return null;
-  return ((a - b) / b) * 100;
-}
-
-interface SeriesCard {
-  label: string;
-  key: keyof FiscalHistoryRow;
-  accent: string;
-  gradStart: string;
-  gradEnd: string;
-  tagline: string;
-}
-
-const CARDS: SeriesCard[] = [
-  {
-    label: 'Appropriated budget',
-    key: 'appropriated_budget',
-    accent: '#1B3A2A',
-    gradStart: '#3B7251',
-    gradEnd: '#1F4A30',
-    tagline: "Parliament's approved spend ceiling.",
-  },
-  {
-    label: 'Tax + non-tax revenue',
-    key: 'total_revenue',
-    accent: '#3E6B84',
-    gradStart: '#5088A8',
-    gradEnd: '#2F5A70',
-    tagline: 'Tax + non-tax revenue; each year names its vintage.',
-  },
-  {
-    label: 'New borrowing',
-    key: 'total_borrowing',
-    accent: '#9E3030',
-    gradStart: '#B83E3E',
-    gradEnd: '#7E2424',
-    tagline: 'Gap filled with fresh debt.',
-  },
-  {
-    label: 'Debt service',
-    key: 'debt_service_cost',
-    accent: '#A6781F',
-    gradStart: '#B38628',
-    gradEnd: '#7D591A',
-    tagline: 'Old loans being repaid.',
-  },
-];
-
-export default function FiscalTrendStrip({ history }: Props) {
-  const sorted = useMemo(
-    () =>
-      [...(history ?? [])]
-        .filter((r) => r && r.fiscal_year)
-        .sort((a, b) => (a.fiscal_year > b.fiscal_year ? 1 : -1)),
-    [history]
+function TrendBars({ observations, max, className, formatAmount, debt }: {
+  observations: Observation[];
+  max: number;
+  className: string;
+  formatAmount: (value: number) => string;
+  debt: boolean;
+}) {
+  const { t } = useLang();
+  const highlight = debt ? 'bg-signal-alarm' : 'bg-neutral-text';
+  return (
+    <ul
+      className={`m-0 list-none gap-x-2 p-0 ${className}`}
+      style={{ gridTemplateColumns: `repeat(${observations.length}, minmax(0, 1fr))` }}>
+      {observations.map(({ year, value, basis }, index) => (
+        <li key={year} className='grid min-w-0 grid-rows-[auto_2.5rem_1fr] text-center text-xs tabular-nums min-[400px]:grid-rows-[auto_3.5rem_1fr]'>
+          <span className='self-end font-medium [overflow-wrap:anywhere]'>
+            {value == null
+              ? <><span aria-hidden='true'>—</span><span className='sr-only'>{t('foundation.no_chart_value')}</span></>
+              : formatAmount(value)}
+          </span>
+          <div aria-hidden='true' className='flex items-end border-b border-neutral-border'>
+            {value != null && (
+              <span
+                className={`mx-auto w-3/4 max-w-10 rounded-t-sm ${index === observations.length - 1 ? highlight : 'bg-chart-context'}`}
+                style={{ height: `${100 * value / max}%` }}
+              />
+            )}
+          </div>
+          <span className='mt-1 text-neutral-muted [overflow-wrap:anywhere]'>
+            <span className='block'><span aria-hidden='true'>{abbreviatedYear(year)}</span><span className='sr-only'>{year}</span></span>
+            {basis && (
+              <>
+                <span aria-hidden='true' className='block'>{t(`budget.history.${basis}_short`)}</span>
+                <span className='sr-only'>{t(`budget.history.${basis}`)}</span>
+              </>
+            )}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
+}
 
-  if (sorted.length < 2) return null;
+function MiniTrend({ observations, max, debt }: { observations: Observation[]; max: number; debt: boolean }) {
+  const points = observations.map(({ value }, index) => value == null ? null : {
+    x: 4 + (112 * index) / (observations.length - 1),
+    y: 32 - (28 * value) / max,
+  });
 
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 16 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-60px' }}
-      transition={{ duration: 0.5 }}
-      className='rounded-2xl bg-white dark:bg-surface-base border border-neutral-border/40 shadow-surface p-5 sm:p-6'>
-      <div className='flex items-baseline justify-between mb-4'>
-        <div>
-          <div className='text-[11px] font-semibold uppercase tracking-[0.18em] text-gov-forest/80 dark:text-emerald-100/80'>
-            The past four budgets
-          </div>
-          <h3 className='font-display text-xl sm:text-[22px] text-gov-dark dark:text-white leading-tight mt-0.5'>
-            Is the gap narrowing, or is debt growing faster than revenue?
-          </h3>
-        </div>
-      </div>
+    <svg aria-hidden='true' viewBox='0 0 120 36' className={`h-9 w-full min-[400px]:hidden ${debt ? 'text-signal-alarm' : 'text-neutral-text'}`}>
+      {points.map((point, index) => {
+        if (!point) return null;
+        const previous = points[index - 1];
+        return (
+          <g key={observations[index].year}>
+            {previous && <line x1={previous.x} y1={previous.y} x2={point.x} y2={point.y} stroke='currentColor' strokeWidth='2' />}
+            <circle cx={point.x} cy={point.y} r='2.5' fill='currentColor' />
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
 
-      <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5'>
-        {CARDS.map((c) => {
-          // Borrowing is deficit financing on Treasury's fiscal framework
-          // (issue #237). A year that does not declare that basis carries a
-          // legacy figure measured another way, and one sparkline must not
-          // compare the two, so such years are left out of this card.
-          const rows =
-            c.key === 'total_borrowing'
-              ? sorted.filter((r) => r.split_basis === FISCAL_FRAMEWORK_BASIS)
-              : sorted;
-          if (rows.length < 2) return null;
-          const values = rows.map((r) => ({
-            year: r.fiscal_year.replace('FY ', ''),
-            value: typeof r[c.key] === 'number' ? r[c.key] as number : null,
-            column: c.key === 'appropriated_budget' ? 'Appropriated budget' : c.key === 'debt_service_cost'
-              ? r.debt_service_source?.title ?? 'Vintage unconfirmed'
-              : r.measure_qualifications?.[c.key]?.vintage ?? 'Vintage unconfirmed',
-          }));
-          const latest = values[values.length - 1];
-          const first = values[0];
-          const max = Math.max(...values.flatMap((v) => v.value == null ? [] : [v.value]), 1);
-          const delta = pctChange(latest.value, first.value);
-          const isUp = delta != null && delta > 0.5;
-          const isDown = delta != null && delta < -0.5;
-          return (
-            <div
-              key={c.label}
-              className='relative rounded-xl bg-white dark:bg-surface-base border border-neutral-border/30 shadow-sm overflow-hidden'>
-              <div
-                className='absolute inset-x-0 top-0 h-0.5'
-                style={{ background: `linear-gradient(90deg, ${c.gradStart}, ${c.gradEnd})` }}
-              />
-              <div className='p-4'>
-                <div className='flex items-baseline justify-between gap-2 mb-1'>
-                  <span className='text-[11px] font-semibold text-gov-dark dark:text-white'>{c.label}</span>
-                  {delta != null && (
-                    <span
-                      className={`inline-flex items-center gap-0.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-full tabular-nums ${
-                        isUp
-                          ? c.key === 'total_borrowing' || c.key === 'debt_service_cost'
-                            ? 'bg-red-50 text-red-600'
-                            : 'bg-green-50 text-green-700'
-                          : isDown
-                            ? c.key === 'total_borrowing' || c.key === 'debt_service_cost'
-                              ? 'bg-green-50 text-green-700'
-                              : 'bg-red-50 text-red-600'
-                            : 'bg-gray-100 dark:bg-surface-elevated text-gray-500 dark:text-neutral-muted/80'
-                      }`}>
-                      {isUp ? <ArrowUp size={10} /> : isDown ? <ArrowDown size={10} /> : <Minus size={10} />}
-                      {Math.abs(delta).toFixed(0)}%
-                    </span>
-                  )}
-                </div>
-                <div className='font-display text-lg sm:text-xl text-gov-dark dark:text-white tabular-nums leading-none'>
-                  KES {fmtB(latest.value)}
-                </div>
-                <p className='text-[11px] text-neutral-muted mt-1 leading-snug'>{c.tagline}</p>
-                {/* Sparkbars */}
-                <div className='mt-3 flex items-end gap-1 h-10'>
-                  {values.map((v, i) => {
-                    const h = v.value == null ? 0 : (v.value / max) * 100;
-                    const isLatest = i === values.length - 1;
-                    return (
-                      <div key={v.year} className='flex-1 flex flex-col items-center gap-0.5'>
-                        <div
-                          className='w-full rounded-t-sm transition-all'
-                          style={{
-                            height: `${v.value == null ? 0 : Math.max(h, 0)}%`,
-                            background: isLatest
-                              ? `linear-gradient(180deg, ${c.gradStart}, ${c.gradEnd})`
-                              : '#E2DDD5',
-                          }}
-                        />
-                        <span className='text-[11px] text-neutral-muted tabular-nums'>{v.year}</span>
-                        <span className='text-[10px] text-neutral-muted text-center'>{v.column}</span>
-                        {v.value == null && <span className='text-[10px]'>Not published</span>}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          );
-        })}
+export default function FiscalTrendStrip({ history }: { history: FiscalHistoryRow[] }) {
+  const { t, lang } = useLang();
+  const titleId = useId();
+  const sorted = [...history]
+    .filter(row => row?.fiscal_year)
+    .sort((a, b) => a.fiscal_year.localeCompare(b.fiscal_year))
+    .slice(-5);
+  if (sorted.length < 2) return null;
+
+  const title = t(sorted.length === 5 ? 'budget.history.five_years' : 'budget.history.title');
+  const locale = lang === 'sw' ? 'sw-KE' : 'en-KE';
+  const billions = new Intl.NumberFormat(locale, { maximumFractionDigits: 0, useGrouping: false });
+  const trillions = new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const percent = new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 0 });
+  const formatAmount = (value: number) => value >= 1000 ? `${trillions.format(value / 1000)}T` : `${billions.format(value)}B`;
+
+  const series = MEASURES.flatMap(measure => {
+    // Only compare borrowing measured on the same Treasury fiscal-framework basis.
+    const rows = measure === 'total_borrowing'
+      ? sorted.filter(row => row.split_basis === FISCAL_FRAMEWORK_BASIS)
+      : sorted;
+    if (rows.length < 2) return [];
+    const observations = rows.map(row => observation(row, measure));
+    const max = Math.max(1, ...observations.map(({ value }) => value ?? 0));
+    const first = observations[0];
+    const latest = observations[observations.length - 1];
+    const change = first.value != null && first.value > 0 && latest.value != null
+      ? (latest.value - first.value) / first.value
+      : null;
+    const takeaway = change == null ? null : t(
+      change > 0.005 ? 'budget.history.up' : change < -0.005 ? 'budget.history.down' : 'budget.history.steady'
+    ).replace('{change}', percent.format(Math.abs(change))).replace('{year}', `FY${first.year}`);
+    return [{ measure, name: t(`budget.history.${measure}`), observations, max, takeaway }];
+  });
+  const bases = Array.from(new Set(series.flatMap(({ observations }) =>
+    observations.flatMap(({ basis }) => basis ? [basis] : [])
+  )));
+  const basisKey = bases.flatMap(basis => {
+    const short = t(`budget.history.${basis}_short`);
+    const full = t(`budget.history.${basis}`);
+    return short === full ? [] : [`${short} = ${full}`];
+  }).join(', ');
+
+  return (
+    <section aria-labelledby={titleId} className='audit-panel space-y-3 p-3 sm:p-5'>
+      <h2 id={titleId} className='font-display text-2xl font-semibold text-neutral-text'>{title}</h2>
+      <div className='grid grid-cols-1 gap-3 lg:grid-cols-2'>
+        {series.map(({ measure, name, observations, max, takeaway }) => (
+          <article key={measure} aria-label={name} className='audit-panel space-y-2 p-3'>
+            <h3 className='text-sm font-semibold'>{name}</h3>
+            {takeaway && <p className='text-sm text-neutral-muted'>{takeaway}</p>}
+            <MiniTrend observations={observations} max={max} debt={measure === 'debt_service_cost'} />
+            <TrendBars observations={observations.slice(-2)} max={max} debt={measure === 'debt_service_cost'} formatAmount={formatAmount} className='grid min-[400px]:hidden' />
+            <TrendBars observations={observations} max={max} debt={measure === 'debt_service_cost'} formatAmount={formatAmount} className='hidden min-[400px]:grid' />
+          </article>
+        ))}
       </div>
-    </motion.section>
+      {basisKey && (
+        <p className='text-xs leading-relaxed text-neutral-muted'>
+          {t('budget.history.basis_key')}: {basisKey}
+        </p>
+      )}
+      <InfoSheet title={title} trigger={trigger => (
+        <button {...trigger} type='button' className='audit-control'>{t('budget.history.open_sheet')}</button>
+      )}>
+        {series.map(({ measure, name, observations }) => (
+          <ResponsiveTable key={measure}>
+            <table className='w-full table-fixed text-left [overflow-wrap:anywhere]'>
+              <caption className='pb-2 text-left font-semibold'>{name}</caption>
+              <colgroup><col className='w-1/4' /><col className='w-1/4' /><col /></colgroup>
+              <thead>
+                <tr className='border-b border-neutral-border'>
+                  <th scope='col' className='pb-2 pr-2'>{t('budget.history.year_column')}</th>
+                  <th scope='col' className='pb-2 pr-2'>{t('budget.history.amount_column')}</th>
+                  <th scope='col' className='pb-2'>{t('budget.history.basis_column')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {observations.map(({ year, value, basis, source }) => (
+                  <tr key={year} className='border-b border-neutral-border align-top'>
+                    <th scope='row' className='py-2 pr-2 font-normal tabular-nums'>{year}</th>
+                    <td className='py-2 pr-2 tabular-nums'>{value == null ? t('foundation.no_chart_value') : formatAmount(value)}</td>
+                    <td className='py-2'>
+                      {value == null ? '—' : t(basis ? `budget.history.${basis}` : 'budget.history.unconfirmed')}
+                      {source && <span className='block text-xs text-neutral-muted'>{source}</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </ResponsiveTable>
+        ))}
+      </InfoSheet>
+    </section>
   );
 }

@@ -32,6 +32,7 @@
 
 import { motion } from 'framer-motion';
 import type { FiscalMeasureQualification, FiscalTaxObservation } from '@/lib/api/fiscal';
+import { useLang } from '@/lib/i18n/LangProvider';
 import FiscalMeasureDisclosure from './FiscalMeasureDisclosure';
 import { ArrowDownRight, Info } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -102,6 +103,7 @@ interface Segment {
 const FLOW_BAR_HEIGHT = 44;
 
 export default function BudgetFlowHero({ data }: Props) {
+  const { t } = useLang();
   const [hover, setHover] = useState<string | null>(null);
 
   const fy = data?.fiscal_year ?? '—';
@@ -291,16 +293,12 @@ export default function BudgetFlowHero({ data }: Props) {
     budget != null && redemptionB != null && equitableShareB != null ? budget - redemptionB + equitableShareB : null;
 
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 18 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-60px' }}
-      transition={{ duration: 0.55 }}
+    <section
       className='rounded-2xl bg-gradient-to-br from-white via-gov-sand/30 to-white dark:from-surface-elevated dark:via-surface-base dark:to-surface-elevated border border-neutral-border/40 shadow-surface overflow-hidden'>
       {/* Header */}
       <div className='px-5 sm:px-8 pt-6 sm:pt-8 pb-4'>
         <div className='flex items-start justify-between gap-4 flex-wrap'>
-          <div>
+          <div className='min-w-0 max-w-full [overflow-wrap:anywhere]'>
             <div className='text-[11px] font-semibold uppercase tracking-[0.18em] text-gov-forest/80 dark:text-emerald-100/80'>
               National Budget · {fy}
             </div>
@@ -373,26 +371,20 @@ export default function BudgetFlowHero({ data }: Props) {
             </details>)}
           </div>
           {/* Debt-service callout */}
-          <div className='relative flex-shrink-0'>
-            <div className='rounded-xl bg-gov-copper/10 border border-gov-copper/30 px-4 py-3 flex items-center gap-3 max-w-xs'>
-              <div className='flex-shrink-0 w-10 h-10 rounded-full bg-gov-copper/15 border border-gov-copper/40 flex items-center justify-center'>
-                <ArrowDownRight size={18} className='text-gov-copper' />
-              </div>
-              <div>
-                <div className='text-[11px] uppercase tracking-wider font-semibold text-gov-copper'>
-                  Treasury APDMR · {fy}
-                </div>
-                <div className='font-display text-xl text-gov-dark dark:text-white leading-tight tabular-nums'>
-                  {debtServiceCents == null ? '—' : `KES ${debtServiceCents.toFixed(1)}`}
-                </div>
-                <div className='text-[11px] text-neutral-muted leading-tight'>
-                  {debtServiceCents == null
-                    ? 'per KES 100 of ordinary revenue — compatible source evidence unconfirmed'
-                    : 'of every KES 100 of ordinary revenue services the debt (interest + principal)'}
-                </div>
-              </div>
+          <aside
+            aria-label={t('budget.flow.debt_source').replace('{year}', fy)}
+            className='flex w-full min-w-0 max-w-full items-start gap-3 rounded border border-neutral-border bg-surface-base px-4 py-3 text-neutral-text sm:max-w-xs'>
+            <ArrowDownRight aria-hidden='true' size={18} className='mt-0.5 shrink-0 text-signal-caution' />
+            <div className='min-w-0 [overflow-wrap:anywhere]'>
+              <p className='text-xs font-semibold'>{t('budget.flow.debt_source').replace('{year}', fy)}</p>
+              <p className='font-display text-xl font-semibold leading-tight tabular-nums'>
+                {debtServiceCents == null ? '—' : `KES ${debtServiceCents.toFixed(1)}`}
+              </p>
+              <p className='text-sm leading-snug text-neutral-muted'>
+                {t(debtServiceCents == null ? 'budget.flow.debt_ratio_withheld' : 'budget.flow.debt_ratio')}
+              </p>
             </div>
-          </div>
+          </aside>
         </div>
       </div>
 
@@ -491,7 +483,7 @@ export default function BudgetFlowHero({ data }: Props) {
           </span>
         </div>
       </div>
-    </motion.section>
+    </section>
   );
 }
 
