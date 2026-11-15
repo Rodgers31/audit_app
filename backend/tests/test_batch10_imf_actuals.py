@@ -264,7 +264,7 @@ def test_projection_only_sustainability_keeps_published_series(client, db_sessio
     assert body["regional_peers_basis"]["debt_to_gdp"]["reference_year"] is None
 
 
-def test_projection_only_sustainability_uses_declared_cbk_fallback(client, db_session):
+def test_projection_only_sustainability_withholds_unqualified_cbk_ratio(client, db_session):
     observation(db_session)
     db_session.add(
         DebtTimeline(
@@ -273,15 +273,13 @@ def test_projection_only_sustainability_uses_declared_cbk_fallback(client, db_se
     )
     db_session.commit()
     body = response(client, "debt/sustainability")
-    ratio = body["debt_to_gdp"]
-    assert (ratio["value"], ratio["year"], ratio["vintage"]) == (60, 2024, None)
-    assert "Central government" in ratio["basis"]
-    assert ratio["source"] == "CBK Annual Reports / National Treasury BPS"
-    assert "present-value" in ratio["assessment"]
+    assert body["debt_to_gdp"] is None
+    assert body["debt_to_gdp_absent_reason"]
+    assert body["projections"][0]["is_published_projection"] is True
     assert body["regional_peers_basis"]["debt_to_gdp"]["reference_year"] is None
 
 
-def test_projection_only_national_uses_declared_world_bank_fallback(
+def test_projection_only_national_does_not_compute_ratio_from_unqualified_gdp(
     client, db_session, seed_country, seed_source_doc
 ):
     register(db_session, seed_country, seed_source_doc)
@@ -289,13 +287,12 @@ def test_projection_only_national_uses_declared_world_bank_fallback(
     db_session.add(GDPData(year=2024, gdp_value=100))
     db_session.commit()
     body = response(client, "debt/national")["data"]
-    assert body["debt_to_gdp_ratio"] == 60
-    assert body["debt_to_gdp_year"] == 2024
-    assert body["debt_to_gdp_source"] == "CBK / World Bank"
-    assert "approximate" in body["debt_to_gdp_basis"]
-    assert "World Bank, 2024" in body["debt_to_gdp_basis"]
+    assert body["debt_to_gdp_ratio"] is None
+    assert body["debt_to_gdp_year"] is None
+    assert body["debt_to_gdp_source"] is None
+    assert body["debt_to_gdp_basis"] is None
     assert body["debt_to_gdp_vintage"] is None
-    assert body["debt_to_gdp_absent_reason"] is None
+    assert body["debt_to_gdp_absent_reason"]
 
 
 def test_projection_only_national_without_gdp_is_absent(

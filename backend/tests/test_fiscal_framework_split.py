@@ -347,7 +347,7 @@ LISTING = f"""
 def test_discovery_reads_every_edition_and_records_the_listing(
     monkeypatch, tmp_path, parse_cache_enabled
 ):
-    from seeding import pdf_download
+    from seeding import native_ocr, pdf_download
     from seeding.config import SeedingSettings
 
     by_url = {URL_2627: "fy2026_27", URL_2324: "fy2023_24"}
@@ -372,6 +372,11 @@ def test_discovery_reads_every_edition_and_records_the_listing(
 
     monkeypatch.setattr(pdf_download, "get_or_download_pdf", fake_download)
     monkeypatch.setattr(ff, "extract_page_texts", extract_owned_text)
+    # The retained text never invokes OCR. Use a fixture engine identity so
+    # the real parse cache is exercised even without a Tesseract installation.
+    monkeypatch.delenv("SEED_PARSER_ROOT", raising=False)
+    monkeypatch.delenv("AUDIT_GITHUB_DATABASE_TLS", raising=False)
+    monkeypatch.setattr(native_ocr, "engine_identity", lambda: ("owned-test-ocr", ["eng"]))
     settings = SeedingSettings(
         cache_path=str(tmp_path), parse_cache_enabled=parse_cache_enabled
     )

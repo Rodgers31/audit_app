@@ -80,6 +80,10 @@ jobs:
       with:
         python-version: '3.12'
         cache: pip
+    - name: Set up Node for workflow contract tests
+      uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      with:
+        node-version: '24.x'
     - name: Install dependencies
       run: 'cd backend
 
@@ -90,6 +94,15 @@ jobs:
         pip install -r requirements-dev.txt
 
         '
+    - name: Install media acceptance tools
+      timeout-minutes: 5
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends ffmpeg
+    - name: Test bounded worker host fixture controls
+      timeout-minutes: 2
+      run: python -m unittest discover -s tools/worker_host_fixture/tests -p 'test_*.py' -v
+
     - name: Lint with flake8 (Critical Errors Only)
       run: 'cd backend
 
@@ -110,6 +123,9 @@ jobs:
       timeout-minutes: 5
       run: python .github/scripts/prepare_audit_epoch_test_fixture.py prepare --state
         "$RUNNER_TEMP/audit-epoch-fixture-state.json" --port 55534
+    - name: Prepare owned nightly test databases
+      timeout-minutes: 3
+      run: bash .github/scripts/prepare_nightly_test_fixture.sh prepare
     - name: Run Core Backend Tests (REQUIRED)
       id: backend_tests
       run: python .github/scripts/run_backend_tests.py
@@ -118,6 +134,10 @@ jobs:
         REDIS_URL: redis://localhost:6379
         TESTING: true
         PYTHON_DOTENV_DISABLED: '1'
+    - name: Remove owned nightly test databases
+      if: always()
+      timeout-minutes: 3
+      run: bash .github/scripts/prepare_nightly_test_fixture.sh cleanup
     - name: Remove owned audit epoch test fixture
       if: always()
       timeout-minutes: 5
@@ -206,6 +226,9 @@ jobs:
       env:
         VERIFICATION_COMMIT: ${{ inputs.commit_sha }}
         VERIFICATION_SCOPE: ${{ inputs.verification_scope }}
+    - name: Fetch the frozen admin paint test fixture
+      run: git fetch --no-tags --depth=1 origin 924f1a4f27e1952f97d2291d8878d88603132237
+
     - name: Set up Node.js
       uses: actions/setup-node@v6
       with:

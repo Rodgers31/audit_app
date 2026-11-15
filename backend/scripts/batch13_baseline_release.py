@@ -39,7 +39,7 @@ Refused = baseline.Refused
 CONTROLS = (
     ("github_seed", "native_scheduled", (".github/workflows/seed.yml", "backend/seeding/cli.py"),
      "Repository/workflow admission, schedules, dispatch/rerun, queued and running jobs, runner descendants; secret target and receipt transports."),
-    ("github_deploy", "migrations_manual_scripts", (".github/workflows/docker-build-deploy.yml", ".github/workflows/ci.yml", ".github/workflows/verification.yml", ".github/workflows/r2-acceptance.yml"),
+    ("github_deploy", "migrations_manual_scripts", (".github/workflows/docker-build-deploy.yml", ".github/workflows/verification.yml", ".github/workflows/r2-acceptance.yml"),
      "Keep all writers fenced; head upgrades, SSH compose deploy, images, revalidation and R2 publication need separate disposition."),
     ("render_lifecycle", "application_sessions", ("backend/main.py", "backend/Dockerfile", "backend/Dockerfile.prod", "docker-compose.prod.yml"),
      "Exact service/replica/deploy/image/start command; manual/API/hook/rollback/resume, Gunicorn request recycling, Docker/provider health replacement, provider maintenance and credential holders."),

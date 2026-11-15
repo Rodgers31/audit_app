@@ -117,6 +117,15 @@ JUDGEMENT_WORDS = (
 )
 
 SUPPRESSION = "counties-literal-ok:"
+# Exact alternate labels used in KNBS Economic Survey 2026, Table 5.13.
+WORKBOOK_COUNTY_ALIASES = {
+    "Taita/Taveta": "Taita-Taveta",
+    "Elgeyo/Marakwet": "Elgeyo-Marakwet",
+    "Nairobi City": "Nairobi",
+}
+_COUNTY_ALIAS_KEYS = {
+    alias.lower(): name.lower() for alias, name in WORKBOOK_COUNTY_ALIASES.items()
+}
 
 
 def _canonical(text: str) -> str:
@@ -129,6 +138,7 @@ def _canonical(text: str) -> str:
     key = text.strip().lower().replace("’", "'")
     if key.endswith(" county"):
         key = key[: -len(" county")]
+    key = _COUNTY_ALIAS_KEYS.get(key, key)
     return key.replace("-", " ").replace("'", "").replace("  ", " ").strip()
 
 
@@ -379,6 +389,14 @@ def test_the_detector_does_not_flag_a_full_roster_or_a_lookup():
     ) + "]\n"
     assert not find_county_selections(roster, "roster.py"), (
         "the full 47 are a reference table and must not trip the guard"
+    )
+
+    workbook_roster = roster
+    for alias, name in WORKBOOK_COUNTY_ALIASES.items():
+        workbook_roster = workbook_roster.replace(f'"{name}"', f'"{alias}"')
+    assert not find_county_selections(workbook_roster, "workbook_roster.py")
+    assert find_county_selections(
+        workbook_roster.replace('    "Kwale",\n', ''), "partial_workbook_roster.py"
     )
 
     assert not find_county_selections(

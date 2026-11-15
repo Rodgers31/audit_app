@@ -53,7 +53,7 @@ def test_real_cli_discovery_terminal_truth_and_atomicity(opendata_pg,tmp_path,mo
     _,_,engine,url = opendata_pg
     with engine.begin() as db: db.execute(text('UPDATE batch11_control SET mode=:m'), {'m':mode})
     with process(tmp_path,url) as (child,log):
-        assert child.wait(timeout=20) == (0 if mode in ('normal','candidate') else 1), log.read_text()
+        assert child.wait(timeout=20) == (0 if mode == 'normal' else 1), log.read_text()
     jobs = query(engine,'SELECT id,status::text,items_created,metadata,errors FROM ingestion_jobs')
     assert len(jobs) == 1 and jobs[0]['status'] == status
     assert len(query(engine,'SELECT 1 FROM source_documents')) == len(query(engine,'SELECT 1 FROM extractions')) == created
@@ -67,8 +67,7 @@ def test_real_cli_discovery_terminal_truth_and_atomicity(opendata_pg,tmp_path,mo
         state = jobs[0]['metadata']['release_discovery']
         assert state['status'] == 'quarantined_review_candidate' and state['public_qualification'] == 'not_granted'
         assert jobs[0]['errors']
-        # Existing CLI returns zero for completed-with-errors; the real workflow
-        # hollow-run gate must reject refused source mode.
+        # The refused source makes the CLI nonzero; the independent hollow-run gate must also reject it.
         from models import IngestionJob
         from seeding.staleness import hollow_run_findings
         with opendata_pg[1]() as db:
@@ -87,7 +86,7 @@ def test_nochange_replay_and_new_candidate_preserve_accepted_records(opendata_pg
     jobs = query(engine,'SELECT metadata FROM ingestion_jobs ORDER BY id')
     assert [j['metadata']['unchanged'] for j in jobs] == [0,1]
     with engine.begin() as db: db.execute(text("UPDATE batch11_control SET mode='candidate'"))
-    with process(tmp_path,url) as (child,log): assert child.wait(timeout=20) == 0, log.read_text()
+    with process(tmp_path,url) as (child,log): assert child.wait(timeout=20) == 1, log.read_text()
     state = query(engine,'SELECT metadata FROM ingestion_jobs ORDER BY id DESC LIMIT 1')[0]['metadata']['release_discovery']
     assert state['last_recorded_edition']['source_document_id'] == original[0]['id']
     assert query(engine,'SELECT id,md5,metadata,fetch_date FROM source_documents') == original

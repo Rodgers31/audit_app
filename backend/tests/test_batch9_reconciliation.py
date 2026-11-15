@@ -159,7 +159,7 @@ def test_audited_native_reconciliation_and_subsequent_native_run(owned):
         with owned.factory.begin() as session:
             job = IngestionJob(domain="audits", status=IngestionStatus.COMPLETED,
                 started_at=datetime.now(timezone.utc), finished_at=datetime.now(timezone.utc),
-                meta={"seeding_claim_id": str(execution.identity)}, errors=[])
+                items_processed=1, meta={"seeding_claim_id": str(execution.identity)}, errors=[])
             session.add(job)
             session.flush()
             job_id = job.id
@@ -396,7 +396,7 @@ def dispatch_retained(db, returned=False, refusal=False):
             status = IngestionStatus.FAILED if refusal else (IngestionStatus.COMPLETED if returned else IngestionStatus.RUNNING)
             job = IngestionJob(domain="audits", status=status,
                 started_at=datetime.now(timezone.utc), finished_at=datetime.now(timezone.utc) if returned or refusal else None,
-                meta=meta, errors=[])
+                items_processed=1 if returned else 0, meta=meta, errors=[])
             session.add(job)
             session.flush()
             job_id = job.id

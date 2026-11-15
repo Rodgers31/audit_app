@@ -232,7 +232,9 @@ def _before_image(row: object) -> dict:
             value = str(value)
         elif isinstance(value, enum.Enum):
             value = value.value
-        result[attribute.columns[0].name] = copy.deepcopy(value)
+        # SQLAlchemy can expose a quoted_name, a str subclass. The CLI
+        # receipt accepts plain JSON string keys, retaining the SQL spelling.
+        result[str(attribute.columns[0].name)] = copy.deepcopy(value)
     return result
 
 

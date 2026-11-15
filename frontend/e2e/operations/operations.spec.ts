@@ -21,42 +21,42 @@ test.beforeEach(async ({context}) => {
 });
 test('real list filters, pagination, history and keyboard detail navigation',async ({page})=>{
   await page.goto('/admin/ingestion');
-  await expect(page.getByText('45 jobs in the last 7 days.')).toBeVisible();
+  await expect(page.getByText('45 matching jobs in the last 7 days.')).toBeVisible();
   await page.getByRole('button',{name:'Next',exact:true}).click();
   await expect(page).toHaveURL(/page=2/);
   await expect(page.getByText('Page 2',{exact:true})).toBeVisible();
-  await page.getByLabel('Status',{exact:true}).selectOption('failed');
+  await page.getByRole('combobox',{name:'Outcome',exact:true}).selectOption('failed');
   await expect(page).toHaveURL(/status=failed/);
   await expect(page).not.toHaveURL(/page=/);
-  await expect(page.getByText('15 jobs in the last 7 days.')).toBeVisible();
+  await expect(page.getByText('15 matching jobs in the last 7 days.')).toBeVisible();
   await page.goBack();
   await expect(page).toHaveURL(/page=2/);
-  const link=page.getByRole('link',{name:'View job #21',exact:true});
+  const link=page.getByRole('link',{name:'Inspect outcome → County budgets job #21',exact:true});
   await link.focus(); await page.keyboard.press('Enter');
-  await expect(page).toHaveURL(/\/admin\/ingestion\/21$/);
-  await expect(page.getByText('Ingestion job #21',{exact:true})).toBeVisible();
-  await expect(page.getByText(/safe operational fields/)).toBeVisible();
+  await expect(page).toHaveURL(/\/admin\/ingestion\/21\?page=2$/);
+  await expect(page.getByText('Data update · job #21',{exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Data outcome'})).toBeVisible();
   await expect(page.getByText('PRIVATE_DIAGNOSTIC')).toHaveCount(0);
-  await page.getByRole('button',{name:'Refresh',exact:true}).click();
-  await page.getByRole('link',{name:'Back to ingestion jobs'}).click();
+  await page.getByRole('button',{name:'Refresh outcome',exact:true}).click();
+  await page.getByRole('link',{name:'Back to data updates'}).click();
   await expect(page).toHaveURL(/\/admin\/ingestion\?page=2$/);
   await expect(page.getByText('Page 2',{exact:true})).toBeVisible();
-  await page.getByLabel('Domain',{exact:true}).fill('audits');
+  await page.getByRole('combobox',{name:'Source',exact:true}).selectOption('audits');
   await expect(page).toHaveURL(/domain=audits/);
   await expect(page).not.toHaveURL(/page=/);
-  await expect(page.getByText('22 jobs in the last 7 days.')).toBeVisible();
-  await page.getByLabel('Time window',{exact:true}).selectOption('30');
+  await expect(page.getByText('22 matching jobs in the last 7 days.')).toBeVisible();
+  await page.getByRole('combobox',{name:'Time window',exact:true}).selectOption('30');
   await expect(page).toHaveURL(/days=30/);
-  await expect(page.getByText('22 jobs in the last 30 days.')).toBeVisible();
+  await expect(page.getByText('22 matching jobs in the last 30 days.')).toBeVisible();
   await page.getByRole('button',{name:'Clear filters',exact:true}).click();
   await expect(page).toHaveURL(/\/admin\/ingestion$/);
-  await expect(page.getByText('45 jobs in the last 7 days.')).toBeVisible();
+  await expect(page.getByText('45 matching jobs in the last 7 days.')).toBeVisible();
 });
 test('bad URL values are canonicalized, empty later pages can recover, missing IDs are distinct',async ({page})=>{
   const requests:string[]=[];page.on('request',request=>{if(request.url().includes('/api/v1/admin/ingestion-jobs')) requests.push(request.url());});
   await page.goto('/admin/ingestion?days=NaN&page=-2&status=alien');
   await expect(page).toHaveURL(/\/admin\/ingestion$/);
-  await expect(page.getByText('45 jobs in the last 7 days.')).toBeVisible();
+  await expect(page.getByText('45 matching jobs in the last 7 days.')).toBeVisible();
   expect(requests.some(url=>url.includes('NaN') || url.includes('alien') || url.includes('page=-2'))).toBe(false);
   await page.goto('/admin/ingestion?page=4');
   await expect(page.getByText('No jobs on this page.')).toBeVisible();
@@ -69,9 +69,10 @@ test('bad URL values are canonicalized, empty later pages can recover, missing I
 });
 test('calendar plan and disabled execution controls agree with real rejection',async ({page,request})=>{
   await page.goto('/admin/etl');
+  await page.getByText('Source calendar · planning evidence',{exact:true}).click();
   await expect(page.getByText('Planned today',{exact:true})).toBeVisible();
   await expect(page.getByText(/^unverified$/i)).toBeVisible();
-  await expect(page.getByText(/The calendar controls below are not connected to worker dispatch\./)).toBeVisible();
+  await expect(page.getByText(/This calendar predicts source checks/)).toBeVisible();
   for(const control of ['Trigger','Dry-run']) {
     const buttons=page.getByRole('button',{name:control,exact:true});
     await expect(buttons).toHaveCount(6);
@@ -89,24 +90,25 @@ test('calendar plan and disabled execution controls agree with real rejection',a
 test('mobile job cards preserve dry-run and navigation without horizontal overflow',async ({page})=>{
   await page.setViewportSize({width:390,height:844});
   await page.goto('/admin/ingestion');
-  await expect(page.getByText('45 jobs in the last 7 days.')).toBeVisible();
-  const mobile=page.locator('main').getByRole('link').filter({hasText:'counties_budget'}).first();
+  await expect(page.getByText('45 matching jobs in the last 7 days.')).toBeVisible();
+  const card=page.getByRole('article').filter({hasText:'Job #1 ·'});
+  const mobile=card.getByRole('link',{name:'Inspect outcome → County budgets job #1', exact:true});
   await expect(mobile).toBeVisible();
-  await expect(mobile.getByText('dry-run',{exact:true})).toBeVisible();
+  await expect(card.getByText(/Job #1 · .* · Dry run/)).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await mobile.click();
-  await expect(page.getByText('Ingestion job #1',{exact:true})).toBeVisible();
+  await expect(page.getByText('Data update · job #1',{exact:true})).toBeVisible();
 });
 test('malformed API refreshes fail safely and retry recovers',async ({page})=>{
   await page.goto('/admin/ingestion');
-  await expect(page.getByText('45 jobs in the last 7 days.')).toBeVisible();
+  await expect(page.getByText('45 matching jobs in the last 7 days.')).toBeVisible();
   await page.route('**/api/v1/admin/ingestion-jobs?*',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({jobs:null,total:true})}));
-  await page.getByRole('button',{name:'Refresh',exact:true}).click();
-  await expect(page.getByText('Could not load jobs.')).toBeVisible();
-  await expect(page.getByText('45 jobs in the last 7 days.')).toHaveCount(0);
+  await page.getByRole('button',{name:'Refresh updates',exact:true}).click();
+  await expect(page.getByText('Could not load data updates. Their outcomes are unknown.')).toBeVisible();
+  await expect(page.getByText('45 matching jobs in the last 7 days.')).toHaveCount(0);
   await page.unroute('**/api/v1/admin/ingestion-jobs?*');
   await page.getByRole('button',{name:'Retry',exact:true}).click();
-  await expect(page.getByText('45 jobs in the last 7 days.')).toBeVisible();
+  await expect(page.getByText('45 matching jobs in the last 7 days.')).toBeVisible();
 });
 test('middleware and real route admin guards reject inert viewer and anonymous access',async ({page,context,request})=>{
   await context.clearCookies();await signIn(context,viewerId);

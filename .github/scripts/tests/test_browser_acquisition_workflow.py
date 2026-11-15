@@ -84,20 +84,22 @@ class BrowserAcquisitionWorkflowTests(unittest.TestCase):
                 self.validate(bad)
 
     def test_pull_request_and_deployment_callers_have_no_new_secret_requirement(self):
-        # Reviewed backend deadline/receipt change; acquisition and secrets unchanged.
-        baseline_hashes = {'ci.yml': 'd99077f26d996931e890fcab7908f00ca118c4cd0c6704bbd1c3712f9252c92b', 'docker-build-deploy.yml': '949e8ae94456b38d2b2d5ed32a899fdc0f6a44541b05c44d19a56063ed055793'}
-        for name, expected_hash in baseline_hashes.items():
-            raw = (ROOT/'.github/workflows'/name).read_bytes()
-            self.assertEqual(hashlib.sha256(raw).hexdigest(), expected_hash)
+        paths = ROOT / '.github/workflows'
+        self.assertFalse((paths / 'ci.yml').exists())
+        for name in ('pr-ci.yml', 'docker-build-deploy.yml'):
+            raw = (paths / name).read_bytes()
             workflow = yaml.safe_load(raw)
             self.assertNotIn('BROWSER_POSTGRES_TRANSPORT', raw.decode())
             self.assertNotIn('prepare_browser_registry_auth.py', raw.decode())
-            # Deployment retains its existing global registry username and
-            # separate build-job login. No new test-job credentials are added.
             if name == 'docker-build-deploy.yml':
+                self.assertEqual(hashlib.sha256(raw).hexdigest(),
+                                 '925d0cefb7a4f730bcaeac0472be89e45838db716fcec45434dc3561315a0d89')
                 frontend = workflow['jobs']['test-frontend']
                 self.assertNotIn('DOCKERHUB_TOKEN', frontend.get('env', {}))
                 self.assertIn('test:e2e:legacy', json.dumps(frontend))
+            else:
+                self.assertNotIn('DOCKERHUB_TOKEN', raw.decode())
+                self.assertNotIn('DOCKERHUB_USERNAME', raw.decode())
 
 
 if __name__ == '__main__':

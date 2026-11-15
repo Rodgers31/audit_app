@@ -9,7 +9,7 @@ or ``db_session`` fixture gets a **clean, isolated** database.
 import os
 import sys
 from datetime import datetime, timezone
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -210,8 +210,9 @@ def db_session(_setup_tables):
 
 
 @pytest.fixture()
-def client(db_session):
+def client(db_session, monkeypatch):
     """FastAPI TestClient with the DB dependency overridden to use test session."""
+    from services.endpoint_resources import SingleWorker
 
     def _override_get_db():
         try:
@@ -237,13 +238,20 @@ def client(db_session):
     # The rate limiter is bypassed session-wide in pytest_configure above —
     # patching it here would be a no-op (the middleware instance binds
     # dispatch_func at construction, before this fixture ever runs).
-    with patch("main.get_db", _override_get_db):
+    # This client bypasses lifespan, which ordinarily creates this worker.
+    # A previous lifespan test may have closed the process-global instance.
+    peer_worker = SingleWorker()
+    # Use pytest's same undo stack as the calling test. If the test replaces
+    # get_db again, its override must unwind before this fixture's override.
+    monkeypatch.setattr("main.get_db", _override_get_db)
+    monkeypatch.setattr("main._peer_worker", peer_worker)
+    try:
         yield TestClient(app, raise_server_exceptions=False)
-
-    # Restore handlers so subsequent test parametrisations still work
-    app.router.on_startup = _saved_startup
-    app.router.on_shutdown = _saved_shutdown
-    app.dependency_overrides.clear()
+    finally:
+        peer_worker.close()
+        app.router.on_startup = _saved_startup
+        app.router.on_shutdown = _saved_shutdown
+        app.dependency_overrides.clear()
 
 
 # ── seed helpers (import into individual test files as needed) ──────────

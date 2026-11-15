@@ -195,7 +195,7 @@ def test_domain_failure_outcomes_never_appear_processed(harness, monkeypatch, ou
     report = result.metadata["county_volumes"]
     assert not report["processed"] and not report["already_current"]
     assert (
-        len(report["partial"] if outcome in ("partial", "skipped") else report["failed"])
+        len(report["partial"] if outcome == "partial" else report["failed"])
         == 4
     )
 

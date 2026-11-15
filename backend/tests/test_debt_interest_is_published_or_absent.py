@@ -428,6 +428,7 @@ class TestWriter:
 @pytest.fixture()
 def register(db_session, national, seed_source_doc):
     from models import DebtCategory, FiscalSummary, Loan
+    from fiscal_evidence import SYNTHETIC_SHA, qualify_synthetic_row
 
     bond_terms = published_rate_terms(
         rate_pct=13.41, basis="coupon_weighted_average",
@@ -458,10 +459,10 @@ def register(db_session, national, seed_source_doc):
             outstanding=amt, interest_rate=col, issue_date=datetime(2025, 12, 31),
             currency="KES", source_document_id=seed_source_doc.id, provenance=prov,
         ))
-    db_session.add(FiscalSummary(
+    fiscal = qualify_synthetic_row(FiscalSummary(
         fiscal_year="FY 2026/27", appropriated_budget=5_485_700_000_000,
         total_revenue=2_985_700_000_000, debt_service_cost=2_315_900_000_000,
-        county_allocation=420_000_000_000,
+        county_allocation=420_000_000_000, unit="KES",
         page_ref="voted total PDF p.11; CFS summary PDF p.1193",
         meta={
             "budget_basis": "cob_gross",
@@ -479,6 +480,12 @@ def register(db_session, national, seed_source_doc):
             },
         },
     ))
+    for field, locator in (("appropriated_budget", "budget_basis_source"),
+                           ("debt_service_cost", "debt_service_source")):
+        fiscal.meta["fiscal_measure_contract"]["measures"][field]["source"] = {
+            **fiscal.meta[locator], "sha256": SYNTHETIC_SHA,
+        }
+    db_session.add(fiscal)
     db_session.commit()
 
 
@@ -546,11 +553,16 @@ def test_a_budget_source_is_not_cited_for_debt_service(client, register, db_sess
     from models import FiscalSummary
 
     row = db_session.query(FiscalSummary).filter_by(fiscal_year="FY 2026/27").one()
-    row.meta = {k: v for k, v in row.meta.items() if k != "debt_service_source"}
+    from copy import deepcopy
+    metadata = deepcopy(row.meta)
+    metadata.pop("debt_service_source")
+    metadata["fiscal_measure_contract"]["measures"].pop("debt_service_cost")
+    row.meta = metadata
     db_session.commit()
     ads = client.get("/api/v1/debt/loans").json()["annual_debt_service"]
     assert ads["value_kes"] is None
-    assert "does not record the document" in ads["absent_reason"]
+    assert ads.get("source") is None
+    assert "has no debt-service figure" in ads["absent_reason"]
 
 
 def test_the_fiscal_writer_keeps_the_debt_service_source(db_session, seed_country):

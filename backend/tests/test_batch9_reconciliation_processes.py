@@ -56,7 +56,7 @@ def stop(process):
         # Do not signal a disappeared/reused group, but retain genuine orphan
         # cleanup. Verify UID and the actual child command before signalling.
         members = []
-        for line in subprocess.check_output(["ps", "-axo", "uid=,pid=,pgid=,command="], text=True).splitlines():
+        for line in subprocess.check_output(["ps", "-ww", "-axo", "uid=,pid=,pgid=,command="], text=True).splitlines():
             parts = line.split(None, 3)
             if len(parts) == 4 and int(parts[2]) == process.pid:
                 members.append(parts)
@@ -144,7 +144,7 @@ def test_supervisor_death_with_actual_live_orphan_refuses_then_dispatch_reconcil
         os.kill(supervisor.pid, signal.SIGKILL)
         supervisor.wait(timeout=5)
         # The real adapter child stays stopped/alive in the dead parent's group.
-        orphan = subprocess.check_output(["ps", "-axo", "pid=,pgid=,command="], text=True)
+        orphan = subprocess.check_output(["ps", "-ww", "-axo", "pid=,pgid=,command="], text=True)
         members = [line for line in orphan.splitlines() if "admin_etl_dispatch_adapter" in line and int(line.split()[1]) == supervisor.pid]
         assert members, "Actual adapter orphan must remain alive"
         owned.admission(False)

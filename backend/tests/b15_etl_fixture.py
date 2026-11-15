@@ -10,6 +10,7 @@ from uuid import uuid4
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
+from tests.admin_audit_epoch.ephemeral_database import head
 
 URL = "postgresql+psycopg2://b15_etl:b15-inert-local@127.0.0.1:55396/b15_etl"
 IMAGE = "sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3"
@@ -50,11 +51,12 @@ def postgres():
         backend = Path(__file__).resolve().parents[1]
         env = {"PATH": os.environ["PATH"], "PYTHONPATH": str(backend),
                "PYTHON_DOTENV_DISABLED": "1", "DATABASE_URL": URL}
-        subprocess.run([sys.executable, "-m", "alembic", "upgrade", "a545b14a0001"],
+        current_head = head()
+        subprocess.run([sys.executable, "-m", "alembic", "upgrade", current_head],
                        cwd=backend, env=env, check=True, timeout=90)
         with engine.connect() as db:
-            if db.scalar(text("SELECT version_num FROM alembic_version")) != "a545b14a0001":
-                raise RuntimeError("Frozen accepted ETL schema required")
+            if db.scalar(text("SELECT version_num FROM alembic_version")) != current_head:
+                raise RuntimeError("Current repository ETL schema required")
         yield sessionmaker(bind=engine), engine
     finally:
         if engine is not None:

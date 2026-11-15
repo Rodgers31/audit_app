@@ -45,13 +45,13 @@ if os.environ.get("BATCH10_READINESS_INERT") == "1":
         load_builtin_domains()
 
         def inert_budget(session, settings, context):
-            return DomainRunResult(domain="national_budget", dry_run=context.dry_run)
+            return DomainRunResult(domain="national_budget", dry_run=context.dry_run, items_processed=1)
 
         def inert_audits(session, settings, context):
             print("WRITER_ENTERED", flush=True)
             if sys.stdin.readline().strip() != "complete":
                 raise RuntimeError("Owned writer barrier was not released")
-            return DomainRunResult(domain="audits", dry_run=context.dry_run)
+            return DomainRunResult(domain="audits", dry_run=context.dry_run, items_processed=1)
 
         REGISTRY._handlers.clear()
         REGISTRY.register("national_budget", inert_budget)

@@ -24,7 +24,7 @@ FULL_QUALITY_SCOPE = "${{ always() && inputs.verification_scope == 'full' }}"
 
 class ManualWorkflowBoundaryTests(unittest.TestCase):
     def test_required_reconciliation_fixture_is_ready_before_tests_and_always_cleaned(self):
-        for filename in ("ci.yml", "verification.yml"):
+        for filename in ("pr-ci.yml", "verification.yml"):
             steps = yaml.safe_load((ROOT / ".github/workflows" / filename).read_text())["jobs"]["test-backend"]["steps"]
             images = next(i for i, step in enumerate(steps) if step.get("name") == "Prepare pinned owned PostgreSQL test images")
             preparation = next(step for step in steps if step.get("name") == "Prepare owned reconciliation test fixture")
@@ -78,23 +78,25 @@ class ManualWorkflowBoundaryTests(unittest.TestCase):
             self.assertEqual(selected, expected)
 
     def test_owned_postgres_images_are_prepared_before_backend_tests(self):
-        for filename in ("ci.yml", "verification.yml"):
+        for filename in ("pr-ci.yml", "verification.yml"):
             job = yaml.safe_load((ROOT / ".github/workflows" / filename).read_text())["jobs"]["test-backend"]
             steps = job["steps"]
             preparation = next(step for step in steps if step.get("name") == "Prepare pinned owned PostgreSQL test images")
             self.assertEqual(preparation["run"], "python .github/scripts/prepare_postgres_test_images.py --service-postgres-ref public.ecr.aws/docker/library/postgres@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3")
             self.assertEqual(preparation["timeout-minutes"], 5)
             self.assertNotIn("continue-on-error", preparation)
-            self.assertEqual(job["timeout-minutes"], 60)
+            self.assertEqual(job["timeout-minutes"], 90 if filename == "pr-ci.yml" else 60)
             self.assertLess(steps.index(preparation), next(i for i, step in enumerate(steps) if step.get("id") == "backend_tests"))
 
     def test_manual_jobs_keep_the_required_ci_contract(self):
-        ci = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
+        ci = yaml.safe_load((ROOT / ".github/workflows/pr-ci.yml").read_text())
         manual = yaml.safe_load((ROOT / ".github/workflows/verification.yml").read_text())
-        self.assertEqual(manual["permissions"], ci["permissions"])
+        self.assertEqual(manual["permissions"], ci["jobs"]["security-scan"]["permissions"])
         for name in JOBS:
             with self.subTest(job=name):
-                expected = ci["jobs"][name]
+                expected = deepcopy(ci["jobs"][name])
+                if name == "security-scan":
+                    del expected["permissions"]
                 actual = deepcopy(manual["jobs"][name])
                 if name != "test-backend":
                     self.assertEqual(actual.pop("if"),
@@ -103,6 +105,26 @@ class ManualWorkflowBoundaryTests(unittest.TestCase):
                         actual["if"] = "always()"
                 steps = actual["steps"]
                 if name == "test-backend":
+                    # Normalize only the PR runner's process supervisor and
+                    # bounded job time. Manual dispatch keeps its existing
+                    # contract; both still execute the same test launcher.
+                    self.assertEqual(expected["timeout-minutes"], 90)
+                    self.assertEqual(actual["timeout-minutes"], 60)
+                    expected["timeout-minutes"] = 60
+                    tools = next(step for step in expected["steps"]
+                                 if step.get("name") == "Install backend acceptance tools")
+                    self.assertTrue(tools["run"].endswith(" ffmpeg tini\n"))
+                    tools["run"] = tools["run"].removesuffix(" tini\n") + "\n"
+                    tools["name"] = "Install media acceptance tools"
+                    expected["steps"].remove({
+                        "name": "Build isolated refresh census fixture",
+                        "timeout-minutes": 5,
+                        "run": "docker build --platform linux/amd64 --file .github/scripts/refresh-census.Dockerfile --tag auditgava-ci-refresh-census:local backend",
+                    })
+                    launcher = next(step for step in expected["steps"] if step.get("id") == "backend_tests")
+                    self.assertEqual(launcher["run"], "tini -s -- python .github/scripts/run_backend_tests.py")
+                    launcher["run"] = launcher["run"].removeprefix("tini -s -- ")
+                    self.assertEqual(launcher["env"].pop("TEST_REFRESH_CENSUS_CONTAINER"), "1")
                     validator_path = ROOT / ".github/scripts/tests/test_backend_acquisition_workflow.py"
                     spec = importlib.util.spec_from_file_location("backend_acquisition_contract", validator_path)
                     validator = importlib.util.module_from_spec(spec)
@@ -160,6 +182,11 @@ class ManualWorkflowBoundaryTests(unittest.TestCase):
                     })
                     del checkouts[0]["with"]
                     steps.remove(guards[0])
+                # PR CI pins actions to commits. The dormant manual workflow
+                # still uses the same action paths with its existing version tags.
+                for step in expected["steps"] + actual["steps"]:
+                    if "uses" in step:
+                        step["uses"] = step["uses"].partition("@")[0]
                 self.assertEqual(actual, expected)
 
 

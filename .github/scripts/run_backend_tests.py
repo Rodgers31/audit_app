@@ -29,6 +29,7 @@ LEGACY_ETL_TESTS = frozenset({
     "tests/test_financial_absence_publication.py",
     "tests/test_knbs_parser_year_column.py",
     "tests/test_national_pending_bills_one_source.py",
+    "tests/test_shared_terminal_inventory.py",
 })
 
 
@@ -174,7 +175,9 @@ def run_cohort(cohort, output, collect_only=False):
     if os.environ.get("PYTEST_ADDOPTS"):
         raise ValueError("Ambient PYTEST_ADDOPTS cannot alter the complete core test gate")
     files = test_inventory()[cohort]
-    sys.path.insert(0, str(BACKEND))
+    # Nested suites reuse fixtures in the top-level tests directory. Keep
+    # that import available before pytest starts collecting either cohort.
+    sys.path[:0] = [str(BACKEND), str(BACKEND / "tests")]
     bind_package("seeding", BACKEND / "seeding")
     bind_package("etl", ROOT / "etl" if cohort == "legacy" else BACKEND / "etl")
     os.environ["PYTHONPATH"] = descendant_environment(cohort, output)

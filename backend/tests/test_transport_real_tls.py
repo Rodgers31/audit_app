@@ -20,9 +20,24 @@ def server(tmp_path,case):
     ca_key=rsa.generate_private_key(public_exponent=65537,key_size=2048)
     now=datetime.now(timezone.utc)
     name=x509.Name([x509.NameAttribute(NameOID.COMMON_NAME,'owned test CA')])
-    ca=x509.CertificateBuilder().subject_name(name).issuer_name(name).public_key(ca_key.public_key()).serial_number(x509.random_serial_number()).not_valid_before(now-timedelta(days=2)).not_valid_after(now+timedelta(days=2)).add_extension(x509.BasicConstraints(ca=True,path_length=None),critical=True).sign(ca_key,hashes.SHA256())
+    ca=(x509.CertificateBuilder().subject_name(name).issuer_name(name)
+        .public_key(ca_key.public_key()).serial_number(x509.random_serial_number())
+        .not_valid_before(now-timedelta(days=2)).not_valid_after(now+timedelta(days=2))
+        .add_extension(x509.BasicConstraints(ca=True,path_length=None),critical=True)
+        .add_extension(x509.SubjectKeyIdentifier.from_public_key(ca_key.public_key()),critical=False)
+        .add_extension(x509.KeyUsage(digital_signature=False,content_commitment=False,
+            key_encipherment=False,data_encipherment=False,key_agreement=False,key_cert_sign=True,
+            crl_sign=True,encipher_only=False,decipher_only=False),critical=True)
+        .sign(ca_key,hashes.SHA256()))
     san=x509.SubjectAlternativeName([x509.IPAddress(ipaddress.ip_address('127.0.0.2' if case=='hostname' else '127.0.0.1'))])
-    cert=x509.CertificateBuilder().subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME,'owned localhost')])).issuer_name(name).public_key(key.public_key()).serial_number(x509.random_serial_number()).not_valid_before(now-timedelta(days=2)).not_valid_after(now-timedelta(days=1) if case=='expired' else now+timedelta(days=1)).add_extension(san,critical=False).sign(ca_key,hashes.SHA256())
+    cert=(x509.CertificateBuilder()
+          .subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME,'owned localhost')]))
+          .issuer_name(name).public_key(key.public_key()).serial_number(x509.random_serial_number())
+          .not_valid_before(now-timedelta(days=2))
+          .not_valid_after(now-timedelta(days=1) if case=='expired' else now+timedelta(days=1))
+          .add_extension(san,critical=False)
+          .add_extension(x509.AuthorityKeyIdentifier.from_issuer_public_key(ca_key.public_key()),critical=False)
+          .sign(ca_key,hashes.SHA256()))
     cert_path=tmp_path/'server.pem'; key_path=tmp_path/'key.pem'; ca_path=tmp_path/'ca.pem'
     cert_path.write_bytes(cert.public_bytes(serialization.Encoding.PEM));ca_path.write_bytes(ca.public_bytes(serialization.Encoding.PEM));key_path.write_bytes(key.private_bytes(serialization.Encoding.PEM,serialization.PrivateFormat.PKCS8,serialization.NoEncryption()))
     seen=[]

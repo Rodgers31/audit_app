@@ -326,13 +326,14 @@ def test_backend_only_packaging_preserves_authority_and_executable(tmp_path):
     packaged.mkdir()
     # Backend deployment includes the shared receipt/publication services and
     # their models; a seeding-only copy no longer represents that package.
-    for package in ("seeding", "services"):
+    for package in ("seeding", "services", "middleware"):
         shutil.copytree(
             backend / package,
             packaged / package,
             ignore=shutil.ignore_patterns("__pycache__"),
         )
-    for module in ("models.py", "database.py", "db_url.py", "github_database_tls.py"):
+    for module in ("models.py", "database.py", "db_url.py", "github_database_tls.py",
+                   "request_database.py"):
         shutil.copy2(backend / module, packaged / module)
     env = {
         "PATH": os.defpath,
