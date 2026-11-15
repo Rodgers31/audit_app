@@ -32,6 +32,12 @@ os.environ.update(DATABASE_URL=f'sqlite:///{ROOT / "fixture.sqlite"}', REDIS_URL
                   CORS_ORIGINS='http://127.0.0.1:3141', REVALIDATE_SECRET='synthetic-browser-secret')
 from dev_fixtures import block_external_http, seed_local_fixture, FIXTURE_TIMESTAMP
 block_external_http()
+
+import request_database
+
+# Next builds several public pages concurrently against this owned SQLite DB.
+request_database.POOL_SIZE = 32
+
 import database
 seed_local_fixture(database)
 import main
