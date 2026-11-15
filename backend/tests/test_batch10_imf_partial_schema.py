@@ -140,7 +140,7 @@ def test_fiscal_optional_imf_absence_keeps_transaction_usable(client, db_session
     ), "OPTIONAL_IMF_QUERY_ABORTED_TRANSACTION"
 
 
-def test_national_debt_optional_imf_absence_preserves_fallback_and_provenance(
+def test_national_debt_optional_imf_absence_preserves_register_and_provenance(
     client, db_session
 ):
     country = Country(
@@ -187,11 +187,13 @@ def test_national_debt_optional_imf_absence_preserves_fallback_and_provenance(
     result = client.get("/api/v1/debt/national")
     assert result.status_code == 200, result.text
     body = result.json()
-    assert body["data"].get("debt_to_gdp_ratio") == 60, (
-        "OPTIONAL_IMF_ABSENCE_LOST_REAL_DEBT_FALLBACK: " + result.text
+    assert body["data"]["total_outstanding"] == 60
+    assert body["data"]["debt_to_gdp_ratio"] is None
+    assert body["data"]["debt_to_gdp_year"] is None
+    assert body["data"]["debt_to_gdp_source"] is None
+    assert body["data"]["figure_qualifications"]["derived_ratio"]["reason"] == (
+        "compatible_qualified_stock_and_annual_gdp_required"
     )
-    assert body["data"]["debt_to_gdp_year"] == 2025
-    assert body["data"]["debt_to_gdp_source"] == "CBK / World Bank"
     assert body["last_updated"].startswith("2025-01-01")
 
 
