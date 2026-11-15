@@ -45,6 +45,14 @@ function observation(row: FiscalHistoryRow, measure: (typeof MEASURES)[number]):
   };
 }
 
+function measureObservations(rows: FiscalHistoryRow[], measure: (typeof MEASURES)[number]) {
+  // Borrowing comparisons use the same Treasury fiscal-framework basis.
+  const eligible = measure === 'total_borrowing'
+    ? rows.filter(row => row.split_basis === FISCAL_FRAMEWORK_BASIS)
+    : rows;
+  return eligible.map(row => observation(row, measure));
+}
+
 function abbreviatedYear(year: string) {
   return year.replace(/^\d{2}(?=\d{2}\/\d{2}$)/, '');
 }
@@ -119,24 +127,21 @@ export default function FiscalTrendStrip({ history }: { history: FiscalHistoryRo
   const titleId = useId();
   const sorted = [...history]
     .filter(row => row?.fiscal_year)
-    .sort((a, b) => a.fiscal_year.localeCompare(b.fiscal_year))
-    .slice(-5);
+    .sort((a, b) => a.fiscal_year.localeCompare(b.fiscal_year));
   if (sorted.length < 2) return null;
 
-  const title = t(sorted.length === 5 ? 'budget.history.five_years' : 'budget.history.title');
+  const recent = sorted.slice(-5);
+  const title = t(recent.length === 5 ? 'budget.history.five_years' : 'budget.history.title');
   const locale = lang === 'sw' ? 'sw-KE' : 'en-KE';
   const billions = new Intl.NumberFormat(locale, { maximumFractionDigits: 0, useGrouping: false });
   const trillions = new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const percent = new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 0 });
   const formatAmount = (value: number) => value >= 1000 ? `${trillions.format(value / 1000)}T` : `${billions.format(value)}B`;
 
-  const series = MEASURES.flatMap(measure => {
-    // Only compare borrowing measured on the same Treasury fiscal-framework basis.
-    const rows = measure === 'total_borrowing'
-      ? sorted.filter(row => row.split_basis === FISCAL_FRAMEWORK_BASIS)
-      : sorted;
-    if (rows.length < 2) return [];
-    const observations = rows.map(row => observation(row, measure));
+  const series = MEASURES.map(measure => ({ measure, name: t(`budget.history.${measure}`) }));
+  const charts = series.flatMap(({ measure, name }) => {
+    const observations = measureObservations(recent, measure);
+    if (observations.length < 2) return [];
     const max = Math.max(1, ...observations.map(({ value }) => value ?? 0));
     const first = observations[0];
     const latest = observations[observations.length - 1];
@@ -146,9 +151,11 @@ export default function FiscalTrendStrip({ history }: { history: FiscalHistoryRo
     const takeaway = change == null ? null : t(
       change > 0.005 ? 'budget.history.up' : change < -0.005 ? 'budget.history.down' : 'budget.history.steady'
     ).replace('{change}', percent.format(Math.abs(change))).replace('{year}', `FY${first.year}`);
-    return [{ measure, name: t(`budget.history.${measure}`), observations, max, takeaway }];
+    return [{ measure, name, observations, max, takeaway }];
   });
-  const bases = Array.from(new Set(series.flatMap(({ observations }) =>
+  const tables = series.map(({ measure, name }) => ({ measure, name, observations: measureObservations(sorted, measure) }))
+    .filter(({ observations }) => observations.length > 0);
+  const bases = Array.from(new Set(charts.flatMap(({ observations }) =>
     observations.flatMap(({ basis }) => basis ? [basis] : [])
   )));
   const basisKey = bases.flatMap(basis => {
@@ -161,7 +168,7 @@ export default function FiscalTrendStrip({ history }: { history: FiscalHistoryRo
     <section aria-labelledby={titleId} className='audit-panel space-y-3 p-3 sm:p-5'>
       <h2 id={titleId} className='font-display text-2xl font-semibold text-neutral-text'>{title}</h2>
       <div className='grid grid-cols-1 gap-3 lg:grid-cols-2'>
-        {series.map(({ measure, name, observations, max, takeaway }) => (
+        {charts.map(({ measure, name, observations, max, takeaway }) => (
           <article key={measure} aria-label={name} className='audit-panel space-y-2 p-3'>
             <h3 className='text-sm font-semibold'>{name}</h3>
             {takeaway && <p className='text-sm text-neutral-muted'>{takeaway}</p>}
@@ -176,10 +183,10 @@ export default function FiscalTrendStrip({ history }: { history: FiscalHistoryRo
           {t('budget.history.basis_key')}: {basisKey}
         </p>
       )}
-      <InfoSheet title={title} trigger={trigger => (
+      <InfoSheet title={t('budget.history.title')} trigger={trigger => (
         <button {...trigger} type='button' className='audit-control'>{t('budget.history.open_sheet')}</button>
       )}>
-        {series.map(({ measure, name, observations }) => (
+        {tables.map(({ measure, name, observations }) => (
           <ResponsiveTable key={measure}>
             <table className='w-full table-fixed text-left [overflow-wrap:anywhere]'>
               <caption className='pb-2 text-left font-semibold'>{name}</caption>

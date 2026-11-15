@@ -14,12 +14,14 @@ test('budget page filter toggles and chart renders', async ({ page }) => {
 test('Budget trend cards and Treasury callout fit their content boxes', async ({ page }, testInfo) => {
   const screenshotStyle = 'header.fixed, nextjs-portal { visibility: hidden; }';
   // The public fixture has two SSR fiscal periods. Age only this browser’s
-  // cache so the fiscal query fetches the five-period response below.
+  // cache so the fiscal query fetches the longer history below.
   await page.clock.setFixedTime(Date.now() + 2 * 60 * 60 * 1000);
   await page.route('**/api/v1/fiscal/summary', async route => {
     const response = await route.fetch();
     const json = await response.json();
     const older = ([
+      ['FY 2019/20', 72, 'Actual'],
+      ['FY 2020/21', 90, 'Approved'],
       ['FY 2021/22', 100, 'Actual'],
       ['FY 2022/23', 120, 'Preliminary'],
       ['FY 2023/24', 140, 'Supplementary I'],
@@ -30,6 +32,7 @@ test('Budget trend cards and Treasury callout fit their content boxes', async ({
         fiscal_year,
         appropriated_budget: amount * 1e9,
         total_revenue: fiscal_year === 'FY 2023/24' ? null : amount * 0.8e9,
+        split_basis: fiscal_year === 'FY 2020/21' ? null : first.split_basis,
         measure_qualifications: {
           ...first.measure_qualifications,
           appropriated_budget: {
@@ -55,7 +58,8 @@ test('Budget trend cards and Treasury callout fit their content boxes', async ({
     await page.setViewportSize({ width, height: 900 });
     await expect(budget.getByRole('listitem')).toHaveCount(width < 400 ? 2 : 5);
     await expect(budget.getByRole('listitem').last()).toContainText('180B');
-    if (width >= 400) await expect(budget.getByRole('listitem').first()).toContainText('100B');
+    await expect(budget.getByRole('listitem').first()).toContainText(width < 400 ? '150B' : '100B');
+    await expect(budget.getByText('2019/20', { exact: true })).toHaveCount(0);
 
     const cards = history.getByRole('article').or(callout);
     await expect.poll(() => cards.evaluateAll(elements => {
@@ -102,13 +106,22 @@ test('Budget trend cards and Treasury callout fit their content boxes', async ({
   expect((await trigger.boundingBox())?.height).toBeGreaterThanOrEqual(44);
   await trigger.focus();
   await page.keyboard.press('Enter');
-  const sheet = page.getByRole('dialog', { name: 'The past five budgets' });
+  const sheet = page.getByRole('dialog', { name: 'Budget history' });
   await expect(sheet).toBeVisible();
   const series = sheet.getByRole('table', { name: 'Appropriated budget' });
-  await expect(series.locator('tbody tr')).toHaveCount(5);
+  await expect(series.getByRole('rowheader')).toHaveText([
+    '2019/20', '2020/21', '2021/22', '2022/23', '2023/24', '2024/25', '2025/26',
+  ]);
+  const oldest = series.getByRole('row', { name: /2019\/20/ });
+  await expect(oldest).toContainText('72B');
+  await expect(oldest).toContainText('Actual');
+  await expect(oldest).toContainText('Synthetic history report on government revenue and spending');
   await expect(series.getByRole('row', { name: /2021\/22/ })).toContainText('100B');
   await expect(series.getByRole('row', { name: /2022\/23/ })).toContainText('Preliminary');
   await expect(sheet.getByRole('table', { name: 'Tax + non-tax revenue' }).getByRole('row', { name: /2023\/24/ })).toContainText('Not published');
+  const borrowing = sheet.getByRole('table', { name: 'New borrowing' });
+  await expect(borrowing.getByRole('row', { name: /2019\/20/ })).toContainText('25B');
+  await expect(borrowing.getByRole('row', { name: /2020\/21/ })).toHaveCount(0);
   await testInfo.attach('budget-history-sheet-360px', { body: await sheet.screenshot(), contentType: 'image/png' });
   await page.keyboard.press('Escape');
   await expect(sheet).toBeHidden();
