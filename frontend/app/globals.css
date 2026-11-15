@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
 /* ── CSS variables for light/dark theme ──
    These power both inline ``rgba(...)`` gradients (PageShell etc.)
@@ -38,6 +37,19 @@
   --c-surface-sunken: 235 230 220; /* nested input, list rows */
   --c-trace: 201 71 61;
   --c-source: 23 107 73;
+  --signal-alarm: #9e2f26;
+  --signal-hero-alarm: #c9473d;
+  --signal-caution: #8a5a10;
+  --signal-caution-fill: #c98a2b;
+  --signal-good: #176b49;
+  --signal-context: #101b14;
+  --gold-on-dark: #d9ae5b;
+  --chart-teal: #00809a;
+  --chart-gold: #b8872d;
+  --chart-blue: #3f6fbf;
+  --chart-clay: #a0602e;
+  --chart-context: #c9c1b0;
+  --public-header-height: 4rem;
 }
 
 /* Dark theme triggers when ``<html>`` carries the ``dark`` class
@@ -55,6 +67,15 @@
    gov-gold and the SubStat accent palette pop crisply on this
    warm dark. */
 :root.dark {
+  --signal-alarm: #f0857b;
+  --signal-hero-alarm: #f0857b;
+  --signal-caution: #e5a84f;
+  --signal-good: #5dbb8c;
+  --signal-context: #f0eade;
+  --chart-teal: #0fa0bc;
+  --chart-gold: #b08530;
+  --chart-blue: #6f93db;
+  --chart-clay: #bc7a40;
   /* Body bg stays cream in dark mode — matches the home page's hybrid
      ``ScenicBackgroundLayout readabilityMode='light'`` look so inner
      pages share the same cream-with-floating-slate-cards structure
@@ -96,7 +117,7 @@
 /* ── Base ── */
 @layer base {
   html {
-    font-family: 'Public Sans', system-ui, sans-serif;
+    font-family: var(--font-audit-sans, 'Public Sans'), system-ui, sans-serif;
     /* Native history restoration must not animate through an intermediate
        offset that a rapid forward/back can save as the new list position.
        User actions that need animation opt in with behavior: 'smooth'. */
@@ -640,4 +661,46 @@
 :root:not(.dark) .text-gray-400,
 :root:not(.dark) .text-gray-500 {
   color: rgb(var(--c-neutral-muted));
+}
+
+@layer components {
+  .audit-panel {
+    @apply min-w-0 rounded border border-neutral-border bg-surface-base;
+  }
+
+  .audit-control {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded border
+           border-neutral-border px-3 text-sm font-semibold text-neutral-text
+           hover:bg-surface-sunken disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .audit-figure {
+    @apply font-display font-semibold leading-none;
+    font-variant-numeric: proportional-nums;
+  }
+
+  .audit-receipt {
+    @apply inline-flex min-h-11 max-w-full items-center gap-2 text-sm
+           font-medium text-neutral-text underline decoration-neutral-border underline-offset-4
+           hover:decoration-current;
+  }
+}
+
+.audit-sheet::backdrop {
+  background: rgb(16 27 20 / 55%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .audit-sheet[open] {
+    animation: audit-sheet-open 220ms ease-out;
+  }
+
+  @keyframes audit-sheet-open {
+    from { opacity: 0.85; transform: translateY(1rem); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+.redesign-section-layout .page-shell-content [id] {
+  scroll-margin-top: 7.5rem;
 }

@@ -1,18 +1,3 @@
-/**
- * The freshness badge must not claim "Up to date" when nothing was measured.
- *
- * `DataFreshnessBadge` took the worst status among the matched sources with
- * `matched.reduce(..., 'fresh')`. When `/data/freshness` has not answered
- * (loading, failed, or during the server prerender, where useQuery never
- * fetches) `matched` is empty, the reduce returns its seed, and the banner
- * rendered "Up to date" in emerald — a freshness verdict nobody measured. It
- * was baked into the static `/budget` HTML.
- *
- * Absence must render as absence: a neutral "checking" state while the
- * request is in flight (and in the prerender), "Freshness unknown" once it
- * has failed or returned nothing for these sources. A measured 'fresh' still
- * says "Up to date".
- */
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, screen, waitFor } from '@testing-library/react';
@@ -65,10 +50,9 @@ describe.each(VARIANTS)('DataFreshnessBadge (%s) with no measurement', (variant)
     get.mockReturnValue(new Promise(() => {}));
     const { container } = render(wrap(client(), <DataFreshnessBadge sources='COB' variant={variant} />));
 
-    expect(screen.queryByText(/up to date/i)).not.toBeInTheDocument();
     expect(container.innerHTML).not.toMatch(/up to date/i);
     expect(container.innerHTML).not.toMatch(/emerald/);
-    expect(screen.getByText(/checking data freshness/i)).toBeVisible();
+    expect(container).toBeEmptyDOMElement();
   });
 
   it('does not say "Up to date" when the request failed', async () => {
@@ -84,7 +68,7 @@ describe.each(VARIANTS)('DataFreshnessBadge (%s) with no measurement', (variant)
 
     expect(container.innerHTML).not.toMatch(/up to date/i);
     expect(container.innerHTML).not.toMatch(/emerald/);
-    expect(screen.getByText(/freshness unknown/i)).toBeVisible();
+    expect(container).toBeEmptyDOMElement();
   }, 8000);
 
   it('does not say "Up to date" when the response has no entry for the source', () => {
@@ -94,7 +78,7 @@ describe.each(VARIANTS)('DataFreshnessBadge (%s) with no measurement', (variant)
 
     expect(container.innerHTML).not.toMatch(/up to date/i);
     expect(container.innerHTML).not.toMatch(/emerald/);
-    expect(screen.getByText(/freshness unknown/i)).toBeVisible();
+    expect(container).toBeEmptyDOMElement();
   });
 
   it('does not treat a status it does not recognise as fresh', () => {
@@ -106,14 +90,14 @@ describe.each(VARIANTS)('DataFreshnessBadge (%s) with no measurement', (variant)
 
     expect(container.innerHTML).not.toMatch(/up to date/i);
     expect(container.innerHTML).not.toMatch(/emerald/);
-    expect(screen.getByText(/freshness unknown/i)).toBeVisible();
+    expect(container).toBeEmptyDOMElement();
   });
 
   it('server-renders no "Up to date" when there is no data', () => {
     const html = renderToString(wrap(client(), <DataFreshnessBadge sources='COB/Treasury' variant={variant} />));
 
     expect(visibleText(html)).not.toMatch(/up to date/i);
-    expect(visibleText(html)).toMatch(/freshness unknown/i);
+    expect(visibleText(html).trim()).toBe('');
     expect(html).not.toMatch(/up to date/i); // nor in aria-label / title
     expect(html).not.toMatch(/emerald/);
     expect(get).not.toHaveBeenCalled();
@@ -127,45 +111,22 @@ describe.each(VARIANTS)('DataFreshnessBadge (%s) with a measured fresh source', 
     const { container } = render(wrap(qc, <DataFreshnessBadge sources='COB' variant={variant} />));
 
     expect(container.innerHTML).toMatch(/up to date/i);
-    expect(container.innerHTML).toMatch(/bg-emerald-400/);
+    expect(container).toHaveTextContent('Controller of Budget');
+    const message = screen.getByText('Up to date').closest('p');
+    expect(message).toHaveClass('text-neutral-muted', variant === 'banner' ? 'text-sm' : 'text-xs');
+    if (variant === 'banner') expect(message).toHaveClass('audit-panel');
     expect(get).not.toHaveBeenCalled();
   });
 });
 
-describe('DataFreshnessBadge banner keeps one shape across states (no CLS)', () => {
-  /**
-   * The layout skeleton: every element's tag and layout classes, in order.
-   * An icon counts by its box (width × height), not by the paths it draws —
-   * the clock and refresh glyphs differ inside the same 18px square.
-   */
-  function skeleton(el: Element): string[] {
-    return Array.from(el.querySelectorAll('*'))
-      .filter((n) => !n.parentElement?.closest('svg'))
-      .map((n) =>
-        n.tagName === 'svg'
-          ? `svg:${n.getAttribute('width')}x${n.getAttribute('height')}`
-          : `${n.tagName}:${(n.getAttribute('class') || '')
-              .split(/\s+/)
-              .filter((c) => /^(flex|items|gap|rounded|border$|p-|text-(xs|sm)|font|mt-|w-|h-|min-w|inline-block)/.test(c))
-              .join(' ')}`,
-      );
-  }
-
-  it('renders the same element structure pending and measured', () => {
-    get.mockReturnValue(new Promise(() => {}));
-    const pending = render(wrap(client(), <DataFreshnessBadge sources='COB' variant='banner' />));
-    const pendingShape = skeleton(pending.container);
-    pending.unmount();
-
-    const qc = client();
-    // Measured, but with no date: the date spans are the only optional parts.
-    qc.setQueryData(['data-freshness'], {
-      sources: [{ ...FRESH_RESPONSE.sources[0], last_updated: null }],
-    });
-    const measured = render(wrap(qc, <DataFreshnessBadge sources='COB' variant='banner' />));
-
-    expect(skeleton(measured.container)).toEqual(pendingShape);
+it('reports the source check without implying a publication date or freshness', () => {
+  const qc = client();
+  qc.setQueryData(['data-freshness'], {
+    sources: [{ ...FRESH_RESPONSE.sources[0], status: 'unknown', last_updated: null, last_checked: RECENT }],
   });
+  const { container } = render(wrap(qc, <DataFreshnessBadge sources='COB' variant='banner' />));
+  expect(container).toHaveTextContent(/Checked .* · Controller of Budget/);
+  expect(container).not.toHaveTextContent(/Up to date|Data as of/);
 });
 
 describe.each(VARIANTS)('publisher coverage (%s)', (variant) => {
@@ -177,8 +138,7 @@ describe.each(VARIANTS)('publisher coverage (%s)', (variant) => {
     qc.setQueryData(['data-freshness'], { sources });
     const { container } = render(wrap(qc, <DataFreshnessBadge sources='COB/Treasury' variant={variant} />));
     expect(container.innerHTML).not.toMatch(/up to date/i);
-    expect(screen.getByText(/freshness unknown/i)).toBeVisible();
-    expect(screen.getByText(/Source: COB\/Treasury/)).toBeVisible();
+    expect(container).toBeEmptyDOMElement();
   });
 
   it.each(['fresh', 'stale', 'outdated'])('uses the worst measured status with complete coverage: %s', (status) => {
@@ -187,7 +147,7 @@ describe.each(VARIANTS)('publisher coverage (%s)', (variant) => {
       ...FRESH_RESPONSE.sources[0], source: 'Treasury', label: 'National Treasury', status,
     }] });
     const { container } = render(wrap(qc, <DataFreshnessBadge sources='COB/Treasury' variant={variant} />));
-    expect(container.innerHTML).toMatch(status === 'fresh' ? /up to date/i : status === 'stale' ? /may be stale/i : /outdated/i);
+    expect(container.innerHTML).toMatch(status === 'fresh' ? /up to date/i : status === 'stale' ? /may be stale/i : /out of date/i);
   });
 });
 
@@ -208,12 +168,12 @@ describe('malformed freshness evidence', () => {
     qc.setQueryData(['data-freshness'], { sources: [{ ...FRESH_RESPONSE.sources[0], last_updated }] });
     const html = renderToString(wrap(qc, <DataFreshnessBadge sources='COB' variant='banner' />));
     expect(html).not.toMatch(/Up to date|Invalid Date|NaN|emerald/);
-    expect(html).toMatch(/Freshness unknown/);
+    expect(visibleText(html).trim()).toBe('');
   });
   it.each([{}, { sources: null }, { sources: {} }, { sources: [null] }])('renders unknown for malformed payload %j', (data) => {
     const qc = client();
     qc.setQueryData(['data-freshness'], data);
     const html = renderToString(wrap(qc, <DataFreshnessBadge sources='COB' variant='banner' />));
-    expect(html).toMatch(/Freshness unknown/);
+    expect(visibleText(html).trim()).toBe('');
   });
 });

@@ -45,6 +45,7 @@ def run(
             _incomplete('fiscal_fetch_failed')
             return DomainRunResult(
                 domain="fiscal_summary",
+                dry_run=context.dry_run,
                 started_at=started_at,
                 finished_at=datetime.now(timezone.utc),
                 items_processed=0,
@@ -64,6 +65,7 @@ def run(
         _incomplete('fiscal_parse_failed')
         return DomainRunResult(
             domain="fiscal_summary",
+            dry_run=context.dry_run,
             started_at=started_at,
             finished_at=datetime.now(timezone.utc),
             items_processed=0,
@@ -123,6 +125,7 @@ def run(
         _incomplete('fiscal_write_failed')
         return DomainRunResult(
             domain="fiscal_summary",
+            dry_run=context.dry_run,
             started_at=started_at,
             finished_at=datetime.now(timezone.utc),
             items_processed=len(records),
@@ -157,6 +160,7 @@ def run(
 
     return DomainRunResult(
         domain="fiscal_summary",
+        dry_run=context.dry_run,
         started_at=started_at,
         finished_at=finished_at,
         items_processed=len(records),

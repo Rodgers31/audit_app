@@ -66,7 +66,9 @@ def readiness_store(request, tmp_path, monkeypatch):
     def handler(session, settings, context):
         calls.append(context.job_id)
         session.execute(text("INSERT INTO batch9_readiness_effects VALUES (1)"))
-        return DomainRunResult(domain="audits", dry_run=context.dry_run, items_created=1)
+        return DomainRunResult(
+            domain="audits", dry_run=context.dry_run, items_processed=1, items_created=1,
+        )
 
     monkeypatch.setattr(registries.REGISTRY, "_handlers", {"audits": handler})
     monkeypatch.setattr(registries, "load_builtin_domains", lambda: None)

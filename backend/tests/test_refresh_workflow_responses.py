@@ -5,6 +5,7 @@ import hmac
 import hashlib
 import os
 import subprocess
+import sys
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -73,6 +74,7 @@ def run_refresh(tmp_path, invalidated, revalidated, *, expected_secret='test-onl
     url = f"https://localhost:{server.server_address[1]}"
     env = {
         **os.environ,
+        "PATH": str(Path(sys.executable).parent) + os.pathsep + os.environ.get("PATH", os.defpath),
         "REVALIDATE_SECRET": "test-only-key", "SSL_CERT_FILE":str(cert_file), "RUNNER_TEMP":str(tmp_path),
         "GITHUB_OUTPUT": str(tmp_path / "outputs"),
         "GITHUB_SHA": "a"*40, "GITHUB_RUN_ID":"1234", "GITHUB_RUN_ATTEMPT":"1",
@@ -97,6 +99,7 @@ def run_refresh(tmp_path, invalidated, revalidated, *, expected_secret='test-onl
                 text=True,
                 timeout=10,
             )
+            assert result.returncode != 127, result.stderr
             if result.returncode:
                 break
         if return_outputs:

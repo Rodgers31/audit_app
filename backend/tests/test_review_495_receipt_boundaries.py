@@ -250,7 +250,8 @@ def test_debt_gdp_create_and_update_keep_independent_verified_operand(
             assert evidence["receipt"]["source_document_id"] != row.source_document_id
             assert qualifications[row.id]["gdp"]["status"] == "verified"
             assert qualifications[row.id]["total"]["status"] == "qualified"
-            assert qualifications[row.id]["gdp_ratio"]["status"] == "qualified"
+            assert row.gdp_ratio is None
+            assert qualifications[row.id]["gdp_ratio"]["status"] == "unavailable"
         assert len(operand_docs) == len(receipt_ids) == 1
         assert db_session.get(SourceDocument, next(iter(operand_docs))).publisher == "World Bank"
         ext = db_session.get(Extraction, next(iter(receipt_ids)))

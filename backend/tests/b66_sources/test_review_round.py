@@ -12,6 +12,7 @@ import pytest
 from sqlalchemy import text
 
 from seeding import cli, source_plan
+from seeding.current_run import PRIOR_STEPS, plan_identity
 from seeding.config import SeedingSettings
 from seeding.domains import cra, opendata
 from seeding.registries import DomainRegistry
@@ -165,7 +166,9 @@ def test_real_workflow_shell_requires_domain_guard_not_just_nonzero(tmp_path,hos
     script=next(s['run'] for s in data['jobs']['seed']['steps'] if s.get('name')=='Seed planned domains')
     env={'PATH':str(Path(sys.executable).parent)+':/usr/bin:/bin','PYTHONPATH':str(ROOT/'backend'),
          'PYTHON_DOTENV_DISABLED':'1','PYTHONDONTWRITEBYTECODE':'1',
-         'SEED_PLAN_EVENT':'workflow_dispatch','SEED_PLAN_DOMAIN':hostile}
+         'SEED_PLAN_EVENT':'workflow_dispatch','SEED_PLAN_DOMAIN':hostile,
+         'GITHUB_OUTPUT': str(tmp_path / 'seed-output'), 'GITHUB_RUN_ID': '1234',
+         'GITHUB_RUN_ATTEMPT': '1', 'SEED_JOB_FLOOR': '0'}
     child=subprocess.run(['/bin/bash','-e','-c',script],cwd=ROOT,env=env,capture_output=True,text=True)
     assert child.returncode==2 and 'Source plan refused: Unknown source plan domain' in child.stderr,child
     assert not (ROOT/'backend/marker').exists()
@@ -203,20 +206,35 @@ def test_actual_workflow_launcher_to_native_job_and_result_gate(opendata_pg,tmp_
     with engine.begin() as db:db.execute(text('UPDATE batch11_control SET mode=:m'),{'m':mode})
     backend=ROOT/'backend'
     env=command_environment(url)
+    output = tmp_path / 'workflow-output'
     env.update({'PYTHONPATH':os.pathsep.join([str(backend/'tests/b66_sources/child'),str(backend/'tests'),str(backend)]),
         'PATH':str(Path(sys.executable).parent)+':/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin',
         'B66_SOURCE_CHILD':'true','SEED_OPENDATA_INGESTION_ENABLED':'true','SEED_KNBS_RELEASE_DISCOVERY_ENABLED':'true',
         'SEED_PLAN_EVENT':'workflow_dispatch','SEED_PLAN_DOMAIN':'opendata','SEED_PLAN_DRY_RUN':'false',
-        'SEED_JOB_FLOOR':'0',
+        'SEED_JOB_FLOOR':'0', 'GITHUB_OUTPUT':str(output),
+        'GITHUB_SHA':'a' * 40, 'GITHUB_RUN_ID':'1234', 'GITHUB_RUN_ATTEMPT':'1',
         'SEED_STORAGE_PATH':str(tmp_path/'storage'),'SEED_CACHE_PATH':str(tmp_path/'cache')})
     data,_=workflow()
     script=next(s['run'] for s in data['jobs']['seed']['steps'] if s.get('name')=='Seed planned domains')
     child=subprocess.run(['/bin/bash','-e','-c',script],cwd=ROOT,env=env,capture_output=True,text=True,timeout=25)
-    assert child.returncode==(1 if mode=='failure' else 0),child.stderr
+    assert child.returncode == exit_code, (child.stdout, child.stderr)
     first=json.loads(child.stdout.splitlines()[0]); assert first['domains']==['opendata'] and first['evidence']=='selection_plan_only'
     jobs=query(engine,'SELECT status::text,metadata FROM ingestion_jobs')
     assert len(jobs)==1 and jobs[0]['status']==status
     check=next(s['run'] for s in data['jobs']['seed']['steps'] if s.get('name')=='Check ingestion job results')
+    receipt = dict(line.split('=', 1) for line in output.read_text().splitlines())
+    assert receipt['executed'] == 'true' and receipt['exit_code'] == str(exit_code)
+    outcome = 'success' if exit_code == 0 else 'failure'
+    selected = plan(event='workflow_dispatch', schedule='', domain='opendata', discovery='true')
+    steps = {name: dict(outcome='success', conclusion='success', outputs={}) for name in PRIOR_STEPS}
+    steps['cli'] = dict(outcome=outcome, conclusion=outcome, outputs=receipt)
+    env.update(SEED_PLANNED_SHA=env['GITHUB_SHA'], SEED_ADMITTED_SHA=env['GITHUB_SHA'],
+               SEED_SCHEMA_HEAD='a756b20a0001', SEED_PLANNED_IDENTITY=plan_identity(selected),
+               SEED_PRIOR_SUCCESS=str(exit_code == 0).lower(), SEED_PRIOR_JOB_STATUS=outcome,
+               SEED_CLI_OUTCOME=outcome, SEED_PRIOR_STEPS=json.dumps(steps))
+    for key in ('executed', 'exit_code', 'run_id', 'run_attempt', 'job_floor', 'started_at', 'finished_at'):
+        suffix = {'exit_code': 'exit', 'job_floor': 'floor', 'started_at': 'started', 'finished_at': 'finished'}.get(key, key)
+        env[f'SEED_CLI_{suffix.upper()}'] = receipt[key]
     gate=subprocess.run(['/bin/bash','-e','-c',check],cwd=ROOT,env=env,capture_output=True,text=True,timeout=15)
     assert '--- Ingestion Job Results ---' in gate.stdout,gate.stderr
     assert gate.returncode==exit_code,(gate.stdout,gate.stderr)

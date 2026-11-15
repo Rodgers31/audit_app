@@ -33,6 +33,7 @@ export default defineConfig({
         NEXT_PUBLIC_SUPABASE_URL: 'http://127.0.0.1:8125',
         NEXT_PUBLIC_SUPABASE_ANON_KEY: 'browser-test-only-anon-key',
         REVALIDATE_SECRET: 'browser-test-only-secret',
+        VERCEL_GIT_COMMIT_SHA: 'a'.repeat(40),
       },
     },
   ],

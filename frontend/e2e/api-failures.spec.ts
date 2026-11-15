@@ -33,6 +33,7 @@ for (const path of ['/counties', '/counties/001', '/sources', '/accountability/u
       await expect(unavailable).toHaveCount(0);
       expect(calls).toBe(2);
     } else {
+      const budgetFreshness = path === '/budget' ? page.waitForResponse('**/api/v1/data/freshness') : undefined;
       await page.route('**/api/v1/**', route => {
         calls++;
         return route.fulfill({ status: 500, json: { detail: 'Synthetic failed read' } });
@@ -40,10 +41,11 @@ for (const path of ['/counties', '/counties/001', '/sources', '/accountability/u
       await page.goto(path);
       await expect.poll(() => calls).toBeGreaterThan(0);
       if (path === '/budget') {
-        // The successful SSR fiscal record stays visible; the failed freshness
-        // read must remain unknown. Browser routing cannot replace SSR data.
+        // Browser routing cannot replace the successful SSR fiscal record. A
+        // failed freshness read must leave the verdict absent.
         await expect(page.getByRole('heading', { name: 'KES 180B approved for FY 2025/26' })).toBeVisible();
-        await expect(page.getByRole('status', { name: /^Data freshness:/ })).toContainText('Freshness unknown');
+        expect((await budgetFreshness)?.status()).toBe(500);
+        await expect(page.getByText(/^(?:Up to date|May be stale|Out of date|Freshness unknown)(?: ·|$)/)).toHaveCount(0);
       } else {
         await expect(page.locator('body')).toContainText(/Failed to load|unavailable|could not|error|Something went wrong|try again|retry|No data/i);
       }

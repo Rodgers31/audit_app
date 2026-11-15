@@ -136,7 +136,36 @@ def test_nothing_outside_the_tests_imports_them():
     If app code ever imports from it, a fixture becomes a payload and the
     exclusion becomes a hole. This keeps the premise true.
     """
+    # The bounded local recorder exercises owned test databases and fixtures.
+    # Only these exact import edges are allowed, never an app or ETL caller.
+    # The files still go through the same whole-tree publication guards.
+    acceptance_imports = {
+        "acceptance_backend.py": {"tests.acceptance_owned_pg"},
+        "acceptance_semantic.py": {"tests.acceptance_owned_pg"},
+        "test_acceptance_authority.py": {
+            "tests.acceptance_owned_pg", "tests.test_oag_acquisition_origin",
+            "tests.test_refresh_current_run_postgres", "tests.test_hollow_run_gate",
+        },
+        "test_acceptance_refresh_v2_loopback.py": {
+            "tests.test_refresh_current_run_postgres", "tests.test_refresh_eligibility",
+        },
+        "test_acceptance_semantic.py": {
+            "tests.test_refresh_current_run_postgres", "tests.test_oag_acquisition_origin",
+        },
+        "test_acceptance_snapshot.py": {"tests.test_cob_publication_producer"},
+    }
+    admitted = {
+        (f"tools/nightly_acceptance_20261105/{path}", target)
+        for path, targets in acceptance_imports.items() for target in targets
+    }
     offenders = []
+    observed = set()
+    def check(path, line, target):
+        if (path, target) in admitted:
+            observed.add((path, target))
+        else:
+            offenders.append(f"{path}:{line}: {target}")
+
     for module in MODULES:
         try:
             tree = ast.parse(module.read_text(encoding="utf-8"), filename=str(module))
@@ -146,12 +175,13 @@ def test_nothing_outside_the_tests_imports_them():
             if isinstance(node, ast.ImportFrom) and node.module and (
                 node.module == "tests" or node.module.startswith("tests.")
             ):
-                offenders.append(f"{rel(module)}:{node.lineno}: from {node.module}")
+                check(rel(module), node.lineno, node.module)
             elif isinstance(node, ast.Import):
                 for alias in node.names:
                     if alias.name == "tests" or alias.name.startswith("tests."):
-                        offenders.append(f"{rel(module)}:{node.lineno}: import {alias.name}")
+                        check(rel(module), node.lineno, alias.name)
     assert not offenders, "\n".join(offenders)
+    assert observed == admitted, f"Remove unused local acceptance exceptions: {admitted - observed}"
 
 
 @pytest.mark.parametrize("module", MODULES, ids=[rel(m) for m in MODULES])

@@ -87,6 +87,7 @@ FAST = {
 
 class _Handler(BaseHTTPRequestHandler):
     stop: threading.Event
+    rate_limiter: threading.Lock
 
     def log_message(self, *args):  # keep pytest output clean
         pass
@@ -121,7 +122,16 @@ class _Handler(BaseHTTPRequestHandler):
         if path == "/waf":
             ua = self.headers.get("User-Agent", "")
             code = 200 if ua.startswith("Mozilla/") else 403
-        elif path == "/gone":
+        elif path.startswith("/limited/"):
+            if self.rate_limiter.acquire(blocking=False):
+                try:
+                    self.stop.wait(0.35)
+                finally:
+                    self.rate_limiter.release()
+                code = 200
+            else:
+                code = 429
+        elif path == "/gone" or (path.startswith("/literal") and path != "/literal[1-5]"):
             code = 404
         else:
             code = 200
@@ -134,7 +144,7 @@ class _Handler(BaseHTTPRequestHandler):
 @pytest.fixture
 def host():
     stop = threading.Event()
-    handler = type("H", (_Handler,), {"stop": stop})
+    handler = type("H", (_Handler,), {"stop": stop, "rate_limiter": threading.Lock()})
     server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
     server.daemon_threads = True
     threading.Thread(target=server.serve_forever, daemon=True).start()
@@ -257,13 +267,42 @@ def test_browser_refusal_after_primary_timeout_reports_the_final_transport_failu
     assert "|connection refused" in outputs["report"]
 
 
+def test_first_pass_reaches_the_other_55_sources_before_retrying(tmp_path, host):
+    stdout, outputs, _ = _run(
+        tmp_path,
+        [f"Hung {n}|{host}/hang|true" for n in range(1, 6)]
+        + [f"Later {n}|{host}/ok|true" for n in range(1, 56)],
+        env={"HC_JOB_BUDGET": "5"},
+    )
+    assert "Total: 60 | OK: 55 | Critical Failures: 5 | Warnings: 0 | Not probed: 0" in stdout
+    assert outputs["unprobed"] == "0"
+    assert outputs["has_failures"] == "true"
+    assert outputs["critical_reachable"] == "false"
+    assert "OK|Later 55|200" in outputs["report"]
+
+
+def test_rate_limited_sources_recover_with_serial_retries(tmp_path, host):
+    stdout, outputs, _ = _run(
+        tmp_path,
+        [f"Limited {n}|{host}/limited/{n}|true" for n in range(6)],
+        env={"HC_SOURCE_BUDGET": "10"},
+    )
+    assert "Total: 6 | OK: 6 | Critical Failures: 0 | Warnings: 0 | Not probed: 0" in stdout
+    assert outputs["critical_reachable"] == "true"
+
+
+def test_brackets_in_a_configured_url_are_probed_literally(tmp_path, host):
+    _, outputs, _ = _run(tmp_path, [f"Literal URL|{host}/literal[1-5]|true"])
+    assert "OK|Literal URL|200" in outputs["report"]
+
+
 def test_when_the_job_budget_runs_out_the_rest_are_named_and_outputs_still_written(tmp_path, host):
     stdout, outputs, secs = _run(
         tmp_path,
-        [f"Hung {n}|{host}/hang|true" for n in range(1, 6)] + [f"Last|{host}/ok|true"],
-        env={"HC_JOB_BUDGET": "5"},
+        [f"Hung {n}|{host}/hang|true" for n in range(1, 13)] + [f"Last|{host}/ok|true"],
+        env={"HC_JOB_BUDGET": "1"},
     )
-    not_probed = re.findall(r"\[WARNING\] (.+?) → not probed: the 5s health-check budget ran out", stdout)
+    not_probed = re.findall(r"\[WARNING\] (.+?) → not probed: the 1s health-check budget ran out", stdout)
     assert not_probed and not_probed[-1] == "Last", stdout
     assert outputs.get("unprobed") == str(len(not_probed)), outputs
     assert int(outputs["unprobed"]) >= 3
@@ -271,7 +310,7 @@ def test_when_the_job_budget_runs_out_the_rest_are_named_and_outputs_still_writt
     assert outputs["critical_reachable"] == "false"
     assert 'CRITICAL|Last|' in outputs['report']
     assert "Health Check Summary" in stdout
-    assert secs < 5 + 5, f"a 5s job budget took {secs:.1f}s"
+    assert secs < 1 + 5, f"a 1s job budget took {secs:.1f}s"
 
 
 # ── What the fix must not break ───────────────────────────────────────────

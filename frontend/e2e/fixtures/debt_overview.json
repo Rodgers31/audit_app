@@ -6,10 +6,16 @@
     "gdp": 20000000000000,
     "debt_to_gdp_ratio": 60,
     "debt_to_gdp_year": 2025,
-    "debt_to_gdp_basis": "Synthetic nominal observation",
-    "debt_to_gdp_source": "Synthetic browser fixture",
+    "debt_to_gdp_basis": "Synthetic GGXWDG_NGDP publication",
+    "debt_to_gdp_source": "IMF World Economic Outlook",
     "categories": {},
     "summary": {},
-    "debt_sustainability": {}
+    "debt_sustainability": {},
+    "figure_qualifications": {
+      "derived_ratio": {
+        "status": "qualified",
+        "reason": "published_imf_ratio_outside_seven_table_contract"
+      }
+    }
   }
 }

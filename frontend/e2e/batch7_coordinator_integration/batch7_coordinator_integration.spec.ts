@@ -57,7 +57,9 @@ async function snapshot(page: Page, path: string) {
   await page.screenshot({ path, fullPage: true, animations: 'disabled' });
 }
 async function calendarBoundary(page: Page) {
-  await expect(page.getByRole('status').filter({ hasText: 'The calendar controls below are not connected to worker dispatch. Use the dedicated worker controls and command receipts above when available.' })).toBeVisible();
+  const calendar = page.locator('details').filter({ has: page.getByText('Source calendar · planning evidence', { exact: true }) });
+  if (await calendar.getAttribute('open') === null) await calendar.locator('summary').click();
+  await expect(calendar.getByText(/This calendar predicts source checks/)).toBeVisible();
   await expect(page.getByText('No job was accepted.')).toHaveCount(0);
   await expect(page.getByText('no dedicated worker dispatch is connected')).toHaveCount(0);
   for (const name of ['Trigger', 'Dry-run']) {
@@ -153,7 +155,7 @@ test('actual confirmed real run completes with persisted actor audit and ingesti
   expect(actual.counts).toEqual({ commands: 1, audits: 1, jobs: 1, effects: 1 });
   expect(actual.audits[0]).toEqual({ actor_id: actor, action: 'etl.trigger', target_id: id, payload: { dry_run: false } });
   expect(actual.observations[0]).toMatchObject({ status: 'COMPLETED', dry_run: false, command_id: id, items_created: 1 });
-  await expect(page.getByRole('link', { name: /View ingestion observation/ })).toHaveAttribute('href', '/admin/ingestion/' + actual.observations[0].id);
+  await expect(page.getByRole('link', { name: /Inspect data and draft outcomes/ })).toHaveAttribute('href', '/admin/ingestion/' + actual.observations[0].id);
   await snapshot(page, info.outputPath('actual-completed.png'));
 });
 
@@ -194,7 +196,7 @@ test('lost actual acceptance acknowledgment recovers same key after lease expiry
   await expect(page.getByRole('button', { name: 'Run Now · oag' })).toBeDisabled();
   await page.getByRole('button', { name: 'Recover same intent' }).click();
   await expect(page.getByText('Original receipt recovered. No second command was accepted.')).toBeVisible();
-  await expect(page.getByLabel('Dedicated worker dispatch', { exact: true }).getByText('Interrupted — execution unverified. Do not automatically repeat.')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Request a data check', exact: true }).getByText('Interrupted — execution unverified. Do not automatically repeat.')).toBeVisible();
   expect(keys).toHaveLength(2);
   expect(keys[1]).toBe(keys[0]);
   expect((await state(request)).counts).toEqual({ commands: 1, audits: 1, jobs: 1, effects: 0 });
@@ -232,7 +234,7 @@ test('actual persisted command history filters, pagination, detail and safe back
   await page.getByRole('button', { name: 'Next commands' }).click();
   await expect(page).toHaveURL(/page=2/);
   await expect(page.getByText('Page 2', { exact: true })).toBeVisible();
-  await page.getByRole('link', { name: /View command / }).first().click();
+  await page.getByRole('link', { name: /view command /i }).first().click();
   await expect(page.getByRole('heading', { name: 'Command receipt', exact: true })).toBeVisible();
   await expect(page.getByText('Completed — recorded ingestion observation.')).toBeVisible();
   await page.getByRole('link', { name: 'Back to command history' }).click();

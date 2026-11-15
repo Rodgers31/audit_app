@@ -31,7 +31,7 @@ it('refuses incomplete verified promotion and excludes hostile URL',()=>{
 it('retains zero GDP and inflation and shows absent context evidence',()=>{
  render(<EconomicContextStrip ctx={{gdp_billion_kes:0,inflation_pct:0,gdp_growth_pct:null}}/>);
  expect(screen.getByText('KES 0B')).toBeInTheDocument();expect(screen.getByText('0.0%')).toBeInTheDocument();
- expect(screen.getAllByText(/Evidence unavailable/).length).toBeGreaterThan(0);
+ expect(screen.getAllByText('No source document yet').length).toBeGreaterThan(0);
 });
 it('replaces cached verified result on explicit refresh downgrade and then failure',async()=>{
  const get=api.get as jest.Mock;
@@ -54,7 +54,8 @@ it('refuses malformed observation identity even when checks claim success',()=>{
 
 it('keeps an aggregate qualification qualified without promoting it to an observed value',()=>{
  render(<FigureEvidence label='ratio' note={{status:'qualified',reason:'published_imf_ratio_outside_seven_table_contract'}}/>);
- expect(screen.getByText(/Evidence for ratio · Qualified citation/)).toBeInTheDocument();
+ expect(screen.getByRole('button', { name: /Evidence for ratio$/ })).toBeInTheDocument();
+ expect(screen.getByText('Source cited, with a caveat')).toBeInTheDocument();
  expect(screen.getByText(/published imf ratio outside seven table contract/)).toBeInTheDocument();
  expect(screen.queryByText(/Verified observation/)).not.toBeInTheDocument();
 });

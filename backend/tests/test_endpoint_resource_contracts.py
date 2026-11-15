@@ -10,6 +10,7 @@ from sqlalchemy import event
 
 import main
 from models import DebtCategory, DebtInstrument, Entity, EntityType, Loan
+from services.endpoint_resources import SingleWorker
 
 
 def test_identical_cold_cache_requests_do_one_fill(monkeypatch):
@@ -109,6 +110,9 @@ def test_cache_cold_peer_provider_keeps_event_loop_responsive(db_session, monkey
         time.sleep(.12)
         return []
     monkeypatch.setattr(main, '_get_regional_peers', slow)
+    # This direct handler call does not run the lifespan that owns the worker.
+    worker = SingleWorker()
+    monkeypatch.setattr(main, '_peer_worker', worker)
     async def exercise():
         task = asyncio.create_task(main.get_debt_sustainability(main._debt_sustainability_snapshot(db_session)))
         start = time.monotonic()
@@ -117,7 +121,10 @@ def test_cache_cold_peer_provider_keeps_event_loop_responsive(db_session, monkey
         body = await task
         assert body['status'] == 'no_data'
         assert elapsed < .08, f'provider blocked serving loop for {elapsed:.3f}s'
-    asyncio.run(exercise())
+    try:
+        asyncio.run(exercise())
+    finally:
+        worker.close()
     assert calls == [1]
 
 

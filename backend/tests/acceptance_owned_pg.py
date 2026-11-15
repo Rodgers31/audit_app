@@ -11,6 +11,7 @@ import uuid
 
 
 URL = 'postgresql+psycopg2://postgres@127.0.0.1:55432/auditgava_refresh_fixture'
+FISCAL_URL = 'postgresql+psycopg2://postgres@127.0.0.1:55432/fiscal_fixture'
 PREFIX = 'nightly-acceptance-owned-v1:'
 CLOSED_SCHEMAS = []
 
@@ -25,7 +26,7 @@ def validate_target(url, owned, token, environment=None):
             'dbname': 'auditgava_refresh_fixture', 'user': 'postgres', 'password': '',
             'passfile': '/nonexistent-nightly-acceptance-passfile', 'connect_timeout': 3,
             'application_name': 'nightly-acceptance-' + token[:12],
-            'options': '-c statement_timeout=5000 -c lock_timeout=2000 -c idle_in_transaction_session_timeout=10000'}
+            'options': '-c TimeZone=UTC -c statement_timeout=5000 -c lock_timeout=2000 -c idle_in_transaction_session_timeout=10000'}
 
 
 def target_from_environment():
@@ -74,17 +75,21 @@ def owned_reader(schema, *, token):
 
 
 @contextmanager
-def owned_schema():
+def owned_schema(database='auditgava_refresh_fixture'):
     from sqlalchemy import create_engine, text
     from sqlalchemy.engine import make_url
     from sqlalchemy.pool import NullPool
     url, token, args = target_from_environment()  # No engine or connection before validation.
+    if database == 'fiscal_fixture' and os.environ.get('FISCAL_TEST_POSTGRES_URL') == FISCAL_URL:
+        url, args = FISCAL_URL, dict(args, dbname=database)
+    elif database != 'auditgava_refresh_fixture':
+        raise RuntimeError('Owned fiscal PostgreSQL fixture not provisioned')
     schema = 'acceptance_' + token[:16] + '_' + uuid.uuid4().hex[:12]
     admin = create_engine(url, connect_args=args, poolclass=NullPool)
     engine, created = None, False
     try:
         with admin.begin() as connection:
-            observed = _database(connection, token)
+            observed = _database(connection, token, database)
             connection.execute(text('CREATE SCHEMA ' + schema + ' AUTHORIZATION postgres'))
             connection.execute(text("COMMENT ON SCHEMA " + schema + " IS '" + PREFIX + token + "'"))
         created = True
@@ -101,7 +106,7 @@ def owned_schema():
         try:
             if created:
                 with admin.begin() as connection:
-                    _database(connection, token)
+                    _database(connection, token, database)
                     owner = connection.execute(text("""SELECT pg_get_userbyid(nspowner),
                         obj_description(oid,'pg_namespace') FROM pg_namespace WHERE nspname=:schema"""),
                         {'schema': schema}).one_or_none()
@@ -109,10 +114,12 @@ def owned_schema():
                         raise RuntimeError('Owned PostgreSQL schema ownership changed; cleanup refused')
                     connection.execute(text('DROP SCHEMA ' + schema + ' CASCADE'))
                 with admin.connect() as connection:
-                    _database(connection, token)
+                    _database(connection, token, database)
                     if connection.scalar(text('SELECT count(*) FROM pg_namespace WHERE nspname=:schema'),
                                          {'schema': schema}) != 0:
                         raise RuntimeError('Owned PostgreSQL schema remains after cleanup')
-                CLOSED_SCHEMAS.append({'schema': schema, 'database': observed[0], 'schema_absent': True})
+                # The nightly receipt records only the refresh cohort's schemas.
+                if database == 'auditgava_refresh_fixture':
+                    CLOSED_SCHEMAS.append({'schema': schema, 'database': observed[0], 'schema_absent': True})
         finally:
             admin.dispose()

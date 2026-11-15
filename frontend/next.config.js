@@ -6,6 +6,10 @@ const publicApi = validateHttpBaseUrl(
     : suppliedApi,
   'NEXT_PUBLIC_API_URL'
 );
+const publicBrowserFixture =
+  process.env.BATCH9_CI_BROWSER === 'true' &&
+  process.env.BROWSER_TEST_COHORT === 'public' &&
+  publicApi === 'http://127.0.0.1:8141';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -14,6 +18,9 @@ const nextConfig = {
   // into a direct deep-path import so only the symbols you use are bundled.
   experimental: {
     optimizePackageImports: ['lucide-react', 'recharts', 'framer-motion', 'date-fns', 'lodash'],
+    // The public browser fixture uses one API process. Keep the build from
+    // sending many pages' prefetches at once and baking its 503s into the HTML.
+    ...(publicBrowserFixture ? { cpus: 1, staticGenerationMaxConcurrency: 1 } : {}),
     // Restore scroll position on browser back/forward. Without this,
     // navigating from /counties?p=2 → /counties/001 → back drops the
     // user at top of /counties instead of where they clicked.

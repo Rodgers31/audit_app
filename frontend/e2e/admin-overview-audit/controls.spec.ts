@@ -26,13 +26,14 @@ test('actual audit API, filters, snapshot pagination, back history, payload and 
   const response = await request.get('http://127.0.0.1:8153/api/v1/admin/audit-log?days=0', { headers: { Authorization: 'Bearer ' + token() } });
   expect(response.headers()['cache-control']).toBe('private, no-store');
   expect(await response.text()).not.toContain('INERT_SECRET');
-  await page.goto('/admin/audit-log?days=0');
-  await expect(page.getByRole('heading', { name: 'Audit Log', exact: true })).toBeVisible();
+  await page.goto('/admin/audit-log?days=0&action=etl.trigger');
+  await expect(page.getByRole('heading', { name: 'Activity', exact: true })).toBeVisible();
   await expect(page.getByText('28 actions recorded.')).toBeVisible();
   await expect(page.locator('main li').last()).toHaveCSS('opacity', '1');
   await page.screenshot({ path: '/tmp/admin-overview-audit-desktop.png', fullPage: true });
-  await page.getByLabel('Action', { exact: true }).fill('etl.trigger');
-  await page.getByLabel('Target id', { exact: true }).fill('cob');
+  await expect(page.getByRole('combobox', { name: 'Action', exact: true })).toHaveValue('etl.trigger');
+  await page.getByText('Actor and target filters', { exact: true }).click();
+  await page.getByRole('textbox', { name: 'Target ID', exact: true }).fill('cob');
   await page.getByRole('button', { name: 'Apply filters' }).click();
   await expect(page).toHaveURL(/target_id=cob/);
   await expect(page.getByRole('button', { name: 'Next', exact: true })).toBeEnabled();
@@ -40,7 +41,7 @@ test('actual audit API, filters, snapshot pagination, back history, payload and 
   await expect(page).toHaveURL(/snapshot_id=28/);
   await expect(page.getByText('Page 2', { exact: true })).toBeVisible();
   await page.goBack();
-  await expect(page.getByLabel('Action', { exact: true })).toHaveValue('etl.trigger');
+  await expect(page.getByRole('combobox', { name: 'Action', exact: true })).toHaveValue('etl.trigger');
   await page.getByRole('button', { name: /etl.trigger on etl_source/ }).first().click();
   await expect(page.getByText('Payload', { exact: true }).first()).toBeVisible();
   expect(await page.locator('main').innerText()).not.toContain('INERT_SECRET');
@@ -55,17 +56,21 @@ test('actual audit API, filters, snapshot pagination, back history, payload and 
 test('overview cards and mobile keyboard navigation preserve shell and truthful scope', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/admin');
-  await expect(page.getByText('Worker execution unverified', { exact: true })).toBeVisible();
-  await expect(page.getByText('Auth identities', { exact: true })).toBeVisible();
-  await expect(page.getByText('Auth identities', { exact: true }).locator('..').getByText('3', { exact: true })).toBeVisible();
-  await expect(page.getByText('Publishing disabled', { exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Manage people and access.*3 accounts/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Review social drafts.*Publishing paused.*Worker evidence: unavailable/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Run or recover a data check/ })).toBeVisible();
   await expect(page.locator('main section').last()).toHaveCSS('opacity', '1');
   await page.screenshot({ path: '/tmp/admin-overview-audit-mobile.png', fullPage: true });
+  const menu = page.getByRole('button', { name: 'Menu', exact: true });
+  await menu.focus();
+  await page.keyboard.press('Enter');
   const nav = page.getByRole('navigation', { name: 'Admin navigation' });
   await expect(nav.getByRole('link', { name: 'Overview', exact: true })).toHaveAttribute('aria-current', 'page');
-  const audit = nav.getByRole('link', { name: 'Audit Log', exact: true });
+  const audit = nav.getByRole('link', { name: 'Activity', exact: true });
   await audit.focus(); await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/admin\/audit-log/);
+  await expect(menu).toHaveAttribute('aria-expanded', 'false');
+  await menu.click();
   await expect(audit).toHaveAttribute('aria-current', 'page');
   await expect(page.getByText('28 actions recorded.')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -92,8 +97,9 @@ test('documented Operations health contract keeps available plan distinct from u
     timestamp: new Date().toISOString(), scheduler_status: 'unverified', plan_status: 'available', worker_status: 'unverified', data_freshness: 'unverified',
   } }));
   await page.goto('/admin');
-  await expect(page.getByText('Schedule calculated', { exact: true })).toBeVisible();
-  await expect(page.getByText('Worker execution unverified', { exact: true })).toBeVisible();
+  await page.getByText('Calendar and system evidence', { exact: true }).click();
+  await expect(page.getByText('Calendar calculation: available.', { exact: true })).toBeVisible();
+  await expect(page.getByText('Calendar planning does not prove worker execution or current financial data.')).toBeVisible();
   await expect(page.locator('main').getByRole('alert')).toHaveCount(0);
 });
 

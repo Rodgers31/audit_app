@@ -34,7 +34,9 @@ if os.environ.get("BATCH9_NATIVE_READINESS_INERT_PROCESS") == "true":
             with SessionLocal.begin() as observation:
                 observation.execute(text("INSERT INTO batch9_readiness_markers VALUES ('entered')"))
             session.execute(text("INSERT INTO batch9_readiness_effects VALUES (1)"))
-            return DomainRunResult(domain="audits", dry_run=context.dry_run, items_created=1)
+            return DomainRunResult(
+                domain="audits", dry_run=context.dry_run, items_processed=1, items_created=1,
+            )
 
         REGISTRY.register("audits", inert_audits)
     except BaseException:

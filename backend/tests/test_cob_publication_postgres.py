@@ -140,15 +140,18 @@ def test_actual_pdf_writer_two_ingestions_generate_then_replay(pg, tmp_path, mon
     second, stats = ingest(factory, tmp_path, amount='1.25')
     assert stats.qualification['qualified'] == 3
     result = dispatch_committed_generation(factory, domain='counties_budget', ingestion_id=second, dry_run=False)
-    assert result['state'] == 'completed' and result['drafts_created'] == 3, result
+    # Only Nairobi's value changed in the new PDF. Two rows retained their
+    # amounts and must not produce new draft events for a new file alone.
+    assert result['state'] == 'completed' and result['drafts_created'] == 1, result
+    assert result['unchanged'] == 2, result
     third, stats = ingest(factory, tmp_path, amount='1.25')
     assert stats.qualification['qualified'] == 3
     for _ in range(2):
         result = dispatch_committed_generation(factory, domain='counties_budget', ingestion_id=third, dry_run=False)
         assert result['state'] == 'completed' and result['unchanged'] == 3, result
     with factory() as db:
-        assert db.scalar(select(func.count()).select_from(SourceEvent)) == 3
-        assert db.scalar(select(func.count()).select_from(SocialPost)) == 3
+        assert db.scalar(select(func.count()).select_from(SourceEvent)) == 1
+        assert db.scalar(select(func.count()).select_from(SocialPost)) == 1
         assert set(db.scalars(select(SocialPost.editorial_state))) == {'pending_review'}
         assert db.scalar(select(func.count()).select_from(SocialPublication)) == 0
         assert all(len(row.provenance) == 3 for row in db.scalars(select(BudgetLine)))

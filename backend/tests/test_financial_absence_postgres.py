@@ -13,7 +13,7 @@ from tests.test_financial_absence_publication import (
     test_county_debt_http_preserves_outstanding_zero,
     test_sources_sql_count_is_measured,
     test_final_comprehensive_ratio_requires_same_source_stock_day,
-    test_fiscal_unknown_metadata_shape_does_not_destroy_sourced_amounts,
+    test_unknown_metadata_cannot_certify_legacy_fiscal_amounts,
     test_unknown_fiscal_unit_is_withheld_with_reason,
 )
 

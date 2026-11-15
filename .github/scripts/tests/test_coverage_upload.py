@@ -15,7 +15,7 @@ SCRIPT = ROOT / ".github/scripts/coverage_upload.py"
 
 class CoverageUploadWorkflowTests(unittest.TestCase):
     def test_provider_rejection_is_not_a_successful_upload_step(self):
-        workflow = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
+        workflow = yaml.safe_load((ROOT / ".github/workflows/pr-ci.yml").read_text())
         upload = next(step for step in workflow["jobs"]["test-backend"]["steps"]
                       if step.get("uses", "").startswith("codecov/codecov-action@"))
         # Codecov's wrapper masks provider/CLI errors when this input is false.
@@ -23,7 +23,7 @@ class CoverageUploadWorkflowTests(unittest.TestCase):
         self.assertIs(upload["continue-on-error"], True)
 
     def test_summary_observes_failed_and_skipped_steps(self):
-        workflow = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
+        workflow = yaml.safe_load((ROOT / ".github/workflows/pr-ci.yml").read_text())
         reporter = next(step for step in workflow["jobs"]["test-backend"]["steps"]
                         if step.get("name") == "Report optional hosted coverage outcome")
         self.assertEqual(reporter["if"], "always()")

@@ -29,6 +29,8 @@ fail if those duplicates ever come back.
 from __future__ import annotations
 
 import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 
 
 @pytest.fixture(autouse=True)
@@ -42,6 +44,29 @@ def _reset_cache_counters():
     rc.cache._last_unserialisable = None
 
 
+@pytest.fixture
+def cache_health_probe(db_session, monkeypatch):
+    """Exercise the actual detailed probe with an independent cache and router."""
+    from cache.redis_cache import RedisCache
+    from routers import health
+
+    def probe(redis_url=None):
+        # Model the requested configuration and the post-connection state;
+        # leave the runner's shared Redis instance and pending limiter alone.
+        with monkeypatch.context() as isolated:
+            isolated.delenv("REDIS_URL", raising=False)
+            isolated.setattr(RedisCache, "_initialize", lambda self: None)
+            cache = RedisCache(redis_url)
+        app = FastAPI()
+        app.include_router(health.router)
+        app.dependency_overrides[health.get_db] = lambda: db_session
+        with monkeypatch.context() as isolated, TestClient(app) as client:
+            isolated.setattr(health, "cache", cache)
+            return client.get("/health/detailed").json()
+
+    return probe
+
+
 class TestHealthDetailedIsReachable:
     def test_it_answers_at_all(self, client):
         """RED before this change: 404 — the router was never imported."""
@@ -51,14 +76,14 @@ class TestHealthDetailedIsReachable:
             "live surface to report on"
         )
 
-    def test_it_reports_the_database_as_healthy_when_it_is(self, client):
+    def test_it_reports_the_database_as_healthy_when_it_is(self, cache_health_probe):
         """The DB probe used a raw ``db.execute("SELECT 1")``.
 
         SQLAlchemy 2.0 raises ArgumentError for a bare string, so the component
         would have reported ``unhealthy`` — and the whole report ``degraded`` —
         against a perfectly good database, on every single call.
         """
-        body = client.get("/health/detailed").json()
+        body = cache_health_probe()
         db_component = body["components"]["database"]
         assert db_component["status"] == "healthy", (
             "the database is up in this test, but the health report says "
@@ -185,32 +210,20 @@ class TestTheCacheComponentCannotHideAnOutage:
     whether or not the variable was ever set.
     """
 
-    def test_no_redis_configured_is_not_an_incident(self, client):
-        import cache.redis_cache as rc
-
-        rc.cache.client = None
-        rc.cache.redis_url_configured = False
-        body = client.get("/health/detailed").json()
+    def test_no_redis_configured_is_not_an_incident(self, cache_health_probe):
+        body = cache_health_probe()
         assert body["components"]["cache"]["redis_configured"] is False
         assert body["status"] == "healthy", (
             "running on the in-memory cache with no Redis configured is the "
             f"normal development mode, not a degraded service: {body!r}"
         )
 
-    def test_configured_but_unreachable_redis_is_reported_degraded(self, client):
+    def test_configured_but_unreachable_redis_is_reported_degraded(self, cache_health_probe):
         """RED before this change: reported healthy while nothing was cached."""
-        import cache.redis_cache as rc
-
-        original = getattr(rc.cache, "redis_url_configured", False)
-        rc.cache.client = None
-        rc.cache.redis_url_configured = True
-        try:
-            body = client.get("/health/detailed").json()
-            assert body["components"]["cache"]["redis_configured"] is True
-            assert body["status"] == "degraded", (
-                "REDIS_URL is set but the client never connected, so every "
-                "endpoint is running uncached — and the health endpoint calls "
-                f"that healthy: {body!r}"
-            )
-        finally:
-            rc.cache.redis_url_configured = original
+        body = cache_health_probe("redis://127.0.0.1:9/0")
+        assert body["components"]["cache"]["redis_configured"] is True
+        assert body["status"] == "degraded", (
+            "REDIS_URL is set but the client never connected, so every "
+            "endpoint is running uncached — and the health endpoint calls "
+            f"that healthy: {body!r}"
+        )

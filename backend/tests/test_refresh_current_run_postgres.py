@@ -52,12 +52,14 @@ def test_real_pg_retains_eligible_hold_while_actual_gate_remains_red(fixture_db)
         meta=native[0].meta
         meta['execution_plan']=job.meta['execution_plan']
         job.meta=meta; job.status=IngestionStatus(native[0].status); job.errors=native[0].errors
-        job.items_processed=job.items_updated=4
+        job.items_processed, job.items_created, job.items_updated = (
+            native[0].items_processed, native[0].items_created, native[0].items_updated,
+        )
         session.commit()
     result=_run_step(url)
     report=parse_report(result)
     assert result.returncode==1,result.stdout+result.stderr
-    assert report['classification']=='required_source_incomplete' and report['cache_eligible'] is True
+    assert report['classification']=='required_source_incomplete' and report['cache_eligible'] is True, result.stdout
     assert next(j for j in report['jobs'] if j['domain']=='audits')['held_proposals'][0]['document_id']==2392
     assert 'private.invalid' not in result.stdout
 

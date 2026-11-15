@@ -2,6 +2,7 @@
 from copy import deepcopy
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import unittest
@@ -16,7 +17,7 @@ class ConfigurationTests(unittest.TestCase):
         step = next(step for step in workflow["jobs"]["test-backend"]["steps"]
                     if step.get("name") == "Preserve backend test receipts")
         self.assertEqual(step["if"], "always()")
-        self.assertEqual(step["uses"], "actions/upload-artifact@v4")
+        self.assertEqual(step["uses"].partition("@")[0], "actions/upload-artifact")
         self.assertIs(step["with"].get("include-hidden-files"), True)
         self.assertEqual(step["with"]["path"].splitlines(), [
             "backend/.ci-test-results/collection-*.json",
@@ -46,12 +47,57 @@ class ConfigurationTests(unittest.TestCase):
                     self.assert_backend_receipts(bad)
 
     def workflows(self):
-        for name in ("ci.yml", "verification.yml"):
+        for name in ("pr-ci.yml", "verification.yml"):
             yield name, yaml.safe_load((ROOT / ".github/workflows" / name).read_text())
 
-    def assert_job_deadlines(self, workflow):
+    def test_pull_request_ci_boundary(self):
+        paths = ROOT / ".github/workflows"
+        self.assertFalse((paths / "ci.yml").exists())
+        raw = (paths / "pr-ci.yml").read_text()
+        workflow = yaml.safe_load(raw)
+        self.assertEqual(workflow.get("on", workflow.get(True)), {"pull_request": {"branches": ["main", "develop"]}})
+        self.assertEqual(workflow["permissions"], {"contents": "read"})
+        jobs = workflow["jobs"]
+        required = {"test-backend", "test-frontend", "test-etl", "security-scan", "quality-gate"}
+        browser = {"test-browser", "test-browser-legacy"}
+        self.assertEqual(set(jobs), required | browser)
+        self.assertEqual(set(jobs["quality-gate"]["needs"]), (required | browser) - {"quality-gate"})
+        self.assertEqual(jobs["security-scan"]["permissions"], {
+            "contents": "read", "security-events": "write", "actions": "read",
+        })
+        for name, job in jobs.items():
+            self.assertNotIn("environment", job)
+            if name != "security-scan":
+                self.assertNotIn("permissions", job)
+            for step in job["steps"]:
+                if "uses" in step:
+                    self.assertRegex(step["uses"], r"^[^@]+@[0-9a-f]{40}$")
+        self.assertEqual(set(re.findall(r"secrets\.([A-Z0-9_]+)", raw)), {"CODECOV_TOKEN"})
+        self.assertEqual(raw.count("alembic upgrade head"), 1)
+        [(job_name, schema_guard)] = [
+            (name, step) for name, job in jobs.items() for step in job["steps"]
+            if "alembic upgrade head" in step.get("run", "")
+        ]
+        self.assertEqual(job_name, "test-backend")
+        self.assertEqual(schema_guard["name"], "Check migrated public table access")
+        self.assertEqual(schema_guard["timeout-minutes"], 5)
+        self.assertEqual(schema_guard["env"], {
+            "SCHEMA_GUARD_CONTAINER": "${{ job.services.schema-guard-postgres.id }}",
+            "PUBLIC_SCHEMA_GUARD_CI_URL": "postgresql://postgres:postgres@127.0.0.1:55498/auditgava_schema_guard",
+            "PYTHON_DOTENV_DISABLED": "1",
+        })
+        self.assertIn(
+            'DATABASE_URL="$PUBLIC_SCHEMA_GUARD_CI_URL" python -m alembic upgrade head',
+            schema_guard["run"].splitlines(),
+        )
+        service = jobs["test-backend"]["services"]["schema-guard-postgres"]
+        self.assertEqual(service["image"], jobs["test-backend"]["services"]["postgres"]["image"])
+        self.assertEqual(service["ports"], ["127.0.0.1:55498:5432"])
+        self.assertEqual(service["env"]["POSTGRES_DB"], "auditgava_schema_guard")
+
+    def assert_job_deadlines(self, workflow, backend_minutes):
         expected = {
-            "test-backend": 60, "test-frontend": 20, "test-etl": 10,
+            "test-backend": backend_minutes, "test-frontend": 20, "test-etl": 10,
             "security-scan": 10, "test-browser": 20,
             "test-browser-legacy": 20, "quality-gate": 5,
         }
@@ -70,29 +116,32 @@ class ConfigurationTests(unittest.TestCase):
         self.assertEqual(preparation["timeout-minutes"], 5)
 
     def test_complete_backend_has_finite_budget_without_relaxing_other_deadlines(self):
-        # Run 38666663428 needed 42 minutes for the first cohort alone,
-        # then hit 45 minutes before legacy tests, coverage and API smoke.
+        # Keep each workflow bounded while allowing PR CI's current core
+        # inventory, legacy tests, coverage and cleanup to finish.
         for name, workflow in self.workflows():
             with self.subTest(workflow=name):
-                self.assert_job_deadlines(workflow)
+                self.assert_job_deadlines(workflow, 90 if name == "pr-ci.yml" else 60)
 
     def test_deadline_policy_rejects_short_unbounded_or_broadened_budgets(self):
         for name, workflow in self.workflows():
+            backend_minutes = 90 if name == "pr-ci.yml" else 60
+            other_backend_timeout = 60 if name == "pr-ci.yml" else 90
             valid = deepcopy(workflow)
-            valid["jobs"]["test-backend"]["timeout-minutes"] = 60
-            self.assert_job_deadlines(valid)
-            for minutes in (20, 30, 45, 90, 0, -1, True, 60.0, "60", None,
+            valid["jobs"]["test-backend"]["timeout-minutes"] = backend_minutes
+            self.assert_job_deadlines(valid, backend_minutes)
+            for minutes in (20, 30, 45, 70, other_backend_timeout, 120, 0, -1, True,
+                            float(backend_minutes), str(backend_minutes), None,
                             float("nan"), float("inf"), [], {}):
                 with self.subTest(workflow=name, backend_minutes=minutes):
                     mutated = deepcopy(valid)
                     mutated["jobs"]["test-backend"]["timeout-minutes"] = minutes
                     with self.assertRaises(AssertionError):
-                        self.assert_job_deadlines(mutated)
+                        self.assert_job_deadlines(mutated, backend_minutes)
             with self.subTest(workflow=name, missing_backend_limit=True):
                 mutated = deepcopy(valid)
                 del mutated["jobs"]["test-backend"]["timeout-minutes"]
                 with self.assertRaises(AssertionError):
-                    self.assert_job_deadlines(mutated)
+                    self.assert_job_deadlines(mutated, backend_minutes)
             for job in valid["jobs"]:
                 if job == "test-backend":
                     continue
@@ -100,7 +149,7 @@ class ConfigurationTests(unittest.TestCase):
                     mutated = deepcopy(valid)
                     mutated["jobs"][job]["timeout-minutes"] = 30
                     with self.assertRaises(AssertionError):
-                        self.assert_job_deadlines(mutated)
+                        self.assert_job_deadlines(mutated, backend_minutes)
             with self.subTest(workflow=name, broadened_image_preparation=True):
                 mutated = deepcopy(valid)
                 preparation = next(
@@ -109,7 +158,7 @@ class ConfigurationTests(unittest.TestCase):
                 )
                 preparation["timeout-minutes"] = 30
                 with self.assertRaises(AssertionError):
-                    self.assert_job_deadlines(mutated)
+                    self.assert_job_deadlines(mutated, backend_minutes)
 
     def test_services_use_exact_official_ecr_pins_and_preserve_cached_role_fixture(self):
         postgres = "public.ecr.aws/docker/library/postgres@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3"
@@ -154,17 +203,27 @@ class ConfigurationTests(unittest.TestCase):
             with self.subTest(workflow=name):
                 job = workflow["jobs"]["test-backend"]
                 step = next(step for step in job["steps"] if step.get("id") == "backend_tests")
-                self.assertEqual(step["run"], "python .github/scripts/run_backend_tests.py")
+                prefix = "tini -s -- " if name == "pr-ci.yml" else ""
+                self.assertEqual(step["run"], prefix + "python .github/scripts/run_backend_tests.py")
                 self.assertNotIn("continue-on-error", step)
+                census = [item for item in job["steps"] if item.get("name") == "Build isolated refresh census fixture"]
+                if name == "pr-ci.yml":
+                    self.assertEqual(len(census), 1)
+                    self.assertLess(job["steps"].index(census[0]), job["steps"].index(step))
+                    self.assertEqual(census[0]["timeout-minutes"], 5)
+                    self.assertNotIn("continue-on-error", census[0])
+                else:
+                    self.assertEqual(census, [])
                 self.assertEqual(step["env"], {
                     "DATABASE_URL": "postgresql://postgres:postgres@localhost:5432/audit_app_test",
                     "REDIS_URL": "redis://localhost:6379", "TESTING": True,
                     "PYTHON_DOTENV_DISABLED": "1",
+                    **({"TEST_REFRESH_CENSUS_CONTAINER": "1"} if name == "pr-ci.yml" else {}),
                 })
 
     def test_browser_cohort_verdicts_execute_with_negative_controls(self):
         result = subprocess.run(
-            ["node", "--test", "scripts/ci-browser-cohorts.test.mjs", "scripts/run-legacy-e2e.test.mjs"],
+            ["node", "--test", "--test-reporter=tap", "scripts/ci-browser-cohorts.test.mjs", "scripts/run-legacy-e2e.test.mjs"],
             cwd=ROOT / "frontend", text=True, capture_output=True,
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)

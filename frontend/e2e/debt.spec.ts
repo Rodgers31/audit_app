@@ -8,7 +8,7 @@ test('national debt page shows key stats and charts', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toHaveText("Kenya's National Debt");
   const ratio = page.getByText('Debt-to-GDP', { exact: true }).locator('..');
   await expect(ratio).toContainText('60.0%');
-  await expect(ratio).toContainText('Synthetic browser fixture');
+  await expect(ratio).toContainText('IMF World Economic Outlook');
   await expect(ratio).toContainText('Observation: 2025');
   await expect(page.getByText('Not assessed', { exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'The cost of debt over time' })).toBeVisible();
@@ -46,6 +46,6 @@ test('debt page does not undermine the headline with discouraging copy', async (
 test('debt page source line names the ratio inputs explicitly', async ({ page }) => {
   await page.goto('/debt');
   await expect(page.getByText(/Uses tax & non-tax revenue; debt figure includes total debt service/i)).toContainText('(interest + principal redemptions)');
-  // This fixture has no APDMR source metadata; do not invent a Treasury citation.
-  await expect(page.getByText(/The source document for FY 2025\/26's debt-service figure is not recorded/i)).toBeVisible();
+  await expect(page.getByText(/FY 2025\/26 debt service is from Synthetic local fixture/))
+    .toContainText('Synthetic browser fiscal framework (p. 1)');
 });

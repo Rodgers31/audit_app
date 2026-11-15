@@ -21,6 +21,7 @@ never orphan it.
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from hashlib import md5
 
 import pytest
 from models import (
@@ -310,7 +311,8 @@ URL = (
     "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/"
     "AUDITOR-GENERALS-REPORT-ON-NATIONAL-GOVERNMENT-2024-2025.pdf"
 )
-MD5 = "7e6a6850102a3cadcba38e1f7af9cae3"
+FIXTURE_PDF = b"%PDF-1.4\nSynthetic envelope; read_pages supplies the test pages.\n%%EOF\n"
+MD5 = md5(FIXTURE_PDF, usedforsecurity=False).hexdigest()
 
 
 def _legacy_rows(doc):
@@ -370,7 +372,7 @@ def national_doc(db_session, tmp_path, monkeypatch):
         db_session.add(country)
         db_session.flush()
     pdf = tmp_path / "blue-book.pdf"
-    pdf.write_bytes(b"%PDF-1.4 stub; read_pages is patched")
+    pdf.write_bytes(FIXTURE_PDF)
     doc = SourceDocument(
         id=2392,
         country_id=country.id,

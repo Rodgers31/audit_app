@@ -32,11 +32,19 @@ os.environ.update(DATABASE_URL=f'sqlite:///{ROOT / "fixture.sqlite"}', REDIS_URL
                   CORS_ORIGINS='http://127.0.0.1:3141', REVALIDATE_SECRET='synthetic-browser-secret')
 from dev_fixtures import block_external_http, seed_local_fixture, FIXTURE_TIMESTAMP
 block_external_http()
+
+import request_database
+
+# Next builds several public pages concurrently against this owned SQLite DB.
+request_database.POOL_SIZE = 32
+
 import database
 seed_local_fixture(database)
 import main
 from models import Audit, BudgetLine, Entity, EntityType, FiscalSummary, Severity
 from services.county_identity import official_county_code
+from services.fiscal_framework_qualification import PRECISION_KES, bind_framework_evidence
+from services.fiscal_qualification import MONEY_BASES, VERSION, measure_evidence
 
 with database.SessionLocal() as db:
     # The base acceptance fixture deliberately has only two counties. Add the
@@ -75,15 +83,25 @@ with database.SessionLocal() as db:
               total_financing_billion=25, net_foreign_financing_billion=10, net_domestic_financing_billion=15,
               adjustment_to_cash_basis_billion=0, statistical_discrepancy_billion=0,
               tax_revenue_billion=80, non_tax_revenue_billion=20,
-              source={'title':'Synthetic browser fiscal framework','publisher':'Synthetic local fixture',
-                      'page':'p. 1','url':'https://example.invalid/auditgava-local-budget.pdf'})
+              source={'title': 'Synthetic browser fiscal framework', 'publisher': 'Synthetic local fixture',
+                      'page': 'p. 1', 'url': 'https://www.treasury.go.ke/synthetic-browser-fixture.pdf',
+                      'sha256': 'a' * 64, 'column': 'Approved'}, precision_kes=PRECISION_KES)
     for year, amount in (('FY 2024/25', 150), ('FY 2025/26', 180)):
-        db.add(FiscalSummary(fiscal_year=year, appropriated_budget=amount*1e9, total_revenue=100e9,
-                            tax_revenue=80e9, non_tax_revenue=20e9, total_borrowing=25e9,
-                            debt_service_cost=50e9, debt_service_per_shilling=50,
-                            development_spending=40e9, recurrent_spending=90e9, county_allocation=20e9,
+        measures = dict(appropriated_budget=amount * 1e9, total_revenue=100e9,
+                        tax_revenue=80e9, non_tax_revenue=20e9, total_borrowing=25e9,
+                        debt_service_cost=50e9, development_spending=40e9,
+                        recurrent_spending=90e9, county_allocation=20e9)
+        framework = bind_framework_evidence(dict(fw, fiscal_year=year))
+        evidence = {
+            name: measure_evidence(value, year, next(iter(MONEY_BASES[name])),
+                                   'Approved', PRECISION_KES, fw['source'])
+            for name, value in measures.items()
+        }
+        db.add(FiscalSummary(fiscal_year=year, **measures, debt_service_per_shilling=50,
                             unit='KES', source_document_id=1, page_ref='p. 1', publishable=True,
-                            meta={'synthetic':True,'fiscal_framework':fw, 'split_basis':'treasury_fiscal_framework'},
+                            meta={'synthetic': True, 'fiscal_framework': framework,
+                                  'split_basis': 'treasury_fiscal_framework',
+                                  'fiscal_measure_contract': {'version': VERSION, 'measures': evidence}},
                             created_at=FIXTURE_TIMESTAMP, updated_at=FIXTURE_TIMESTAMP))
     db.commit()
 from contextlib import asynccontextmanager

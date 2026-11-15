@@ -101,7 +101,7 @@ describe('/counties/compare — the prerendered document, with useSearchParams s
   it('renders the page shell, which does not read the URL and has no business being deferred', () => {
     renderWithHydratedCounties();
 
-    expect(screen.getByText('Compare counties')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Compare counties', level: 1 })).toBeInTheDocument();
     expect(
       screen.getByText(/Line up two or three counties side-by-side/i)
     ).toBeInTheDocument();

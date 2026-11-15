@@ -54,11 +54,40 @@ def test_unknown_refresh_protocol_refuses_before_invalidation(isolated, monkeypa
 
 def test_actual_gunicorn_census_and_signed_worker_adoption(tmp_path):
     import os
+    import re
     import socket
     import subprocess
     import sys
     import signal
+    from pathlib import Path
     import httpx
+    if os.environ.get('TEST_REFRESH_CENSUS_CONTAINER') == '1':
+        # A hosted runner shares /proc with services owned by other users.
+        # The same test runs in an owned PID/network namespace so it can read
+        # the real listener holders without relaxing the production census.
+        backend = Path(__file__).resolve().parents[1]
+        cidfile = tmp_path / 'refresh-census.cid'
+        try:
+            result = subprocess.run([
+                'docker', 'run', '--platform', 'linux/amd64', '--pull', 'never', '--rm', '--init',
+                '--network', 'none', '--user', '10001:10001', '--cap-drop', 'ALL',
+                '--security-opt', 'no-new-privileges', '--cidfile', str(cidfile),
+                '--mount', f'type=bind,source={backend},target=/backend,readonly',
+                '--workdir', '/backend', '--env', 'HOME=/tmp',
+                '--env', 'PYTHONPATH=/backend:/backend/tests',
+                '--env', 'PYTHONDONTWRITEBYTECODE=1',
+                'auditgava-ci-refresh-census:local', 'python', '-m', 'pytest',
+                '--noconftest', '-p', 'no:cacheprovider', '-o', 'addopts=', '-q',
+                'tests/test_workflow_refresh_signed.py::test_actual_gunicorn_census_and_signed_worker_adoption',
+            ], capture_output=True, text=True, timeout=60)
+            assert result.returncode == 0, result.stdout + result.stderr
+        finally:
+            if cidfile.is_file():
+                identity = cidfile.read_text().strip()
+                assert re.fullmatch(r'[0-9a-f]{64}', identity), 'Invalid owned census container identity'
+                subprocess.run(['docker', 'rm', '-f', identity], capture_output=True, timeout=10)
+        return
+
     app = tmp_path/'owned_web.py'
     app.write_text('from fastapi import FastAPI\nfrom routers.cache_invalidation import router\napp=FastAPI()\napp.include_router(router)\n')
     with socket.socket() as reserve:

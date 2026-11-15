@@ -1,30 +1,57 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
-const fresh = (source: string, status = 'fresh') => ({
-  source, label: source, status, last_updated: new Date().toISOString().slice(0, 10),
+const publication = (source: string, last_updated: string, status = 'fresh') => ({
+  source, label: source, status, last_updated,
   covers_through: 'FY2025/26 9M', update_frequency: 'Quarterly',
 });
+const cob = publication('COB', '2025-10-10');
+const treasury = publication('Treasury', '2025-10-15');
+const freshnessURL = '**/api/v1/data/freshness';
+const freshnessVerdict = /^(?:Up to date|May be stale|Out of date|Freshness unknown)(?: ·|$)/;
+
+async function openBudget(page: Page, sources: readonly (ReturnType<typeof publication> & { last_checked?: string })[]) {
+  await page.route(freshnessURL, route => route.fulfill({ json: { sources } }));
+  const response = page.waitForResponse(freshnessURL);
+  await page.goto('/budget');
+  expect((await response).ok()).toBe(true);
+  await expect(page.getByRole('heading', { name: "Kenya's Budget & Spending", exact: true })).toBeVisible();
+}
 
 for (const [name, sources, label] of [
-  ['partial', [fresh('COB')], 'Freshness unknown'],
-  ['complete', [fresh('COB'), fresh('Treasury')], 'Up to date'],
-  ['stale', [fresh('COB'), fresh('Treasury', 'stale')], 'May be stale'],
-  ['unavailable', [], 'Freshness unknown'],
+  ['complete', [cob, treasury], 'Up to date'],
+  ['stale', [cob, { ...treasury, status: 'stale' }], 'May be stale'],
 ] as const) {
   test(`budget freshness is ${name}`, async ({ page }) => {
-    await page.route('**/api/v1/data/freshness', route => route.fulfill({ json: { sources } }));
-    await page.goto('/budget');
-    const badge = page.getByRole('status', { name: /^Data freshness:/ });
-    await expect(badge).toContainText(label);
-    if (name !== 'complete') await expect(badge).not.toContainText('Up to date');
+    await openBudget(page, sources);
+    const verdict = page.getByText(label, { exact: true });
+    await expect(verdict).toBeVisible();
+    await expect(verdict.locator('..')).toHaveText(`${label} · Data as of 10 Oct 2025 · COB / Treasury`);
+    await expect(page.getByText(freshnessVerdict)).toHaveCount(1);
   });
 }
 
-test('no JavaScript readers receive an honest resolved absence', async ({ browser }) => {
-  const context = await browser.newContext({ javaScriptEnabled: false });
+test('partial publisher coverage shows only the verified check date', async ({ page }) => {
+  await openBudget(page, [{ ...cob, last_checked: '2025-10-20' }]);
+  await expect(page.getByText('Checked 20 Oct 2025 · COB', { exact: true })).toBeVisible();
+  await expect(page.getByText(freshnessVerdict)).toHaveCount(0);
+  await expect(page.getByText(/Data as of .* · COB/)).toHaveCount(0);
+});
+
+test('unavailable freshness evidence leaves the verdict absent', async ({ page }) => {
+  await openBudget(page, []);
+  await expect(page.getByText(freshnessVerdict)).toHaveCount(0);
+  await expect(page.getByText(/^Checked .* · (?:COB|Treasury)/)).toHaveCount(0);
+});
+
+test('no JavaScript readers receive the budget without a freshness verdict', async ({ browser, baseURL }) => {
+  const context = await browser.newContext({ baseURL, javaScriptEnabled: false });
   const page = await context.newPage();
-  await page.goto('http://127.0.0.1:3125/budget');
-  await expect(page.getByRole('status', { name: /^Data freshness:/ })).toContainText('Freshness unknown');
-  await expect(page.getByText('Checking data freshness…', { exact: true })).toHaveCount(0);
-  await context.close();
+  try {
+    await page.goto('/budget');
+    await expect(page.getByRole('heading', { name: "Kenya's Budget & Spending", exact: true })).toBeVisible();
+    await expect(page.getByText(freshnessVerdict)).toHaveCount(0);
+    await expect(page.getByText('Checking data freshness…', { exact: true })).toHaveCount(0);
+  } finally {
+    await context.close();
+  }
 });

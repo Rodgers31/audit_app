@@ -224,39 +224,30 @@ def test_unqualified_year_data_still_requires_primitive_null_schema(field,value)
 
 
 @pytest.mark.parametrize('job', ['migrate','bootstrap','seed','validate'])
-@pytest.mark.parametrize('profile_kind', ['missing','linked_parent'])
-def test_writer_runtime_refuses_missing_reviewed_native_profile_before_acquisition(tmp_path,job,profile_kind):
-    import shutil
+@pytest.mark.parametrize('approved_sha', ['', 'b' * 40], ids=['missing', 'different'])
+def test_writer_runtime_refuses_unapproved_source_before_acquisition(tmp_path,job,approved_sha):
     import subprocess
     import sys
 
     doc = yaml.safe_load(WORKFLOW.read_text())
     step = next(s for s in doc['jobs'][job]['steps'] if s.get('name') == 'Require hosted native writer admission')
-    helpers = Path('tools/nightly_acceptance_20261105')
-    (tmp_path / helpers).mkdir(parents=True)
-    for name in ('native_jobs', 'common', 'runtime', 'native_corpus', 'native_environment'):
-        path = helpers / f'{name}.py'
-        shutil.copyfile(ROOT / path, tmp_path / path)
-
-    parent = tmp_path / 'docs/operations/nightly-acceptance-20261105'
-    parent.mkdir(parents=True)
-    if profile_kind == 'linked_parent':
-        native = tmp_path / 'elsewhere'
-        native.mkdir()
-        shutil.copyfile(ROOT / 'docs/operations/nightly-acceptance-20261105/native' / f'{job}.local.json',
-                        native / f'{job}.local.json')
-        (parent / 'native').symlink_to(native, target_is_directory=True)
-    else:
-        (parent / 'native').mkdir()
-
-    command = step['run']
-    if not Path('/usr/bin/python3').is_file():
-        command = command.replace('/usr/bin/python3', sys.executable, 1)
-    output = tmp_path / 'path'
-    output.touch()
-    result = subprocess.run(['/bin/bash', '-eo', 'pipefail', '-c', command], cwd=tmp_path,
+    outputs = {key: tmp_path / key.lower() for key in ('GITHUB_PATH', 'GITHUB_ENV')}
+    for output in outputs.values():
+        output.touch()
+    scratch = tmp_path / 'scratch'
+    scratch.mkdir()
+    # Provide the correct workflow identity, no database credentials and a
+    # missing/wrong approval. The actual gate must stop before provisioning.
+    result = subprocess.run(['/bin/bash', '-eo', 'pipefail', '-c', step['run']], cwd=ROOT,
         text=True, capture_output=True, timeout=10, env={
-            'PATH': '/usr/bin:/bin', 'RUNNER_TEMP': str(tmp_path / 'scratch'),
-            'GITHUB_JOB': job, 'GITHUB_PATH': str(output)})
-    assert result.returncode == 1 and 'original evidence symlink/absent' in result.stderr, result
-    assert not (tmp_path / 'scratch').exists() and output.read_text() == ''
+            'PATH': str(Path(sys.executable).parent) + ':/usr/bin:/bin',
+            'RUNNER_TEMP': str(scratch), 'GITHUB_JOB': job,
+            'GITHUB_ACTIONS': 'true', 'RUNNER_ENVIRONMENT': 'github-hosted',
+            'GITHUB_REPOSITORY': 'Rodgers31/audit_app', 'GITHUB_REF': 'refs/heads/main',
+            'GITHUB_WORKFLOW_REF': 'Rodgers31/audit_app/.github/workflows/seed.yml@refs/heads/main',
+            'GITHUB_EVENT_NAME': 'workflow_dispatch', 'GITHUB_SHA': 'a' * 40,
+            'GITHUB_WORKFLOW_SHA': 'a' * 40, 'APPROVED_SHA': approved_sha,
+            **{key: str(path) for key, path in outputs.items()},
+        })
+    assert result.returncode == 1 and 'writer source is not admitted' in result.stderr, result
+    assert not list(scratch.iterdir()) and all(not path.read_text() for path in outputs.values())

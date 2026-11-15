@@ -6,11 +6,32 @@ from decimal import Decimal
 import pytest
 from fiscal_evidence import isolated_fiscal_debt_peer_worker
 from sqlalchemy import text
-from models import Country, DebtTimeline, FiscalSummary
+from sqlalchemy.orm import Session
+from models import Base, Country, DebtTimeline, FiscalSummary
+from tests.acceptance_owned_pg import owned_schema
 from test_fiscal_measure_postgres import candidate, write
 from test_fiscal_measure_publication import qualified_row
 from test_refresh_review_debt import run_source, snapshots
 from test_refresh_review_debt_boundary import capture
+
+
+@pytest.fixture
+def db_session():
+    # Keep these tests on actual PostgreSQL without changing the default
+    # SQLite fixture used by the rest of the backend suite.
+    with owned_schema('fiscal_fixture') as (engine, _):
+        Base.metadata.create_all(engine)
+        with Session(engine) as session:
+            yield session
+
+
+@pytest.fixture
+def seed_source_doc(db_session, seed_source_doc):
+    # The parent fixture inserts id=1 explicitly; advance the PostgreSQL
+    # sequence before the writer under test adds a second source document.
+    db_session.execute(text("SELECT setval(pg_get_serial_sequence('source_documents','id'),"
+                            "(SELECT max(id) FROM source_documents),true)"))
+    return seed_source_doc
 
 
 @pytest.fixture

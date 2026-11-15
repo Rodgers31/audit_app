@@ -38,8 +38,8 @@ it.each([
   expect(screen.getByRole('heading', { name: `${title} · 2024` })).toBeInTheDocument();
   expect(screen.getByText(zero)).toBeInTheDocument();
   expect(screen.getByText(absent)).toBeInTheDocument();
-  expect(evidence('gross county product').getByText(new RegExp(gcp))).toBeInTheDocument();
-  expect(evidence('county budget observations').getByText(new RegExp(budget))).toBeInTheDocument();
+  expect(evidence('gross county product').getByRole('button', { name: new RegExp(gcp) })).toBeInTheDocument();
+  expect(evidence('county budget observations').getByRole('button', { name: new RegExp(budget) })).toBeInTheDocument();
   expect(evidence('gross county product').getByRole('link', { hidden: true, name: lang === 'sw' ? 'Maelezo ya ushahidi wa takwimu' : 'Details for this observation' })).toHaveAttribute('href', `/sources/figures/gdp_data/${profile.economic_profile.latest_gcp.record_id}`);
   expect(within(screen.getByRole('heading', { name: `${title} · 2024` }).parentElement!).getByText('KES 0')).toBeInTheDocument();
 });
@@ -50,7 +50,7 @@ it.each([
 ])('localizes actual sector disclosure application copy in %s and keeps the raw sector label', (lang, expected) => {
   subject(<ExecutionAuditLens fiscalYear='FY2024/25' rows={[{ sector: 'Health $&', allocated: 100, spent: 0, unspent: 100, execution_rate: 0, qualifications: fixture.budget_lines.qualifications as any }]} />);
   fireEvent.click(screen.getByRole('button', { name: lang }));
-  expect(evidence('Health $& allocation and expenditure').getByText(text => text.startsWith(expected))).toBeInTheDocument();
+  expect(evidence('Health $& allocation and expenditure').getByRole('button', { name: name => name.endsWith(expected) })).toBeInTheDocument();
   expect(screen.getByTitle('Health $&')).toBeInTheDocument();
 });
 
@@ -60,8 +60,8 @@ it.each([
 ])('localizes actual economic disclosure labels in %s while preserving numbers and original selectors', (lang, inflation, ratio) => {
   subject(<EconomicContextStrip ctx={{ gdp_billion_kes: 0, inflation_pct: 0, budget_to_gdp_pct: 0 }} />);
   fireEvent.click(screen.getByRole('button', { name: lang }));
-  expect(evidence('Inflation').getByText(text => text.startsWith(inflation))).toBeInTheDocument();
-  expect(evidence('Budget / GDP').getByText(text => text.startsWith(ratio))).toBeInTheDocument();
+  expect(evidence('Inflation').getByRole('button', { name: name => name.endsWith(inflation) })).toBeInTheDocument();
+  expect(evidence('Budget / GDP').getByRole('button', { name: name => name.endsWith(ratio) })).toBeInTheDocument();
   expect(screen.getByText('KES 0B')).toBeInTheDocument();
 });
 
@@ -71,9 +71,9 @@ it.each([
 ])('localizes actual dashboard debt disclosure labels in %s with original selectors and ratio unchanged', (lang, loans, gdp, ratio) => {
   subject(<SummaryStrip />);
   fireEvent.click(screen.getByRole('button', { name: lang }));
-  expect(evidence('debt register operands').getByText(text => text.startsWith(loans))).toBeInTheDocument();
-  expect(evidence('GDP observations').getByText(text => text.startsWith(gdp))).toBeInTheDocument();
-  expect(evidence('debt-to-GDP observation').getByText(text => text.startsWith(ratio))).toBeInTheDocument();
+  expect(evidence('debt register operands').getByRole('button', { name: name => name.endsWith(loans) })).toBeInTheDocument();
+  expect(evidence('GDP observations').getByRole('button', { name: name => name.endsWith(gdp) })).toBeInTheDocument();
+  expect(evidence('debt-to-GDP observation').getByRole('button', { name: name => name.endsWith(ratio) })).toBeInTheDocument();
   expect(screen.getByText('0.0%')).toBeInTheDocument();
   expect(evidence('debt-to-GDP observation').getByText(/published imf ratio outside seven table contract/)).toBeInTheDocument();
 });
@@ -83,8 +83,8 @@ it.each([
   ['plain', 'Evidence for Nairobi $& {name} budget observations', 'Evidence for debt register operands'],
 ])('uses only explicit display keys in %s and retains literal entity names and original selector labels', (lang, translated, raw) => {
   subject(<><FigureEvidence label='Nairobi $& {name} budget observations' labelKey='evidence.label.county_named' labelValues={{ name: 'Nairobi $& {name}' }} /><FigureEvidence label='debt register operands' /></>);
-  expect(evidence('Nairobi $& {name} budget observations').getByText(text => text.startsWith('Evidence for Nairobi $& {name} budget observations'))).toBeInTheDocument();
+  expect(evidence('Nairobi $& {name} budget observations').getByRole('button', { name: name => name.endsWith('Evidence for Nairobi $& {name} budget observations') })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: lang }));
-  expect(evidence('Nairobi $& {name} budget observations').getByText(text => text.startsWith(translated))).toBeInTheDocument();
-  expect(evidence('debt register operands').getByText(text => text.startsWith(raw))).toBeInTheDocument();
+  expect(evidence('Nairobi $& {name} budget observations').getByRole('button', { name: name => name.endsWith(translated) })).toBeInTheDocument();
+  expect(evidence('debt register operands').getByRole('button', { name: name => name.endsWith(raw) })).toBeInTheDocument();
 });

@@ -43,16 +43,18 @@ def environment(db, tmp_path, nonce, admin_subject):
 
 
 def group_members(pid):
-    rows = subprocess.check_output(["ps", "-axo", "uid=,pid=,pgid=,command="], text=True).splitlines()
+    # A CI terminal width can truncate the module after a long Python path.
+    rows = subprocess.check_output(["ps", "-ww", "-axo", "uid=,pid=,pgid=,command="], text=True).splitlines()
     return [line.split(None, 3) for line in rows if len(line.split(None, 3)) == 4 and int(line.split(None, 3)[2]) == pid]
 
 
 @contextmanager
-def process(tmp_path, env, module, *args):
+def process(tmp_path, env, module, *args, pass_fds=()):
     argv = [sys.executable, *(["-O"] if sys.flags.optimize else []), "-B", "-m", module, *args]
     path = tmp_path / (module + "-" + uuid4().hex + ".log")
     with path.open("xb") as log:
-        child = subprocess.Popen(argv, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+        child = subprocess.Popen(argv, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT,
+                                 start_new_session=True, pass_fds=pass_fds)
         birth = subprocess.check_output(["ps", "-p", str(child.pid), "-o", "lstart="], text=True).strip()
         try:
             yield child, path
@@ -93,9 +95,17 @@ def headers(subject):
     return {"Authorization": "Bearer " + token}
 
 
+@pytest.fixture
+def owned_http_listener():
+    # Reserve a unique loopback port and hand the descriptor to Uvicorn.
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        yield listener
+
+
 @pytest.mark.parametrize("mode,dry_run,terminal,effects", [("normal", False, "completed", 1),
     ("normal", True, "completed", 0), ("failure", False, "failed", 0)])
-def test_http_acceptance_correlates_one_actual_worker_execution(owned, tmp_path, mode, dry_run, terminal, effects):
+def test_http_acceptance_correlates_one_actual_worker_execution(owned, owned_http_listener, tmp_path, mode, dry_run, terminal, effects):
     nonce, admin_subject = uuid4().hex, str(uuid4())
     with owned.connection.begin():
         owned.connection.execute(text("CREATE TABLE batch12_control(mode text NOT NULL, nonce text NOT NULL)"))
@@ -104,9 +114,11 @@ def test_http_acceptance_correlates_one_actual_worker_execution(owned, tmp_path,
         owned.connection.execute(text("CREATE TABLE batch12_process_exit(pid integer PRIMARY KEY, exit_code integer NOT NULL, observer_pid integer NOT NULL)"))
         owned.connection.execute(text("CREATE TABLE batch12_effects(job_id integer NOT NULL)"))
     env = environment(owned, tmp_path, nonce, admin_subject)
-    with socket.socket() as probe:
-        probe.bind(("127.0.0.1", 18060))
-    with process(tmp_path, env, "uvicorn", "server:app", "--host", "127.0.0.1", "--port", "18060") as (server, server_log), httpx.Client(base_url="http://127.0.0.1:18060", trust_env=False) as client:
+    port = owned_http_listener.getsockname()[1]
+    descriptor = owned_http_listener.fileno()
+    with process(tmp_path, env, "uvicorn", "server:app", "--fd", str(descriptor),
+                 pass_fds=(descriptor,)) as (server, server_log), httpx.Client(
+                     base_url=f"http://127.0.0.1:{port}", trust_env=False) as client:
         def server_response():
             try:
                 return client.get("/api/v1/admin/etl/dispatch", headers=headers(admin_subject))

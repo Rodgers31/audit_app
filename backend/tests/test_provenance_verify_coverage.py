@@ -16,6 +16,7 @@ so in words rather than leaving the table unmentioned.
 from datetime import datetime
 
 import pytest
+from fiscal_evidence import SYNTHETIC_SHA, qualify_synthetic_row
 from models import (
     DebtCategory,
     DocumentStatus,
@@ -64,13 +65,15 @@ class TestProvenanceVerifyCoverage:
     def test_fiscal_summaries_resolves_to_its_document(
         self, client, db_session, hashed_doc
     ):
-        db_session.add(
-            FiscalSummary(
-                fiscal_year="FY 2024/25",
-                appropriated_budget=4_490_000_000_000,
-                source_document_id=hashed_doc.id,
-            )
-        )
+        row = qualify_synthetic_row(FiscalSummary(
+            fiscal_year="FY 2024/25", appropriated_budget=4_490_000_000_000,
+            source_document_id=hashed_doc.id, unit="KES",
+        ))
+        row.meta["fiscal_measure_contract"]["measures"]["appropriated_budget"]["source"] = {
+            "url": hashed_doc.url, "title": hashed_doc.title, "publisher": hashed_doc.publisher,
+            "page": "PDF p.37", "sha256": SYNTHETIC_SHA,
+        }
+        db_session.add(row)
         db_session.commit()
         body = client.get(
             "/api/v1/provenance/verify/fiscal_summaries?year=2024"
@@ -94,7 +97,9 @@ class TestProvenanceVerifyCoverage:
             "/api/v1/provenance/verify/fiscal_summaries?year=2019"
         ).json()
         assert body["value"] is None
-        assert "no appropriated budget" in body["reason"]
+        assert body["reason"] == "measure_contract_missing_or_unknown"
+        assert body["verification_status"] == "unverified"
+        assert body["source_url"] is None
 
     def test_revenue_by_source_names_the_row_it_verified(
         self, client, db_session, hashed_doc
@@ -203,14 +208,14 @@ class TestVerifyStatesItsOwnLimit:
         self, client, db_session, hashed_doc
     ):
         db_session.add(
-            FiscalSummary(
-                fiscal_year="FY 2024/25",
-                appropriated_budget=4_490_000_000_000,
+            RevenueBySource(
+                fiscal_year="FY 2024/25", revenue_type="PAYE", category="tax",
+                amount_billion_kes=561.0,
                 source_document_id=hashed_doc.id,
             )
         )
         db_session.commit()
-        body = client.get("/api/v1/provenance/verify/fiscal_summaries").json()
+        body = client.get("/api/v1/provenance/verify/revenue_by_source?year=2024").json()
         assert body["verification_status"] != "verified"
         assert "has not been fetched or validated by this endpoint" in body["reason"]
 
@@ -233,13 +238,13 @@ class TestVerifyStatesItsOwnLimit:
         db_session.add(unhashed)
         db_session.add_all(
             [
-                FiscalSummary(
-                    fiscal_year="FY 2024/25",
-                    appropriated_budget=4_490_000_000_000,
+                RevenueBySource(
+                    fiscal_year="FY 2024/25", revenue_type="VAT", category="tax",
+                    amount_billion_kes=327.3,
                     source_document_id=hashed_doc.id,
                 ),
                 RevenueBySource(
-                    fiscal_year="FY 2024/25",
+                    fiscal_year="FY 2025/26",
                     revenue_type="PAYE",
                     category="tax",
                     amount_billion_kes=561.0,
@@ -249,10 +254,10 @@ class TestVerifyStatesItsOwnLimit:
         )
         db_session.commit()
         with_md5 = client.get(
-            "/api/v1/provenance/verify/fiscal_summaries"
+            "/api/v1/provenance/verify/revenue_by_source?year=2024"
         ).json()["reason"]
         without_md5 = client.get(
-            "/api/v1/provenance/verify/revenue_by_source"
+            "/api/v1/provenance/verify/revenue_by_source?year=2025"
         ).json()["reason"]
         assert "an md5 is on file" in with_md5
         assert "no md5 is on file" in without_md5

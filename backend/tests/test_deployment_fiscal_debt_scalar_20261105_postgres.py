@@ -7,7 +7,7 @@ from copy import deepcopy
 from decimal import Decimal
 
 from models import DebtTimeline
-from test_deployment_fiscal_debt_20261105_postgres import owned_fiscal_debt_pg
+from test_deployment_fiscal_debt_20261105_postgres import db_session, owned_fiscal_debt_pg
 from test_refresh_review_debt import document, freshness, run_source
 from seeding.domains.debt_timeline.publication import debt_qualifications, public_debt_rows
 

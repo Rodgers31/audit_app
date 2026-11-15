@@ -5,6 +5,7 @@ Control routes live only in this executable test harness, not the application.
 """
 
 import os
+import secrets
 import sys
 import tempfile
 from pathlib import Path
@@ -18,10 +19,17 @@ os.environ.update(
     REDIS_URL="",
     ENVIRONMENT="test",
     REVALIDATE_SECRET="browser-test-only-secret",
+    RENDER_GIT_COMMIT="a" * 40,
     CACHE_GENERATION_FILE=str(ROOT / "generation"),
     CORS_ORIGINS=os.environ.get("LOCAL_DEV_CORS_ORIGINS", "http://127.0.0.1:3125,http://localhost:3125"),
     DISABLE_RATE_LIMIT="true",
 )
+
+import request_database
+
+# The production request pool protects a shared service. This SQLite fixture
+# also serves Next's parallel build-time reads, so reserve local-only capacity.
+request_database.POOL_SIZE = 32
 
 import database
 from dev_fixtures import block_external_http, seed_local_fixture
@@ -74,5 +82,19 @@ def change_budget(amount: int):
 
 if __name__ == "__main__":
     import uvicorn
+    from routers import cache_invalidation
+
+    # The browser fixture owns one worker on every platform. The separate
+    # Linux loopback acceptance covers discovery of the real process census.
+    worker = f"{os.getpid()}:1"
+    instance = secrets.token_hex(32)
+
+    def fixture_census():
+        return {
+            "scope": "container", "instance": instance, "supervisor": worker,
+            "workers": [worker], "worker": worker,
+        }
+
+    cache_invalidation.serving_census = fixture_census
 
     uvicorn.run(main.app, host="127.0.0.1", port=int(os.environ.get("AUDIT_BROWSER_FIXTURE_PORT", "8125")))

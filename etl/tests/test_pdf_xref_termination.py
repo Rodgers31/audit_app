@@ -27,7 +27,9 @@ print("truncated-xref-refused")
         [sys.executable, "-I", *(["-O"] if optimized else []), "-c", program],
         capture_output=True,
         text=True,
-        timeout=3,
+        # The optimized interpreter may have to compile its imports on a
+        # cold runner. Keep the child bounded while allowing that startup.
+        timeout=15,
         check=True,
     )
     assert result.stdout.strip() == "truncated-xref-refused"

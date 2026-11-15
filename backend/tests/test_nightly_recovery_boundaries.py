@@ -148,5 +148,5 @@ def test_explicit_review_cannot_take_a_legacy_delegate_shortcut(tmp_path,monkeyp
     seen=[]
     def volume(*args,**kwargs):seen.append(kwargs['review']);return expected
     monkeypatch.setattr(county,'_county_volume_dispatch',volume)
-    assert county.extract_county_audit(Session(),SimpleNamespace(file_path=str(path)),SeedingSettings(),review=REVIEW) is expected
+    assert county.extract_county_audit(Session(),SimpleNamespace(file_path=str(path),meta={}),SeedingSettings(),review=REVIEW) is expected
     assert seen==[REVIEW]
