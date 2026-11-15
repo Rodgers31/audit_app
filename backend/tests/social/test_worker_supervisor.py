@@ -170,6 +170,9 @@ def test_direct_supervisor_api_cannot_bypass_finite_deadline(seconds):
 
 
 def test_pipe_setup_failure_closes_both_descriptors_without_spawning(monkeypatch):
+    # Real supervisor cases run in their own process. This case never starts
+    # children, so do not let it take ownership of later tests' orphans.
+    monkeypatch.setattr(supervisor, "_subreaper", lambda: None)
     original_pipe = os.pipe
     created = []
     def tracked_pipe():

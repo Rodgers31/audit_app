@@ -105,11 +105,11 @@ class ConfigurationTests(unittest.TestCase):
     def test_deadline_policy_rejects_short_unbounded_or_broadened_budgets(self):
         for name, workflow in self.workflows():
             backend_minutes = 70 if name == "pr-ci.yml" else 60
-            other_workflow_budget = 60 if name == "pr-ci.yml" else 70
+            other_backend_timeout = 60 if name == "pr-ci.yml" else 70
             valid = deepcopy(workflow)
             valid["jobs"]["test-backend"]["timeout-minutes"] = backend_minutes
             self.assert_job_deadlines(valid, backend_minutes)
-            for minutes in (20, 30, 45, other_workflow_budget, 90, 0, -1, True,
+            for minutes in (20, 30, 45, other_backend_timeout, 90, 0, -1, True,
                             float(backend_minutes), str(backend_minutes), None,
                             float("nan"), float("inf"), [], {}):
                 with self.subTest(workflow=name, backend_minutes=minutes):
