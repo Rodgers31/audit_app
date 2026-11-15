@@ -1,6 +1,7 @@
 """Source glyph regressions; page doubles do not establish HTTP or PDF authority."""
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -46,6 +47,73 @@ def test_source_tagged_titles_keep_their_own_suffixes(number, titles):
     lines = [" ".join(line.split()) for line in result.splitlines()]
     for title in titles:
         assert title in lines
+
+
+def _physical_tagged_pages():
+    pages = []
+    for physical in (265, 266, 691):
+        qualifications = []
+        text = bb._page_text(page(physical), qualifications=qualifications)
+        pages.append(bb.PageText(physical, text, "pdfplumber", qualifications))
+    return pages
+
+
+def test_exact_reviewed_edition_retains_only_visible_text_in_the_four_clipped_cells():
+    originals = _physical_tagged_pages()
+    patched = bb._represent_clipped_titles(originals, bb._CLIPPED_EDITION_SHA256)
+    expected_changes = {
+        266: {
+            "10. Delayed Completion of Pediatric Emergency Centre and Burns Management Centre":
+                "10. Delayed Completion of Pediatric Emergency Centre and Burns Management",
+            "17. Proposed Establishment of a NEURpsychiatric National Teaching and Referral Hospital":
+                "17. Proposed Establishment of a NEURpsychiatric National Teaching and",
+        },
+        691: {
+            "9. Delayed Completion of the Construction of National Employment Promotion Centre":
+                "9. Delayed Completion of the Construction of National Employment Promotion",
+            "10. Delayed Completion of Construction of Occupational Safety and Health (OSH) Institute Phase 1":
+                "10. Delayed Completion of Construction of Occupational Safety and Health (OSH)",
+        },
+    }
+    marker = " [remaining title not visible in the publisher PDF]"
+    for original, changed in zip(originals, patched, strict=True):
+        changes = expected_changes.get(original.page_number)
+        if changes is None:
+            assert changed is original
+        else:
+            assert changed.layout_qualifications == []
+            assert len(original.layout_qualifications) == 2
+            before, after = original.text.splitlines(), changed.text.splitlines()
+            assert {a: b for a, b in zip(before, after, strict=True) if a != b} == {
+                a: b + marker for a, b in changes.items()
+            }
+
+
+def test_clipped_title_representation_refuses_drift_and_leaves_other_editions_held():
+    from seeding.extractors.reconciliation import IncompleteExtraction
+
+    pages = _physical_tagged_pages()
+    assert bb._represent_clipped_titles(pages, "0" * 64) is pages
+    assert all(len(p.layout_qualifications) == 2 for p in pages if p.page_number in (266, 691))
+    with pytest.raises(IncompleteExtraction, match="pages missing"):
+        bb._represent_clipped_titles(pages[:-1], bb._CLIPPED_EDITION_SHA256)
+    with pytest.raises(IncompleteExtraction, match="Duplicate Blue Book physical page"):
+        bb._represent_clipped_titles(pages + [pages[0]], bb._CLIPPED_EDITION_SHA256)
+    pages[1].layout_qualifications[0]["requires_human_review"] = 1
+    with pytest.raises(IncompleteExtraction, match="clipped cells differ"):
+        bb._represent_clipped_titles(pages, bb._CLIPPED_EDITION_SHA256)
+
+
+def test_reviewed_fingerprint_is_required_even_with_a_current_extraction_stamp(tmp_path):
+    from seeding.extractors.reconciliation import IncompleteExtraction
+
+    path = tmp_path / "replacement.pdf"
+    path.write_bytes(b"%PDF-1.7\nDifferent local PDF bytes\n%%EOF\n")
+    doc = SimpleNamespace(id=2392, file_path=str(path), md5=bb._CLIPPED_EDITION_MD5,
+                          meta={"extracted_md5": bb._CLIPPED_EDITION_MD5, "extractor_version": 6})
+    assert bb.extraction_is_current(doc)
+    with pytest.raises(IncompleteExtraction, match="PDF fingerprint differs"):
+        bb.extract_blue_book(None, doc, None)
 
 
 def test_complete_source_parent_lists_and_layout_qualification():
