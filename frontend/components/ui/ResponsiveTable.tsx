@@ -1,5 +1,6 @@
 'use client';
 
+import { useLang } from '@/lib/i18n/LangProvider';
 import { cn } from '@/lib/utils';
 import { useEffect, useRef, useState } from 'react';
 
@@ -26,15 +27,18 @@ export default function ResponsiveTable({
   className,
   bleed = false,
 }: ResponsiveTableProps) {
+  const { t } = useLang();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [showHint, setShowHint] = useState(false);
+  const [overflow, setOverflow] = useState(false);
+  const [viewed, setViewed] = useState(false);
+  const showHint = overflow && !viewed;
 
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
 
     const checkOverflow = () => {
-      setShowHint(el.scrollWidth > el.clientWidth + 8);
+      setOverflow(el.scrollWidth > el.clientWidth + 8);
     };
 
     checkOverflow();
@@ -48,7 +52,7 @@ export default function ResponsiveTable({
     if (!el) return;
     // Hide hint once user has scrolled
     if (el.scrollLeft > 20) {
-      setShowHint(false);
+      setViewed(true);
     }
   };
 
@@ -57,6 +61,9 @@ export default function ResponsiveTable({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
+        tabIndex={overflow ? 0 : undefined}
+        aria-label={overflow ? t('foundation.scroll_table') : undefined}
+        role={overflow ? 'region' : undefined}
         className={cn(
           'overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300',
           bleed && '-mx-4 px-4 md:mx-0 md:px-0'
@@ -71,7 +78,7 @@ export default function ResponsiveTable({
           ``text-gov-dark/30`` measured 1.94:1, well under the 4.5:1 AA floor. */}
       {showHint && (
         <div className='md:hidden flex justify-center pt-2'>
-          <span className='text-[11px] text-neutral-muted font-medium animate-pulse'>← scroll →</span>
+          <span className='text-xs text-neutral-muted font-medium'>{t('foundation.scroll_table')}</span>
         </div>
       )}
     </div>
