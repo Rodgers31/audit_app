@@ -300,33 +300,29 @@ def test_no_public_endpoint_manufactures_a_zero_from_an_outage(dead_db_client):
     )
 
 
-def test_positive_control_a_real_figure_still_publishes(client, db_session):
+def test_positive_control_a_real_figure_still_publishes(
+    client, db_session, seed_country, seed_entity, seed_fiscal_period, tmp_path,
+):
     """The fix must not be "return null always".
 
     Without this, nulling every field unconditionally would satisfy every
     assertion above. A working database must still yield a figure. Do not
     weaken this test to make the negatives pass.
     """
-    from models import DebtTimeline
+    from tests.test_figure_qualification_handlers import observation
 
-    db_session.add(
-        DebtTimeline(
-            year=2031,          # distinctive: `year` is unique across the suite
-            external=5680,
-            domestic=6820,
-            total=12500,
-            gdp=17578,
-            gdp_ratio=71.1,
-        )
+    observation(
+        db_session, seed_country, seed_entity, seed_fiscal_period,
+        "debt_timeline", tmp_path, value=12500, kind="pdf",
+        locator={"page": 1, "table": "Table 1", "cell": "2024-12 / total"},
     )
     db_session.commit()
 
     r = client.get("/api/v1/debt/timeline")
     assert r.status_code == 200, r.text
-    assert "12500" in r.text or "12,500" in r.text, (
-        "a seeded figure did not reach the response — the negative "
-        "assertions above are worthless if nothing can publish"
-    )
+    year = next(row for row in r.json()["timeline"] if row["year"] == 2024)
+    assert year["total"] == 12500
+    assert year["qualifications"]["total"]["status"] == "verified"
 
 
 class TestTheFixtureReachesEveryRoute:

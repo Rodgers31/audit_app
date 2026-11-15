@@ -114,18 +114,18 @@ def test_native_cli_records_preview_success_and_preserves_discovery_errors(nativ
         assert db.query(SourceDocument).count() == db.query(Extraction).count() == db.query(Audit).count() == 0
 
 
-def test_real_non_dry_no_extraction_still_records_fixture_failure(native_cli, monkeypatch):
+def test_real_non_dry_no_extraction_records_refusal_without_fixture(native_cli, monkeypatch):
     from seeding import oag_discovery as od
 
     monkeypatch.setattr(od, "discover_county_audit_documents", lambda _client: od.CountyAuditDiscovery())
     monkeypatch.setattr(audits, "_known_document_urls", lambda *_args: [])
     monkeypatch.setattr(audits.fetcher, "_discover_audit_pdfs_via_wp_api", lambda *_args, **_kwargs: [])
     args = argparse.Namespace(domain=["audits"], all=False, dry_run=False, since=None)
-    cli.run_seed_command(args, SeedingSettings(log_path=None, total_timeout_seconds=0))
+    assert cli.run_seed_command(args, SeedingSettings(log_path=None, total_timeout_seconds=0)) == 1
     with native_cli() as db:
         job = db.scalars(select(IngestionJob)).one()
-        assert job.status == IngestionStatus.COMPLETED_WITH_ERRORS
-        assert job.meta["source_mode"] == "fixture"
-        assert job.meta["source_fallback_reason"] == "no_document_extracted"
-        assert "dry_run_plan" not in job.meta
-        assert any("served from fixture" in error for error in job.errors)
+        assert job.status == IngestionStatus.FAILED and not job.dry_run
+        assert job.items_processed == job.items_created == job.items_updated == 0
+        assert job.meta.get("source_mode") != "fixture" and "dry_run_plan" not in job.meta
+        assert job.errors == ["Invalid domain result: no processed inventory"]
+        assert db.query(Audit).count() == 0
