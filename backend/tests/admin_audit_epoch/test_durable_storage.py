@@ -25,7 +25,7 @@ from routers.admin_audit_log import router
 from services import admin_audit_storage as storage
 from supabase_auth import AdminUser, get_current_user
 from tests.admin_audit_epoch.resource_cleanup import cleanup_owned, database_identity, role_identity
-from tests.admin_audit_epoch.ephemeral_database import empty_full_head
+from tests.admin_audit_epoch.ephemeral_database import empty_full_head, head
 
 BACKEND = Path(__file__).resolve().parents[2]
 MIGRATION = BACKEND / 'alembic/versions/a611b12a0001_durable_admin_audit.py'
@@ -80,7 +80,7 @@ def durable(request, monkeypatch):
                 c.execute(text("INSERT INTO admin_audit_log(actor_id,action,payload,created_at) VALUES('legacy','legacy','{}',now())"))
         assert migrate(url, 'upgrade', 'head').returncode == 0
         with owner.begin() as c:
-            assert c.scalar(text('SELECT version_num FROM alembic_version')) == 'a611b12a0001'
+            assert c.scalar(text('SELECT version_num FROM alembic_version')) == head()
             assert c.scalar(text('SELECT certified FROM admin_audit_storage')) is False
             incarnation = c.scalar(text('SELECT incarnation::text FROM admin_audit_storage'))
             c.execute(text('UPDATE admin_audit_storage SET certified=true'))
@@ -425,7 +425,7 @@ def test_ordered_upgrade_repeat_and_history_refuses_downgrade(durable):
     assert result.returncode!=0 and 'Audit history or certification exists' in result.stderr
     with owner.connect() as c:
         assert c.scalar(text('SELECT count(*) FROM admin_audit_log'))==1
-        assert c.scalar(text('SELECT version_num FROM alembic_version'))=='a611b12a0001'
+        assert c.scalar(text('SELECT version_num FROM alembic_version'))==head()
 
 
 def test_empty_uncertified_round_trip_preserves_private_admission(durable,monkeypatch):

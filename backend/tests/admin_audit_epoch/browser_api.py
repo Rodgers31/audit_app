@@ -27,6 +27,7 @@ from database import get_db
 from models import AdminAuditLog
 from routers.admin_audit_log import PRIVATE, router
 from supabase_auth import _decode_supabase_jwt
+from tests.admin_audit_epoch.ephemeral_database import head
 from tests.admin_audit_epoch.resource_cleanup import cleanup_owned,database_identity,role_identity
 
 ACTOR='00000000-0000-4000-8000-000000000001'
@@ -62,7 +63,7 @@ try:
     if result.returncode:raise RuntimeError('Owned browser migration failed: '+result.stderr)
     owner=create_engine(url)
     with owner.begin() as c:
-        if c.scalar(text('SELECT version_num FROM alembic_version'))!='a611b12a0001':raise RuntimeError('Owned browser migration head mismatch')
+        if c.scalar(text('SELECT version_num FROM alembic_version'))!=head():raise RuntimeError('Owned browser migration head mismatch')
         if c.scalar(text('SELECT certified FROM admin_audit_storage')) is not False:raise RuntimeError('Migration unexpectedly certified storage')
         scope=c.scalar(text('SELECT incarnation::text FROM admin_audit_storage'))
         c.execute(text('UPDATE admin_audit_storage SET certified=true'))
