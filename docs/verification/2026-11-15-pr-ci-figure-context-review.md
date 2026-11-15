@@ -1,6 +1,6 @@
 # Financial literal context review for PR #952
 
-This review binds the existing seven raw findings to the API source already on `main` at `4f9f313ad548096d660576278ceaf284c66aa7c7`. No measured value, safeguard rule, or inventory disposition changes. The previous matching source revisions are `4260a42` for `backend/main.py` and `2ed3703` for `backend/routers/data_provenance.py`.
+This review binds raw findings to the source already on `main` at `4f9f313ad548096d660576278ceaf284c66aa7c7`. The safeguard still reports each raw finding and requires a fresh review if the source or use changes. No measured value or safeguard rule changes.
 
 | Existing finding | Current use |
 | --- | --- |
@@ -12,4 +12,14 @@ This review binds the existing seven raw findings to the API source already on `
 
 The intervening `main.py` changes cover API capacity, caching, source status, county pending bills and debt, and the qualified fiscal and debt read paths. The existing county score and budget overview definitions are unchanged. Changes to the fiscal summary use qualified measures and adjust diagnostic metadata without changing the anchor's separate policy and observation fields. In the provenance router, the intervening changes are in the response model and `verify_data_point`: debt totals now come from the qualified publication result, and fiscal measures use their own proofs with absence preserved. The age policy and its only reader are unchanged.
 
-The normalized AST pins are `43a0616147b48e95eaa7790a3c7505479d3fa89abf969540c9b5cfc8150bcd9d` and `d883324af15342203deb0ae2b89dccc8fc42a7b47ca47d55d3afa3a1ae20a011`, respectively. Applying the unchanged detector to both previous and current sources yields the same ordered signatures for all seven sites. Existing unresolved financial findings elsewhere remain tracked by #301 and #424.
+The previous matching sources are `4260a42` and `2ed3703`, respectively. Applying the unchanged detector to those sources and `main` yields the same seven ordered signatures.
+
+| Other finding | Current use |
+| --- | --- |
+| `audits_county_start_budget_seconds` (240) | Elapsed-time admission setting. The audit domain discloses it as `start_budget_seconds` and compares it with elapsed time. Compared with `4260a42`, the config adds separate opt-ins and adjusts whole-run and transfer budgets; the 240-second setting and its role are unchanged. |
+| `_PLAUSIBLE_ORDINARY_REVENUE_BILLION` (1,500–6,000) | Validates the candidate magnitude at extraction time; an out-of-range number is refused. Compared with `8d11628`, PDF reading moved into the isolated parser, while the validation threshold and its consumer stayed the same. Neither limit fills an absent amount. |
+| Four BROP Table 8 checks in `actuals.py` and the corresponding four in `fiscal_qualification.py` | Compared the checked-in PDF's SHA-256 with `BROP_SHA256` and read PDF page 21 visually. In the FY 2022/23 “Prel. Actual” column, the table prints 2,041 ordinary revenue, 1,887 tax, 154 non-tax, 319 A-i-A and 2,361 total, in KES billions. The producer compares the exact PDF-backed transcription to the expected values, and the reader matches these fields, basis, vintage, precision and source before returning the stored observation. The printed rounded total is kept as printed. This is separate from the higher-precision APDMR observation, and the review provides no production source-adoption authority. |
+| `GRANT_VERIFICATION_BUDGET_EXCEEDED` (503) | A whitelisted HTTP status for a verification error from the child process; no financial amount or plan budget is provided by this number. |
+| `revenue_by_source` (2) | An advisory lock namespace slot passed to `pg_advisory_xact_lock`, not a revenue observation or fallback. |
+
+The four newly inventoried modules use exact whole-module pins and per-site signatures. No wildcard exclusion, suppression, or change to unresolved sites from #301 or #424 is included.

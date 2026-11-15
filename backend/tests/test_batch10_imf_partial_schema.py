@@ -104,14 +104,10 @@ def test_sustainability_optional_imf_table_absent_keeps_partial_response(
     assert body["projections"] == [] and body["projections_source"] is None
     assert body["projections_absent_reason"] == "no_published_projection_seeded"
     assert body["status"] == ("no_data" if seeded == "none" else "success")
-    if seeded in {"timeline", "both"}:
-        assert body["debt_to_gdp"]["value"] == 60
-        assert (
-            body["debt_to_gdp"]["source"]
-            == "CBK Annual Reports / National Treasury BPS"
-        )
-    else:
-        assert body["debt_to_gdp"] is None
+    # An optional IMF table may be absent without breaking the response or
+    # making a legacy timeline row eligible to supply a ratio.
+    assert body["debt_to_gdp"] is None
+    assert body["debt_to_gdp_absent_reason"]
     assert (
         db_session.scalar(text("SELECT 1")) == 1
     ), "OPTIONAL_IMF_QUERY_ABORTED_TRANSACTION"
