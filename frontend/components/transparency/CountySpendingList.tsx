@@ -154,7 +154,7 @@ export default function CountySpendingList({
           </button>
         </div>
       </div>
-      {!projected && !loading && !error && countiesWithData > 0 && (
+      {!projected && !loading && !error && rows.length > 0 && (
         <>
           <p className={styles.efficiencyKey}>
             {executionBands.map(({ verdict, range }) => (
@@ -199,7 +199,7 @@ export default function CountySpendingList({
                   ? (row.allocated / nationalAllocated) * 100
                   : null;
               const coverage = row.audit_amount_coverage;
-              const coverageNote = coverage && coverage.reason !== 'no_findings'
+              const coverageNote = !auditUnavailable && coverage && coverage.reason !== 'no_findings'
                 ? auditAmountCoverageNote(coverage, lang)
                 : null;
 

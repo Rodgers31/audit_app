@@ -52,7 +52,7 @@ jest.mock('@/lib/react-query/useMoneyFlow', () => ({
 function flow(
   id: number | null,
   name: string,
-  allocated: number,
+  allocated: number | null,
   spent: number | null,
   flagged: number | null,
   efficiency: number | null
@@ -71,7 +71,7 @@ function flow(
         stage: 'Spent',
         label: 'Expenditure',
         amount: spent,
-        gap_from_prev: spent == null ? null : allocated - spent,
+        gap_from_prev: spent == null || allocated == null ? null : allocated - spent,
       },
       { stage: 'Flagged', label: 'Questioned', amount: flagged },
     ],
@@ -79,8 +79,10 @@ function flow(
 }
 let efficiencyOverrides: number[] | undefined;
 let coverageOverride: AuditAmountCoverage | undefined;
+let countyOverrides: MoneyFlowData[] | undefined;
 
 function countiesFor(year: string): MoneyFlowData[] {
+  if (countyOverrides) return countyOverrides;
   const rows = [
     flow(1, 'Alpha County', 10e9, 0, null, 0),
     flow(2, 'Beta County', 20e9, 12e9, 0, 60),
@@ -110,7 +112,8 @@ function nationalFor(year: string): MoneyFlowData {
       }
     : flow(null, 'National', 60e9, 36e9, 2e9, efficiencyOverrides?.[1] ?? 60);
 }
-const countyList = () => screen.getByRole('list', { name: /Counties ordered by/ });
+const countySection = () => within(screen.getByRole('region', { name: 'County spending' }));
+const countyList = () => countySection().getByRole('list', { name: /Counties ordered by/ });
 const county = (name: string) => screen.getByRole('link', { name }).closest('li')!;
 const overview = () => screen.getByRole('region', { name: 'At a glance' });
 
@@ -118,6 +121,7 @@ describe('Follow the Money presentation contracts', () => {
   beforeEach(() => {
     efficiencyOverrides = undefined;
     coverageOverride = undefined;
+    countyOverrides = undefined;
     jest.useFakeTimers();
     jest.setSystemTime(new Date('2026-09-27T12:00:00Z'));
   });
@@ -143,13 +147,60 @@ describe('Follow the Money presentation contracts', () => {
     expect(overview()).toHaveTextContent('40.0% of allocation unspent');
   });
 
+  it('explains unavailable amounts and the target when county rows have no allocations', () => {
+    countyOverrides = [
+      flow(1, 'Alpha County', null, null, null, null),
+      flow(2, 'Beta County', null, null, null, null),
+    ];
+    render(<TransparencyPage />);
+
+    expect(within(countyList()).getAllByRole('listitem')).toHaveLength(2);
+    expect(countySection().getByText('0 of 47 counties have published allocations')).toBeInTheDocument();
+    expect(countySection().getByText(/Audit amounts are unavailable for FY 2025\/26 9M/)).toBeInTheDocument();
+    expect(countySection().getByText('Under 65%')).toBeInTheDocument();
+    expect(within(countyList()).queryAllByRole('img')).toHaveLength(0);
+    expect(within(countyList()).queryAllByText('KES 0')).toHaveLength(0);
+  });
+
+  it.each([
+    ['no_publishable_findings', 'No cited audit findings available for this period.'],
+    ['fiscal_period_not_found', 'Fiscal period unavailable.'],
+  ])('explains period-wide audit absence once for %s', (reason, rowCaveat) => {
+    coverageOverride = {
+      status: 'unavailable', reason, total_findings: 0, findings_with_amount: 0,
+      findings_without_amount: 0, findings_with_invalid_amount: 0, withheld_findings: 0,
+    };
+    countyOverrides = [
+      flow(1, 'Alpha County', 10e9, 5e9, null, 50),
+      flow(2, 'Beta County', 20e9, 12e9, null, 60),
+    ];
+    render(<TransparencyPage />);
+
+    expect(countySection().getAllByText(/Audit amounts are unavailable for/)).toHaveLength(1);
+    expect(within(countyList()).getAllByLabelText('Audit amount unavailable')).toHaveLength(2);
+    expect(within(countyList()).queryAllByText(rowCaveat)).toHaveLength(0);
+  });
+
   it('carries partial coverage through the actual page into county rows and the national summary', () => {
     coverageOverride = {
       status: 'partial', reason: 'incomplete_amount_coverage', total_findings: 3,
       findings_with_amount: 1, findings_without_amount: 1, findings_with_invalid_amount: 1,
       withheld_findings: 0,
     };
+    countyOverrides = [
+      {
+        ...flow(1, 'Alpha County', 10e9, 0, null, 0),
+        audit_amount_coverage: {
+          status: 'unavailable', reason: 'no_publishable_findings', total_findings: 0,
+          findings_with_amount: 0, findings_without_amount: 0,
+          findings_with_invalid_amount: 0, withheld_findings: 1,
+        },
+      },
+      flow(2, 'Beta County', 20e9, 12e9, 0, 60),
+      flow(3, 'Gamma County', 30e9, 24e9, 2e9, 80),
+    ];
     render(<TransparencyPage />);
+    expect(county('Alpha')).toHaveTextContent('No cited audit findings available for this period.');
     expect(county('Beta')).toHaveTextContent('QuestionedKES 0');
     expect(county('Beta')).toHaveTextContent('Partial subtotal: 1 of 3 cited findings');
     expect(county('Gamma')).toHaveTextContent('QuestionedKES 2.00B');
