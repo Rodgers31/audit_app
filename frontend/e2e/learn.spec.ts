@@ -71,6 +71,12 @@ test.describe('Learn Page', () => {
       const reader = page.getByRole('region', { name: 'Constitution of Kenya reader' });
       const chapters = reader.getByRole('button', { name: 'Chapters', exact: true });
       const drawer = reader.getByRole('navigation', { name: 'Chapters' });
+      await chapters.focus();
+      await page.keyboard.press('Enter');
+      await expect(drawer).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(drawer).toBeHidden();
+      await expect(chapters).toBeFocused();
       await chapters.tap();
       await expect(drawer).toBeVisible();
       await drawer.getByRole('button', { name: /229\s*Auditor-General/ }).focus();

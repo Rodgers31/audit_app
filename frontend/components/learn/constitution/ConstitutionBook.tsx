@@ -295,6 +295,7 @@ export default function ConstitutionBook({
           ref={drawerButton}
           className='inline-flex min-h-11 items-center gap-2 rounded border border-neutral-border bg-surface-elevated px-3 text-sm font-semibold text-neutral-text hover:bg-surface-sunken lg:hidden'
           onClick={() => setDrawerOpen((v) => !v)}
+          onKeyDown={({ key }) => { if (key === 'Escape' && drawerOpen) closeDrawer(); }}
           aria-expanded={drawerOpen}
           aria-controls='constitution-drawer'>
           {drawerOpen ? <X aria-hidden='true' size={16} /> : <Menu aria-hidden='true' size={16} />}
