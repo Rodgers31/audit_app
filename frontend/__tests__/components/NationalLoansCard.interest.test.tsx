@@ -127,6 +127,20 @@ describe('NationalLoansCard', () => {
     expect(screen.getByText('China')).toBeInTheDocument();
   });
 
+  it('recognizes the commercial category capitalization in the loan fixture', () => {
+    const syndicated = {
+      ...row('Commercial Banks (Syndicated loans)', 400e9),
+      lender_type: 'external_commercial',
+    };
+    mockLoans.mockReturnValue({
+      data: { ...PAYLOAD, loans: [syndicated], total_loans: 1, total_outstanding: 400e9 },
+      isLoading: false,
+      error: null,
+    });
+    render(<NationalLoansCard />);
+    expect(screen.getByText('Syndicated loans', { exact: true })).toBeInTheDocument();
+  });
+
   it.each([
     ['CBK Public Debt Statistical Bulletin', 'https://www.centralbank.go.ke/public-debt/'],
     ['World Bank IDS', 'https://api.worldbank.org/'],
