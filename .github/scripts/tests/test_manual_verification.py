@@ -85,7 +85,7 @@ class ManualWorkflowBoundaryTests(unittest.TestCase):
             self.assertEqual(preparation["run"], "python .github/scripts/prepare_postgres_test_images.py --service-postgres-ref public.ecr.aws/docker/library/postgres@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3")
             self.assertEqual(preparation["timeout-minutes"], 5)
             self.assertNotIn("continue-on-error", preparation)
-            self.assertEqual(job["timeout-minutes"], 90 if filename == "pr-ci.yml" else 60)
+            self.assertEqual(job["timeout-minutes"], 120 if filename == "pr-ci.yml" else 60)
             self.assertLess(steps.index(preparation), next(i for i, step in enumerate(steps) if step.get("id") == "backend_tests"))
 
     def test_manual_jobs_keep_the_required_ci_contract(self):
@@ -108,7 +108,7 @@ class ManualWorkflowBoundaryTests(unittest.TestCase):
                     # Normalize only the PR runner's process supervisor and
                     # bounded job time. Manual dispatch keeps its existing
                     # contract; both still execute the same test launcher.
-                    self.assertEqual(expected["timeout-minutes"], 90)
+                    self.assertEqual(expected["timeout-minutes"], 120)
                     self.assertEqual(actual["timeout-minutes"], 60)
                     expected["timeout-minutes"] = 60
                     tools = next(step for step in expected["steps"]
