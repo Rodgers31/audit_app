@@ -46,17 +46,27 @@ def test_exact_original_response_retained_for_signed_non_utf8(tmp_path):
 
 def test_valid_pid1_single_uvicorn_needs_no_nonexistent_parent(monkeypatch):
     """The repository container's exec-form CMD can make Uvicorn PID1/PPID0."""
+    peer_scans = []
+
     def process(pid):
         if pid == 0:
             raise FileNotFoundError('/proc/0/stat')
         assert pid == 1
         return {'pid':1,'parent':0,'identity':'1:123',
                 'command':'/usr/local/bin/python /usr/local/bin/uvicorn main:app --host 0.0.0.0 --workers 1'}
+
+    def no_web_peers(allowed):
+        peer_scans.append(set(allowed))
+        return []
+
     monkeypatch.setattr(invalidation, '_process', process)
     monkeypatch.setattr(invalidation.os, 'getpid', lambda:1)
+    # Keep the synthetic PID 1 topology independent of the runner's live peers.
+    monkeypatch.setattr(invalidation, '_other_web_processes', no_web_peers)
     monkeypatch.setattr(invalidation, '_listener_scope', lambda allowed: None)
     result = invalidation.serving_census()
     assert result['workers'] == ['1:123'] and result['worker'] == '1:123'
+    assert peer_scans and all(allowed == {1} for allowed in peer_scans)
 
 
 def test_unknown_process_named_uvicorn_is_not_a_supported_server(monkeypatch):
