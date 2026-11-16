@@ -50,6 +50,16 @@ test.describe('county map with a touchscreen', () => {
     await nairobi.tap();
     await expect(page).toHaveURL(/\/counties\/001(?:\?|$)/);
   });
+
+  test('a mouse click opens the county on a touchscreen device', async ({ page }) => {
+    await page.goto('/counties');
+    expect(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(true);
+    const map = page.getByRole('region', { name: 'County Performance Map' });
+    const county = map.getByRole('link', { name: /^Garissa, Grade:/ });
+
+    await county.click();
+    await expect(page).toHaveURL(/\/counties\/007(?:\?|$)/);
+  });
 });
 
 test('county map Space selects and Enter opens a county', async ({ page }) => {

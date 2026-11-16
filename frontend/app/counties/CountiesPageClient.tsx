@@ -701,7 +701,8 @@ function CountyPerformanceMap({
                   if (!interactive) return;
                   const touchOrCoarse =
                     event.detail > 0 &&
-                    (input === 'touch' || window.matchMedia('(pointer: coarse)').matches);
+                    (input === 'touch' ||
+                      (input !== 'mouse' && window.matchMedia('(pointer: coarse)').matches));
                   if (touchOrCoarse && !selected) selectCounty(county.id);
                   else router.push(countyHref(county));
                 }}
