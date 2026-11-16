@@ -125,16 +125,16 @@ describe('Follow the Money presentation contracts', () => {
 
   it('preserves source amounts, zero spending, and the difference between unavailable and zero findings', () => {
     render(<TransparencyPage />);
-    expect(within(county('Alpha')).getByLabelText('Flagged amount unavailable')).toHaveTextContent(
+    expect(within(county('Alpha')).getByLabelText('Audit amount unavailable')).toHaveTextContent(
       '—'
     );
     expect(county('Alpha')).toHaveTextContent('KES 0');
-    expect(county('Alpha')).toHaveTextContent('Low execution');
-    expect(county('Beta')).toHaveTextContent('FlaggedKES 0');
-    expect(county('Beta')).toHaveTextContent('Fair execution');
-    expect(county('Gamma')).toHaveTextContent('FlaggedKES 2.00B');
-    expect(county('Gamma')).toHaveTextContent('Amounts discussed; not proven loss');
-    expect(county('Gamma')).toHaveTextContent('Good execution');
+    expect(county('Alpha')).toHaveTextContent('Well below target');
+    expect(county('Beta')).toHaveTextContent('QuestionedKES 0');
+    expect(county('Beta')).toHaveTextContent('Well below target');
+    expect(county('Gamma')).toHaveTextContent('QuestionedKES 2.00B');
+    expect(screen.getByText(/Questioned amounts are discussed in audit reports/)).toBeInTheDocument();
+    expect(county('Gamma')).toHaveTextContent('Above target');
     expect(screen.getByRole('link', { name: 'Gamma' })).toHaveAttribute(
       'href',
       '/counties/3?tab=money&from=transparency'
@@ -150,9 +150,9 @@ describe('Follow the Money presentation contracts', () => {
       withheld_findings: 0,
     };
     render(<TransparencyPage />);
-    expect(county('Beta')).toHaveTextContent('FlaggedKES 0');
+    expect(county('Beta')).toHaveTextContent('QuestionedKES 0');
     expect(county('Beta')).toHaveTextContent('Partial subtotal: 1 of 3 cited findings');
-    expect(county('Gamma')).toHaveTextContent('FlaggedKES 2.00B');
+    expect(county('Gamma')).toHaveTextContent('QuestionedKES 2.00B');
     expect(county('Gamma')).toHaveTextContent('1 missing and 1 invalid amounts');
     expect(overview()).toHaveTextContent('Partial subtotal: 1 of 3 cited findings');
   });
@@ -160,17 +160,11 @@ describe('Follow the Money presentation contracts', () => {
   it('searches and reverses all sort modes while preserving the national summary and coverage', () => {
     render(<TransparencyPage />);
     const originalSummary = overview().textContent;
-    fireEvent.change(screen.getByLabelText('Sort by'), {
-      target: { value: 'flagged' },
-    });
+    fireEvent.click(screen.getByRole('button', { name: 'Most questioned' }));
     expect(within(countyList()).getAllByRole('link')[0]).toHaveTextContent('Gamma');
-    fireEvent.change(screen.getByLabelText('Sort by'), {
-      target: { value: 'gap' },
-    });
+    fireEvent.click(screen.getByRole('button', { name: 'Biggest gap' }));
     expect(within(countyList()).getAllByRole('link')[0]).toHaveTextContent('Alpha');
-    fireEvent.change(screen.getByLabelText('Sort by'), {
-      target: { value: 'name' },
-    });
+    fireEvent.click(screen.getByRole('button', { name: 'A–Z' }));
     fireEvent.click(screen.getByRole('button', { name: 'Reverse sort order' }));
     expect(within(countyList()).getAllByRole('link')[0]).toHaveTextContent('Gamma');
     fireEvent.change(screen.getByLabelText('Find your county'), {
@@ -183,7 +177,7 @@ describe('Follow the Money presentation contracts', () => {
       target: { value: 'Missing' },
     });
     expect(screen.getByText('No counties match your search.')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Clear search' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Clear county search' }));
     expect(within(countyList()).getAllByRole('listitem')).toHaveLength(3);
   });
 
@@ -204,7 +198,7 @@ describe('Follow the Money presentation contracts', () => {
     });
     expect(overview()).toHaveTextContent('Spent so far');
     expect(overview()).toHaveTextContent('Not yet audited');
-    expect(screen.getByLabelText('Sort by')).toHaveValue('allocated');
+    expect(screen.getByRole('button', { name: 'Largest allocation' })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('keeps the selected sort and actual order aligned after switching back from a projection', () => {
@@ -212,12 +206,12 @@ describe('Follow the Money presentation contracts', () => {
     fireEvent.change(screen.getByLabelText('Fiscal year & reporting period'), {
       target: { value: '2026/27' },
     });
-    fireEvent.change(screen.getByLabelText('Sort by'), { target: { value: 'name' } });
-    fireEvent.change(screen.getByLabelText('Sort by'), { target: { value: 'allocated' } });
+    fireEvent.click(screen.getByRole('button', { name: 'A–Z' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Largest allocation' }));
     fireEvent.change(screen.getByLabelText('Fiscal year & reporting period'), {
       target: { value: '2025/26 9M' },
     });
-    expect(screen.getByLabelText('Sort by')).toHaveValue('efficiency');
+    expect(screen.getByRole('button', { name: 'Least spent first' })).toHaveAttribute('aria-pressed', 'true');
     expect(
       within(countyList())
         .getAllByRole('link')
@@ -226,11 +220,11 @@ describe('Follow the Money presentation contracts', () => {
   });
 
   it('does not round percentages across the execution bands shown in the legend', () => {
-    efficiencyOverrides = [49.99, 69.99, 70];
+    efficiencyOverrides = [64.99, 69.99, 70];
     render(<TransparencyPage />);
-    expect(county('Alpha')).toHaveTextContent('49.99%Low execution');
-    expect(county('Beta')).toHaveTextContent('69.99%Fair execution');
-    expect(county('Gamma')).toHaveTextContent('70%Good execution');
+    expect(county('Alpha')).toHaveTextContent('64.99%KES 10.00B allocatedWell below target');
+    expect(county('Beta')).toHaveTextContent('69.99%KES 20.00B allocatedBelow target');
+    expect(county('Gamma')).toHaveTextContent('70%KES 30.00B allocatedOn target');
     expect(overview()).toHaveTextContent('69.99%');
   });
 });

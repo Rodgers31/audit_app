@@ -12,16 +12,6 @@ export function efficiencyTone(score: number | null): FlowTone {
   return score == null ? 'neutral' : score >= 70 ? 'good' : score >= 50 ? 'fair' : 'low';
 }
 
-export function efficiencyLabel(score: number | null): string {
-  return score == null
-    ? 'Execution data pending'
-    : score >= 70
-      ? 'Good execution'
-      : score >= 50
-        ? 'Fair execution'
-        : 'Low execution';
-}
-
 export function formatFlowKES(amount: number | null | undefined): string {
   if (amount == null) return '—';
   const abs = Math.abs(amount);
