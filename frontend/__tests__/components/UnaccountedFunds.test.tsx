@@ -98,7 +98,7 @@ describe('the unaccounted-funds page', () => {
   it('lists each finding under the report’s own heading, linked to its page', async () => {
     renderPage();
     expect(await screen.findByText('“Unaccounted Expenditure on Transfers to Polytechnics”')).toBeInTheDocument();
-    const link = screen.getByRole('link', { name: /report p\.322/ });
+    const link = screen.getByRole('link', { name: 'OAG · FY2020/21 · p.322' });
     expect(link).toHaveAttribute('href', NAROK.source.page_url);
     expect(screen.getByRole('link', { name: 'County Executive of Narok' })).toHaveAttribute('href', '/counties/narok-county');
     expect(screen.getByText('Basis for Adverse Opinion')).toBeInTheDocument();

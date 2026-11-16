@@ -11,6 +11,7 @@ import InfoTip from '@/components/InfoTip';
 import { PageSkeleton } from '@/components/ui/Skeleton';
 import PageShell from '@/components/layout/PageShell';
 import PDFExportButton from '@/components/PDFExportButton';
+import { useLang } from '@/lib/i18n/LangProvider';
 import LenderTreemap from '@/components/debt/LenderTreemap';
 import MaturityLadder from '@/components/debt/MaturityLadder';
 import DebtServiceObservations from '@/components/debt/DebtServiceObservations';
@@ -33,7 +34,7 @@ import {
 } from '@/lib/debt/revenueAllocation';
 import FiscalMeasureDisclosure from '@/components/budget/FiscalMeasureDisclosure';
 import { annualCostCell, rateCell, sortLoans } from '@/lib/debt/loanInterest';
-import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   AlertTriangle,
   ArrowDown,
@@ -44,7 +45,6 @@ import {
   ChevronUp,
   CircleDollarSign,
   FileWarning,
-  Flame,
   Gauge,
   Scale,
   ShieldAlert,
@@ -77,12 +77,12 @@ import {
    Helpers
    ═══════════════════════════════════════════════════════ */
 
-function fmtT(val: number | null | undefined): string {
+function fmtT(val: number | null | undefined, locale?: string): string {
   if (val == null || Number.isNaN(val)) return '—';
   if (val >= 1_000_000_000_000) return `${(val / 1_000_000_000_000).toFixed(2)}T`;
   if (val >= 1_000_000_000) return `${(val / 1_000_000_000).toFixed(1)}B`;
   if (val >= 1_000_000) return `${(val / 1_000_000).toFixed(1)}M`;
-  return val.toLocaleString();
+  return val.toLocaleString(locale);
 }
 
 function fmtKES(val: number | null | undefined): string {
@@ -134,32 +134,34 @@ function PendingBillsSourceLine({ date, source }: { date: string | null; source?
   );
 }
 
-/* ═══════════════════════════════════════════════════════
-   Animated number — counts up on mount, tabular-nums
-   ═══════════════════════════════════════════════════════ */
-
-function AnimatedCurrency({
-  value,
-  duration = 1.6,
-  className = '',
-}: {
-  value: number;
-  duration?: number;
-  className?: string;
-}) {
-  const mv = useMotionValue(value * 0.6);
-  const display = useTransform(mv, (v) => {
-    if (v >= 1_000_000_000_000) return `KES ${(v / 1_000_000_000_000).toFixed(2)}T`;
-    if (v >= 1_000_000_000) return `KES ${(v / 1_000_000_000).toFixed(1)}B`;
-    return `KES ${Math.round(v).toLocaleString()}`;
-  });
-
-  useEffect(() => {
-    const controls = animate(mv, value, { duration, ease: [0.22, 1, 0.36, 1] });
-    return () => controls.stop();
-  }, [value, duration, mv]);
-
-  return <motion.span className={`tabular-nums ${className}`}>{display}</motion.span>;
+function DebtHeadline({ amount, source }: { amount: number | null; source: string | null }) {
+  const { lang, t } = useLang();
+  return (
+    <div>
+      <h2 className='text-audit-label font-semibold text-neutral-muted'>{t('debt.headline.label')}</h2>
+      {amount == null ? (
+        <p data-testid='national-debt-outstanding' className='mt-1 text-base font-semibold'>
+          {t('debt.headline.amount_unavailable')}
+        </p>
+      ) : (
+        <>
+          <p data-testid='national-debt-outstanding' className='mt-1 flex flex-wrap items-baseline gap-x-1.5'>
+            <span className='font-display text-lg font-semibold text-neutral-muted'>KES</span>{' '}
+            <span className='min-w-0 break-words font-display text-[2.75rem] font-bold leading-none text-signal-hero-alarm md:text-[3.25rem]'>
+              {fmtT(amount, lang === 'sw' ? 'sw-KE' : 'en-KE')}
+            </span>
+          </p>
+          {/* The envelope's last_updated is source vintage, not a loan balance date. */}
+          <p className='mt-1 text-sm text-neutral-muted'>{t('debt.headline.date_unavailable')}</p>
+          {source && (
+            <p className='mt-1 text-sm text-neutral-muted'>
+              {t('foundation.source').replace('{publisher}', () => source)}
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  );
 }
 
 /* RingGauge was removed with the sustainability gauges (F5/F10). */
@@ -192,7 +194,7 @@ function Sparkline({
             strokeWidth={2}
             fill='url(#spark-grad)'
             dot={false}
-            isAnimationActive
+            isAnimationActive={false}
           />
         </AreaChart>
       </ResponsiveContainer>
@@ -338,7 +340,11 @@ export default function NationalDebtPage() {
   const d = useMemo(() => {
     const api = overview?.data || overview || {};
     const hasData = Object.keys(api).length > 0;
-    const totalDebt = api.total_outstanding ?? api.total_debt ?? null;
+    // Legacy responses could omit total_outstanding. A current response with
+    // an explicit null does not authorize substituting the principal total.
+    const reported = api.total_outstanding === undefined ? api.total_debt : api.total_outstanding;
+    const totalDebt = typeof reported === 'number' && Number.isFinite(reported) && reported >= 0
+      ? reported : null;
     const gdp = api.gdp ?? null;
     // The API declares the ratio's measure and observation year. The register
     // total and GDP can be from different periods; they cannot fill its absence.
@@ -347,10 +353,8 @@ export default function NationalDebtPage() {
     const categories = api.categories || {};
     const population = fetchedPopulation || api.population || null;
     const perCapita = totalDebt != null && totalDebt > 0 && population ? totalDebt / population : null;
-    const asOf = api.as_of || api.last_updated || null;
-    const source = api.source || 'CBK / Treasury';
+    const source = sourceText(overview?.source) ?? sourceText(api.source);
     const reconciliation = api.reconciliation || null;
-    const lastUpdated = overview?.last_updated || api.last_updated || null;
 
     return {
       hasData,
@@ -372,10 +376,8 @@ export default function NationalDebtPage() {
       domesticDebt: summary.domestic_debt ?? null,
       externalPct: summary.external_percentage ?? null,
       domesticPct: summary.domestic_percentage ?? null,
-      asOf,
       source,
       reconciliation,
-      lastUpdated,
     };
   }, [overview, fetchedPopulation]);
 
@@ -517,10 +519,12 @@ export default function NationalDebtPage() {
   /* ── Loading / Error states ── */
   const isLoading = ovLoading || loansLoading || tlLoading;
   const isError = ovError || loansError || tlError;
+  const headline = <DebtHeadline amount={d.totalDebt} source={d.source} />;
 
   if (isLoading) {
     return (
       <PageShell title="Kenya's National Debt" subtitle='Pulling the latest numbers from CBK, Treasury and COB…'>
+        {overview && <section className='audit-panel p-4 sm:p-6'>{headline}</section>}
         <PageSkeleton />
       </PageShell>
     );
@@ -529,6 +533,7 @@ export default function NationalDebtPage() {
   if (isError) {
     return (
       <PageShell title="Kenya's National Debt" subtitle='Data temporarily unavailable.'>
+        {overview && <section className='audit-panel p-4 sm:p-6'>{headline}</section>}
         <div className='flex flex-col items-center justify-center py-20 text-center'>
           <AlertTriangle size={48} className='text-gov-copper mb-4' />
           <h3 className='text-lg font-semibold text-gov-dark dark:text-white mb-1'>Failed to load debt data</h3>
@@ -565,90 +570,66 @@ export default function NationalDebtPage() {
         <PDFExportButton />
       </div>
 
-      {/* ═══════════ SECTION 1 — DEBT CLOCK HERO ═══════════ */}
-      <motion.section
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className='relative overflow-hidden rounded-2xl bg-gradient-to-br from-gov-dark via-gov-forest to-gov-dark text-white p-6 sm:p-8'>
-        <div
-          className='absolute inset-0 opacity-20 pointer-events-none'
-          aria-hidden='true'
-          style={{
-            backgroundImage:
-              'radial-gradient(circle at 20% 20%, rgba(217,164,65,0.25), transparent 40%), radial-gradient(circle at 80% 80%, rgba(201,74,74,0.22), transparent 45%)',
-          }}
-        />
-        <div className='relative grid grid-cols-1 lg:grid-cols-[1.35fr_1fr] gap-6 lg:gap-8 items-center'>
-          <div>
-            <div className='flex items-center gap-2 mb-3'>
-              <Flame className='text-gov-gold' size={18} />
-              <span className='text-[11px] uppercase tracking-[0.2em] font-semibold text-gov-gold/90'>
-                Live national debt counter
-              </span>
-            </div>
-            <div className='metric-hero leading-none'>
-              {d.totalDebt != null ? (
-                <AnimatedCurrency value={d.totalDebt} />
-              ) : (
-                <span className='opacity-50'>KES —</span>
-              )}
-            </div>
-            <p className='mt-3 text-white/70 text-sm sm:text-base max-w-xl'>
+      {/* ═══════════ SECTION 1 — DEBT HEADLINE ═══════════ */}
+      <section className='audit-panel p-4 sm:p-6'>
+        <div className='grid grid-cols-1 items-start gap-6 lg:grid-cols-[1.35fr_1fr] lg:gap-8'>
+          <div className='min-w-0'>
+            {headline}
+            <p className='mt-3 text-sm text-neutral-muted sm:text-base max-w-xl'>
               Outstanding public debt — money borrowed by the Kenyan government that must be
               repaid, with interest, from taxes you pay.
             </p>
             {yoyGrowth && (
               <div className='mt-4 flex flex-wrap items-center gap-2 text-sm'>
                 <span
-                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-semibold ${
+                  className={`inline-flex items-center gap-1 font-semibold ${
                     yoyGrowth.change >= 0
-                      ? 'bg-gov-copper/20 text-gov-copper border border-gov-copper/40'
-                      : 'bg-gov-sage/20 text-gov-sage border border-gov-sage/40'
+                      ? 'text-signal-alarm'
+                      : 'text-signal-good'
                   }`}>
                   {yoyGrowth.change >= 0 ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
                   {yoyGrowth.change >= 0 ? '+' : ''}
                   {yoyGrowth.change.toFixed(1)}% YoY
                 </span>
-                <span className='text-white/70'>
+                <span className='text-neutral-muted'>
                   Added KES {fmtT(Math.abs(yoyGrowth.amount))} in {yoyGrowth.year}
                 </span>
               </div>
             )}
             {timeline.length > 1 && (
               <div className='mt-4'>
-                <p className='text-[11px] uppercase tracking-wider text-white/50 mb-1'>
+                <p className='mb-1 text-audit-label font-semibold text-neutral-muted'>
                   10-year trajectory
                 </p>
-                <Sparkline data={timeline.map((t) => t.total)} color='#D9A441' height={48} />
+                <Sparkline data={timeline.map((t) => t.total)} color='var(--signal-alarm)' height={48} />
               </div>
             )}
           </div>
 
           <div className='grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-3'>
-            <div className='rounded-xl bg-white/8 backdrop-blur border border-white/15 p-4'>
-              <div className='flex items-center gap-2 text-[11px] uppercase tracking-wider text-white/60 mb-1.5'>
+            <div className='rounded border border-neutral-border p-4'>
+              <div className='mb-1.5 flex items-center gap-2 text-audit-label font-semibold text-neutral-muted'>
                 <Users size={12} />
                 Per citizen
               </div>
-              <div className='text-2xl sm:text-3xl font-bold text-white tabular-nums'>
+              <div className='text-2xl sm:text-3xl font-bold tabular-nums'>
                 {d.perCapita != null ? `KES ${Math.round(d.perCapita).toLocaleString()}` : '—'}
               </div>
-              <p className='text-[11px] text-white/50 mt-1'>
+              <p className='mt-1 text-sm text-neutral-muted'>
                 If every Kenyan paid an equal share
               </p>
             </div>
-            <div className='rounded-xl bg-white/8 backdrop-blur border border-white/15 p-4'>
-              <div className='flex items-center gap-2 text-[11px] uppercase tracking-wider text-white/60 mb-1.5'>
+            <div className='rounded border border-neutral-border p-4'>
+              <div className='mb-1.5 flex flex-wrap items-center gap-2 text-audit-label font-semibold text-neutral-muted'>
                 <Scale size={12} />
                 Debt-to-GDP
                 <InfoTip term='debt-to-gdp' size={11} />
               </div>
-              <div className='text-2xl sm:text-3xl font-bold text-white tabular-nums'>
+              <div className='text-2xl sm:text-3xl font-bold tabular-nums'>
                 {d.gdpRatio != null ? pct(d.gdpRatio) : 'Unavailable'}
               </div>
               {d.gdpRatio != null ? (
-                <p className='text-[11px] text-white/70 mt-1'>
+                <p className='mt-1 text-sm text-neutral-muted'>
                   <span className='block'>Nominal debt · {d.gdpRatioBasis || 'Basis unavailable'}</span>
                   <span className='block mt-1'>
                     {d.gdpRatioSource || 'Source unavailable'} ·{' '}
@@ -656,32 +637,32 @@ export default function NationalDebtPage() {
                   </span>
                 </p>
               ) : (
-                <p className='text-[11px] text-white/70 mt-1'>No debt-to-GDP observation received.</p>
+                <p className='mt-1 text-sm text-neutral-muted'>No debt-to-GDP observation received.</p>
               )}
             </div>
-            <div className='rounded-xl bg-white/8 backdrop-blur border border-white/15 p-4'>
-              <div className='flex items-center gap-2 text-[11px] uppercase tracking-wider text-white/60 mb-1.5'>
+            <div className='rounded border border-neutral-border p-4'>
+              <div className='mb-1.5 flex items-center gap-2 text-audit-label font-semibold text-neutral-muted'>
                 <ShieldAlert size={12} />
                 Overall risk of debt distress
               </div>
               <div className='flex items-center gap-2'>
                 <span
                   className={`text-2xl sm:text-3xl font-bold ${
-                    dsaIsAlarm(dsa) ? 'text-gov-copper' : 'text-white/50'
+                    dsaIsAlarm(dsa) ? 'text-signal-alarm' : 'text-neutral-muted'
                   }`}>
                   {dsa ? dsa.overall_risk_of_debt_distress : 'Not assessed'}
                 </span>
               </div>
-              <p className='text-[11px] text-white/50 mt-1'>
+              <p className='mt-1 text-sm text-neutral-muted'>
                 {dsa ? <>
-                  <a href={dsaHref(dsa)} title={dsaCitation(dsa)} target='_blank' rel='noopener noreferrer' className='underline'>{dsaSourceLabel(dsa)}</a>
+                  <a href={dsaHref(dsa)} title={dsaCitation(dsa)} target='_blank' rel='noopener noreferrer' className='audit-receipt'>{dsaSourceLabel(dsa)}</a>
                   <span className='block mt-1'>{dsaVintageLabel(dsa)}</span>
                 </> : 'No published assessment received.'}
               </p>
             </div>
           </div>
         </div>
-      </motion.section>
+      </section>
 
       {/* ═══════════ SECTION 1B — SOURCE DIVERGENCE ═══════════
           What used to sit here was withdrawn (credibility audit F8/F9):
