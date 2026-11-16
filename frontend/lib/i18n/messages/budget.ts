@@ -1,0 +1,38 @@
+import type { Translation } from '../messages';
+
+export const budgetMessages = {
+  'budget.history.five_years': { en: 'The past five budgets', sw: 'Bajeti tano zilizopita', plain: 'The past five budgets' },
+  'budget.history.title': { en: 'Budget history', sw: 'Historia ya bajeti', plain: 'Past budgets' },
+  'budget.history.appropriated_budget': { en: 'Appropriated budget', sw: 'Bajeti iliyoidhinishwa', plain: 'Approved budget' },
+  'budget.history.total_revenue': { en: 'Tax + non-tax revenue', sw: 'Mapato ya kodi na yasiyo ya kodi', plain: 'Money from taxes and other sources' },
+  'budget.history.total_borrowing': { en: 'New borrowing', sw: 'Mikopo mipya', plain: 'New borrowing' },
+  'budget.history.debt_service_cost': { en: 'Debt service', sw: 'Malipo ya deni', plain: 'Loan repayments and interest' },
+  'budget.history.up': { en: 'Up {change} since {year}', sw: 'Yameongezeka kwa {change} tangu {year}', plain: 'Up {change} since {year}' },
+  'budget.history.down': { en: 'Down {change} since {year}', sw: 'Yamepungua kwa {change} tangu {year}', plain: 'Down {change} since {year}' },
+  'budget.history.steady': { en: 'Little change since {year}', sw: 'Tofauti ndogo tangu {year}', plain: 'About the same as {year}' },
+  'budget.history.open_sheet': { en: 'See all years', sw: 'Tazama miaka yote', plain: 'See all years' },
+  'budget.history.year_column': { en: 'Year', sw: 'Mwaka', plain: 'Year' },
+  'budget.history.amount_column': { en: 'Amount (KES)', sw: 'Kiasi (KES)', plain: 'Amount (KES)' },
+  'budget.history.basis_column': { en: 'Basis', sw: 'Aina ya takwimu', plain: 'Type of figure' },
+  'budget.history.basis_key': { en: 'Basis under each year', sw: 'Aina ya takwimu chini ya kila mwaka', plain: 'What the labels below each year mean' },
+  'budget.history.approved': { en: 'Approved', sw: 'Imeidhinishwa', plain: 'Approved' },
+  'budget.history.approved_short': { en: 'Appr', sw: 'Idh', plain: 'Appr' },
+  'budget.history.actual': { en: 'Actual', sw: 'Halisi', plain: 'Actual' },
+  'budget.history.actual_short': { en: 'Actual', sw: 'Halisi', plain: 'Actual' },
+  'budget.history.preliminary': { en: 'Preliminary', sw: 'Awali', plain: 'Early figure' },
+  'budget.history.preliminary_short': { en: 'Prelim', sw: 'Awali', plain: 'Early' },
+  'budget.history.supplementary': { en: 'Supplementary I', sw: 'Nyongeza ya kwanza', plain: 'First revised budget' },
+  'budget.history.supplementary_short': { en: 'Supp', sw: 'Nyon', plain: 'Rev' },
+  'budget.history.unconfirmed': { en: 'Basis unconfirmed', sw: 'Aina ya takwimu haijathibitishwa', plain: 'Type of figure not confirmed' },
+  'budget.flow.debt_source': { en: 'Treasury APDMR · {year}', sw: 'Ripoti ya deni ya Hazina · {year}', plain: 'Treasury debt report · {year}' },
+  'budget.flow.debt_ratio': {
+    en: 'of every KES 100 of ordinary revenue services the debt (interest + principal)',
+    sw: 'kati ya kila KES 100 za mapato ya kawaida hutumika kulipa deni (riba na mkopo wenyewe)',
+    plain: 'of every KES 100 in ordinary revenue goes to loan repayments and interest',
+  },
+  'budget.flow.debt_ratio_withheld': {
+    en: 'per KES 100 of ordinary revenue — compatible source evidence unconfirmed',
+    sw: 'kwa kila KES 100 za mapato ya kawaida — hakuna ushahidi wa chanzo uliothibitishwa kwa msingi huu',
+    plain: 'per KES 100 in ordinary revenue. The available sources do not confirm a comparable figure.',
+  },
+} as const satisfies Record<string, Translation>;
