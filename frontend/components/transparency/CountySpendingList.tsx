@@ -1,32 +1,31 @@
 'use client';
 
 import { useLang } from '@/lib/i18n/LangProvider';
-
-import {
-  ArrowUpDown,
-  ChevronDown,
-  Clock,
-  Info,
-  Loader2,
-  Search,
-  TriangleAlert,
-  X,
-} from 'lucide-react';
+import { countySpendingMessages } from '@/lib/i18n/messages/transparency';
+import { ArrowUpDown, Search, X } from 'lucide-react';
 import Link from 'next/link';
-import { useRef, type CSSProperties } from 'react';
+import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
 import {
   auditAmountCoverageNote,
-  efficiencyLabel,
   formatEfficiency,
-  efficiencyTone,
   formatFlowKES,
   type CountyFlowRow,
   type CountySortKey,
 } from './moneyFlowPresentation';
 import styles from './MoneyFlowPresentation.module.css';
 
+const INITIAL_COUNT = 10;
+const TARGET = 70;
+const executionBands = [
+  { min: 0, verdict: 'wellBelow', range: 'below65' },
+  { min: 65, verdict: 'below', range: 'below70' },
+  { min: TARGET, verdict: 'onTarget', range: 'below80' },
+  { min: 80, verdict: 'above', range: 'atLeast80' },
+] as const;
+const highestBandFirst = [...executionBands].reverse();
+
 interface Props {
-  rows: CountyFlowRow[];
+  rows: (CountyFlowRow & { rank: number })[];
   fiscalYear: string;
   countiesWithData: number;
   nationalEfficiency: number | null;
@@ -43,16 +42,12 @@ interface Props {
   onReverse: () => void;
 }
 
-function Amount({ amount }: { amount: number | null }) {
-  const value = formatFlowKES(amount);
-  return amount == null ? (
-    <b aria-label='Unavailable'>—</b>
-  ) : (
-    <b>
-      <small>KES </small>
-      {value.slice(4)}
-    </b>
-  );
+function Amount({ amount, unavailable }: { amount: number | null; unavailable: string }) {
+  return <b aria-label={amount == null ? unavailable : undefined}>{formatFlowKES(amount)}</b>;
+}
+
+function percentWidth(percent: number) {
+  return `${Math.min(100, Math.max(0, percent))}%`;
 }
 
 export default function CountySpendingList({
@@ -72,275 +67,241 @@ export default function CountySpendingList({
   onSort,
   onReverse,
 }: Props) {
-  const { lang } = useLang();
+  const { lang, t } = useLang();
+  const listId = useId();
   const searchInput = useRef<HTMLInputElement>(null);
-  const options: { value: CountySortKey; label: string }[] = projected
-    ? [
-        { value: 'allocated', label: 'Largest allocation' },
-        { value: 'name', label: 'A–Z' },
-      ]
-    : [
-        { value: 'efficiency', label: 'Least efficient' },
-        { value: 'flagged', label: 'Most flagged' },
-        { value: 'gap', label: 'Highest gap' },
-        { value: 'name', label: 'A–Z' },
-      ];
-  const activeSort = options.some((option) => option.value === sortKey)
-    ? sortKey
-    : options[0].value;
-  const clearSearch = () => {
+  const firstAdditionalCounty = useRef<HTMLAnchorElement>(null);
+  const [showAll, setShowAll] = useState(false);
+  useEffect(() => {
+    if (showAll) firstAdditionalCounty.current?.focus();
+  }, [showAll]);
+  const shownRows = showAll ? rows : rows.slice(0, INITIAL_COUNT);
+  const messages = countySpendingMessages;
+  const copy = (key: keyof typeof messages, values: Record<string, string | number> = {}) =>
+    messages[key][lang].replace(/\{(\w+)\}/g, (match, name) => String(values[name] ?? match));
+  const period = copy('fiscalYear', { year: fiscalYear });
+  const sortOptions: CountySortKey[] = projected ? ['allocated', 'name'] : ['efficiency', 'gap', 'name'];
+  if (!projected && !auditUnavailable) sortOptions.push('flagged');
+  const markerNote =
+    nationalEfficiency == null
+      ? copy('targetMarker', { target: TARGET })
+      : copy('markers', { target: TARGET, national: formatEfficiency(nationalEfficiency) });
+
+  function clearSearch() {
     onSearch('');
     searchInput.current?.focus();
-  };
+  }
+
   return (
     <section
       className={`${styles.presentation} ${styles.countySection}`}
       aria-labelledby='county-spending-heading'>
       <header className={styles.countyHeading}>
         <div className={styles.reportTitle}>
-          <h2 id='county-spending-heading'>County spending</h2>
-          <p className={styles.reportPeriod}>FY {fiscalYear}</p>
+          <h2 id='county-spending-heading'>{copy('title')}</h2>
+          <p className={styles.reportPeriod}>{period}</p>
         </div>
-        <p className={styles.coverage}>
-          {loading
-            ? 'Loading county data…'
-            : `${countiesWithData} of 47 counties have published allocations`}
-          {projected ? ' — execution figures pending' : ''}
-        </p>
+        {!loading && !error && (
+          <p className={styles.coverage}>
+            {copy(projected ? 'allocationCoverageProjected' : 'allocationCoverage', {
+              count: countiesWithData,
+            })}
+          </p>
+        )}
       </header>
       <div className={styles.controls}>
         <div className={styles.searchWrap}>
-          <label htmlFor='county-search' className={styles.fieldLabel}>
-            Find your county
-          </label>
+          <label htmlFor='county-search' className='sr-only'>{copy('search')}</label>
           <Search size={18} className={styles.searchIcon} aria-hidden='true' />
           <input
             ref={searchInput}
             id='county-search'
             type='search'
             autoComplete='off'
-            placeholder='Search counties'
+            placeholder={copy('search')}
             value={search}
             onChange={(event) => onSearch(event.target.value)}
           />
           {search && (
             <button
+              type='button'
               className={styles.clearSearch}
               onClick={clearSearch}
-              aria-label='Clear county search'>
+              aria-label={copy('clearSearch')}>
               <X size={16} aria-hidden='true' />
             </button>
           )}
         </div>
-        <div className={styles.sortWrap}>
-          <label htmlFor='county-sort'>Sort by</label>
-          <div className={styles.selectWrap}>
-            <select
-              id='county-sort'
-              value={activeSort}
-              onChange={(event) => onSort(event.target.value as CountySortKey)}>
-              {options.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={16} aria-hidden='true' />
-          </div>
+        <div className={styles.sortWrap} role='group' aria-label={copy('sort')}>
+          {sortOptions.map((option) => (
+            <button
+              key={option}
+              type='button'
+              className={`audit-control ${styles.sortChip}`}
+              aria-pressed={option === sortKey}
+              onClick={() => onSort(option)}>
+              {copy(option)}
+            </button>
+          ))}
           <button
-            className={styles.direction}
+            type='button'
+            className={`audit-control ${styles.sortChip}`}
             onClick={onReverse}
-            aria-label='Reverse sort order'
+            aria-label={copy('reverse')}
             aria-pressed={reversed}
-            title='Reverse sort order'>
-            <ArrowUpDown size={19} aria-hidden='true' />
+            title={copy('reverse')}>
+            <ArrowUpDown size={18} aria-hidden='true' />
           </button>
         </div>
       </div>
-      {!projected && (
+      {!projected && !loading && !error && rows.length > 0 && (
         <>
-          <div className={styles.sectionMeta}>
-            <p className={styles.reference}>
-              {nationalEfficiency != null ? (
-                <>
-                  <span className={styles.referenceMark} aria-hidden='true' />
-                  Reference line:{' '}
-                  <strong>national efficiency {formatEfficiency(nationalEfficiency)}%</strong>
-                </>
-              ) : (
-                'National efficiency unavailable for this period'
-              )}
-            </p>
-            <details className={styles.auditNote}>
-              <summary>
-                <Info size={16} aria-hidden='true' />
-                <span>
-                  {auditUnavailable
-                    ? 'Auditor-General amounts unavailable'
-                    : 'About Auditor-General findings'}
-                </span>
-                <ChevronDown size={14} aria-hidden='true' />
-              </summary>
-              <p>
-                {auditUnavailable
-                  ? 'No finite cited finding amounts are available for this period. '
-                  : 'Recorded finding amounts may include balances discussed in the report; they are not a measure of proven loss or theft. '}
-                A dash means the amount is unavailable.
-              </p>
-            </details>
-          </div>
           <p className={styles.efficiencyKey}>
-            Budget execution: <span data-tone='good'>70% and above</span>
-            <span data-tone='fair'>50% to below 70%</span>
-            <span data-tone='low'>Below 50%</span>
+            {executionBands.map(({ verdict, range }) => (
+              <span key={verdict} data-execution={verdict}>{copy(range)}</span>
+            ))}
+            {copy('target', { target: TARGET })}
+          </p>
+          <p className={styles.countyNote}>{markerNote}</p>
+          <p className={styles.countyNote}>
+            {auditUnavailable ? copy('auditMissing', { period }) : copy('auditContext')}
           </p>
         </>
       )}
-      <div className={styles.resultsLine}>
-        <span role='status'>
-          {loading
-            ? 'Loading counties…'
-            : `${rows.length} ${rows.length === 1 ? 'county' : 'counties'}${search ? ' found' : ''}`}
-        </span>
-        <span>{projected ? 'Share of national allocation' : 'Spent share of allocation'}</span>
-      </div>
-      {loading ? (
-        <div className={styles.empty}>
-          <Loader2 size={24} className='animate-spin' aria-hidden='true' />
-          Loading county data…
-        </div>
-      ) : error ? (
-        <p className={styles.empty} role='alert'>
-          County data could not be loaded. Please try again.
+      {search.trim() && !loading && !error && rows.length > 0 && (
+        <p role='status' className={styles.countyNote}>
+          {rows.length === 1 ? copy('oneCounty') : copy('countyCount', { count: rows.length })}
         </p>
+      )}
+      {loading ? (
+        <p role='status' className={styles.empty}>{copy('loading')}</p>
+      ) : error ? (
+        <p className={styles.empty} role='alert'>{copy('error')}</p>
       ) : rows.length === 0 ? (
-        <div className={styles.empty}>
-          <strong>
-            {search ? 'No counties match your search.' : 'No data available for this fiscal year.'}
-          </strong>
-          {search && <button onClick={clearSearch}>Clear search</button>}
-        </div>
+        <p className={styles.empty} role='status'>
+          {search.trim() ? copy('noMatch') : copy('noData')}
+        </p>
       ) : (
-        <ol
-          className={styles.counties}
-          aria-label={`Counties ordered by ${options.find((option) => option.value === activeSort)?.label}${reversed ? ', reversed' : ''}`}>
-          {rows.map((row, index) => {
-            const tone = efficiencyTone(row.efficiency_score);
-            const flagged = row.flagged_amount != null && row.flagged_amount > 0;
-            const share =
-              nationalAllocated != null && nationalAllocated > 0 && row.allocated != null
-                ? (row.allocated / nationalAllocated) * 100
+        <>
+          <ol
+            id={listId}
+            className={styles.counties}
+            style={{ '--county-rows': Math.ceil(shownRows.length / 2) } as CSSProperties}
+            role='list'
+            aria-label={copy(reversed ? 'reversedOrder' : 'orderedBy', { sort: copy(sortKey) })}>
+            {shownRows.map((row, index) => {
+              const efficiency = row.efficiency_score;
+              const band = efficiency == null
+                ? null
+                : highestBandFirst.find(({ min }) => efficiency >= min) ?? executionBands[0];
+              const share =
+                projected && nationalAllocated != null && nationalAllocated > 0 && row.allocated != null
+                  ? (row.allocated / nationalAllocated) * 100
+                  : null;
+              const coverage = row.audit_amount_coverage;
+              const coverageNote = !auditUnavailable && coverage && coverage.reason !== 'no_findings'
+                ? auditAmountCoverageNote(coverage, lang)
                 : null;
-            return (
-              <li
-                key={row.county_id}
-                className={`${styles.county} ${projected ? styles.projectedCounty : ''}`}>
-                <div className={styles.identity}>
+
+              return (
+                <li
+                  key={row.county_id}
+                  className={styles.county}
+                  data-execution={band?.verdict}
+                  data-column-end={index + 1 === Math.ceil(shownRows.length / 2) || undefined}>
                   <div className={styles.nameLine}>
-                    <span className={styles.rank}>{String(index + 1).padStart(2, '0')}</span>
+                    <span className={styles.rank}>{String(row.rank).padStart(2, '0')}</span>
                     <h3>
-                      <Link href={`/counties/${row.county_id}?tab=money&from=transparency`}>
+                      <Link
+                        ref={index === INITIAL_COUNT ? firstAdditionalCounty : undefined}
+                        href={`/counties/${row.county_id}?tab=money&from=transparency`}>
                         {row.county_name}
                       </Link>
                     </h3>
+                    {!projected && (
+                      <strong className={styles.countyRate}>
+                        {efficiency == null ? '—' : `${formatEfficiency(efficiency)}%`}
+                      </strong>
+                    )}
                   </div>
-                  <p className={styles.allocation}>
-                    <b>{formatFlowKES(row.allocated)}</b> allocated
-                  </p>
-                </div>
-                {projected ? (
-                  <>
-                    <div className={styles.spending}>
-                      <p className={styles.share}>
-                        {share != null ? `${share.toFixed(1)}%` : '—'}{' '}
-                        <span>of national allocation</span>
+                  <div className={styles.countyDetails}>
+                    <p>{copy('allocation', { amount: formatFlowKES(row.allocated) })}</p>
+                    {!projected && <strong>{copy(band?.verdict ?? 'unreported')}</strong>}
+                  </div>
+                  {projected ? (
+                    <>
+                      <p className={styles.countyNote}>
+                        {share == null ? '—' : `${share.toFixed(1)}%`} {copy('allocationShare')} · {copy('pending')}
                       </p>
                       {share != null && (
                         <div className={styles.measure} aria-hidden='true'>
-                          <span
-                            className={styles.fill}
-                            data-tone='allocation'
-                            style={{
-                              width: `${Math.min(100, Math.max(0, share))}%`,
-                            }}
-                          />
+                          <span className={styles.fill} data-tone='allocation' style={{ width: percentWidth(share) }} />
                         </div>
                       )}
-                    </div>
-                    <p className={styles.pending}>
-                      <Clock size={14} aria-hidden='true' />
-                      Execution pending
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <div className={styles.rate} data-tone={tone}>
-                      <strong>
-                        {row.efficiency_score != null
-                          ? `${formatEfficiency(row.efficiency_score)}%`
-                          : '—'}
-                      </strong>
-                      <span>{efficiencyLabel(row.efficiency_score)}</span>
-                    </div>
-                    <div className={styles.spending}>
-                      <div className={styles.amounts}>
-                        <p>
-                          <span>Spent</span>
-                          <Amount amount={row.spent} />
-                        </p>
-                        <p data-tone={row.total_gap > 0 ? 'fair' : 'neutral'}>
-                          <span>Gap</span>
-                          <Amount
-                            amount={
-                              row.total_gap > 0 || (row.allocated != null && row.spent != null)
-                                ? row.total_gap
-                                : null
-                            }
-                          />
-                        </p>
-                      </div>
-                      {row.efficiency_score != null && (
+                    </>
+                  ) : (
+                    <>
+                      {efficiency != null && (
                         <div
                           className={styles.measure}
                           role='img'
-                          aria-label={`${row.county_name}: ${formatEfficiency(row.efficiency_score)}% budget execution${nationalEfficiency != null ? `. National reference: ${formatEfficiency(nationalEfficiency)}%` : ''}`}
-                          style={
-                            {
-                              '--flow-value': `${Math.min(100, Math.max(0, row.efficiency_score))}%`,
-                            } as CSSProperties
-                          }>
-                          <span className={styles.fill} data-tone={tone} />
+                          aria-label={copy(nationalEfficiency == null ? 'efficiencyBar' : 'nationalBar', {
+                            county: row.county_name,
+                            spent: formatEfficiency(efficiency),
+                            target: TARGET,
+                            national: nationalEfficiency == null ? '' : formatEfficiency(nationalEfficiency),
+                          })}>
+                          <span className={styles.fill} style={{ width: percentWidth(efficiency) }} />
+                          <span className={styles.targetMarker} style={{ left: percentWidth(TARGET) }} />
                           {nationalEfficiency != null && (
                             <span
                               className={styles.nationalMarker}
-                              style={{
-                                left: `${Math.min(100, Math.max(0, nationalEfficiency))}%`,
-                              }}
+                              style={{ left: percentWidth(nationalEfficiency) }}
                             />
                           )}
                         </div>
                       )}
-                    </div>
-                    <div className={styles.auditAmount} data-tone={flagged ? 'low' : 'neutral'}>
-                      <span>
-                        {flagged && <TriangleAlert size={14} aria-hidden='true' />}
-                        Flagged
-                      </span>
-                      <b
-                        aria-label={
-                          row.flagged_amount == null ? 'Flagged amount unavailable' : undefined
-                        }>
-                        {formatFlowKES(row.flagged_amount)}
-                      </b>
-                      {row.audit_amount_coverage && <small>{auditAmountCoverageNote(row.audit_amount_coverage, lang)}</small>}
-                      {flagged && <small>Amounts discussed; not proven loss</small>}
-                    </div>
-                  </>
-                )}
-              </li>
-            );
-          })}
-        </ol>
+                      <dl className={styles.ledger}>
+                        <div>
+                          <dt>{copy('spent')}</dt>
+                          <dd><Amount amount={row.spent} unavailable={copy('unavailable')} /></dd>
+                        </div>
+                        <div className={styles.countyGap}>
+                          <dt>{copy('unspent')}</dt>
+                          <dd>
+                            <Amount
+                              amount={
+                                row.total_gap > 0 || (row.allocated != null && row.spent != null)
+                                  ? row.total_gap
+                                  : null
+                              }
+                              unavailable={copy('unavailable')}
+                            />
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>{copy(auditUnavailable ? 'auditFlagged' : 'auditQuestioned')}</dt>
+                          <dd><Amount amount={row.flagged_amount} unavailable={copy('auditAmountUnavailable')} /></dd>
+                        </div>
+                      </dl>
+                      {coverageNote && <p className={styles.countyNote}>{coverageNote}</p>}
+                    </>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+          {rows.length > INITIAL_COUNT && (
+            <button
+              type='button'
+              className={`audit-control ${styles.countyShowAll}`}
+              aria-controls={listId}
+              aria-expanded={showAll}
+              onClick={() => setShowAll(!showAll)}>
+              {showAll ? t('foundation.show_less') : copy('showAll', { count: rows.length })}
+            </button>
+          )}
+        </>
       )}
     </section>
   );

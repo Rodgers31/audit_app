@@ -309,10 +309,10 @@ test.describe('Follow the Money — national page (/transparency)', () => {
     await expect(nairobi).toContainText('KES 20.00B');
     await expect(nairobi).toContainText('KES 12.00B');
     await expect(nairobi).toContainText('KES 8.00B');
-    await expect(nairobi).toContainText('FlaggedKES 2.00B');
-    await expect(kiambu).toContainText('FlaggedKES 0');
+    await expect(nairobi).toContainText('QuestionedKES 2.00B');
+    await expect(kiambu).toContainText('QuestionedKES 0');
     await expect(
-      nairobi.getByRole('img', { name: 'Nairobi: 60% budget execution. National reference: 70%' })
+      nairobi.getByRole('img', { name: 'Nairobi: 60% of allocation spent. Target: 70%. National share spent: 70%.' })
     ).toBeVisible();
 
     // Returning to the cached initial period must update the visible selection
@@ -322,6 +322,68 @@ test.describe('Follow the Money — national page (/transparency)', () => {
     await expect(summary).toHaveText(initialSummary!);
     await expect(spending).toContainText(`FY ${defaultYear}`);
   });
+
+  test('shows ten rich county cards and searches all 47 before expansion', async ({ page, request }) => {
+    await page.setViewportSize({ width: 360, height: 800 });
+    const { defaultYear, years } = await reportedYears(request);
+    const year = years.find((availableYear) => availableYear !== defaultYear);
+    expect(year, 'The county spending fixture requires a non-default period').toBeTruthy();
+    const countyRows: MoneyFlowData[] = Array.from({ length: 47 }, (_, index) => {
+      const allocated = 10e9;
+      const share = 50 + index;
+      const spent = allocated * share / 100;
+      return {
+        county_id: index + 1,
+        county_name: `Test county ${String(index + 1).padStart(2, '0')}`,
+        fiscal_year: year!,
+        budget_source: 'cob_cbirr',
+        efficiency_score: share,
+        total_waste_estimate: null,
+        stages: [
+          { stage: 'Allocated', label: 'Allocation', amount: allocated },
+          { stage: 'Spent', label: 'Expenditure', amount: spent, gap_from_prev: allocated - spent },
+          { stage: 'Flagged', label: 'Questioned', amount: null },
+        ],
+      };
+    });
+    await page.route(
+      (url) => url.pathname === '/api/v1/money-flow/all-counties' && url.searchParams.get('year') === year,
+      (route) => route.fulfill({ json: countyRows }),
+    );
+    await page.goto('/transparency');
+    await waitForAppReady(page);
+    await page.getByRole('combobox', { name: 'Fiscal year & reporting period' }).selectOption(year!);
+
+    const spending = page.getByRole('region', { name: 'County spending' });
+    const list = spending.getByRole('list', { name: /Counties ordered by/ });
+    const items = list.getByRole('listitem');
+    await expect(items).toHaveCount(10);
+    await expect(items.first()).toContainText('Well below target');
+    await expect(items.first()).toContainText('KES 10.00B allocated');
+    await expect(items.first()).toContainText('SpentKES 5.00B');
+    await expect(items.first()).toContainText('GapKES 5.00B');
+    await expect(items.first().getByLabel('Audit amount unavailable')).toHaveText('—');
+    await expect(spending.getByText(/Audit amounts are unavailable for/)).toHaveCount(1);
+
+    const search = spending.getByRole('searchbox', { name: 'Find your county' });
+    await search.fill('Test county 47');
+    await expect(items).toHaveCount(1);
+    await expect(items.first()).toContainText(/^47Test county 47/);
+    await expect(items.first()).toContainText('Above target');
+    await spending.getByRole('button', { name: 'Clear county search' }).click();
+    await expect(search).toBeFocused();
+    await expect(items).toHaveCount(10);
+
+    const showAll = spending.getByRole('button', { name: 'Show all 47 counties' });
+    await showAll.focus();
+    await page.keyboard.press('Enter');
+    await expect(items).toHaveCount(47);
+    await expect(list.getByRole('link', { name: 'Test county 11' })).toBeFocused();
+    await spending.getByRole('button', { name: 'Show fewer' }).click();
+    await expect(items).toHaveCount(10);
+    await expect(showAll).toHaveAttribute('aria-expanded', 'false');
+  });
+
 });
 
 test.describe('Follow the Money — efficiency + provenance', () => {
