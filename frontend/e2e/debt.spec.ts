@@ -1,7 +1,66 @@
 import { expect, test } from '@playwright/test';
+import nationalObservation from './fixtures/debt_overview.json';
 import { registerApiMocks } from './utils/mockApi';
 
 test.beforeEach(async ({ page }) => { await registerApiMocks(page); });
+
+type HeadlineFrame = { amount: string; visible: boolean };
+
+declare global {
+  interface Window {
+    debtHeadlineFrames?: HeadlineFrame[];
+  }
+}
+
+test('the first client frame shows the sourced national debt total', async ({ page }) => {
+  // The fixture API refuses the SSR prefetch in this cohort. Observe the first
+  // client commit after the browser receives the separate mocked loan balance.
+  await page.addInitScript(() => {
+    const frames: HeadlineFrame[] = [];
+    window.debtHeadlineFrames = frames;
+    new MutationObserver(() => {
+      const amount = document.querySelector('[data-testid="national-debt-outstanding"]');
+      if (!amount) return;
+      const frame = {
+        amount: amount.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+        visible: amount.checkVisibility({ opacityProperty: true, visibilityProperty: true }),
+      };
+      const previous = frames.at(-1);
+      if (frame.amount !== previous?.amount || frame.visible !== previous.visible) frames.push(frame);
+    }).observe(document, { childList: true, subtree: true, characterData: true, attributes: true });
+  });
+  await page.goto('/debt');
+  const expected = `KES ${(nationalObservation.data.total_outstanding / 1e12).toFixed(2)}T`;
+  await expect(page.getByTestId('national-debt-outstanding')).toHaveText(expected);
+  await expect(page.getByText('Balance date unavailable', { exact: true })).toBeVisible();
+  await expect(page.getByText('Live national debt counter', { exact: true })).toHaveCount(0);
+  expect(await page.evaluate(() => window.debtHeadlineFrames)).toEqual([
+    { amount: expected, visible: true },
+  ]);
+});
+
+test('a missing outstanding balance does not become the principal or a guessed date', async ({ page }) => {
+  await page.route('**/api/v1/debt/national', route => route.fulfill({ json: {
+    ...nationalObservation,
+    last_updated: '2026-08-15T00:00:00',
+    data: { ...nationalObservation.data, total_outstanding: null, total_debt: 12_000_000_000_000 },
+  } }));
+  await page.goto('/debt');
+  await expect(page.getByTestId('national-debt-outstanding')).toHaveText('Debt total unavailable');
+});
+
+test('a failed debt snapshot can be retried without a substitute figure', async ({ page }) => {
+  let available = false;
+  await page.route('**/api/v1/debt/national', route => available
+    ? route.fulfill({ json: nationalObservation })
+    : route.fulfill({ status: 503, json: { status: 'unavailable' } }));
+  await page.goto('/debt');
+  await expect(page.getByRole('heading', { name: 'Failed to load debt data' })).toBeVisible();
+  await expect(page.getByTestId('national-debt-outstanding')).toHaveCount(0);
+  available = true;
+  await page.getByRole('button', { name: 'Retry fetch' }).click();
+  await expect(page.getByTestId('national-debt-outstanding')).toHaveText('KES 12.00T');
+});
 
 test('national debt page shows key stats and charts', async ({ page }) => {
   await page.goto('/debt');

@@ -15,7 +15,8 @@ async function findings(page: import('@playwright/test').Page, populated: boolea
     county_name: 'Synthetic County', county_slug: 'synthetic-county',
     title: 'Unaccounted test assets', excerpt: 'Explicit synthetic browser finding.',
     heading: 'Basis for Qualified Opinion', fiscal_year: 'FY2025/26', page_ref: 'p.2',
-    source: { document_id: 901, title: 'Synthetic report', url: 'https://example.invalid/report.pdf',
+    source: { document_id: 901, title: 'SYNTHETIC-OFFICE-OF-THE-AUDITOR-GENERAL-REPORT.pdf',
+      publisher: 'Office of the Auditor-General', url: 'https://example.invalid/report.pdf',
       page_url: 'https://example.invalid/report.pdf#page=2' } }] : [];
   await page.route('**/api/v1/accountability/missing-funds*', r => r.fulfill({ json: {
     basis: 'oag_finding_title', total_amount: null, total_amount_reason: 'no_amount_extracted',
@@ -49,13 +50,16 @@ test.describe(PATH, () => {
   });
 
   test('every listed finding links to a page of its report', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 780 });
     await findings(page, true);
     await page.goto(PATH);
     await waitForAppReady(page);
     await expect(page.locator('article')).toHaveCount(1, { timeout: 15_000 });
-    const links = page.locator('article a[href*="#page="]');
-    await expect(links).toHaveCount(1);
-    await expect(links).toHaveAttribute('href', 'https://example.invalid/report.pdf#page=2');
+    const link = page.getByRole('link', { name: 'OAG · FY2025/26 · p.2', exact: true });
+    await expect(link).toHaveAttribute('href', 'https://example.invalid/report.pdf#page=2');
+    expect((await link.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+    await expect(page.locator('article')).not.toContainText('.pdf');
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBe(360);
   });
 
   test('the empty state explains itself and does not imply a clean bill of health', async ({ page }) => {
