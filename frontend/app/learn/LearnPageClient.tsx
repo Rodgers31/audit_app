@@ -16,6 +16,7 @@
 
 import PageShell from '@/components/layout/PageShell';
 import ConstitutionBook from '@/components/learn/constitution/ConstitutionBook';
+import { DEFAULT_READER_LOCATION, pushArticleLocation, readArticleLocation } from '@/components/learn/constitution/readerLocation';
 import LearnHero from '@/components/learn/LearnHero';
 import PopularQuestions from '@/components/learn/PopularQuestions';
 import {
@@ -23,6 +24,8 @@ import {
   findChapterForArticle,
   TOTAL_ARTICLES,
 } from '@/data/constitution';
+import { useLang } from '@/lib/i18n/LangProvider';
+import { learnCopy } from '@/lib/i18n/messages/learn';
 import { motion } from 'framer-motion';
 import {
   ArrowRight,
@@ -33,7 +36,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 const KEEP_LEARNING: {
   href: string;
@@ -99,10 +102,11 @@ function parseArticleNumber(q: string): number | null {
 }
 
 export default function LearningHubPage() {
+  const { lang } = useLang();
   /* ── Constitution book seeding ── */
   const [seedQuery, setSeedQuery] = useState<string>('');
-  const [seedChapter, setSeedChapter] = useState<number>(12);
-  const [seedArticle, setSeedArticle] = useState<number | undefined>(229);
+  const [seedChapter, setSeedChapter] = useState(DEFAULT_READER_LOCATION.chapter);
+  const [seedArticle, setSeedArticle] = useState(DEFAULT_READER_LOCATION.article);
   const [bookKey, setBookKey] = useState<number>(0);
   const bookRef = useRef<HTMLDivElement>(null);
 
@@ -114,9 +118,13 @@ export default function LearningHubPage() {
     // Smooth scroll otherwise gets silently cancelled by those concurrent layout
     // shifts on some browsers.
     setTimeout(() => {
-      bookRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      bookRef.current?.scrollIntoView({ block: 'start' });
     }, 60);
   }, []);
+
+  useEffect(() => {
+    if (readArticleLocation()) scrollToBook();
+  }, [scrollToBook]);
 
   const openArticle = useCallback(
     (articleNumber: number) => {
@@ -124,6 +132,7 @@ export default function LearningHubPage() {
       if (!meta) return;
       setSeedChapter(meta.number);
       setSeedArticle(articleNumber);
+      pushArticleLocation(articleNumber);
       setSeedQuery('');
       setBookKey((k) => k + 1);
       scrollToBook();
@@ -136,6 +145,7 @@ export default function LearningHubPage() {
     (chapterNumber: number, articleNumber: number) => {
       setSeedChapter(chapterNumber);
       setSeedArticle(articleNumber);
+      pushArticleLocation(articleNumber);
       setSeedQuery('');
       setBookKey((k) => k + 1);
       scrollToBook();
@@ -174,15 +184,9 @@ export default function LearningHubPage() {
               The Constitution, as a book you can actually read
             </h2>
             <p className='text-sm text-neutral-muted'>
-              {CONSTITUTION_META.length} chapters, {TOTAL_ARTICLES} articles, every one with a plain-English note.
+              {learnCopy(lang, 'bookCoverage', { chapters: CONSTITUTION_META.length, articles: TOTAL_ARTICLES })}
             </p>
           </div>
-          <Link
-            href='#constitution-book'
-            className='hidden shrink-0 items-center gap-1.5 rounded-full bg-gov-forest/10 px-3 py-1.5 text-xs font-semibold text-gov-forest dark:text-emerald-100 hover:bg-gov-forest/15 sm:inline-flex'>
-            <Sparkles size={12} />
-            New
-          </Link>
         </div>
         <ConstitutionBook
           key={bookKey}

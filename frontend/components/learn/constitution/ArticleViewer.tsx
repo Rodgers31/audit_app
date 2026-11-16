@@ -1,69 +1,53 @@
-/**
- * ArticleViewer — renders one constitutional article as a "page" in the book.
- *
- * The parent passes a direction (1 for forward, -1 for back) and a unique key
- * so framer-motion's AnimatePresence can cross-fade with a page-turn feel.
- *
- * Search highlights are applied client-side via a simple non-regex token
- * substitution to keep the markup predictable for screen readers.
- */
 'use client';
 
-import type { ConstitutionArticle, ConstitutionChapter } from '@/data/constitution/types';
-import { AnimatePresence, motion, type Variants } from 'framer-motion';
-import {
-  ArrowLeft,
-  ArrowRight,
-  Bookmark,
-  CheckCircle2,
-  CornerDownLeft,
-  Hash,
-  Lightbulb,
-  ScrollText,
-} from 'lucide-react';
-import { useEffect, useMemo, useRef } from 'react';
+import type { ConstitutionArticle } from '@/data/constitution/types';
+import { useLang } from '@/lib/i18n/LangProvider';
+import { learnCopy } from '@/lib/i18n/messages/learn';
+import { ArrowLeft, ArrowRight, ChevronRight } from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useId, useRef } from 'react';
 
 import { renderProse, type ReferenceTarget } from './prose';
 
-/** Page-turn variants. `direction` is passed via AnimatePresence's custom prop. */
-const PAGE_VARIANTS: Variants = {
-  enter: (d: number) => ({ opacity: 0, x: d * 64, rotateY: d * -6 }),
-  center: { opacity: 1, x: 0, rotateY: 0 },
-  exit: (d: number) => ({ opacity: 0, x: d * -64, rotateY: d * 6 }),
-};
+export type ReadingMode = 'plain' | 'official';
 
 interface ArticleViewerProps {
-  chapter: ConstitutionChapter;
   article: ConstitutionArticle;
-  /** Highlighted query, if any. */
   query?: string;
-  /** +1 forward, -1 back — drives the slide direction. */
-  direction: number;
-  hasPrev: boolean;
-  hasNext: boolean;
-  prevLabel?: string;
-  nextLabel?: string;
+  mode: ReadingMode;
+  onModeChange: (mode: ReadingMode) => void;
+  prevArticle?: number;
+  nextArticle?: number;
   onPrev: () => void;
   onNext: () => void;
-  /** Next chapter in reading order, when we're on the last article. */
   nextChapterNumber?: number;
   nextChapterTitle?: string;
-  onGoNextChapter?: () => void;
-  /** Called when the reader clicks an "Article N" / "Chapter N"
-   * reference embedded in the prose. The parent decides whether the
-   * jump pushes history, opens in place, etc. */
-  onReferenceClick?: (target: ReferenceTarget) => void;
-  /** Label for the back-pill shown when the reader followed a
-   * reference into this article. `null` / `undefined` hides it. */
-  backTarget?: { articleNumber: number } | null;
-  onBack?: () => void;
-  /** Top-level clause the reader was pointed at — e.g. "3" when the
-   * reference was "Article 144(3)(c)". On arrival we flash + scroll
-   * to the paragraph whose leading "(X)" marker matches. `null` /
-   * absent means "no clause highlight" (plain-article or non-
-   * reference navigation: the page switch is itself the feedback). */
-  highlightClause?: string | null;
+  onGoNextChapter: () => void;
+  onReferenceClick: (target: ReferenceTarget) => void;
+  backTarget: { articleNumber: number } | null;
+  onBack: () => void;
+  highlightClause: string | null;
 }
+
+const ARTICLE_LINKS = {
+  budget: { label: 'budget', href: '/budget' },
+  countyMoney: { label: 'countyMoney', href: '/transparency' },
+  debt: { label: 'debt', href: '/debt' },
+  audits: { label: 'audits', href: '/audits' },
+  countyAudits: { label: 'countyAudits', href: '/counties' },
+} as const;
+
+const LINKS_BY_ARTICLE: Record<number, readonly (keyof typeof ARTICLE_LINKS)[]> = {
+  201: ['budget'],
+  203: ['countyMoney'],
+  214: ['debt'],
+  217: ['countyMoney'],
+  218: ['countyMoney'],
+  219: ['countyMoney'],
+  229: ['audits', 'countyAudits'],
+};
+
+const CONSTITUTION_SOURCE = 'https://new.kenyalaw.org/akn/ke/act/2010/constitution/eng%402010-09-03/source.pdf';
 
 /** Cheap, allocation-light highlight: splits on case-insensitive query. */
 function highlight(text: string, query: string): React.ReactNode {
@@ -95,14 +79,12 @@ function highlight(text: string, query: string): React.ReactNode {
 }
 
 export default function ArticleViewer({
-  chapter,
   article,
   query = '',
-  direction,
-  hasPrev,
-  hasNext,
-  prevLabel,
-  nextLabel,
+  mode,
+  onModeChange,
+  prevArticle,
+  nextArticle,
   onPrev,
   onNext,
   nextChapterNumber,
@@ -113,216 +95,136 @@ export default function ArticleViewer({
   onBack,
   highlightClause,
 }: ArticleViewerProps) {
-  const clauseRef = useRef<HTMLParagraphElement | null>(null);
+  const { lang } = useLang();
+  const modeId = useId();
+  const clauseRef = useRef<HTMLParagraphElement>(null);
+  const currentMode = article.summary ? mode : 'official';
+  const proseOptions = { query, onRefClick: onReferenceClick };
+  const links = LINKS_BY_ARTICLE[article.number];
 
-  // When the viewer mounts with a clause to highlight, scroll that
-  // paragraph into view inside the overflow-y-auto body. `block:
-  // 'nearest'` (not 'start'): short articles where the whole body
-  // already fits need no scroll, and 'start' would try to align the
-  // paragraph with the viewport top — if the inner container can't
-  // scroll the browser walks up ancestors and ends up scrolling the
-  // outer page, visually pushing the article down. 'nearest' is a
-  // no-op whenever the paragraph is already visible.
   useEffect(() => {
-    if (!highlightClause || !clauseRef.current) return;
-    clauseRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    if (highlightClause) clauseRef.current?.scrollIntoView({ block: 'nearest' });
   }, [article.number, highlightClause]);
-  const pageKey = useMemo(
-    () => `${chapter.number}-${article.number}`,
-    [chapter.number, article.number]
-  );
-  const atEndOfChapter = !hasNext;
-  const showNextChapter = atEndOfChapter && !!nextChapterNumber && !!onGoNextChapter;
 
   return (
-    <div className='relative h-full' style={{ perspective: '1800px' }}>
-      <AnimatePresence mode='wait' initial={false} custom={direction}>
-        <motion.article
-          key={pageKey}
-          custom={direction}
-          variants={PAGE_VARIANTS}
-          initial='enter'
-          animate='center'
-          exit='exit'
-          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-          className='flex h-full flex-col'
-          style={{ transformStyle: 'preserve-3d', transformOrigin: 'center' }}>
-          {/* ── Header ── */}
-          <header className='border-b border-neutral-border/70 px-5 pb-4 pt-5 sm:px-7 sm:pt-6'>
-            {/* Back pill — only shown when the reader arrived here via an
-                in-prose reference click. Sits above the chapter chip so it
-                reads as "you followed a thread; here's how to unwind it"
-                rather than general navigation (left/right arrows do that). */}
-            {backTarget && onBack && (
-              <button
-                type='button'
-                onClick={onBack}
-                className='mb-3 inline-flex items-center gap-1.5 rounded-full border border-gov-forest/20 bg-gov-forest/5 px-3 py-1 text-[11px] font-semibold text-gov-forest dark:text-emerald-100 hover:bg-gov-forest/10 hover:border-gov-forest/40 transition-colors'>
-                <CornerDownLeft size={12} />
-                Back to Article {backTarget.articleNumber}
-              </button>
-            )}
-            <div className='mb-2 flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-wider text-gov-forest/70 dark:text-emerald-100/70'>
-              <span className='inline-flex items-center gap-1 rounded-full bg-gov-forest/10 px-2 py-0.5 font-semibold'>
-                <ScrollText size={11} />
-                Chapter {chapter.number}
-              </span>
-              <span className='text-neutral-muted'>·</span>
-              <span className='font-semibold text-neutral-muted'>{chapter.title}</span>
-            </div>
-            <div className='flex items-start gap-3'>
-              <span className='shrink-0 rounded-xl bg-gov-gold/20 px-3 py-1.5 font-display text-xl font-bold text-gov-dark dark:text-white'>
-                <Hash size={14} className='-mt-1 mr-0.5 inline text-gov-gold' />
-                {article.number}
-              </span>
-              <h3 className='font-display text-2xl leading-tight text-gov-dark dark:text-white sm:text-[1.7rem]'>
-                {highlight(article.title, query)}
-              </h3>
-            </div>
-            {article.summary && (
-              <p className='mt-3 rounded-xl border border-gov-sage/30 bg-gov-sage/10 px-3.5 py-2.5 text-[13.5px] leading-relaxed text-gov-forest dark:text-emerald-100'>
-                <Bookmark size={13} className='-mt-0.5 mr-1 inline text-gov-sage' />
-                {renderProse(article.summary, { query, onRefClick: onReferenceClick })}
-              </p>
-            )}
-          </header>
+    <article className='space-y-3 px-4 py-4 sm:px-6'>
+      {backTarget && (
+        <button
+          type='button'
+          onClick={onBack}
+          className='inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-gov-sage hover:underline'>
+          <ArrowLeft aria-hidden='true' size={16} />
+          {learnCopy(lang, 'backTo', { number: backTarget.articleNumber })}
+        </button>
+      )}
+      <header className='flex items-baseline gap-2'>
+        <span className='shrink-0 font-mono text-[13px] font-semibold text-signal-alarm'>
+          {learnCopy(lang, 'article', { number: article.number })}
+        </span>
+        <h4 lang='en' className='min-w-0 break-words font-display text-[22px] font-semibold leading-tight text-neutral-text sm:text-2xl'>
+          {highlight(article.title, query)}
+        </h4>
+      </header>
 
-          {/* ── Paragraphs ──
-              No container-level flash anymore — only the paragraph
-              whose leading "(X)" marker matches highlightClause
-              flashes. That keeps the scope of the highlight aligned
-              with the scope of the reference: "Article 144(3)" lights
-              up clause (3), not the whole article. Paragraphs without
-              a leading clause marker, or when highlightClause is
-              absent, render unchanged. */}
-          <div className='flex-1 space-y-3 overflow-y-auto px-5 py-5 text-[14.5px] leading-relaxed text-neutral-text sm:px-7 sm:py-6'>
-            {article.paragraphs.map((p, i) => {
-              const leading = /^\s*\((\w+)\)/.exec(p)?.[1];
-              const isTarget = !!highlightClause && leading === highlightClause;
+      <fieldset className='grid min-w-0 grid-cols-2 overflow-hidden rounded border border-neutral-border'>
+        <legend className='sr-only'>{learnCopy(lang, 'textVersion')}</legend>
+        {(['plain', 'official'] as const).map((option) => (
+          <label key={option} className='min-w-0 first-of-type:border-r first-of-type:border-neutral-border'>
+            <input
+              type='radio'
+              name={modeId}
+              className='peer sr-only'
+              checked={currentMode === option}
+              disabled={option === 'plain' && !article.summary}
+              onChange={() => onModeChange(option)}
+            />
+            <span className='grid min-h-11 cursor-pointer place-items-center px-2 py-1 text-center text-[13px] font-semibold text-neutral-text peer-checked:bg-gov-sage peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-inset peer-focus-visible:ring-gov-gold peer-disabled:cursor-default peer-disabled:text-neutral-muted'>
+              {learnCopy(lang, option === 'plain' ? 'plainEnglish' : 'officialText')}
+            </span>
+          </label>
+        ))}
+      </fieldset>
+
+      {currentMode === 'plain' && article.summary ? (
+        <p lang='en' className='text-[15px] leading-relaxed text-neutral-text'>{renderProse(article.summary, proseOptions)}</p>
+      ) : (
+        <div className='space-y-3 text-[15px] leading-relaxed text-neutral-text'>
+          {!article.summary && <p className='text-sm text-neutral-text'>{learnCopy(lang, 'plainUnavailable')}</p>}
+          <p className='text-xs text-neutral-muted'>
+            {learnCopy(lang, 'transcript')}{' '}
+            <a
+              href={CONSTITUTION_SOURCE}
+              target='_blank'
+              rel='noopener noreferrer'
+              className='flex min-h-11 items-center font-semibold text-gov-sage underline underline-offset-2'>
+              {learnCopy(lang, 'source')}
+            </a>
+          </p>
+          {article.paragraphs.map((paragraph, index) => {
+            const leading = /^\s*\((\w+)\)/.exec(paragraph)?.[1];
+            const isTarget = !!highlightClause && leading === highlightClause;
+            return (
+              <p
+                key={index}
+                lang='en'
+                ref={isTarget ? clauseRef : undefined}
+                className={isTarget ? 'rounded border-l-4 border-gov-gold bg-surface-sunken px-3 py-2' : undefined}>
+                {renderProse(paragraph, proseOptions)}
+              </p>
+            );
+          })}
+        </div>
+      )}
+
+      {links && (
+        <div className='space-y-1.5'>
+          <h5 className='text-sm font-semibold text-neutral-text'>{learnCopy(lang, 'where')}</h5>
+          <ul className='space-y-1.5'>
+            {links.map((key) => {
+              const { href, label } = ARTICLE_LINKS[key];
               return (
-                <motion.p
-                  key={i}
-                  ref={isTarget ? clauseRef : undefined}
-                  initial={isTarget ? { backgroundColor: 'rgb(254, 249, 195)' } : undefined}
-                  animate={
-                    isTarget
-                      ? {
-                          backgroundColor: [
-                            'rgba(254, 249, 195, 1)',
-                            'rgba(254, 249, 195, 1)',
-                            'rgba(254, 249, 195, 0)',
-                          ],
-                        }
-                      : undefined
-                  }
-                  transition={
-                    isTarget
-                      ? { duration: 2.4, times: [0, 0.25, 1], ease: 'easeOut' }
-                      : undefined
-                  }
-                  className={`font-serif first-letter:text-[1.15em] first-letter:font-semibold ${
-                    isTarget ? 'rounded-md px-2 -mx-2 py-1 -my-1' : ''
-                  }`}>
-                  {renderProse(p, { query, onRefClick: onReferenceClick })}
-                </motion.p>
+                <li key={key}>
+                  <Link href={href} className='flex min-h-11 items-center gap-1 rounded border border-neutral-border bg-surface-elevated px-3 text-[13px] font-semibold text-gov-sage hover:underline'>
+                    {learnCopy(lang, label)}
+                    <ChevronRight aria-hidden='true' size={16} />
+                  </Link>
+                </li>
               );
             })}
+          </ul>
+        </div>
+      )}
 
-            {article.explanation && (
-              <div className='mt-4 rounded-xl bg-gradient-to-br from-gov-gold/15 via-gov-sand to-gov-cream/80 dark:from-gov-gold/[0.12] dark:via-surface-base dark:to-surface-elevated p-4 ring-1 ring-gov-gold/30 dark:ring-gov-gold/40'>
-                <div className='mb-1 flex flex-wrap items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-gov-forest dark:text-emerald-100'>
-                  <Lightbulb size={13} className='text-gov-gold' />
-                  Why it matters
-                  <span className='normal-case font-normal tracking-normal text-gov-dark/50 dark:text-white/50'>
-                    · our plain-language take, not the law
-                  </span>
-                </div>
-                <p className='text-[13.5px] leading-relaxed text-gov-dark dark:text-white'>
-                  {renderProse(article.explanation, { query, onRefClick: onReferenceClick })}
-                </p>
-              </div>
-            )}
+      {article.explanation && (
+        <details>
+          <summary className='min-h-11 cursor-pointer py-3 text-sm font-semibold text-gov-sage'>
+            {learnCopy(lang, 'why')}
+          </summary>
+          <p lang='en' className='text-[15px] leading-relaxed text-neutral-text'>
+            {renderProse(article.explanation, proseOptions)}
+          </p>
+        </details>
+      )}
 
-            {article.tags && article.tags.length > 0 && (
-              <div className='mt-3 flex flex-wrap gap-1.5 pt-2'>
-                {article.tags.map((t) => (
-                  <span
-                    key={t}
-                    className='rounded-full bg-gov-forest/5 px-2 py-0.5 text-[11px] font-medium text-gov-forest/70 dark:text-emerald-100/70'>
-                    #{t}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {showNextChapter && (
-              <div className='mt-6 rounded-2xl border border-gov-forest/20 dark:border-gov-forest/40 bg-gradient-to-br from-gov-forest/5 via-white to-gov-sage/15 dark:from-gov-forest/[0.15] dark:via-surface-base dark:to-surface-elevated p-4 sm:p-5'>
-                <div className='flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-gov-forest dark:text-emerald-100'>
-                  <CheckCircle2 size={13} className='text-gov-sage' />
-                  End of Chapter {chapter.number}
-                </div>
-                <div className='mt-2 flex flex-wrap items-center justify-between gap-3'>
-                  <div className='min-w-0'>
-                    <div className='text-[11px] font-semibold uppercase tracking-wider text-gov-forest/60 dark:text-emerald-100/60'>
-                      Up next · Chapter {nextChapterNumber}
-                    </div>
-                    <div className='font-display text-base text-gov-dark dark:text-white sm:text-lg'>
-                      {nextChapterTitle}
-                    </div>
-                  </div>
-                  <button
-                    type='button'
-                    onClick={onGoNextChapter}
-                    className='inline-flex shrink-0 items-center gap-2 rounded-xl bg-gov-forest px-4 py-2.5 text-sm font-semibold text-white shadow-surface transition-colors hover:bg-gov-dark'>
-                    Read Chapter {nextChapterNumber}
-                    <ArrowRight size={14} />
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* ── Footer nav ── */}
-          <footer className='flex items-center justify-between gap-3 border-t border-neutral-border/70 bg-gov-cream/60 dark:bg-surface-sunken px-5 py-3 sm:px-7'>
-            <button
-              type='button'
-              onClick={onPrev}
-              disabled={!hasPrev}
-              className='inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gov-forest dark:text-emerald-100 transition-colors hover:bg-gov-forest/10 disabled:cursor-not-allowed disabled:opacity-30'>
-              <ArrowLeft size={16} />
-              <span className='hidden sm:inline'>
-                {prevLabel ? `Art. ${prevLabel}` : 'Previous'}
-              </span>
-              <span className='sm:hidden'>Prev</span>
-            </button>
-            <div className='text-[11px] font-semibold uppercase tracking-wider text-neutral-muted'>
-              Article {article.number}
-            </div>
-            {showNextChapter ? (
-              <button
-                type='button'
-                onClick={onGoNextChapter}
-                className='inline-flex items-center gap-2 rounded-lg bg-gov-forest/10 px-3 py-2 text-sm font-semibold text-gov-forest dark:text-emerald-100 transition-colors hover:bg-gov-forest/20'>
-                <span className='hidden sm:inline'>Ch. {nextChapterNumber}</span>
-                <span className='sm:hidden'>Next ch.</span>
-                <ArrowRight size={16} />
-              </button>
-            ) : (
-              <button
-                type='button'
-                onClick={onNext}
-                disabled={!hasNext}
-                className='inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gov-forest dark:text-emerald-100 transition-colors hover:bg-gov-forest/10 disabled:cursor-not-allowed disabled:opacity-30'>
-                <span className='hidden sm:inline'>
-                  {nextLabel ? `Art. ${nextLabel}` : 'Next'}
-                </span>
-                <span className='sm:hidden'>Next</span>
-                <ArrowRight size={16} />
-              </button>
-            )}
-          </footer>
-        </motion.article>
-      </AnimatePresence>
-    </div>
+      <footer className='flex items-center justify-between gap-3 border-t border-neutral-border pt-1 text-sm font-semibold text-gov-sage'>
+        {prevArticle != null && (
+          <button type='button' onClick={onPrev} className='inline-flex min-h-11 items-center gap-2 hover:underline'>
+            <ArrowLeft aria-hidden='true' size={16} />
+            {learnCopy(lang, 'article', { number: prevArticle })}
+          </button>
+        )}
+        {nextArticle != null ? (
+          <button type='button' onClick={onNext} className='ml-auto inline-flex min-h-11 items-center gap-2 hover:underline'>
+            {learnCopy(lang, 'article', { number: nextArticle })}
+            <ArrowRight aria-hidden='true' size={16} />
+          </button>
+        ) : nextChapterNumber != null && (
+          <button type='button' onClick={onGoNextChapter} className='ml-auto inline-flex min-h-11 items-center gap-2 text-left hover:underline'>
+            {learnCopy(lang, 'chapterTitle', { chapter: nextChapterNumber, title: nextChapterTitle ?? '' })}
+            <ArrowRight aria-hidden='true' size={16} />
+          </button>
+        )}
+      </footer>
+    </article>
   );
 }

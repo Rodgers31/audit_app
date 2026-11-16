@@ -242,8 +242,8 @@ export default function InteractiveGlossary({
                             </div>
                             {term.relatedArticle && (
                               <Link
-                                href={`/learn#constitution-book`}
-                                className='inline-flex items-center gap-2 rounded-lg bg-gov-forest/10 px-3 py-2 text-[12.5px] font-semibold text-gov-forest dark:text-emerald-100 transition-colors hover:bg-gov-forest/15'>
+                                href={`/learn?article=${term.relatedArticle.article}`}
+                                className='inline-flex min-h-11 items-center gap-2 rounded-lg bg-gov-forest/10 px-3 py-2 text-[12.5px] font-semibold text-gov-forest dark:text-emerald-100 transition-colors hover:bg-gov-forest/15'>
                                 <ScrollText size={13} />
                                 {term.relatedArticle.label}
                               </Link>
