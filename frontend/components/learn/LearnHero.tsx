@@ -17,6 +17,8 @@ import { runSearch, type SearchHit } from '@/data/constitution/search';
 import { warmSemanticIndex } from '@/data/constitution/semantic-search';
 import { POPULAR_QUESTIONS } from '@/data/popularQuestions';
 import { TOTAL_QUESTIONS } from '@/data/quizData';
+import { useLang } from '@/lib/i18n/LangProvider';
+import { learnCopy } from '@/lib/i18n/messages/learn';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowRight,
@@ -42,6 +44,7 @@ interface LearnHeroProps {
 const EXAMPLE_QUERIES = ['Article 229', 'Auditor General', 'Chapter 6', 'Public debt', 'Devolution'];
 
 export default function LearnHero({ onSearchSubmit, onArticleSelect }: LearnHeroProps) {
+  const { lang } = useLang();
   const [value, setValue] = useState('');
   const [debounced, setDebounced] = useState('');
   const [hits, setHits] = useState<SearchHit[]>([]);
@@ -206,9 +209,9 @@ export default function LearnHero({ onSearchSubmit, onArticleSelect }: LearnHero
               )}
               <button
                 type='submit'
-                className='inline-flex items-center gap-1.5 rounded-xl bg-gov-forest px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-gov-dark'>
-                <span className='hidden sm:inline'>Search</span>
-                <ArrowRight size={15} />
+                className='inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-xl bg-gov-forest px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-gov-dark'>
+                <span className='sr-only sm:not-sr-only'>{learnCopy(lang, 'search')}</span>
+                <ArrowRight aria-hidden='true' size={15} />
               </button>
             </form>
 

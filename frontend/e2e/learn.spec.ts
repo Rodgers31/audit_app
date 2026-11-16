@@ -21,11 +21,69 @@ test.describe('Learn Page', () => {
     await page.getByRole('searchbox', { name: 'Search civic topics or the Constitution' }).fill('Article 214');
     await page.getByRole('button', { name: 'Search', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Public debt', exact: true })).toBeVisible();
+    await expect(page).toHaveURL(/article=214/);
+    await page.goBack();
+    await expect(page.getByRole('heading', { name: 'Auditor-General', exact: true })).toBeVisible();
+    await page.goForward();
+    await expect(page.getByRole('heading', { name: 'Public debt', exact: true })).toBeVisible();
   });
   test('learn page has interactive sections', async ({ page }) => {
     await page.goto('/learn');
     for (const path of ['/learn/glossary', '/learn/quiz', '/learn/government', '/learn/why-it-matters']) {
       await expect(page.locator(`main a[href="${path}"]`)).toBeVisible();
+    }
+  });
+  test('article links, browser history and the reading preference work together', async ({ page }) => {
+    await page.goto('/learn?article=229');
+    const reader = page.getByRole('region', { name: 'Constitution of Kenya reader' });
+    await expect(reader.getByRole('heading', { name: 'Auditor-General', exact: true })).toBeVisible();
+    const plain = reader.getByRole('radio', { name: 'Plain English' });
+    const official = reader.getByRole('radio', { name: 'Official text' });
+    await expect(plain).toBeChecked();
+    await expect(reader.getByRole('progressbar')).toHaveAccessibleName('2 articles left in Chapter 12');
+    await expect(reader.getByRole('link', { name: 'Audit findings', exact: true })).toHaveAttribute('href', '/audits');
+    await plain.focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(official).toBeChecked();
+    await expect(reader.getByRole('link', { name: /Authoritative text from Kenya Law/ })).toBeVisible();
+    await expect(page).toHaveURL(/article=229/);
+    await reader.getByRole('button', { name: 'Article 251', exact: true }).click();
+    await expect(page).toHaveURL(/article=251/);
+    await reader.getByRole('button', { name: 'Back to Article 229', exact: true }).click();
+    await expect(reader.getByRole('heading', { name: 'Auditor-General', exact: true })).toBeVisible();
+    await reader.getByRole('button', { name: 'Art. 230', exact: true }).click();
+    await expect(page).toHaveURL(/article=230/);
+    await expect(reader.getByRole('heading', { name: 'Salaries and Remuneration Commission' })).toBeVisible();
+    await page.goBack();
+    await expect(reader.getByRole('heading', { name: 'Auditor-General', exact: true })).toBeVisible();
+    await page.goForward();
+    await expect(reader.getByRole('heading', { name: 'Salaries and Remuneration Commission' })).toBeVisible();
+    await page.reload();
+    await expect(official).toBeChecked();
+  });
+
+  test('mobile reader controls have names and the chapter drawer restores focus', async ({ browser }) => {
+    const context = await browser.newContext({ hasTouch: true, viewport: { width: 360, height: 840 } });
+    try {
+      const page = await context.newPage();
+      await page.goto('/learn?article=229');
+      await expect(page.getByRole('button', { name: 'Search', exact: true })).toBeVisible();
+      const reader = page.getByRole('region', { name: 'Constitution of Kenya reader' });
+      const chapters = reader.getByRole('button', { name: 'Chapters', exact: true });
+      const drawer = reader.getByRole('navigation', { name: 'Chapters' });
+      await chapters.tap();
+      await expect(drawer).toBeVisible();
+      await drawer.getByRole('button', { name: /229\s*Auditor-General/ }).focus();
+      await page.keyboard.press('Escape');
+      await expect(drawer).toBeHidden();
+      await expect(chapters).toBeFocused();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(360);
+      await page.goto('/learn?article=215');
+      await expect(reader.getByRole('radio', { name: 'Official text' })).toBeChecked();
+      await expect(reader.getByRole('radio', { name: 'Plain English' })).toBeDisabled();
+      await expect(reader.getByText('A plain-English summary is unavailable for this article.')).toBeVisible();
+    } finally {
+      await context.close();
     }
   });
 });
@@ -39,8 +97,10 @@ test.describe('Interactive Glossary', () => {
   test('glossary term cards are clickable', async ({ page }) => {
     await glossary(page);
     await page.getByRole('button', { name: /^National Debt/ }).click();
-    await expect(page.getByText(/Article 214/).first()).toBeVisible();
     await expect(page.getByText('In plain life', { exact: true }).first()).toBeVisible();
+    await page.getByRole('link', { name: /Article 214.*Public debt/i }).click();
+    await expect(page).toHaveURL(/\/learn\?article=214/);
+    await expect(page.getByRole('heading', { name: 'Public debt', exact: true })).toBeVisible();
   });
   test('glossary category filter works', async ({ page }) => {
     await glossary(page);
@@ -114,12 +174,11 @@ test.describe('Learn Page Accessibility', () => {
     await expect(page.getByRole('link', { name: 'Skip to main content' })).toBeFocused();
   });
   test('learn page has proper headings structure', async ({ page }) => {
-    // Learn currently keeps English copy in all three supported language modes.
-    // Check the real hierarchy without inventing unreviewed translations.
     await page.goto('/learn');
     await page.locator('header summary').filter({ hasText: /^Language$/ }).click();
+    const languagePicker = page.locator('header').getByRole('radiogroup');
     for (const name of ['English', 'Kiswahili', 'Plain English']) {
-      const language = page.getByRole('radio', { name, exact: true });
+      const language = languagePicker.getByRole('radio', { name, exact: true });
       await language.check();
       await expect(language).toBeChecked();
       await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
@@ -128,7 +187,10 @@ test.describe('Learn Page Accessibility', () => {
       for (const name of ['The Constitution, as a book you can actually read', 'Keep learning', 'Popular questions', 'Ready to put your knowledge to use?']) {
         await expect(page.getByRole('heading', { level: 2, name, exact: true })).toBeVisible();
       }
-      await expect(page.getByRole('heading', { level: 3, name: 'Read the law that shapes every shilling' })).toBeVisible();
+      const readerHeading = name === 'Kiswahili'
+        ? 'Soma sheria inayoongoza matumizi ya kila shilingi'
+        : 'Read the law that shapes every shilling';
+      await expect(page.getByRole('heading', { level: 3, name: readerHeading })).toBeVisible();
       await expect(page.getByRole('heading', { level: 3, name: 'Civic quiz', exact: true })).toBeVisible();
       await expect(page.getByRole('searchbox', { name: 'Search civic topics or the Constitution' })).toBeVisible();
     }

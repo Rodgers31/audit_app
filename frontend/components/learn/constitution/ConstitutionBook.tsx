@@ -4,7 +4,6 @@
  * Responsibilities
  *   - Owns the active chapter + article state.
  *   - Lazily fetches chapter bodies through loadChapter() (cached).
- *   - Drives page-turn direction for ArticleViewer's AnimatePresence.
  *   - Wires up keyboard arrows and mobile swipe gestures.
  *
  * Design choices
@@ -17,13 +16,17 @@
 
 import { CONSTITUTION_META, loadChapter } from '@/data/constitution';
 import type { ConstitutionChapter } from '@/data/constitution/types';
-import { AnimatePresence, motion, type PanInfo } from 'framer-motion';
-import { BookOpen, Menu, X } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLang } from '@/lib/i18n/LangProvider';
+import { learnCopy } from '@/lib/i18n/messages/learn';
+import { Menu, X } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState, type TouchEvent } from 'react';
 
-import ArticleViewer from './ArticleViewer';
+import ArticleViewer, { type ReadingMode } from './ArticleViewer';
 import ChapterSidebar from './ChapterSidebar';
 import type { ReferenceTarget } from './prose';
+import { DEFAULT_READER_LOCATION, pushArticleLocation, readArticleLocation } from './readerLocation';
+
+const READING_MODE_KEY = 'auditgava-constitution-reading-mode';
 
 interface ConstitutionBookProps {
   /** Initial chapter to open. Defaults to Chapter 12 (Public Finance). */
@@ -38,8 +41,8 @@ interface ConstitutionBookProps {
 }
 
 export default function ConstitutionBook({
-  initialChapter = 12,
-  initialArticle,
+  initialChapter = DEFAULT_READER_LOCATION.chapter,
+  initialArticle = DEFAULT_READER_LOCATION.article,
   seedQuery = '',
 }: ConstitutionBookProps) {
   /* ── State ── */
@@ -47,8 +50,11 @@ export default function ConstitutionBook({
   const [activeArticle, setActiveArticle] = useState<number | null>(initialArticle ?? null);
   const [loadedChapter, setLoadedChapter] = useState<ConstitutionChapter | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [direction, setDirection] = useState<number>(1);
+  const { lang } = useLang();
   const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
+  const [mode, setMode] = useState<ReadingMode>('plain');
+  const drawerButton = useRef<HTMLButtonElement>(null);
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
   // Breadcrumb of positions the reader left when they clicked a
   // reference inside the prose. Pushed in navigateToReference(),
   // popped in goBack(), cleared when the reader jumps via the sidebar
@@ -65,12 +71,38 @@ export default function ConstitutionBook({
   // itself is the feedback.
   const [highlightClause, setHighlightClause] = useState<string | null>(null);
 
-  /* Use a ref for direction too so keyboard/swipe handlers always read the
-     latest value regardless of render timing. */
-  const directionRef = useRef(1);
   useEffect(() => {
-    directionRef.current = direction;
-  }, [direction]);
+    const requested = readArticleLocation();
+    if (requested) {
+      setActiveChapter(requested.chapter);
+      setActiveArticle(requested.article);
+    }
+    try {
+      if (localStorage.getItem(READING_MODE_KEY) === 'official') setMode('official');
+    } catch {
+      // The current page still works if the browser restricts storage.
+    }
+
+    function restoreArticle() {
+      const location = readArticleLocation() ?? DEFAULT_READER_LOCATION;
+      setActiveChapter(location.chapter);
+      setActiveArticle(location.article);
+      setRefHistory([]);
+      setHighlightClause(null);
+    }
+    window.addEventListener('popstate', restoreArticle);
+    return () => window.removeEventListener('popstate', restoreArticle);
+  }, []);
+
+  function changeMode(value: ReadingMode) {
+    setMode(value);
+    setHighlightClause(null);
+    try {
+      localStorage.setItem(READING_MODE_KEY, value);
+    } catch {
+      // Keep the in-memory choice if persistence isn't available.
+    }
+  }
 
   /* ── Fetch chapter body whenever the active chapter changes ── */
   useEffect(() => {
@@ -96,40 +128,41 @@ export default function ConstitutionBook({
   }, [activeChapter]);
 
   /* ── Derive current article + neighbours ── */
-  const articleList = loadedChapter?.articles ?? [];
+  const chapter = loadedChapter?.number === activeChapter ? loadedChapter : null;
+  const articleList = chapter?.articles;
   const currentIdx = useMemo(() => {
     if (activeArticle === null) return -1;
-    return articleList.findIndex((a) => a.number === activeArticle);
+    return articleList?.findIndex((a) => a.number === activeArticle) ?? -1;
   }, [articleList, activeArticle]);
-  const currentArticle = currentIdx >= 0 ? articleList[currentIdx] : null;
-  const prevArticle = currentIdx > 0 ? articleList[currentIdx - 1] : null;
-  const nextArticle =
-    currentIdx >= 0 && currentIdx < articleList.length - 1 ? articleList[currentIdx + 1] : null;
+  const currentArticle = currentIdx >= 0 ? articleList?.[currentIdx] : null;
+  const prevArticle = currentIdx > 0 ? articleList?.[currentIdx - 1] : null;
+  const nextArticle = currentIdx >= 0 ? articleList?.[currentIdx + 1] : null;
 
   /* ── Navigation helpers ── */
   const goPrev = useCallback(() => {
     if (prevArticle) {
-      setDirection(-1);
       setActiveArticle(prevArticle.number);
       setHighlightClause(null);
+      pushArticleLocation(prevArticle.number);
     }
   }, [prevArticle]);
 
   const goNext = useCallback(() => {
     if (nextArticle) {
-      setDirection(1);
       setActiveArticle(nextArticle.number);
       setHighlightClause(null);
+      pushArticleLocation(nextArticle.number);
     }
   }, [nextArticle]);
 
   const selectChapter = useCallback(
     (n: number) => {
       if (n === activeChapter) return;
-      setDirection(n > activeChapter ? 1 : -1);
+      const first = CONSTITUTION_META.find((item) => item.number === n)?.articleTitles[0];
+      if (!first) return;
       setActiveChapter(n);
-      // Drop the preselected article so the new chapter opens at #1.
-      setActiveArticle(null);
+      setActiveArticle(first.number);
+      pushArticleLocation(first.number);
       // Sidebar / keyboard jumps aren't "following a reference", so the
       // back-pill would be misleading here — start fresh.
       setRefHistory([]);
@@ -147,25 +180,18 @@ export default function ConstitutionBook({
 
   const goNextChapter = useCallback(() => {
     if (!nextChapterMeta) return;
-    setDirection(1);
-    setActiveChapter(nextChapterMeta.number);
-    setActiveArticle(null);
-    setHighlightClause(null);
-  }, [nextChapterMeta]);
+    selectChapter(nextChapterMeta.number);
+  }, [nextChapterMeta, selectChapter]);
 
   const selectArticle = useCallback(
     (chapterNumber: number, articleNumber: number) => {
-      if (chapterNumber !== activeChapter) {
-        setDirection(chapterNumber > activeChapter ? 1 : -1);
-        setActiveChapter(chapterNumber);
-        setActiveArticle(articleNumber);
-      } else {
-        setDirection(articleNumber > (activeArticle ?? 0) ? 1 : -1);
-        setActiveArticle(articleNumber);
-      }
+      setActiveChapter(chapterNumber);
+      setActiveArticle(articleNumber);
+      setRefHistory([]);
       setHighlightClause(null);
+      pushArticleLocation(articleNumber);
     },
-    [activeChapter, activeArticle]
+    []
   );
 
   /** Follow a cross-reference from inside the prose. Pushes the
@@ -192,53 +218,32 @@ export default function ConstitutionBook({
       setHighlightClause(
         target.kind === 'article' && target.clauses.length > 0 ? target.clauses[0]! : null,
       );
-      if (target.kind === 'chapter') {
-        setDirection(target.chapterNumber > activeChapter ? 1 : -1);
-        setActiveChapter(target.chapterNumber);
-        setActiveArticle(null); // fall through to first article
-        return;
-      }
-      // Article ref — same logic as selectArticle but we already
-      // managed direction / state above.
-      if (!sameChapter) {
-        setDirection(target.chapterNumber > activeChapter ? 1 : -1);
-        setActiveChapter(target.chapterNumber);
-        setActiveArticle(target.articleNumber);
-      } else {
-        setDirection(target.articleNumber > (activeArticle ?? 0) ? 1 : -1);
-        setActiveArticle(target.articleNumber);
-      }
+      const next = target.kind === 'article'
+        ? target.articleNumber
+        : CONSTITUTION_META.find((item) => item.number === target.chapterNumber)?.articleTitles[0]?.number;
+      if (next == null) return;
+      setActiveChapter(target.chapterNumber);
+      setActiveArticle(next);
+      pushArticleLocation(next);
     },
     [activeChapter, activeArticle]
   );
 
   const goBack = useCallback(() => {
-    setRefHistory((h) => {
-      if (h.length === 0) return h;
-      const prev = h[h.length - 1]!;
-      // Apply navigation as a side effect — React batches the history
-      // slice + the chapter/article sets into one render.
-      if (prev.chapter !== activeChapter) {
-        setDirection(prev.chapter > activeChapter ? 1 : -1);
-        setActiveChapter(prev.chapter);
-        setActiveArticle(prev.article);
-      } else {
-        setDirection(prev.article > (activeArticle ?? 0) ? 1 : -1);
-        setActiveArticle(prev.article);
-      }
-      return h.slice(0, -1);
-    });
-    // Returning somewhere the reader has already read shouldn't flash
-    // — they know the content. Flashing would read as "new answer" and
-    // be misleading.
+    const prev = refHistory[refHistory.length - 1];
+    if (!prev) return;
+    setRefHistory((history) => history.slice(0, -1));
+    setActiveChapter(prev.chapter);
+    setActiveArticle(prev.article);
+    pushArticleLocation(prev.article);
     setHighlightClause(null);
-  }, [activeChapter, activeArticle]);
+  }, [refHistory]);
 
   /* ── Keyboard navigation (arrow keys) ── */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (e.defaultPrevented || e.altKey || e.metaKey || e.ctrlKey ||
+        (e.target as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable="true"]')) return;
       if (e.key === 'ArrowRight') goNext();
       else if (e.key === 'ArrowLeft') goPrev();
     };
@@ -247,127 +252,117 @@ export default function ConstitutionBook({
   }, [goNext, goPrev]);
 
   /* ── Mobile swipe ── */
-  const handleDragEnd = useCallback(
-    (_: unknown, info: PanInfo) => {
-      const { offset, velocity } = info;
-      const swipe = Math.abs(offset.x) * velocity.x;
-      if (offset.x < -80 || swipe < -500) goNext();
-      else if (offset.x > 80 || swipe > 500) goPrev();
-    },
-    [goNext, goPrev]
-  );
+  function startSwipe({ touches, target }: TouchEvent) {
+    const touch = touches.length === 1 ? touches[0] : undefined;
+    swipeStart.current = touch && target instanceof Element && !target.closest('button, a, label, summary')
+      ? { x: touch.clientX, y: touch.clientY }
+      : null;
+  }
 
-  /* ── Progress meter ── */
-  const progress = useMemo(() => {
-    if (articleList.length === 0) return 0;
-    return ((currentIdx + 1) / articleList.length) * 100;
-  }, [currentIdx, articleList.length]);
+  function endSwipe({ changedTouches }: TouchEvent) {
+    const start = swipeStart.current;
+    const touch = changedTouches[0];
+    swipeStart.current = null;
+    if (!start || !touch) return;
+    const distance = touch.clientX - start.x;
+    if (Math.abs(distance) < 80 || Math.abs(distance) <= 2 * Math.abs(touch.clientY - start.y)) return;
+    if (distance < 0) goNext();
+    else goPrev();
+  }
 
   const activeMeta = CONSTITUTION_META.find((m) => m.number === activeChapter);
+  const articlesLeft = (articleList?.length ?? 0) - currentIdx - 1;
+  const remaining = learnCopy(lang, articlesLeft === 1 ? 'chapterProgressOne' : 'chapterProgress', {
+    count: articlesLeft, chapter: activeChapter,
+  });
+  const closeDrawer = () => {
+    setDrawerOpen(false);
+    drawerButton.current?.focus();
+  };
 
   return (
     <section
       id='constitution-book'
-      className='relative overflow-hidden rounded-3xl border border-white/60 dark:border-neutral-border bg-gradient-to-br from-white/85 via-gov-cream/80 to-gov-sand dark:from-surface-elevated dark:via-surface-base dark:to-surface-elevated shadow-elevated'
-      aria-label='Constitution of Kenya reader'>
+      className='relative scroll-mt-20 overflow-hidden rounded border border-neutral-border bg-surface-base'
+      aria-label={learnCopy(lang, 'readerTitle')}>
       {/* ── Header ── */}
-      <div className='flex items-start gap-3 border-b border-neutral-border/60 bg-gradient-to-r from-gov-forest via-gov-dark to-gov-forest px-5 py-4 sm:px-7'>
-        <div className='flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gov-gold/90 text-gov-dark dark:text-white shadow-surface'>
-          <BookOpen size={20} />
-        </div>
-        <div className='min-w-0 flex-1'>
-          <div className='text-[11px] font-semibold uppercase tracking-widest text-gov-gold/90'>
-            Constitution of Kenya · 2010
-          </div>
-          <h3 className='font-display text-xl leading-tight text-white sm:text-2xl'>
-            Read the law that shapes every shilling
-          </h3>
-          <p className='mt-1 text-[11px] leading-snug text-white/60'>
-            Unofficial reference for civic learning. The authoritative consolidated text is
-            published by{' '}
-            <a
-              href='https://www.kenyalaw.org'
-              target='_blank'
-              rel='noopener noreferrer'
-              className='underline hover:text-white/90'>
-              Kenya Law
-            </a>
-            .
-          </p>
-        </div>
+      <div className='flex flex-wrap items-center justify-between gap-3 border-b border-neutral-border px-4 py-3 sm:px-6'>
+        <h3 className='font-display text-xl font-semibold text-neutral-text sm:text-2xl'>
+          {learnCopy(lang, 'bookHeading')}
+        </h3>
         <button
           type='button'
-          className='ml-2 inline-flex h-10 items-center gap-1.5 rounded-lg bg-white/10 px-3 text-xs font-semibold text-white hover:bg-white/20 lg:hidden'
+          ref={drawerButton}
+          className='inline-flex min-h-11 items-center gap-2 rounded border border-neutral-border bg-surface-elevated px-3 text-sm font-semibold text-neutral-text hover:bg-surface-sunken lg:hidden'
           onClick={() => setDrawerOpen((v) => !v)}
           aria-expanded={drawerOpen}
           aria-controls='constitution-drawer'>
-          {drawerOpen ? <X size={16} /> : <Menu size={16} />}
-          <span className='hidden sm:inline'>Chapters</span>
+          {drawerOpen ? <X aria-hidden='true' size={16} /> : <Menu aria-hidden='true' size={16} />}
+          {learnCopy(lang, 'chapters')}
         </button>
       </div>
 
       {/* ── Body ── */}
-      <div className='grid grid-cols-1 lg:grid-cols-[280px_1fr]'>
+      <div className='grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)]'>
         {/* Sidebar — desktop */}
-        <aside className='hidden max-h-[640px] overflow-y-auto border-r border-neutral-border/60 bg-white/50 dark:bg-surface-elevated p-3 lg:block'>
+        <aside className='hidden max-h-[640px] overflow-y-auto border-r border-neutral-border bg-surface-elevated p-3 lg:block'>
           <ChapterSidebar
             chapters={CONSTITUTION_META}
             activeChapterNumber={activeChapter}
             activeArticleNumber={activeArticle}
-            loadedChapter={loadedChapter}
+            loadedChapter={chapter}
             onSelectChapter={selectChapter}
             onSelectArticle={selectArticle}
           />
         </aside>
 
         {/* Sidebar — mobile drawer */}
-        <AnimatePresence>
+        <aside
+          id='constitution-drawer'
+          hidden={!drawerOpen}
+          onKeyDown={(event) => { if (event.key === 'Escape') closeDrawer(); }}
+          className='max-h-[60vh] overflow-y-auto border-b border-neutral-border bg-surface-elevated p-3 lg:hidden'>
           {drawerOpen && (
-            <motion.aside
-              id='constitution-drawer'
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.25 }}
-              className='overflow-hidden border-b border-neutral-border/60 bg-white/70 dark:bg-surface-elevated p-3 lg:hidden'>
-              <ChapterSidebar
-                chapters={CONSTITUTION_META}
-                activeChapterNumber={activeChapter}
-                activeArticleNumber={activeArticle}
-                loadedChapter={loadedChapter}
-                onSelectChapter={selectChapter}
-                onSelectArticle={selectArticle}
-                onNavigate={() => setDrawerOpen(false)}
-              />
-            </motion.aside>
+            <ChapterSidebar
+              chapters={CONSTITUTION_META}
+              activeChapterNumber={activeChapter}
+              activeArticleNumber={activeArticle}
+              loadedChapter={chapter}
+              onSelectChapter={selectChapter}
+              onSelectArticle={selectArticle}
+              onNavigate={closeDrawer}
+            />
           )}
-        </AnimatePresence>
+        </aside>
 
         {/* Viewer */}
-        <motion.div
-          className='relative min-h-[540px] bg-white/70 dark:bg-surface-elevated'
-          drag='x'
-          dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={0.18}
-          onDragEnd={handleDragEnd}>
-          {isLoading && !loadedChapter ? (
-            <div className='flex h-[540px] items-center justify-center text-sm text-neutral-muted'>
-              <div className='animate-pulse'>Loading chapter…</div>
+        <div
+          className='min-w-0 touch-pan-y touch-pinch-zoom'
+          onTouchStart={startSwipe}
+          onTouchEnd={endSwipe}
+          onTouchCancel={() => { swipeStart.current = null; }}>
+          <div className='bg-surface-sunken px-4 py-2 text-xs font-semibold text-neutral-text sm:px-6'>
+            <div className='flex flex-wrap justify-between gap-x-3 gap-y-1'>
+              <span>{learnCopy(lang, 'chapterTitle', { chapter: activeChapter, title: activeMeta?.title ?? '' })}</span>
+              {currentArticle && <span>{remaining}</span>}
             </div>
-          ) : !loadedChapter ? (
-            <div className='flex h-[540px] items-center justify-center p-8 text-center text-sm text-neutral-muted'>
-              Could not load Chapter {activeChapter}. Please try another chapter.
-            </div>
-          ) : currentArticle ? (
+            {currentArticle && articleList && (
+              <progress
+                className='mt-2 block h-1.5 w-full appearance-none overflow-hidden rounded bg-neutral-border [&::-moz-progress-bar]:bg-gov-sage [&::-webkit-progress-bar]:bg-neutral-border [&::-webkit-progress-value]:bg-gov-sage'
+                aria-label={remaining}
+                value={currentIdx + 1}
+                max={articleList.length}
+              />
+            )}
+          </div>
+          {currentArticle ? (
             <ArticleViewer
-              chapter={loadedChapter}
               article={currentArticle}
               query={seedQuery}
-              direction={direction}
-              hasPrev={!!prevArticle}
-              hasNext={!!nextArticle}
-              prevLabel={prevArticle ? String(prevArticle.number) : undefined}
-              nextLabel={nextArticle ? String(nextArticle.number) : undefined}
+              mode={highlightClause ? 'official' : mode}
+              onModeChange={changeMode}
+              prevArticle={prevArticle?.number}
+              nextArticle={nextArticle?.number}
               onPrev={goPrev}
               onNext={goNext}
               nextChapterNumber={nextChapterMeta?.number}
@@ -382,32 +377,13 @@ export default function ConstitutionBook({
               onBack={goBack}
               highlightClause={highlightClause}
             />
-          ) : null}
-        </motion.div>
-      </div>
-
-      {/* ── Progress bar ── */}
-      <div className='border-t border-neutral-border/60 bg-white/60 dark:bg-surface-elevated px-4 py-3 sm:px-6'>
-        <div className='flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-neutral-muted'>
-          <span>
-            Chapter {activeChapter}{activeMeta ? ` — ${activeMeta.title}` : ''}
-          </span>
-          <span>
-            {articleList.length > 0
-              ? `${currentIdx + 1} of ${articleList.length}`
-              : '—'}
-          </span>
-        </div>
-        <div className='mt-2 h-1.5 overflow-hidden rounded-full bg-neutral-border/60'>
-          <motion.div
-            className='h-full rounded-full bg-gradient-to-r from-gov-sage to-gov-gold'
-            initial={false}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.4 }}
-          />
-        </div>
-        <div className='mt-2 hidden text-[11px] text-neutral-muted sm:block'>
-          Tip · use ← and → keys to turn pages, or swipe on mobile.
+          ) : (
+            <p role='status' className='p-6 text-sm text-neutral-muted'>
+              {isLoading || (loadedChapter && !chapter)
+                ? learnCopy(lang, 'loading')
+                : learnCopy(lang, 'loadError', { chapter: activeChapter })}
+            </p>
+          )}
         </div>
       </div>
     </section>

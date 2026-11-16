@@ -13,8 +13,9 @@
 'use client';
 
 import type { ChapterMeta, ConstitutionChapter } from '@/data/constitution/types';
-import { motion } from 'framer-motion';
-import { BookOpen, ChevronDown, ChevronRight } from 'lucide-react';
+import { useLang } from '@/lib/i18n/LangProvider';
+import { learnCopy } from '@/lib/i18n/messages/learn';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { memo } from 'react';
 
 interface ChapterSidebarProps {
@@ -37,11 +38,11 @@ function ChapterSidebarInner({
   onSelectArticle,
   onNavigate,
 }: ChapterSidebarProps) {
+  const { lang } = useLang();
   return (
-    <nav className='text-sm' aria-label='Constitution chapters'>
-      <div className='flex items-center gap-2 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-gov-forest/70 dark:text-emerald-100/70'>
-        <BookOpen size={13} />
-        Chapters
+    <nav className='text-sm' aria-label={learnCopy(lang, 'chapters')}>
+      <div className='px-3 py-2 text-sm font-semibold text-neutral-muted'>
+        {learnCopy(lang, 'chapters')}
       </div>
       <ul className='space-y-0.5'>
         {chapters.map((chapter) => {
@@ -55,26 +56,25 @@ function ChapterSidebarInner({
                   onSelectChapter(chapter.number);
                   onNavigate?.();
                 }}
-                className={`group flex w-full items-start gap-2 rounded-lg px-3 py-2 text-left transition-colors ${
+                aria-expanded={isActive}
+                className={`group flex min-h-11 w-full items-start gap-2 rounded px-3 py-2 text-left transition-colors ${
                   isActive
                     ? 'bg-gov-forest text-white shadow-surface'
                     : 'text-gov-dark dark:text-white hover:bg-gov-forest/10'
                 }`}>
                 <span
-                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded text-[11px] font-bold ${
-                    isActive ? 'bg-gov-gold text-gov-dark dark:text-white' : 'bg-gov-forest/10 text-gov-forest dark:text-emerald-100'
-                  }`}>
+                  className='mt-0.5 shrink-0 text-xs font-semibold'>
                   {chapter.number}
                 </span>
                 <span className='min-w-0 flex-1'>
-                  <span className={`block truncate font-semibold ${isActive ? '' : ''}`}>
+                  <span lang='en' className='block break-words font-semibold'>
                     {chapter.title}
                   </span>
                   <span
-                    className={`block truncate text-[11px] ${
-                      isActive ? 'text-white/70' : 'text-neutral-muted'
+                    className={`block text-xs ${
+                      isActive ? 'text-white' : 'text-neutral-muted'
                     }`}>
-                    Articles {chapter.articleRange[0]}–{chapter.articleRange[1]}
+                    {learnCopy(lang, 'articleRange', { first: chapter.articleRange[0], last: chapter.articleRange[1] })}
                   </span>
                 </span>
                 {isActive ? (
@@ -85,36 +85,32 @@ function ChapterSidebarInner({
               </button>
 
               {isActive && (
-                <motion.ul
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.25 }}
-                  className='ml-7 mt-1 space-y-0.5 overflow-hidden border-l border-gov-forest/20 pl-2'>
+                <ul className='ml-7 mt-1 space-y-0.5 border-l border-neutral-border pl-2'>
                   {(articles.length ? articles : chapter.articleTitles).map((a) => {
                     const isArticleActive = a.number === activeArticleNumber;
                     return (
                       <li key={a.number}>
                         <button
                           type='button'
+                          aria-current={isArticleActive ? 'true' : undefined}
                           onClick={() => {
                             onSelectArticle(chapter.number, a.number);
                             onNavigate?.();
                           }}
-                          className={`flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left text-[13px] leading-snug transition-colors ${
+                          className={`flex min-h-11 w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[13px] leading-snug transition-colors ${
                             isArticleActive
                               ? 'bg-gov-gold/20 font-semibold text-gov-forest dark:text-emerald-100'
                               : 'text-neutral-text hover:bg-gov-forest/5 hover:text-gov-forest dark:text-emerald-100'
                           }`}>
-                          <span className='mt-[1px] w-8 shrink-0 text-[11px] font-semibold text-gov-forest/70 dark:text-emerald-100/70'>
+                          <span className='shrink-0 text-xs font-semibold text-neutral-muted'>
                             {a.number}
                           </span>
-                          <span className='min-w-0 flex-1 truncate'>{a.title}</span>
+                          <span lang='en' className='min-w-0 flex-1 break-words'>{a.title}</span>
                         </button>
                       </li>
                     );
                   })}
-                </motion.ul>
+                </ul>
               )}
             </li>
           );
