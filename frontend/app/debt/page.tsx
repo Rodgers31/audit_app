@@ -35,6 +35,9 @@ export const metadata: Metadata = {
 
 const SSR_TIMEOUT_MS = 5000;
 
+// Keep the prefetched headline in the visible initial HTML. A route-level
+// loading.tsx puts the debt snapshot in a hidden segment until JavaScript runs.
+
 /**
  * ISR: regenerate at most once an hour, matching every other route that
  * server-prefetches (`/`, `/counties`, `/audits`, `/transparency`,

@@ -15,6 +15,8 @@
 
 import PageShell from '@/components/layout/PageShell';
 import api from '@/lib/api/axios';
+import { useLang } from '@/lib/i18n/LangProvider';
+import { AUDITS_MESSAGES } from '@/lib/i18n/messages/audits';
 import type { UnaccountedCase } from '@/types';
 import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, ExternalLink, Loader2, Search } from 'lucide-react';
@@ -37,6 +39,8 @@ interface UnaccountedResponse {
 
 export default function MissingFundsPage() {
   const [query, setQuery] = useState('');
+  const { lang } = useLang();
+  const copy = (key: keyof typeof AUDITS_MESSAGES) => AUDITS_MESSAGES[key][lang];
 
   const { data, isLoading, error } = useQuery<UnaccountedResponse>({
     queryKey: ['accountability', 'missing-funds'],
@@ -143,7 +147,7 @@ export default function MissingFundsPage() {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder='Search by county, ministry, heading or year…'
                 aria-label='Search findings'
-                className='w-full pl-9 pr-3 py-2 text-sm bg-transparent border border-gray-200 dark:border-neutral-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gov-forest/30'
+                className='min-h-11 w-full pl-9 pr-3 py-2 text-sm bg-transparent border border-gray-200 dark:border-neutral-border rounded-lg focus:outline-none focus:ring-2 focus:ring-gov-forest/30'
               />
             </div>
           </div>
@@ -170,7 +174,7 @@ export default function MissingFundsPage() {
               </div>
             ) : (
               filtered.map((c) => (
-                <article key={c.finding_id} className='p-5'>
+                <article key={c.finding_id} className='p-5 [overflow-wrap:anywhere]'>
                   <div className='flex items-center gap-2 mb-1.5 flex-wrap text-xs'>
                     {c.entity_type === 'county' && c.county_slug ? (
                       <Link
@@ -185,8 +189,10 @@ export default function MissingFundsPage() {
                       <span className='text-gray-500 dark:text-neutral-muted/80'>· {c.fiscal_year}</span>
                     )}
                     {c.heading && (
-                      <span className='px-2 py-0.5 rounded-full border border-gray-200 dark:border-neutral-border text-gray-600 dark:text-neutral-muted'>
-                        {c.heading}
+                      <span className='text-neutral-muted'>
+                        {c.heading.toLowerCase() === 'basis for qualified opinion'
+                          ? copy('audits.qualified_basis')
+                          : c.heading}
                       </span>
                     )}
                   </div>
@@ -207,10 +213,15 @@ export default function MissingFundsPage() {
                       href={c.source.page_url}
                       target='_blank'
                       rel='noopener noreferrer'
-                      className='mt-2 inline-flex items-center gap-1 text-xs text-gov-forest dark:text-emerald-100 hover:underline'>
-                      <ExternalLink size={12} />
-                      Source: report {c.page_ref}
-                      {c.source.title ? ` — ${c.source.title}` : ''}
+                      className='audit-receipt mt-2'>
+                      <span className='min-w-0'>
+                        {[
+                          reportPublisher(c.source.publisher) ?? copy('audits.source_report'),
+                          c.fiscal_year,
+                          c.page_ref,
+                        ].filter(Boolean).join(' · ')}
+                      </span>
+                      <ExternalLink aria-hidden='true' className='shrink-0' size={14} />
                     </a>
                   )}
                 </article>
@@ -261,4 +272,10 @@ export default function MissingFundsPage() {
       </div>
     </PageShell>
   );
+}
+
+function reportPublisher(value: string | null): string | null {
+  const publisher = value?.trim();
+  if (!publisher) return null;
+  return /^(oag|office of the auditor[- ]general)$/i.test(publisher) ? 'OAG' : publisher;
 }

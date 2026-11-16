@@ -3,6 +3,8 @@
 import DataFreshnessBadge from '@/components/DataFreshnessBadge';
 import PageShell from '@/components/layout/PageShell';
 import type { FindingsFilters } from '@/lib/api/audits';
+import { useLang } from '@/lib/i18n/LangProvider';
+import { AUDITS_MESSAGES, auditSectionLabel } from '@/lib/i18n/messages/audits';
 import {
   AUDIT_FINDINGS_INITIAL_FILTERS,
   useAuditDashboardSummary,
@@ -10,7 +12,6 @@ import {
   useAuditTrends,
   useRecurringFindings,
 } from '@/lib/react-query';
-import { motion } from 'framer-motion';
 import {
   AlertTriangle,
   ChevronDown,
@@ -26,7 +27,7 @@ import {
   X,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useId, useMemo, useState } from 'react';
 import {
   Bar,
   BarChart,
@@ -36,6 +37,7 @@ import {
   Line,
   LineChart,
   ResponsiveContainer,
+  Text,
   Tooltip,
   XAxis,
   YAxis,
@@ -93,35 +95,13 @@ function getTypeColor(type: string): string {
 }
 
 /* ═══════════════════════════════════════════════════════
-   Section animation wrapper
-   ═══════════════════════════════════════════════════════ */
-
-function Section({
-  children,
-  delay = 0,
-  className = '',
-}: {
-  children: React.ReactNode;
-  delay?: number;
-  className?: string;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.4, delay }}
-      className={className}>
-      {children}
-    </motion.div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════
    Page Component
    ═══════════════════════════════════════════════════════ */
 
 export default function AuditFindingsPage() {
+  const { lang } = useLang();
+  const copy = (key: keyof typeof AUDITS_MESSAGES) => AUDITS_MESSAGES[key][lang];
+
   // --- Filters state ---
   // Seeded from the shared constant `app/audits/page.tsx` prefetches against,
   // so the first render reads the page the server already put in the HTML.
@@ -224,7 +204,7 @@ export default function AuditFindingsPage() {
       title='Audit Findings'
       subtitle='Tracking how public money is spent and where it goes missing'>
       {/* ═══ A. HERO STATS ═══ */}
-      <Section>
+      <div>
         <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
           <StatCard
             label='Total Findings'
@@ -251,7 +231,7 @@ export default function AuditFindingsPage() {
             }
           />
         </div>
-      </Section>
+      </div>
 
       {/* Why there is no money total here.
           The two expenditure tiles that used to sit above summed
@@ -266,7 +246,7 @@ export default function AuditFindingsPage() {
           this matter". Publishing that sum as "Unsupported Expenditure" was
           credibility-audit finding F1. Withheld until the extraction can
           separate an amount QUESTIONED from an amount DISCUSSED. */}
-      <Section delay={0.04}>
+      <div>
         <div className='rounded-xl border border-neutral-border/60 bg-surface-sunken/40 px-4 py-3.5'>
           <div className='flex items-start gap-2.5'>
             <FileWarning className='w-4 h-4 mt-0.5 flex-shrink-0 text-gov-forest/70 dark:text-emerald-100/70' />
@@ -288,10 +268,10 @@ export default function AuditFindingsPage() {
             </p>
           </div>
         </div>
-      </Section>
+      </div>
 
       {/* Standing civic-risk disclaimer — questioned ≠ proven loss (audit §2.6/§6) */}
-      <Section delay={0.05}>
+      <div>
         <div className='flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50/70 dark:border-amber-500/30 dark:bg-amber-500/10 px-4 py-3'>
           <AlertTriangle className='w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0' />
           <p className='text-[12.5px] leading-relaxed text-amber-900 dark:text-amber-200'>
@@ -300,7 +280,7 @@ export default function AuditFindingsPage() {
             be resolved, not proven theft or loss.
           </p>
         </div>
-      </Section>
+      </div>
 
       {/* The "Top 10 Worst Offenders" ranking was withdrawn (credibility audit
           F1/F34). It ordered named State Departments and the Executive Office of
@@ -312,30 +292,47 @@ export default function AuditFindingsPage() {
           shows; a ranking by an amount the report never stated is not. */}
 
       {/* ═══ C. FINDINGS BY TYPE + D. TRENDS — side by side ═══ */}
-      <Section delay={0.15}>
+      <div>
         <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
           {/* C. Findings by Type */}
           <div className='space-y-3'>
             <h2 className='font-display text-xl text-gov-dark dark:text-white'>Findings by Type</h2>
             {typeChartData.length > 0 ? (
-              <div className='h-[320px]'>
+              <div className='h-[320px] overflow-hidden'>
                 <ResponsiveContainer width='100%' height='100%'>
                   <BarChart data={typeChartData} layout='vertical' margin={{ left: 0, right: 16 }}>
                     <CartesianGrid strokeDasharray='3 3' stroke='#e5e7eb' horizontal={false} />
-                    <XAxis type='number' tick={{ fontSize: 11 }} />
+                    <XAxis type='number' tick={{ fontSize: 12, fill: 'rgb(var(--c-neutral-muted))' }} />
                     <YAxis
                       type='category'
                       dataKey='name'
                       width={130}
-                      tick={{ fontSize: 11 }}
+                      tick={({ x, y, payload }: { x: number; y: number; payload: { value: string } }) => (
+                        <Text
+                          x={x}
+                          y={y}
+                          width={108}
+                          maxLines={2}
+                          textAnchor='end'
+                          verticalAnchor='middle'
+                          fill='rgb(var(--c-neutral-muted))'
+                          style={{ fontSize: 12 }}>
+                          {auditSectionLabel(payload.value, lang)}
+                        </Text>
+                      )}
                     />
                     <Tooltip
+                      wrapperStyle={{ maxWidth: '70%' }}
                       contentStyle={{
-                        backgroundColor: '#fff',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: 8,
+                        backgroundColor: 'rgb(var(--c-surface-base))',
+                        border: '1px solid rgb(var(--c-neutral-border))',
+                        borderRadius: 4,
+                        color: 'rgb(var(--c-neutral-text))',
                         fontSize: 12,
+                        whiteSpace: 'normal',
+                        overflowWrap: 'anywhere',
                       }}
+                      itemStyle={{ color: 'rgb(var(--c-neutral-text))' }}
                       formatter={(val: number) => [val.toLocaleString(), 'Findings']}
                     />
                     <Bar dataKey='value' radius={[0, 4, 4, 0]}>
@@ -361,7 +358,7 @@ export default function AuditFindingsPage() {
                 <Loader2 className='w-6 h-6 animate-spin text-gov-sage' />
               </div>
             ) : trendsChartData.length > 0 ? (
-              <div className='h-[320px]'>
+              <div className='h-[320px] overflow-hidden'>
                 <ResponsiveContainer width='100%' height='100%'>
                   <LineChart data={trendsChartData} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
                     <CartesianGrid strokeDasharray='3 3' stroke='#e5e7eb' />
@@ -406,23 +403,19 @@ export default function AuditFindingsPage() {
             )}
           </div>
         </div>
-      </Section>
+      </div>
 
       {/* ═══ E. RECURRING FINDINGS ═══ */}
-      <Section delay={0.2}>
+      <div>
         <div className='space-y-3'>
           <div className='flex items-center gap-3'>
-            <h2 className='font-display text-xl text-gov-dark dark:text-white'>Recurring Findings</h2>
+            <h2 className='font-display text-xl text-gov-dark dark:text-white'>{copy('audits.recurring_findings')}</h2>
             {recurring && (
               <span className='text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium'>
                 {recurring.total} patterns
               </span>
             )}
           </div>
-          <p className='text-sm text-gov-dark/50 dark:text-white/50'>
-            Counties with the same type of finding across multiple audit years — the real scandals.
-          </p>
-
           {recurringLoading ? (
             <div className='flex items-center justify-center py-12'>
               <Loader2 className='w-6 h-6 animate-spin text-gov-sage' />
@@ -485,27 +478,28 @@ export default function AuditFindingsPage() {
             </div>
           )}
         </div>
-      </Section>
+      </div>
 
       {/* ═══ F. FILTER BAR ═══ */}
-      <Section delay={0.25}>
+      <div>
         <div className='space-y-3'>
-          <div className='flex items-center justify-between'>
-            <h2 className='font-display text-xl text-gov-dark dark:text-white'>All Findings</h2>
+          <div className='flex items-center justify-between gap-2'>
+            <h2 className='font-display text-xl text-gov-dark dark:text-white'>{copy('audits.all_findings')}</h2>
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
-                className='flex items-center gap-1 text-xs text-gov-sage hover:text-gov-forest dark:text-emerald-100 transition-colors'>
-                <X className='w-3 h-3' />
-                Clear filters
+                className='flex min-h-11 items-center gap-1 text-sm text-gov-sage hover:text-gov-forest dark:text-emerald-100 transition-colors'>
+                <X className='w-3 h-3' aria-hidden='true' />
+                {copy('audits.clear_filters')}
               </button>
             )}
           </div>
 
-          <div className='flex flex-wrap gap-3'>
+          <div className='grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5'>
             {/* Year filter */}
             <FilterSelect
-              label='Year'
+              label={copy('audits.year')}
+              placeholder={copy('audits.all_years')}
               value={filters.year?.toString() || ''}
               onChange={(v) => updateFilter('year', v ? parseInt(v) : undefined)}
               options={yearOptions.map((y) => ({ value: String(y), label: String(y) }))}
@@ -513,17 +507,19 @@ export default function AuditFindingsPage() {
 
             {/* Type filter */}
             <FilterSelect
-              label='Finding Type'
+              label={copy('audits.section')}
+              placeholder={copy('audits.all_sections')}
               value={filters.query_type || ''}
               onChange={(v) => updateFilter('query_type', v || undefined)}
-              options={typeOptions.map((t) => ({ value: t, label: t }))}
+              options={typeOptions.map((type) => ({ value: type, label: auditSectionLabel(type, lang) }))}
             />
 
             {/* Opinion filter — hidden when the facet is withheld, rather than
                 rendered as a dropdown whose only option is "All". */}
             {opinionOptions.length > 0 && (
               <FilterSelect
-                label='Audit Opinion'
+                label={copy('audits.opinion')}
+                placeholder={copy('audits.all')}
                 value={filters.audit_opinion || ''}
                 onChange={(v) => updateFilter('audit_opinion', v || undefined)}
                 options={opinionOptions.map((o) => ({ value: o, label: o }))}
@@ -532,7 +528,8 @@ export default function AuditFindingsPage() {
 
             {/* Severity filter */}
             <FilterSelect
-              label='Severity'
+              label={copy('audits.severity')}
+              placeholder={copy('audits.all')}
               value={filters.severity || ''}
               onChange={(v) => updateFilter('severity', v || undefined)}
               options={[
@@ -545,7 +542,8 @@ export default function AuditFindingsPage() {
 
             {/* Status filter */}
             <FilterSelect
-              label='Status'
+              label={copy('audits.status')}
+              placeholder={copy('audits.all')}
               value={filters.status || ''}
               onChange={(v) => updateFilter('status', v || undefined)}
               options={[
@@ -556,10 +554,10 @@ export default function AuditFindingsPage() {
             />
           </div>
         </div>
-      </Section>
+      </div>
 
       {/* ═══ G. FINDINGS TABLE ═══ */}
-      <Section delay={0.3}>
+      <div>
         {findingsLoading ? (
           <div className='flex items-center justify-center py-16'>
             <Loader2 className='w-6 h-6 animate-spin text-gov-sage' />
@@ -579,7 +577,7 @@ export default function AuditFindingsPage() {
                   <tr className='border-b border-gov-dark/10 text-left'>
                     <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>Entity audited</th>
                     <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>Year</th>
-                    <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>Type</th>
+                    <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>{copy('audits.section')}</th>
                     <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70 text-right'>Amount</th>
                     <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>Severity</th>
                     <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>Status</th>
@@ -609,11 +607,7 @@ export default function AuditFindingsPage() {
                       <td className='py-2.5 pr-3 font-mono text-xs'>{f.audit_year || '—'}</td>
                       <td className='py-2.5 pr-3'>
                         {f.query_type ? (
-                          <span
-                            className='inline-block px-2 py-0.5 rounded text-xs font-medium text-white'
-                            style={{ backgroundColor: getTypeColor(f.query_type) }}>
-                            {f.query_type}
-                          </span>
+                          <span className='text-xs text-neutral-muted'>{f.query_type}</span>
                         ) : (
                           '—'
                         )}
@@ -689,7 +683,7 @@ export default function AuditFindingsPage() {
             {hasActiveFilters ? 'No findings match your filters.' : 'No findings data available.'}
           </div>
         )}
-      </Section>
+      </div>
 
       {/* Data freshness badge */}
       <DataFreshnessBadge sources="OAG" className="mt-6 justify-center" />
@@ -741,30 +735,29 @@ function StatCard({
 
 function FilterSelect({
   label,
+  placeholder,
   value,
   onChange,
   options,
 }: {
   label: string;
+  placeholder: string;
   value: string;
   onChange: (value: string) => void;
   options: { value: string; label: string }[];
 }) {
+  const id = useId();
   return (
-    <div className='flex flex-col gap-1'>
-      <label className='text-[11px] font-semibold text-gov-dark/50 dark:text-white/50 uppercase tracking-wider'>
+    <div className='flex min-w-0 flex-col gap-1'>
+      <label htmlFor={id} className='text-xs font-semibold text-neutral-muted'>
         {label}
       </label>
       <select
+        id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className='text-sm px-3 py-1.5 rounded-lg bg-white/60 dark:bg-surface-elevated border border-gov-dark/10 text-gov-dark dark:text-white focus:outline-none focus:ring-2 focus:ring-gov-sage/30 focus:border-gov-sage appearance-none pr-8 min-w-[140px]'
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'right 8px center',
-        }}>
-        <option value=''>All</option>
+        className='min-h-11 w-full min-w-0 max-w-full rounded border border-neutral-border bg-surface-base px-3 text-sm text-neutral-text'>
+        <option value=''>{placeholder}</option>
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>
             {opt.label}
