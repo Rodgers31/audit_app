@@ -322,19 +322,19 @@ export default function TransparencyPage() {
       (row) => row.spent == null && row.flagged_amount == null && row.efficiency_score == null
     );
 
-  // The comparator and selector must use the same key in either reporting mode.
+  const auditUnavailable =
+    countyRows.length > 0 && countyRows.every((row) => row.flagged_amount == null);
+  // The control and comparator use the same key for the current reporting period.
   const effectiveSortKey: SortKey = isProjectedCountyList
     ? sortKey === 'name'
       ? 'name'
       : 'allocated'
-    : sortKey === 'allocated'
+    : sortKey === 'allocated' || (sortKey === 'flagged' && auditUnavailable)
       ? 'efficiency'
       : sortKey;
 
   const sortedRows = useMemo(() => {
-    const sorted = countyRows.filter((row) =>
-      row.county_name.toLowerCase().includes(searchQuery.trim().toLowerCase())
-    );
+    const sorted = [...countyRows];
     sorted.sort((a, b) => {
       let cmp = 0;
       switch (effectiveSortKey) {
@@ -358,7 +358,10 @@ export default function TransparencyPage() {
       }
       return sortDir === 'asc' ? cmp : -cmp;
     });
-    return sorted;
+    const search = searchQuery.trim().toLowerCase();
+    return sorted
+      .map((row, index) => ({ ...row, rank: index + 1 }))
+      .filter((row) => row.county_name.toLowerCase().includes(search));
   }, [countyRows, searchQuery, effectiveSortKey, sortDir]);
 
   const countiesWithData = countyRows.filter((row) => row.allocated != null).length;
@@ -422,30 +425,27 @@ export default function TransparencyPage() {
       )}
 
       {/* ═══ 5. County comparison ═══ */}
-      <Section delay={0.15}>
-        <CountySpendingList
-          rows={sortedRows}
-          fiscalYear={stripFY(selectedYear)}
-          countiesWithData={countiesWithData}
-          nationalEfficiency={insights?.efficiency ?? null}
-          nationalAllocated={insights?.allocated ?? null}
-          projected={isProjectedCountyList}
-          loading={allCountyFlowsLoading}
-          error={countyFlowsError}
-          auditUnavailable={
-            countyRows.length > 0 && countyRows.every((row) => row.flagged_amount == null)
-          }
-          search={searchQuery}
-          onSearch={setSearchQuery}
-          sortKey={effectiveSortKey}
-          reversed={sortDir === 'desc'}
-          onSort={(key) => {
-            setSortKey(key);
-            setSortDir('asc');
-          }}
-          onReverse={() => setSortDir((direction) => (direction === 'asc' ? 'desc' : 'asc'))}
-        />
-      </Section>
+      <CountySpendingList
+        key={selectedYear}
+        rows={sortedRows}
+        fiscalYear={stripFY(selectedYear)}
+        countiesWithData={countiesWithData}
+        nationalEfficiency={insights?.efficiency ?? null}
+        nationalAllocated={insights?.allocated ?? null}
+        projected={isProjectedCountyList}
+        loading={allCountyFlowsLoading}
+        error={countyFlowsError}
+        auditUnavailable={auditUnavailable}
+        search={searchQuery}
+        onSearch={setSearchQuery}
+        sortKey={effectiveSortKey}
+        reversed={sortDir === 'desc'}
+        onSort={(key) => {
+          setSortKey(key);
+          setSortDir('asc');
+        }}
+        onReverse={() => setSortDir((direction) => (direction === 'asc' ? 'desc' : 'asc'))}
+      />
 
       {/* ═══ 6. Source reconciliation ═══ */}
       <Section delay={0.18}>

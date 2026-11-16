@@ -219,9 +219,9 @@ describe('Review regression: national summary and source states', () => {
   });
 
   it.each([
-    { spent: 0, flagged: null, efficiency: 0, visible: '0%Low execution' },
-    { spent: null, flagged: 2e9, efficiency: null, visible: 'FlaggedKES 2.00B' },
-    { spent: null, flagged: null, efficiency: 45, visible: '45%Low execution' },
+    { spent: 0, flagged: null, efficiency: 0, visible: '0%KES 20.00B allocatedWell below target' },
+    { spent: null, flagged: 2e9, efficiency: null, visible: 'QuestionedKES 2.00B' },
+    { spent: null, flagged: null, efficiency: 45, visible: '45%KES 20.00B allocatedWell below target' },
   ])(
     'preserves county evidence independently of a still-projected national response ($visible)',
     ({ spent, flagged, efficiency, visible }) => {
@@ -241,9 +241,9 @@ describe('Review regression: national summary and source states', () => {
       expect(overview()).toHaveTextContent('Spent so far');
       expect(county('Alpha')).toHaveTextContent(visible);
       expect(county('Alpha')).not.toHaveTextContent('Execution pending');
-      expect(screen.getByLabelText('Sort by')).toHaveValue('efficiency');
+      expect(screen.getByRole('button', { name: 'Least spent first' })).toHaveAttribute('aria-pressed', 'true');
       fireEvent.change(screen.getByLabelText('Find your county'), { target: { value: 'Beta' } });
-      expect(screen.getByLabelText('Sort by')).toHaveValue('efficiency');
+      expect(screen.getByRole('button', { name: 'Least spent first' })).toHaveAttribute('aria-pressed', 'true');
       expect(overview()).toHaveTextContent('Spent so far');
     }
   );

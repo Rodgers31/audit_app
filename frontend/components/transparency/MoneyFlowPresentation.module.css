@@ -217,79 +217,83 @@
   max-width: 78ch;
 }
 .countySection {
-  /* Keep compact phone margins; the paper treatment adds no layout width. */
-  padding: 24px clamp(12px, 2.5vw, 32px);
-  border: 2px dotted var(--flow-report-rule);
-  border-radius: 2px;
-  background: var(--flow-paper);
+  --county-well-below: var(--signal-alarm);
+  --county-below: #9a4a1e;
+  --county-on-target: #2f7a52;
+  --county-above: #14583b;
+}
+:global(.dark) .countySection {
+  --county-below: var(--signal-caution);
+  --county-on-target: var(--signal-good);
+  --county-above: var(--flow-good);
+}
+.countySection [data-execution="wellBelow"] {
+  --county-execution: var(--county-well-below);
+}
+.countySection [data-execution="below"] {
+  --county-execution: var(--county-below);
+}
+.countySection [data-execution="onTarget"] {
+  --county-execution: var(--county-on-target);
+}
+.countySection [data-execution="above"] {
+  --county-execution: var(--county-above);
 }
 .countyHeading {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 .reportTitle {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: 8px 24px;
-  padding-bottom: 16px;
-  margin-bottom: 12px;
-  border-bottom: 1px solid var(--flow-divider);
+  gap: 4px 12px;
 }
 .countyHeading h2 {
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: clamp(24px, 1.35rem + 0.5cqi, 28px);
-  line-height: 1.2;
-  font-weight: 400;
-  letter-spacing: -0.025em;
-  text-wrap: balance;
+  font-family: var(--font-audit-display, "Barlow Condensed"), "Arial Narrow", sans-serif;
+  font-weight: 600;
+  font-size: 26px;
+  line-height: 1.15;
 }
-.reportPeriod {
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.025em;
+.reportPeriod,
+.coverage,
+.countyNote,
+.efficiencyKey {
+  font-size: 14px;
+  line-height: 1.45;
   color: var(--flow-muted);
 }
-.coverage {
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--flow-muted);
+.coverage,
+.countyNote {
+  margin-top: 4px;
 }
 .controls {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-  align-items: end;
+  flex-direction: column;
+  align-items: start;
+  gap: 8px;
   margin-bottom: 12px;
 }
 .searchWrap {
-  flex: 1 1 280px;
   position: relative;
-}
-.fieldLabel {
-  display: block;
-  color: var(--flow-muted);
-  font-size: 12px;
-  font-weight: 500;
-  margin-bottom: 8px;
+  width: min(100%, 26rem);
 }
 .searchIcon {
   position: absolute;
-  left: 16px;
-  bottom: 15px;
+  inset-inline-start: 12px;
+  top: 15px;
   color: var(--flow-muted);
   pointer-events: none;
 }
 .searchWrap input {
   display: block;
   width: 100%;
-  height: 48px;
-  border: 1px solid var(--flow-line);
+  min-height: 48px;
+  border: 1px solid var(--flow-muted);
   border-radius: 4px;
-  background: transparent;
-  padding: 0 48px 0 44px;
+  background: rgb(var(--c-surface-base));
+  padding-inline: 36px 46px;
   font-size: 16px;
-  line-height: 1.5;
 }
 .searchWrap input::placeholder {
   color: var(--flow-muted);
@@ -300,267 +304,117 @@
 }
 .clearSearch {
   position: absolute;
-  right: 2px;
-  bottom: 2px;
+  inset-inline-end: 2px;
+  top: 2px;
   display: grid;
   place-items: center;
   width: 44px;
   height: 44px;
-  border-radius: 10px;
-  color: var(--flow-muted);
-}
-.sortWrap {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 0 1 auto;
-}
-.sortWrap label {
-  font-size: 13px;
-  color: var(--flow-muted);
-  white-space: nowrap;
-}
-.selectWrap {
-  position: relative;
-}
-.selectWrap select {
-  appearance: none;
-  min-height: 48px;
-  max-width: 100%;
-  padding: 8px 32px 8px 8px;
-  background: transparent;
-  border: 0;
-  border-radius: 8px;
-  font-size: 16px;
-  cursor: pointer;
-}
-.selectWrap option {
-  background: rgb(var(--c-surface-base));
-  color: var(--flow-ink);
-}
-.selectWrap svg {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-}
-.direction {
-  height: 44px;
-  width: 44px;
-  display: grid;
-  place-items: center;
-  border-radius: 10px;
-  color: var(--flow-muted);
-  flex-shrink: 0;
-}
-.direction[aria-pressed="true"] {
-  color: var(--flow-ink);
-  background: var(--flow-control);
-}
-.presentation :is(.direction, .clearSearch):hover,
-.selectWrap select:hover {
-  background: var(--flow-control);
-  color: var(--flow-ink);
-}
-.reference {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--flow-muted);
-  margin: 0 0 4px;
-}
-.referenceMark {
-  display: inline-block;
-  height: 13px;
-  width: 2px;
-  background: var(--flow-reference);
-}
-.reference strong {
-  color: var(--flow-ink);
-  font-weight: 500;
-}
-.auditNote {
-  color: var(--flow-muted);
-  font-size: 12px;
-  line-height: 1.6;
-}
-.auditNote summary {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  list-style: none;
-  min-height: 44px;
-  width: fit-content;
-  max-width: 100%;
   border-radius: 4px;
-  cursor: pointer;
+  color: var(--flow-muted);
 }
-.auditNote summary::-webkit-details-marker {
-  display: none;
-}
-.auditNote summary svg {
-  flex-shrink: 0;
-}
-.auditNote summary > span {
-  text-decoration: underline;
-  text-decoration-color: var(--flow-line);
-  text-underline-offset: 4px;
-}
-.auditNote[open] summary svg:last-child {
-  transform: rotate(180deg);
-}
-.auditNote p {
-  max-width: 72ch;
-  margin: 0 0 20px;
-  padding-left: 24px;
-  font-size: 14px;
-}
+.sortWrap,
 .efficiencyKey {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 16px;
-  color: var(--flow-muted);
-  font-size: 12px;
-  line-height: 1.6;
-  margin: 12px 0;
+  gap: 6px 8px;
+}
+.sortWrap {
+  gap: 4px;
+}
+.sortChip {
+  min-width: 44px;
+  padding-inline: 8px;
+  border: 1px solid var(--flow-muted);
+  background: rgb(var(--c-surface-base));
+}
+.sortChip[aria-pressed="true"] {
+  border-color: var(--signal-good);
+  color: var(--signal-good);
+  font-weight: 600;
 }
 .efficiencyKey span {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 .efficiencyKey span::before {
   content: "";
-  width: 12px;
-  height: 3px;
-  background: var(--flow-tone);
-}
-.resultsLine {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  align-items: center;
-  margin-top: 8px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--flow-line);
-  color: var(--flow-muted);
-  font-size: 12px;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--county-execution);
 }
 .counties {
+  display: grid;
   list-style: none;
-  margin: 0;
-  padding: 0;
+  margin: 10px 0 0;
+  padding: 0 10px;
+  border: 1.5px dotted var(--flow-report-rule);
+  border-radius: 4px;
+  background: rgb(var(--c-surface-base));
 }
 .county {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "identity rate" "spending spending" "audit audit";
-  gap: 12px 16px;
-  padding: 16px 0;
+  padding: 1px 0 8px;
   border-bottom: 1px solid var(--flow-line);
 }
-.identity {
-  grid-area: identity;
+.county:last-child {
+  border-bottom: 0;
 }
 .nameLine {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: 1.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px;
 }
 .rank {
   font-size: 12px;
   color: var(--flow-muted);
   font-weight: 500;
-  min-width: 16px;
 }
 .county h3 {
   margin: 0;
   font-size: 17px;
-  line-height: 1.3;
-  letter-spacing: -0.025em;
+  line-height: 1.2;
   font-weight: 600;
   overflow-wrap: anywhere;
 }
 .county h3 a {
   display: inline-flex;
   align-items: center;
+  min-width: 44px;
   min-height: 44px;
-  color: inherit;
   text-decoration-thickness: 1px;
-  text-underline-offset: 4px;
+  text-underline-offset: 3px;
 }
 .county h3 a:hover {
   text-decoration: underline;
-  color: var(--flow-good);
+  color: var(--signal-good);
 }
-.allocation {
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--flow-muted);
-  margin-left: 28px;
+.countyRate {
+  color: var(--county-execution, var(--flow-muted));
+  font-size: 20px;
+  font-weight: 600;
 }
-.allocation b {
-  font-weight: 500;
-  color: var(--flow-ink);
-}
-.rate {
-  grid-area: rate;
-  text-align: right;
-  padding-top: 4px;
-  max-width: 108px;
-}
-.rate strong {
-  display: block;
-  font-size: 23px;
-  line-height: 1.15;
-  font-weight: 500;
-  letter-spacing: -0.045em;
-  color: var(--flow-tone);
-}
-.rate span {
-  display: block;
-  margin-top: 6px;
-  color: var(--flow-muted);
-  font-size: 11px;
-  line-height: 1.5;
-}
-.spending {
-  grid-area: spending;
-}
-.amounts {
+.countyDetails {
   display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 12px;
-}
-.amounts p:last-child {
-  text-align: right;
-}
-.amounts span {
-  display: block;
-  font-size: 12px;
+  gap: 2px 8px;
+  margin-inline-start: 1.75rem;
   color: var(--flow-muted);
-  margin-bottom: 4px;
+  font-size: 14px;
+  line-height: 1.3;
 }
-.amounts b {
-  font-size: 16px;
-  font-weight: 500;
-  letter-spacing: -0.025em;
-  color: var(--flow-tone, var(--flow-ink));
-}
-.amounts small {
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--flow-muted);
-  letter-spacing: 0;
+.countyDetails strong {
+  color: var(--county-execution, var(--flow-muted));
+  font-weight: 600;
 }
 .measure {
   position: relative;
+  margin: 8px 0 7px 1.75rem;
   height: 6px;
   background: var(--flow-track);
   border-radius: 3px;
@@ -568,78 +422,69 @@
 .fill {
   display: block;
   height: 100%;
-  width: var(--flow-value);
   border-radius: inherit;
-  background: var(--flow-tone);
+  background: var(--county-execution, var(--flow-tone));
 }
+.targetMarker,
 .nationalMarker {
   position: absolute;
-  top: -4px;
+  top: -2px;
   width: 2px;
-  height: 14px;
+  height: 10px;
   background: var(--flow-reference);
   transform: translateX(-1px);
 }
-.auditAmount {
-  grid-area: audit;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
+.nationalMarker {
+  top: -3px;
+  height: 12px;
+  background: var(--flow-ink);
+}
+.ledger {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin-inline-start: 1.75rem;
+}
+.ledger dt {
   color: var(--flow-muted);
   font-size: 12px;
-  line-height: 1.5;
 }
-.auditAmount > span {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.ledger dd {
+  font-size: 14px;
+  overflow-wrap: anywhere;
 }
-.auditAmount svg,
-.auditAmount b {
-  color: var(--flow-tone);
+.ledger b {
+  font-weight: 600;
 }
-.auditAmount b {
-  font-weight: 500;
+.countyGap b {
+  color: var(--county-execution, var(--flow-ink));
 }
-.auditAmount small {
-  margin-left: auto;
-  font-size: 11px;
+.county .countyNote {
+  margin-inline-start: 1.75rem;
 }
-.projectedCounty {
-  grid-template-areas: "identity identity" "spending spending" "audit audit";
-}
-.share {
-  margin-bottom: 12px;
-  font-size: 16px;
-  font-weight: 500;
-}
-.share span {
-  font-size: 12px;
-  color: var(--flow-muted);
-  font-weight: 400;
-}
-.pending {
-  grid-area: audit;
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  font-size: 12px;
-  color: var(--flow-muted);
+.countyShowAll {
+  width: 100%;
+  margin-top: 8px;
+  border: 1px solid var(--signal-good);
+  color: var(--signal-good);
+  font-weight: 600;
 }
 .empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 48px 16px;
+  padding: 24px 12px;
   text-align: center;
   color: var(--flow-muted);
+  font-size: 14px;
 }
-.empty button {
-  min-height: 44px;
-  text-decoration: underline;
-  text-underline-offset: 4px;
+@container money-flow (min-width: 55rem) {
+  .counties {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(var(--county-rows), auto);
+    grid-auto-flow: column;
+    column-gap: 20px;
+  }
+  .county[data-column-end] {
+    border-bottom: 0;
+  }
 }
 .flow {
   padding: 4px 0 16px;
@@ -812,66 +657,5 @@
   .auditCopy {
     grid-column: 3;
     font-size: 13px;
-  }
-  .searchWrap {
-    flex: 0 1 400px;
-  }
-  .sortWrap {
-    margin-left: auto;
-  }
-  .county {
-    grid-template-columns: minmax(180px, 0.9fr) minmax(220px, 1.45fr) 108px;
-    grid-template-areas: "identity spending rate" "audit audit audit";
-    gap: 16px 24px;
-    padding: 20px 0;
-  }
-  .auditAmount {
-    padding-left: 28px;
-  }
-  .auditAmount small {
-    margin-left: 0;
-  }
-  .projectedCounty {
-    grid-template-areas: "identity spending spending" "audit audit audit";
-  }
-}
-@container money-flow (min-width: 920px) {
-  .county {
-    grid-template-columns: minmax(180px, 1fr) minmax(260px, 1.65fr) 108px minmax(
-        140px,
-        0.7fr
-      );
-    grid-template-areas: "identity spending rate audit";
-    gap: 24px;
-    align-items: center;
-  }
-  .rate {
-    align-self: center;
-    padding: 0;
-  }
-  .auditAmount {
-    display: grid;
-    gap: 4px;
-    padding-left: 0;
-    justify-self: end;
-  }
-  .auditAmount small {
-    max-width: 19ch;
-  }
-  .sectionMeta {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 24px;
-  }
-  .projectedCounty {
-    grid-template-columns: minmax(200px, 1fr) minmax(300px, 1.5fr) minmax(
-        150px,
-        1fr
-      );
-    grid-template-areas: "identity spending audit";
-  }
-  .pending {
-    justify-self: end;
   }
 }
