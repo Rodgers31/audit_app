@@ -27,6 +27,7 @@ import {
   QueryClientProvider,
 } from '@tanstack/react-query';
 import React, { isValidElement, ReactNode } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 import DebtPage from '@/app/debt/page';
 import NationalDebtPage from '@/app/debt/DebtPageClient';
@@ -127,6 +128,31 @@ async function serverState(): Promise<DehydratedState> {
 /* ── tests ──────────────────────────────────────────────────────────── */
 
 describe('/debt SSR prefetch', () => {
+  it('renders the full sourced total in the HTML even without the loan register', async () => {
+    mockGet.mockImplementation((url: string) => {
+      if (url === '/debt/loans') return Promise.reject(new Error('register temporarily unavailable'));
+      return Promise.resolve({ data: url === '/debt/national' ? {
+        data: BODIES['/debt/national'],
+        source: 'Synthetic Debt Office',
+        last_updated: '2026-08-15T00:00:00',
+      } : BODIES[url] ?? {} });
+    });
+    const tree = await DebtPage();
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    try {
+      const html = renderToStaticMarkup(<QueryClientProvider client={client}>{tree}</QueryClientProvider>);
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const headline = doc.querySelector('[data-testid="national-debt-outstanding"]');
+      expect(headline?.textContent).toBe('KES 11.80T');
+      expect(headline?.closest('[style*="opacity:0"]')).toBeNull();
+      expect(headline?.parentElement?.textContent).toContain('Balance date unavailable');
+      expect(headline?.parentElement?.textContent).toContain('Source: Synthetic Debt Office');
+      expect(headline?.parentElement?.textContent).not.toMatch(/August 2026|Live national debt counter/i);
+    } finally {
+      client.clear();
+    }
+  });
+
   it('every query the page dehydrates is read by a component the page mounts', async () => {
     const state = await serverState();
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
