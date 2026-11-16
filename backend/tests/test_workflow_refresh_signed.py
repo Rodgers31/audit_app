@@ -61,6 +61,7 @@ def test_actual_gunicorn_census_and_signed_worker_adoption(tmp_path):
     import signal
     from pathlib import Path
     import httpx
+    import pytest
     if os.environ.get('TEST_REFRESH_CENSUS_CONTAINER') == '1':
         # A hosted runner shares /proc with services owned by other users.
         # The same test runs in an owned PID/network namespace so it can read
@@ -111,19 +112,51 @@ def test_actual_gunicorn_census_and_signed_worker_adoption(tmp_path):
                 assert process.poll() is None and time.monotonic()<deadline,(tmp_path/'server.log').read_text()
                 time.sleep(.05)
             original=response.json()['result'];workers=original['census']['workers']
-            assert len(workers)==2
-            seen=set()
-            for _ in range(64):
-                response,raw=request(client,'/api/v1/system/cache/status',nonce=__import__('secrets').token_hex(16))
-                assert response.status_code==200,response.text
-                assert response.headers['x-revalidate-response-signature']==hmac.new(SECRET.encode(),response.content,hashlib.sha256).hexdigest()
-                value=response.json();assert value['request_sha256']==hashlib.sha256(raw).hexdigest()
-                row=value['result'];assert row['census']['workers']==workers
-                assert row['observed_identity']==row['adopted_identity']==original['marker_identity']
+            assert len(workers) == len(set(workers)) == 2
+
+            def signed_worker_status():
+                response, raw = request(client, '/api/v1/system/cache/status',
+                                        nonce=__import__('secrets').token_hex(16))
+                assert response.status_code == 200, response.text
+                signature = hmac.new(SECRET.encode(), response.content, hashlib.sha256).hexdigest()
+                assert response.headers['x-revalidate-response-signature'] == signature
+                value = response.json()
+                assert value['request_sha256'] == hashlib.sha256(raw).hexdigest()
+                row = value['result']
+                assert row['census']['workers'] == workers
+                assert row['observed_identity'] == row['adopted_identity'] == original['marker_identity']
                 assert row['synchronised'] is True
-                seen.add(row['census']['worker'])
-                if seen==set(workers):break
-            assert seen==set(workers)
+                return row['census']['worker']
+
+            first = signed_worker_status()
+            assert first in workers
+            pid = int(first.split(':', 1)[0])
+            from cache.invalidation import _process
+            worker = _process(pid)
+            assert worker['identity'] == first and worker['parent'] == process.pid
+            assert os.getpgid(pid) == process.pid
+
+            # Pause the worker that already answered. Its listening socket and
+            # census identity stay intact, but only its peer can handle a request.
+            os.kill(pid, signal.SIGSTOP)
+            try:
+                deadline = time.monotonic() + 2
+                while True:
+                    status = Path(f'/proc/{pid}/status').read_text()
+                    if re.search(r'^State:\s+T\b', status, re.MULTILINE):
+                        break
+                    assert time.monotonic() < deadline, 'Fixture worker did not stop'
+                    time.sleep(.01)
+                peer = signed_worker_status()
+            finally:
+                os.kill(pid, signal.SIGCONT)
+
+            def assert_all_workers_acknowledged(*identities):
+                assert set(identities) == set(workers), 'Incomplete signed worker adoption'
+
+            with pytest.raises(AssertionError, match='Incomplete signed worker adoption'):
+                assert_all_workers_acknowledged(peer)
+            assert_all_workers_acknowledged(first, peer)
     finally:
         os.killpg(process.pid,signal.SIGTERM)
         try:process.wait(timeout=6)
