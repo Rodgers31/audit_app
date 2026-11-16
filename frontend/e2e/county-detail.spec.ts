@@ -8,6 +8,7 @@
  *   - /counties/[id] taking 5 s cold due to compounded SSR timeouts
  */
 import { expect, test } from '@playwright/test';
+import type { AccountabilityScorecard, GradeFactor } from '../types';
 import { countyTabs, waitForAppReady } from './utils/selectors';
 
 const COUNTY_ID = '001'; // Nairobi — widest data coverage across FYs
@@ -122,4 +123,67 @@ test.describe('/counties/[id] — performance budget', () => {
     // the SSR-timeout regression is back.
     expect(elapsed).toBeLessThan(3_000);
   });
+});
+
+test.describe('/counties/[id] — accountability factor layout', () => {
+  test.use({ reducedMotion: 'reduce' });
+
+  const impacts = [
+    ['major', 'Major'],
+    ['moderate', 'Moderate'],
+    ['minor', 'Minor'],
+  ] as const;
+
+  for (const width of [320, 360]) {
+    test(`keeps impact labels on one line with long details at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      const factors: GradeFactor[] = impacts.map(([impact, caption], index) => ({
+        impact,
+        label: `Synthetic ${caption.toLowerCase()} factor`,
+        detail: `AuditReconciliationReference2025Edition${index} requires supporting records before this finding can be reconciled.`,
+        points: -(index + 1),
+      }));
+      await page.route(`**/api/v1/counties/${COUNTY_ID}/accountability`, async (route) => {
+        const response = await route.fetch();
+        expect(response.ok()).toBe(true);
+        const scorecard: AccountabilityScorecard = await response.json();
+        await route.fulfill({ response, json: { ...scorecard, grade_factors: factors } });
+      });
+
+      await page.goto(`/counties/${COUNTY_ID}`);
+      await waitForAppReady(page);
+      await countyTabs.accountability(page).click();
+      await expect(page.getByRole('heading', { name: 'How this grade was calculated' })).toBeVisible();
+      await page.evaluate(() => document.fonts.ready);
+
+      for (let index = 0; index < factors.length; index++) {
+        const factor = factors[index];
+        const detail = page.getByText(factor.detail, { exact: true });
+        const row = detail.locator('..');
+        await expect(detail).toBeVisible();
+        const chip = row.getByText(impacts[index][1], { exact: true });
+        const geometry = await chip.evaluate((label) => {
+          const description = label.nextElementSibling!;
+          const lineCount = (element: Element) => {
+            const range = document.createRange();
+            range.selectNodeContents(element);
+            return new Set(Array.from(range.getClientRects(), ({ top }) => Math.round(top))).size;
+          };
+          const rowBounds = label.parentElement!.getBoundingClientRect();
+          const descriptionBounds = description.getBoundingClientRect();
+          return {
+            labelLines: lineCount(label),
+            labelFits: label.scrollWidth <= label.clientWidth,
+            detailLines: lineCount(description),
+            detailFits: descriptionBounds.right <= rowBounds.right + 1
+              && description.scrollWidth <= description.clientWidth,
+          };
+        });
+        expect.soft(geometry.labelLines, `${impacts[index][1]} label at ${width}px`).toBe(1);
+        expect.soft(geometry.labelFits).toBe(true);
+        expect.soft(geometry.detailLines).toBeGreaterThan(1);
+        expect.soft(geometry.detailFits).toBe(true);
+      }
+    });
+  }
 });
