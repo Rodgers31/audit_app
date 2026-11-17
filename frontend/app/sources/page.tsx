@@ -1,27 +1,23 @@
-/**
- * Unified Data Sources page
- *
- * Displays the indexed-document manifest and stored dataset lineage.
- * Publisher presence and freshness do not establish figure verification.
- */
 'use client';
 
+import { useDataFreshness } from '@/components/DataFreshnessBadge';
 import PageShell from '@/components/layout/PageShell';
 import api from '@/lib/api/axios';
+import { evidenceUrl } from '@/lib/evidence/qualification';
+import { useLang } from '@/lib/i18n/LangProvider';
+import type { Lang } from '@/lib/i18n/messages';
+import { SOURCES_MESSAGES } from '@/lib/i18n/messages/sources';
 import { useQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
-import { Activity, Clock, Database, ExternalLink, FileText, Globe } from 'lucide-react';
+import { ChevronDown, ExternalLink } from 'lucide-react';
+import { useState } from 'react';
 
 interface SourceSummary {
   publisher: string;
-  short: string;
-  role: string;
   website?: string | null;
   document_count: number;
   downloaded_documents?: number;
   extracted_documents?: number;
   last_fetched: string | null;
-  last_seen_at: string | null;
   doc_types: Record<string, number>;
 }
 
@@ -39,10 +35,7 @@ interface TableHealth {
   attribution_basis?: 'coherent_observation_identity' | 'stored_document_links' | 'unavailable';
   represented_publishers?: { source_id: string; name: string; row_count: number }[];
   unresolved_source_rows?: number;
-  status: string; // healthy | stale | degraded | critical | empty
-  notes?: string | null;
-  /** Days since the newest row changed, and the threshold it is judged
-   *  against. The panel could previously only answer "is it empty?". */
+  status: string;
   age_days?: number | null;
   stale_after_days?: number | null;
 }
@@ -51,457 +44,347 @@ interface HealthResponse {
   tables: TableHealth[];
 }
 
-const HEALTH_STYLE: Record<string, { dot: string; text: string; label: string }> = {
-  healthy: { dot: 'bg-emerald-500', text: 'text-emerald-700', label: 'Current' },
-  stale: { dot: 'bg-amber-500', text: 'text-amber-700', label: 'Stale' },
-  degraded: { dot: 'bg-amber-500', text: 'text-amber-700', label: 'Partial' },
-  critical: { dot: 'bg-rose-500', text: 'text-rose-700', label: 'Critical' },
-  empty: { dot: 'bg-gray-400 dark:bg-neutral-muted/60', text: 'text-gray-500 dark:text-neutral-muted/80', label: 'Empty' },
-};
+type MessageKey = keyof typeof SOURCES_MESSAGES;
+type FreshnessEntry = NonNullable<ReturnType<typeof useDataFreshness>['data']>['sources'][number];
 
-function fmtRelativeDate(iso: string | null): string {
-  if (!iso) return 'Not verified';
-  const then = new Date(iso).getTime();
-  if (!Number.isFinite(then)) return 'Not verified';
-  const diff = Date.now() - then;
-  const days = Math.floor(diff / (24 * 60 * 60 * 1000));
-  if (days === 0) return 'Today';
-  if (days === 1) return 'Yesterday';
-  if (days < 30) return `${days} days ago`;
-  if (days < 365) return `${Math.floor(days / 30)} months ago`;
-  return `${Math.floor(days / 365)} years ago`;
+function copy(lang: Lang, key: MessageKey, vars: Record<string, string> = {}) {
+  return SOURCES_MESSAGES[key][lang].replace(/\{(\w+)\}/g, (token, name: string) => vars[name] ?? token);
 }
 
-function freshnessColor(iso: string | null): string {
-  if (!iso) return 'text-gray-400 dark:text-neutral-muted/80';
-  const diff = Date.now() - new Date(iso).getTime();
-  const days = diff / (24 * 60 * 60 * 1000);
-  if (days < 14) return 'text-emerald-600';
-  if (days < 60) return 'text-amber-600';
-  return 'text-rose-600';
+function countText(value: number, lang: Lang) {
+  return value.toLocaleString(lang === 'sw' ? 'sw-KE' : 'en-KE');
 }
 
-/**
- * Reserved space for a figure that has not arrived, in place of the figure.
- *
- * NOT a value. The strip used to render `{total.toLocaleString()}` with
- * `total = data?.total_documents || 0`, so a reader on a cold load — and
- * anyone reading the prerendered HTML — saw "Documents indexed 0" and
- * "Publishing agencies 0" for as long as the fetch took. Those are the same
- * two slots that later say 2,330 and 11; nothing distinguished the zero that
- * means "nobody has counted yet" from a zero that was counted.
- *
- * `h-8` is the line box of the `text-2xl` figure it stands in for, so the
- * strip is the same height either way and the page below it does not move.
- */
-function ReservedFigure({ label }: { label: string }) {
-  return (
-    <div
-      className='h-8 w-24 rounded bg-gray-200/70 dark:bg-surface-elevated animate-pulse'
-      role='status'
-      aria-label={`${label} — still loading`}
-    />
+function rowCount(value: number, lang: Lang) {
+  return copy(lang, value === 1 ? 'rowsOne' : 'rowsMany', { count: countText(value, lang) });
+}
+
+function recordedDate(iso: string | null, lang: Lang) {
+  if (!iso || !/^\d{4}-\d{2}-\d{2}(?:$|T)/.test(iso)) return null;
+  const stamp = Date.parse(iso);
+  if (!Number.isFinite(stamp) || stamp > Date.now()) return null;
+  const day = iso.slice(0, 10);
+  const date = new Date(`${day}T00:00:00Z`);
+  if (date.toISOString().slice(0, 10) !== day) return null;
+  return date.toLocaleDateString(lang === 'sw' ? 'sw-KE' : 'en-GB', {
+    timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric',
+  });
+}
+
+const PUBLISHERS: readonly {
+  name: string;
+  aliases: readonly string[];
+  description: MessageKey;
+  code?: string;
+  cadence?: MessageKey;
+}[] = [
+  {
+    name: 'Controller of Budget',
+    aliases: ['controller of budget', 'controller of budget (cob)', 'office of the controller of budget', 'office of the controller of budget (ocob)', 'cob', 'ocob'],
+    description: 'cob', code: 'COB', cadence: 'cobCadence',
+  },
+  {
+    name: 'Office of the Auditor-General',
+    aliases: ['office of the auditor general', 'office of the auditor general (oag)', 'auditor general', 'oag'],
+    description: 'oag', code: 'OAG', cadence: 'oagCadence',
+  },
+  {
+    name: 'Central Bank of Kenya',
+    aliases: ['central bank of kenya', 'central bank of kenya (cbk)', 'cbk'],
+    description: 'cbk', code: 'CBK', cadence: 'cbkCadence',
+  },
+  {
+    name: 'Kenya National Bureau of Statistics',
+    aliases: ['kenya national bureau of statistics', 'kenya national bureau of statistics (knbs)', 'knbs'],
+    description: 'knbs', code: 'KNBS',
+  },
+  {
+    name: 'National Treasury',
+    aliases: ['national treasury', 'the national treasury', 'kenya national treasury', 'national treasury kenya', 'national treasury of kenya'],
+    description: 'treasury', code: 'Treasury',
+  },
+  {
+    name: 'Commission on Revenue Allocation',
+    aliases: ['commission on revenue allocation', 'cra'],
+    description: 'cra', code: 'CRA',
+  },
+  {
+    name: 'World Bank Open Data',
+    aliases: ['world bank', 'world bank open data'],
+    description: 'worldBank',
+  },
+];
+
+const DOC_TYPES = new Map<string, MessageKey>([
+  ['budget', 'budgets'], ['audit', 'audits'], ['report', 'reports'],
+  ['loan', 'loans'], ['other', 'other'],
+]);
+
+const FREQUENCIES = new Map<string, MessageKey>([
+  ['Quarterly', 'quarterly'], ['Annually', 'annually'], ['Monthly', 'monthly'],
+]);
+
+const FOCUS = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal-good';
+
+function publisherGroups(sources: SourceSummary[]) {
+  const groups = new Map<string, {
+    name: string;
+    metadata?: typeof PUBLISHERS[number];
+    records: SourceSummary[];
+  }>();
+  sources.forEach((source) => {
+    // Match named publishers only. Joint or unfamiliar names retain their manifest identity.
+    const normalized = source.publisher.trim().toLowerCase().replace(/[-\u2010-\u2015]/g, ' ').replace(/\s+/g, ' ');
+    const metadata = PUBLISHERS.find((publisher) => publisher.aliases.includes(normalized));
+    const name = metadata?.name ?? source.publisher;
+    const group = groups.get(name);
+    if (group) group.records.push(source);
+    else groups.set(name, { name, metadata, records: [source] });
+  });
+  return Array.from(groups.values()).sort((a, b) =>
+    (a.metadata ? PUBLISHERS.indexOf(a.metadata) : PUBLISHERS.length) -
+    (b.metadata ? PUBLISHERS.indexOf(b.metadata) : PUBLISHERS.length)
   );
 }
 
-/** One placeholder card. Height is deliberately a little UNDER the real card's:
- *  reserving less than the content needs pushes what follows off-screen and
- *  costs nothing, while reserving MORE drags visible content upward when the
- *  data lands, which is a layout shift in the other direction. */
-function SkeletonCard({ className = '' }: { className?: string }) {
+function PublisherList({ sources, freshness, lang }: {
+  sources: SourceSummary[];
+  freshness: FreshnessEntry[];
+  lang: Lang;
+}) {
   return (
-    <div
-      aria-hidden='true'
-      className={`rounded-lg border border-gray-100 dark:border-neutral-border bg-gray-50/60 dark:bg-surface-elevated/40 animate-pulse ${className}`}
-    />
+    <ul role='list' className='divide-y divide-neutral-border border-b border-neutral-border'>
+      {publisherGroups(sources).map(({ name, metadata, records }) => {
+        const recordedTypes = new Set<MessageKey>();
+        const websites = new Set<string>();
+        records.forEach((record) => {
+          Object.entries(record.doc_types).forEach(([type, count]) => {
+            if (count > 0) recordedTypes.add(DOC_TYPES.get(type) ?? 'unknownType');
+          });
+          const website = evidenceUrl(record.website);
+          if (website) websites.add(website);
+        });
+        // Summary can return one partner's homepage for a joint manifest label.
+        const href = websites.size === 1 && (metadata || !/[&/]/.test(name)) ? Array.from(websites)[0] : undefined;
+        const description = metadata ? copy(lang, metadata.description)
+          : Array.from(recordedTypes, (key) => copy(lang, key)).join(' · ') || copy(lang, 'unknownType');
+        const matches = metadata?.code ? freshness.filter((entry) => entry.source === metadata.code) : [];
+        const receipt = matches.length === 1 ? matches[0] : null;
+        // The shared query returns the full response. These fields have no role in its badge.
+        const period = receipt && 'covers_through' in receipt && typeof receipt.covers_through === 'string'
+          ? receipt.covers_through.trim() : '';
+        const frequency = receipt && 'update_frequency' in receipt && typeof receipt.update_frequency === 'string'
+          ? FREQUENCIES.get(receipt.update_frequency) : undefined;
+        const published = receipt ? recordedDate(receipt.last_updated, lang) : null;
+        return (
+          <li key={name} className='min-w-0 py-2 [overflow-wrap:anywhere]'>
+            <h2 className='text-base font-bold text-neutral-text'>
+              {href ? (
+                <a href={href} target='_blank' rel='noopener noreferrer'
+                  className={`inline-flex min-h-11 min-w-11 max-w-full items-center gap-2 rounded text-signal-good underline underline-offset-4 ${FOCUS}`}>
+                  <span className='min-w-0'>{name}</span>
+                  <ExternalLink size={15} className='shrink-0' aria-hidden='true' />
+                </a>
+              ) : <span className='flex min-h-11 items-center'>{name}</span>}
+            </h2>
+            <p className='text-sm leading-relaxed text-neutral-muted'>
+              {description}
+              {metadata?.cadence && frequency && <> · {copy(lang, metadata.cadence, { frequency: copy(lang, frequency) })}</>}
+            </p>
+            {period && <p className='text-audit-label text-neutral-muted'>{copy(lang, 'acceptedCoverage', { period })}</p>}
+            {published && <p className='text-audit-label text-neutral-muted'>{copy(lang, 'acceptedPublication', { date: published })}</p>}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
-function DocTypeBadge({ type, count }: { type: string; count: number }) {
-  const palette: Record<string, string> = {
-    budget: 'bg-blue-50 text-blue-700 border-blue-200',
-    audit: 'bg-rose-50 text-rose-700 border-rose-200',
-    report: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    other: 'bg-gray-50 dark:bg-surface-elevated text-gray-700 dark:text-neutral-muted border-gray-200 dark:border-neutral-border',
-  };
-  const cls = palette[type] || palette.other;
+const STATUS = new Map<string, { label: MessageKey; tone: string }>([
+  ['healthy', { label: 'healthy', tone: 'text-signal-good' }],
+  ['stale', { label: 'stale', tone: 'text-signal-caution' }],
+  ['degraded', { label: 'degraded', tone: 'text-signal-caution' }],
+  ['critical', { label: 'critical', tone: 'text-signal-alarm' }],
+  ['empty', { label: 'empty', tone: 'text-neutral-muted' }],
+]);
+
+function attribution(table: TableHealth, lang: Lang) {
+  switch (table.attribution_status) {
+    case 'empty': return copy(lang, 'noAttribution');
+    case 'mixed_publishers': return copy(lang, 'mixedAttribution');
+    case 'partial': return copy(lang, 'partialAttribution');
+    case 'unresolved': return copy(lang, 'unresolvedAttribution');
+    case 'single_publisher': return copy(lang, table.attribution_basis === 'stored_document_links'
+      ? 'linkedAttribution' : 'observationAttribution');
+    default: return table.attribution_basis === 'stored_document_links' ? copy(lang, 'linkedAttribution')
+      : table.source || copy(lang, 'attributionUnavailable');
+  }
+}
+
+function RequestError({ message, retry, lang }: { message: string; retry: () => void; lang: Lang }) {
   return (
-    <span className={`text-[11px] font-semibold uppercase px-2 py-0.5 rounded-full border ${cls}`}>
-      {type} · {count.toLocaleString()}
-    </span>
+    <div className='flex flex-wrap items-center gap-x-3'>
+      <p role='alert' className='text-sm text-signal-alarm'>{message}</p>
+      <button type='button' onClick={retry}
+        className={`min-h-11 min-w-11 rounded px-2 text-sm font-semibold text-signal-good underline ${FOCUS}`}>
+        {copy(lang, 'retry')}
+      </button>
+    </div>
+  );
+}
+
+function DataHealth({ lang }: { lang: Lang }) {
+  const { data, isPending, isError, refetch } = useQuery<HealthResponse>({
+    queryKey: ['provenance', 'health'],
+    queryFn: async ({ signal }) => (await api.get<HealthResponse>('/provenance/health', { signal })).data,
+    staleTime: 10 * 60 * 1000,
+    retry: false,
+  });
+
+  return (
+    <div className='space-y-3 pt-3'>
+      <p className='text-sm text-neutral-muted'>{copy(lang, 'healthIntro')}</p>
+      <p className='text-sm text-neutral-muted'>{copy(lang, 'healthLineage')}</p>
+      {isPending && <p role='status' className='text-sm text-neutral-muted'>{copy(lang, 'healthLoading')}</p>}
+      {isError && <RequestError message={copy(lang, 'healthError')} retry={() => void refetch()} lang={lang} />}
+      {data?.tables.length === 0 && <p className='text-sm text-neutral-muted'>{copy(lang, 'healthEmpty')}</p>}
+      {data && data.tables.length > 0 && (
+        <ul role='list' className='grid gap-2 sm:grid-cols-2 lg:grid-cols-3'>
+          {data.tables.map((table) => {
+            const status = STATUS.get(table.status);
+            const age = table.age_days;
+            const unresolvedRows = table.unresolved_source_rows;
+            return (
+              <li key={table.table} className='min-w-0 space-y-1 rounded border border-neutral-border p-3 [overflow-wrap:anywhere]'>
+                <div className='flex flex-wrap items-baseline justify-between gap-x-2'>
+                  <h3 className='text-sm font-bold text-neutral-text'>{table.label}</h3>
+                  <span className={`text-audit-label font-semibold ${status?.tone ?? 'text-neutral-muted'}`}>
+                    {copy(lang, status?.label ?? 'unknown')}
+                  </span>
+                </div>
+                <p className='text-audit-label font-semibold text-neutral-text'>{rowCount(table.row_count, lang)}</p>
+                <p className='text-audit-label text-neutral-muted'>{attribution(table, lang)}</p>
+                {table.attribution_basis === 'stored_document_links' && (
+                  <p className='text-audit-label text-neutral-muted'>{copy(lang, 'linkOnly')}</p>
+                )}
+                {table.represented_publishers?.map((publisher) => (
+                  <p key={publisher.source_id} className='text-audit-label text-neutral-muted'>
+                    {publisher.name} · {rowCount(publisher.row_count, lang)}
+                  </p>
+                ))}
+                {unresolvedRows != null && unresolvedRows > 0 && (
+                  <p className='text-audit-label text-neutral-muted'>
+                    {copy(lang, 'unresolvedRows', { rows: rowCount(unresolvedRows, lang) })}
+                  </p>
+                )}
+                <p className='flex flex-wrap gap-x-2 text-audit-label text-neutral-muted'>
+                  {age != null && (
+                    <span>{copy(lang, age === 0 ? 'changedToday' : age === 1 ? 'changedDay' : 'changedDays',
+                      { count: countText(age, lang) })}</span>
+                  )}
+                  {table.stale_after_days != null && (
+                    <span>{copy(lang, 'staleAfter', { count: countText(table.stale_after_days, lang) })}</span>
+                  )}
+                </p>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function DocumentInventory({ sources, lang }: { sources: SourceSummary[]; lang: Lang }) {
+  return (
+    <div className='space-y-2 border-t border-neutral-border pt-3'>
+      <h3 className='text-base font-bold text-neutral-text'>{copy(lang, 'inventory')}</h3>
+      <p className='text-sm text-neutral-muted'>{copy(lang, 'inventoryIntro')}</p>
+      <ul role='list' className='divide-y divide-neutral-border'>
+        {sources.map((source) => {
+          const date = recordedDate(source.last_fetched, lang);
+          const registered = copy(lang, 'registered', { count: countText(source.document_count, lang) });
+          const downloaded = source.downloaded_documents == null ? copy(lang, 'downloadCountUnavailable')
+            : copy(lang, 'downloaded', { count: countText(source.downloaded_documents, lang) });
+          const extracted = source.extracted_documents == null ? copy(lang, 'extractionCountUnavailable')
+            : copy(lang, 'extracted', { count: countText(source.extracted_documents, lang) });
+          return (
+            <li key={source.publisher} className='space-y-1 py-2 text-audit-label text-neutral-muted [overflow-wrap:anywhere]'>
+              <p className='text-sm font-semibold text-neutral-text'>{source.publisher}</p>
+              <p>{registered} · {downloaded} · {extracted}</p>
+              {Object.keys(source.doc_types).length > 0 && (
+                <p>{Object.entries(source.doc_types).map(([type, count]) =>
+                  `${copy(lang, DOC_TYPES.get(type) ?? 'unknownType')} (${countText(count, lang)})`).join(' · ')}</p>
+              )}
+              <p>{date ? copy(lang, 'checkedDownload', { date }) : copy(lang, 'noDownload')}</p>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 
 export default function SourcesPage() {
-  const { data, isLoading, error } = useQuery<SourcesResponse>({
+  const { lang } = useLang();
+  const [healthRequested, setHealthRequested] = useState(false);
+  const { data, isPending, isError, refetch } = useQuery<SourcesResponse>({
     queryKey: ['sources', 'summary'],
     queryFn: async ({ signal }) => (await api.get<SourcesResponse>('/sources/summary', { signal })).data,
     staleTime: 10 * 60 * 1000,
+    retry: false,
   });
-
-  const sources = data?.sources || [];
-  /** `null` until the manifest answers. A real 0 is a real answer and still
-   *  prints as 0 — it is the *absence* of an answer that must not. */
-  const total = data ? data.total_documents : null;
-
-  /**
-   * Distinct publishing BODIES, not distinct manifest rows.
-   *
-   * The manifest carries the same agency under several names — "Office of the
-   * Auditor General" and "Office of the Auditor-General"; "National Treasury
-   * Kenya", "National Treasury of Kenya" and "National Treasury"; "Controller
-   * of Budget", "National Treasury & Controller of Budget" and "Office of the
-   * Controller of Budget (OCOB)". Counting rows reported 17 agencies where
-   * there are about nine (credibility audit F38).
-   *
-   * Normalising instead of hardcoding a number, so the count stays right as
-   * the manifest changes.
-   */
-  const distinctAgencyCount = useMemo(() => {
-    if (sources.length === 0) return null;
-    const norm = (name: string) =>
-      name
-        .toLowerCase()
-        // Any dash, ASCII or typographic, becomes a space so "Auditor-General"
-        // and "Auditor General" collapse to the same body.
-        .replace(/[-\u2010-\u2015]/g, ' ')
-        .replace(/\(.*?\)/g, '') // drop parenthetical acronyms: "(OCOB)"
-        // A row naming two bodies ("Central Bank of Kenya / National Treasury")
-        // is filed under the first rather than counted as a third agency.
-        .split(/[&/]/)[0]
-        .replace(/\bknbs\b/g, 'national bureau statistics')
-        .replace(/\b(the|of|kenya|kenyan|office|republic)\b/g, '')
-        .replace(/[^a-z ]/g, '')
-        .replace(/\s+/g, ' ')
-        .trim();
-    return new Set(sources.map((src) => norm(src.publisher)).filter(Boolean)).size;
-  }, [sources]);
-
-  // Data-health grid — surfaces the /provenance/health endpoint (previously
-  // unused by any page; audit §2.9). Shows live completeness of each dataset.
-  const { data: health, isLoading: healthLoading } = useQuery<HealthResponse>({
-    queryKey: ['provenance', 'health'],
-    queryFn: async ({ signal }) => (await api.get<HealthResponse>('/provenance/health', { signal })).data,
-    staleTime: 10 * 60 * 1000,
-  });
-  const healthTables = health?.tables || [];
+  const freshness = useDataFreshness();
 
   return (
-    <PageShell
-      title='Where the data comes from'
-      subtitle='AuditGava aggregates Kenyan public data from government agencies and international publishers. Most figures here trace to a named document; where one does not, the page carrying it says so and names the method instead. No private sources, no opinion.'>
+    <PageShell title={copy(lang, 'title')} subtitle={copy(lang, 'intro')} breadcrumbs={false}>
       <div className='space-y-6'>
-        {/* Hero stat strip */}
-        <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border px-5 py-4 flex flex-wrap items-center gap-6'>
-          <div className='flex items-center gap-3'>
-            <div className='w-10 h-10 rounded-lg bg-gov-forest/10 flex items-center justify-center'>
-              <Database className='text-gov-forest dark:text-emerald-100' size={20} />
-            </div>
-            <div>
-              <div className='text-xs uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-semibold'>
-                Documents indexed
-              </div>
-              {total == null ? (
-                <ReservedFigure label='Documents indexed' />
-              ) : (
-                <div className='text-2xl font-bold text-gray-900 dark:text-neutral-text tabular-nums'>
-                  {total.toLocaleString()}
+        <section aria-label={copy(lang, 'publishers')}>
+          {isPending && (
+            <div className='divide-y divide-neutral-border' role='status'>
+              <p className='sr-only'>{copy(lang, 'summaryLoading')}</p>
+              {Array.from({ length: 4 }, (_, index) => (
+                <div key={index} aria-hidden='true' className='space-y-2 py-5'>
+                  <div className='h-4 w-48 max-w-full rounded bg-surface-elevated' />
+                  <div className='h-3 w-72 max-w-full rounded bg-surface-elevated' />
                 </div>
-              )}
-            </div>
-          </div>
-          <div className='flex items-center gap-3'>
-            <div className='w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center'>
-              <Globe className='text-amber-700' size={20} />
-            </div>
-            <div>
-              <div className='text-xs uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-semibold'>
-                Publishing agencies
-              </div>
-              {data == null ? (
-                <ReservedFigure label='Publishing agencies' />
-              ) : (
-                <div className='text-2xl font-bold text-gray-900 dark:text-neutral-text tabular-nums'>
-                  {distinctAgencyCount ?? sources.length}
-                </div>
-              )}
-            </div>
-          </div>
-          <div className='flex-1 min-w-[220px] text-sm text-gray-600 dark:text-neutral-muted leading-relaxed sm:pl-6 sm:border-l border-gray-100 dark:border-neutral-border'>
-            The freshness age below shows how recently we last reached each
-            agency. Several are months behind; the site does not currently update
-            every source nightly, whatever a headline elsewhere may suggest.
-          </div>
-        </div>
-
-        {/*
-          Data health grid — surfaces /provenance/health.
-
-          While it is in flight the block renders its own (static) heading and
-          explanation with a placeholder grid under it, rather than nothing at
-          all. Rendering nothing is what made this page shift: the block
-          appeared above the fold once the fetch landed and shoved everything
-          below it off-screen — 0.197 of the page's 0.374 came from that one
-          insertion (#221 finding #6).
-
-          The placeholder count is chosen per breakpoint so it never reserves
-          MORE than the content needs — twelve at `lg` (four rows of three,
-          which is what the endpoint's ten real cards also make), nine below
-          it (five rows of two at `sm`, again matching ten; nine rows against
-          ten on mobile). Under-reserving pushes what follows below the fold
-          and costs nothing; over-reserving would pull visible content upward
-          when the data lands, which is a shift in the other direction.
-        */}
-        {healthLoading && (
-          <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-5'>
-            <div className='flex items-center gap-2 mb-1'>
-              <Activity size={16} className='text-gov-forest dark:text-emerald-100' />
-              <h2 className='text-base font-bold text-gray-900 dark:text-neutral-text'>Data health</h2>
-            </div>
-            <p className='text-xs text-gray-500 dark:text-neutral-muted/80 mb-4 max-w-2xl'>
-              Reading how many rows each dataset holds and how long since any of
-              them changed.
-            </p>
-            <div
-              className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'
-              role='status'
-              aria-label='Data health — still loading'>
-              {Array.from({ length: 9 }, (_, i) => (
-                <SkeletonCard key={i} className='h-[110px]' />
-              ))}
-              {/* Three more only at `lg`, where the grid is 3 columns: 9 cards
-                  would be 3 rows against the real 4, and 12 is 4 — the same
-                  row count, so the reserve is exact there. At `sm` these are
-                  hidden and 9 cards is 5 rows, which is what 10 real cards
-                  also make. */}
-              {Array.from({ length: 3 }, (_, i) => (
-                <SkeletonCard key={`lg-${i}`} className='h-[110px] hidden lg:block' />
               ))}
             </div>
-          </div>
-        )}
-        {healthTables.length > 0 && (
-          <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-5'>
-            <div className='flex items-center gap-2 mb-1'>
-              <Activity size={16} className='text-gov-forest dark:text-emerald-100' />
-              <h2 className='text-base font-bold text-gray-900 dark:text-neutral-text'>Data health</h2>
-            </div>
-            <p className='text-xs text-gray-500 dark:text-neutral-muted/80 mb-4 max-w-2xl'>
-              Each dataset behind the site: how many rows it holds, and how long
-              since any of them changed. <strong>Current</strong> means the table
-              has enough rows AND has moved within the table&apos;s freshness
-              budget. <strong>Stale</strong> means it has stopped moving
-              — the rows are still there, but nothing new has arrived when
-              something should have. Neither status checks whether a figure is
-              <em> correct</em>. Stored lineage below describes recorded publisher
-              identity; it does not validate document bytes or cross-check figures.
+          )}
+          {isError && <RequestError message={copy(lang, 'summaryError')} retry={() => void refetch()} lang={lang} />}
+          {data?.sources.length === 0 && (
+            <p className='py-2 text-sm font-semibold text-neutral-text'>{copy(lang, 'emptyManifest')}</p>
+          )}
+          {data && data.sources.length > 0 && (
+            <PublisherList sources={data.sources} freshness={freshness.isError ? [] : freshness.data?.sources ?? []} lang={lang} />
+          )}
+          {data && (
+            <p className='mt-3 text-audit-label text-neutral-muted'>
+              <span>{copy(lang, 'documentsIndexed')}</span> · <span className='font-mono'>{countText(data.total_documents, lang)}</span>
             </p>
-            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'>
-              {healthTables.map((tb) => {
-                const s = HEALTH_STYLE[tb.status] || HEALTH_STYLE.empty;
-                return (
-                  <div
-                    key={tb.table}
-                    className='rounded-lg border border-gray-100 dark:border-neutral-border p-3'>
-                    <div className='flex items-center justify-between gap-2'>
-                      <span className='text-sm font-semibold text-gray-800 dark:text-neutral-text truncate'>
-                        {tb.label}
-                      </span>
-                      <span
-                        className={`inline-flex items-center gap-1 text-[11px] font-semibold flex-shrink-0 ${s.text}`}>
-                        <span className={`w-2 h-2 rounded-full ${s.dot}`} />
-                        {s.label}
-                      </span>
-                    </div>
-                    <div className='mt-1 text-lg font-bold text-gray-900 dark:text-neutral-text tabular-nums'>
-                      {tb.row_count.toLocaleString()}{' '}
-                      <span className='text-xs font-normal text-gray-400 dark:text-neutral-muted/80'>
-                        rows
-                      </span>
-                    </div>
-                    <div className='text-[11px] text-gray-500 dark:text-neutral-muted/80'>
-                      {tb.attribution_status === 'empty' ? 'No stored rows to attribute'
-                        : tb.attribution_status === 'mixed_publishers' ? 'Mixed stored lineage'
-                        : tb.attribution_status === 'partial' ? 'Partial stored lineage'
-                        : tb.attribution_status === 'unresolved' ? 'Stored lineage unresolved'
-                        : tb.attribution_basis === 'stored_document_links' ? 'Linked document publisher'
-                        : tb.attribution_status === 'single_publisher' ? 'Stored observation lineage'
-                        : tb.source || 'Stored lineage unavailable'}
-                      {tb.attribution_basis === 'stored_document_links' && (
-                        <div>Linked documents only; observation evidence not assessed</div>
-                      )}
-                      {tb.represented_publishers?.map((publisher) => (
-                        <div key={publisher.source_id}>
-                          {publisher.name} · {publisher.row_count.toLocaleString()}{' '}
-                          {publisher.row_count === 1 ? 'row' : 'rows'}
-                        </div>
-                      ))}
-                      {tb.unresolved_source_rows != null && tb.unresolved_source_rows > 0 && (
-                        <div>
-                          {tb.unresolved_source_rows.toLocaleString()}{' '}
-                          {tb.unresolved_source_rows === 1 ? 'row' : 'rows'} without resolved lineage
-                        </div>
-                      )}
-                    </div>
-                    {tb.age_days != null && (
-                      <div className='text-[11px] text-gray-400 dark:text-neutral-muted/70'>
-                        last changed {tb.age_days === 0 ? 'today' : `${tb.age_days}d ago`}
-                        {tb.stale_after_days != null && ` · stale after ${tb.stale_after_days}d`}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+          )}
+        </section>
+
+        <details className='group rounded border border-neutral-border bg-surface-base'
+          onToggle={(event) => { if (event.currentTarget.open) setHealthRequested(true); }}>
+          <summary className={`flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded px-3 py-2 text-sm font-semibold text-neutral-text [&::-webkit-details-marker]:hidden ${FOCUS}`}>
+            {copy(lang, 'health')}
+            <ChevronDown size={16} aria-hidden='true' className='shrink-0 text-neutral-muted group-open:rotate-180' />
+          </summary>
+          {healthRequested && (
+            <div className='space-y-4 px-3 pb-3'>
+              <h2 className='sr-only'>{copy(lang, 'health')}</h2>
+              <DataHealth lang={lang} />
+              {data && data.sources.length > 0 && <DocumentInventory sources={data.sources} lang={lang} />}
             </div>
-          </div>
-        )}
+          )}
+        </details>
 
-        {/*
-          Loading / Error.
-
-          The manifest's own placeholder is card-shaped for the same reason:
-          an 84px spinner box standing in for a 1,657px grid is what pushed
-          the methodology footer out of the viewport. Six cards against the
-          eighteen the endpoint returns — three rows at `lg` against nine, six
-          against eighteen on mobile — so, again, never more than the content.
-        */}
-        {isLoading && (
-          <div
-            className='grid grid-cols-1 lg:grid-cols-2 gap-4'
-            role='status'
-            aria-label='Loading source manifest'>
-            <span className='sr-only'>Loading source manifest…</span>
-            {Array.from({ length: 6 }, (_, i) => (
-              <SkeletonCard key={i} className='h-[160px]' />
-            ))}
-          </div>
-        )}
-        {error && (
-          <div className='bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-800 text-sm'>
-            Failed to load source manifest. Please refresh.
-          </div>
-        )}
-
-        {/* Empty state — manifest indexed nothing (audit §2.9: no silent "0 documents" void) */}
-        {!isLoading && !error && sources.length === 0 && (
-          <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-10 text-center'>
-            <p className='text-sm font-semibold text-gray-700 dark:text-neutral-muted'>
-              No source documents indexed yet
-            </p>
-            <p className='mt-1 text-xs text-gray-500 dark:text-neutral-muted/80'>
-              The source manifest is empty for this environment — the ingestion pipeline has
-              not recorded any documents.
-            </p>
-          </div>
-        )}
-
-        {/* Source list */}
-        {!isLoading && !error && sources.length > 0 && (
-          <div className='grid grid-cols-1 lg:grid-cols-2 gap-4'>
-            {sources.map((s) => (
-              <article
-                key={s.publisher}
-                className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-5 hover:border-gov-sage/40 hover:shadow-md transition-all'>
-                <div className='flex items-start justify-between gap-3 mb-3'>
-                  <div className='min-w-0'>
-                    <div className='flex items-center gap-2 mb-1'>
-                      {s.short && (
-                        <span className='text-[11px] font-bold uppercase tracking-wider bg-gov-forest/10 text-gov-forest dark:text-emerald-100 px-2 py-0.5 rounded'>
-                          {s.short}
-                        </span>
-                      )}
-                      <h2 className='text-base font-bold text-gray-900 dark:text-neutral-text truncate'>
-                        {s.publisher}
-                      </h2>
-                    </div>
-                    {s.role && (
-                      <p className='text-sm text-gray-600 dark:text-neutral-muted leading-relaxed'>{s.role}</p>
-                    )}
-                  </div>
-                  {s.website && (
-                    <a
-                      href={s.website}
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      className='text-xs text-gov-forest dark:text-emerald-100 hover:underline inline-flex items-center gap-1 shrink-0 whitespace-nowrap'>
-                      Visit site
-                      <ExternalLink size={11} />
-                    </a>
-                  )}
-                </div>
-
-                <p className='text-xs text-gray-500 dark:text-neutral-muted mt-2'>Registration, download and extraction do not establish accepted publication coverage.</p>
-                <div className='flex flex-wrap items-center gap-4 pt-3 border-t border-gray-100 dark:border-neutral-border'>
-                  <div>
-                    <div className='text-[11px] uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-semibold'>
-                      Registered documents
-                    </div>
-                    <div className='text-lg font-bold text-gray-900 dark:text-neutral-text tabular-nums'>
-                      {s.document_count.toLocaleString()}
-                    </div>
-                    <p className='text-xs text-gray-500 dark:text-neutral-muted'>
-                      {s.downloaded_documents ?? '—'} downloaded · {s.extracted_documents ?? '—'} extracted
-                    </p>
-                  </div>
-                  <div>
-                    <div className='text-[11px] uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-semibold'>
-                      Last verified download
-                    </div>
-                    <div
-                      className={`text-sm font-semibold inline-flex items-center gap-1.5 ${freshnessColor(s.last_fetched)}`}>
-                      <Clock size={12} />
-                      {fmtRelativeDate(s.last_fetched)}
-                    </div>
-                  </div>
-                  {Object.keys(s.doc_types).length > 0 && (
-                    <div className='flex flex-wrap gap-1.5 ml-auto'>
-                      {Object.entries(s.doc_types)
-                        .sort((a, b) => b[1] - a[1])
-                        .map(([type, count]) => (
-                          <DocTypeBadge key={type} type={type} count={count} />
-                        ))}
-                    </div>
-                  )}
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-
-        {/* Methodology footer */}
-        <div className='bg-gov-forest/5 border border-gov-forest/20 rounded-xl p-5'>
-          <div className='flex items-start gap-3'>
-            <FileText className='text-gov-forest dark:text-emerald-100 mt-0.5 shrink-0' size={18} />
-            <div className='text-sm text-gray-700 dark:text-neutral-muted leading-relaxed'>
-              <p className='font-semibold text-gray-900 dark:text-neutral-text mb-1'>How this works</p>
-              {/* The old copy promised that "every extracted value retains a
-                  provenance pointer … so you can trace any county's budget
-                  execution number back to the original COB quarterly report".
-                  GET /provenance/verify/budget_lines answers "Unknown table"
-                  — the one trace the sentence promised is the one the verifier
-                  cannot do (credibility audit F16). Describe the actual state. */}
-              <p>
-                Our ETL pipeline fetches PDFs and spreadsheets from each agency&apos;s
-                official portal, extracts line-items using table-extraction tools
-                and rule-based parsers, and writes them to a canonical schema.
-              </p>
-              <p className='mt-2'>
-                Coverage of the evidence trail is uneven, and we would rather say
-                so than imply otherwise. Audit findings and national debt
-                instruments carry a <strong>provenance pointer</strong> — a source
-                document and, for audit findings, a page reference — and can be
-                checked through the verification endpoint. County budget lines and
-                the historical debt timeline cannot yet: they are not wired into
-                that endpoint. County figures come from two different places, and
-                each page says which: the headline budget, spend and execution
-                rate are read from the Controller of Budget&apos;s implementation
-                review where that parse landed, while the per-sector split and any
-                future-year period are modelled from the CRA equitable-share
-                formula. Pages carrying modelled figures say so on the page.
-              </p>
-            </div>
-          </div>
-        </div>
+        <section className='space-y-2 border-t border-neutral-border pt-4' aria-labelledby='sources-method'>
+          <h2 id='sources-method' className='text-base font-bold text-neutral-text'>{copy(lang, 'methodTitle')}</h2>
+          <p className='max-w-[75ch] text-sm text-neutral-muted'>{copy(lang, 'method')}</p>
+          <p className='max-w-[75ch] text-sm text-neutral-muted'>{copy(lang, 'countyMethod')}</p>
+        </section>
       </div>
     </PageShell>
   );
