@@ -89,6 +89,7 @@ export interface SearchHit {
 export interface RunSearchResult {
   mode: 'article' | 'keyword' | 'too-short' | 'empty';
   hits: SearchHit[];
+  highlightTerms?: string[];
 }
 
 /* ───────────────────────── Parsing ───────────────────────── */
@@ -310,7 +311,7 @@ function reciprocalRankFusion(
 }
 
 /**
- * One-shot search used by autocomplete boxes.
+ * One-shot article search. The reader opts into lexical matches and excerpts.
  *
  *   mode === 'article'     → a valid article number parsed from the query.
  *   mode === 'keyword'     → hybrid BM25 ⊕ semantic (or BM25-only on server).
@@ -319,7 +320,8 @@ function reciprocalRankFusion(
  */
 export async function runSearch(
   rawQuery: string,
-  limit = 20
+  limit = 20,
+  { includeSemantic = true }: { includeSemantic?: boolean } = {}
 ): Promise<RunSearchResult> {
   const q = rawQuery.trim();
   if (q.length === 0) return { mode: 'empty', hits: [] };
@@ -354,7 +356,7 @@ export async function runSearch(
   const semanticLimit = Math.max(limit, 30);
   const [bm25Results, semResults] = await Promise.all([
     Promise.resolve(mini.search(q) as SearchResult[]),
-    semanticSearch(q, semanticLimit).catch(() => [] as SemanticHit[]),
+    includeSemantic ? semanticSearch(q, semanticLimit).catch(() => [] as SemanticHit[]) : [],
   ]);
 
   // Track matched BM25 terms per row for excerpt highlighting. Semantic
@@ -423,7 +425,10 @@ export async function runSearch(
     }
   }
 
-  return { mode: 'keyword', hits };
+  const highlightTerms = includeSemantic ? undefined : Array.from(new Set(
+    (q.toLowerCase().match(/[a-z0-9]{3,}/g) ?? []).filter((term) => !STOP_WORDS.has(term))
+  ));
+  return { mode: 'keyword', hits, highlightTerms };
 }
 
 /* ───────────────────────── Test-only helpers ───────────────────────── */

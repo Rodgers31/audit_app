@@ -27,6 +27,67 @@ test.describe('Learn Page', () => {
     await page.goForward();
     await expect(page.getByRole('heading', { name: 'Public debt', exact: true })).toBeVisible();
   });
+  test('reader search groups highlighted articles and opens them through browser history', async ({ page }) => {
+    await page.goto('/learn?article=229');
+    const reader = page.getByRole('region', { name: 'Constitution of Kenya reader' });
+    await expect(reader.getByRole('heading', { name: 'Auditor-General', exact: true })).toBeVisible();
+    const disclosure = reader.getByRole('button', { name: 'Search the reader' });
+    await disclosure.press('Enter');
+    const search = reader.getByRole('searchbox', { name: 'Search Constitution articles' });
+    await expect(search).toBeFocused();
+    await search.fill('devolution services');
+    const group = reader.getByRole('region', { name: /Chapter 2 · The Republic/ });
+    const result = group.getByRole('link', { name: /Art\. 6 Devolution and access to services/ });
+    await expect(result.locator('span[lang=en]').first().locator('mark')).toHaveText(['Devolution', 'services']);
+    await expect(result).toHaveAttribute('href', '?article=6');
+    await expect(reader.getByRole('region', { name: /Chapter 11 · Devolved Government/ })).toBeVisible();
+    await result.press('ArrowRight');
+    await expect(page).toHaveURL(/article=229$/);
+    await result.press('Enter');
+    await expect(page).toHaveURL(/article=6$/);
+    await expect(disclosure).toHaveAttribute('aria-expanded', 'false');
+    const heading = reader.getByRole('heading', { name: 'Devolution and access to services', exact: true });
+    await expect(heading).toBeFocused();
+    await expect(heading.locator('mark')).toHaveText(['Devolution', 'services']);
+    await page.goBack();
+    await expect(reader.getByRole('heading', { name: 'Auditor-General', exact: true })).toBeVisible();
+    await page.goForward();
+    await expect(heading).toBeVisible();
+  });
+
+  test('mobile reader search handles short, empty, and direct article queries', async ({ browser }) => {
+    const context = await browser.newContext({ hasTouch: true, viewport: { width: 360, height: 840 } });
+    try {
+      const page = await context.newPage();
+      await page.goto('/learn?article=229');
+      const reader = page.getByRole('region', { name: 'Constitution of Kenya reader' });
+      await expect(reader.getByRole('heading', { name: 'Auditor-General', exact: true })).toBeVisible();
+      const disclosure = reader.getByRole('button', { name: 'Search the reader' });
+      await disclosure.tap();
+      const search = reader.getByRole('searchbox', { name: 'Search Constitution articles' });
+      await search.fill('ab');
+      await expect(reader.getByText('Enter at least three characters or an article number.')).toBeVisible();
+      await search.fill('999');
+      await expect(reader.getByText('No matching articles.')).toBeVisible();
+      await search.press('Escape');
+      await expect(disclosure).toBeFocused();
+      await expect(search).toBeHidden();
+      await disclosure.tap();
+      await reader.getByRole('button', { name: 'Clear article search' }).tap();
+      await expect(search).toBeFocused();
+      await expect(search).toHaveValue('');
+      await expect(reader.getByText('No matching articles.')).toBeHidden();
+      await search.fill('Article 214');
+      const result = reader.getByRole('link', { name: /Art\. 214 Public debt/ });
+      await expect(result.locator('mark')).toHaveText('214');
+      await result.tap();
+      await expect(reader.getByRole('heading', { name: 'Public debt', exact: true })).toBeFocused();
+      await expect(page).toHaveURL(/article=214$/);
+    } finally {
+      await context.close();
+    }
+  });
+
   test('learn page has interactive sections', async ({ page }) => {
     await page.goto('/learn');
     for (const path of ['/learn/glossary', '/learn/quiz', '/learn/government', '/learn/why-it-matters']) {

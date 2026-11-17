@@ -2,6 +2,18 @@ import type { Lang, Translation } from '../messages';
 
 const LEARN_MESSAGES = {
   search: { en: 'Search', sw: 'Tafuta', plain: 'Search' },
+  readerSearch: { en: 'Search the reader', sw: 'Tafuta katika kisomaji', plain: 'Search the reader' },
+  readerSearchLabel: { en: 'Search Constitution articles', sw: 'Tafuta vifungu vya Katiba', plain: 'Search Constitution articles' },
+  readerSearchPlaceholder: { en: 'Public debt or Article 214', sw: 'Mfano: public debt au 214', plain: 'Public debt or Article 214' },
+  readerSearchHelp: { en: 'Search the English text or enter an article number.', sw: 'Tafuta katika maandishi ya Kiingereza au andika nambari ya kifungu.', plain: 'Type an English term or an article number.' },
+  readerSearchLoading: { en: 'Searching articles…', sw: 'Inatafuta vifungu…', plain: 'Searching articles…' },
+  readerSearchClear: { en: 'Clear article search', sw: 'Futa utafutaji wa vifungu', plain: 'Clear article search' },
+  readerSearchShort: { en: 'Enter at least three characters or an article number.', sw: 'Andika angalau herufi tatu au nambari ya kifungu.', plain: 'Type three or more characters or an article number.' },
+  readerSearchEmpty: { en: 'No matching articles.', sw: 'Hakuna vifungu vinavyolingana.', plain: 'No matching articles.' },
+  readerSearchError: { en: 'Search could not load. Try an article number.', sw: 'Utafutaji haukupakiwa. Jaribu nambari ya kifungu.', plain: 'Search could not load. Try an article number.' },
+  readerSearchResult: { en: '1 matching article', sw: 'Kifungu 1 kinacholingana', plain: '1 matching article' },
+  readerSearchResults: { en: 'Showing {count} matching articles', sw: 'Inaonyesha vifungu {count} vinavyolingana', plain: 'Showing {count} matching articles' },
+  readerSearchChapter: { en: 'Chapter {chapter}', sw: 'Sura ya {chapter}', plain: 'Chapter {chapter}' },
   chapters: { en: 'Chapters', sw: 'Sura', plain: 'Chapters' },
   readerTitle: { en: 'Constitution of Kenya reader', sw: 'Kisomaji cha Katiba ya Kenya', plain: 'Read the Constitution of Kenya' },
   bookHeading: { en: 'Read the law that shapes every shilling', sw: 'Soma sheria inayoongoza matumizi ya kila shilingi', plain: 'Read the law that shapes every shilling' },
