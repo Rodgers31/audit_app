@@ -6,6 +6,7 @@ import ModelledDataNote from '@/components/ModelledDataNote';
 import InfoTip from '@/components/InfoTip';
 import { useLang } from '@/lib/i18n/LangProvider';
 import type { TranslationKey } from '@/lib/i18n/messages';
+import { COUNTY_EXPLORER_MESSAGES } from '@/lib/i18n/messages/countyExplorer';
 import {
   compareByPublishedFigure,
   countyBudget,
@@ -581,10 +582,19 @@ function CountyPerformanceMap({
   selectedRegion: string;
   fiscalYear?: string;
 }) {
-  const { t } = useLang();
+  const { lang, t } = useLang();
   const router = useRouter();
-  const [hoveredCountyId, setHoveredCountyId] = useState<County['id'] | null>(null);
-  const [hoveredGadm, setHoveredGadm] = useState<string | null>(null);
+  const [activeCounty, setActiveCounty] = useState<{
+    id: County['id'];
+    selected: boolean;
+  } | null>(null);
+  const pointerType = useRef<string | null>(null);
+
+  // Browsers can focus the path before completing a tap. A preview must
+  // never count as the selection that makes the next tap open the county.
+  const previewCounty = (id: County['id']) =>
+    setActiveCounty((current) => (current?.id === id ? current : { id, selected: false }));
+  const selectCounty = (id: County['id']) => setActiveCounty({ id, selected: true });
 
   // Build lookup for ALL counties (so all polygons get colored)
   const allLookup = useMemo(() => {
@@ -638,7 +648,7 @@ function CountyPerformanceMap({
   }, [selectedRegion, allLookup]);
 
   // Resolve from the current period and filters; never retain a previous year's figures.
-  const inspected = counties.find((county) => county.id === hoveredCountyId) ?? counties[0] ?? null;
+  const inspected = counties.find((county) => county.id === activeCounty?.id) ?? counties[0] ?? null;
   const countyHref = (county: County) =>
     `/counties/${county.id}${fiscalYear ? `?fy=${encodeURIComponent(fiscalYear)}` : ''}`;
   return (
@@ -648,7 +658,16 @@ function CountyPerformanceMap({
         <span>{fiscalYear}</span>
       </header>
       <div className={styles.mapCanvas}>
-        <svg viewBox={regionViewBox} className={styles.mapSvg} aria-label={t('counties.map.title')}>
+        <svg
+          viewBox={regionViewBox}
+          className={styles.mapSvg}
+          aria-label={t('counties.map.title')}
+          onPointerDown={(event) => {
+            pointerType.current = event.pointerType;
+          }}
+          onPointerCancel={() => {
+            pointerType.current = null;
+          }}>
           {KENYA_COUNTY_PATHS.map((cp) => {
             const county = allLookup.get(normalizeCountyName(cp.name));
             const band = county ? financialHealthBand(county.financial_health_score) : null;
@@ -657,38 +676,49 @@ function CountyPerformanceMap({
               !filteredNames.has(normalizeCountyName(cp.name)) ||
               (activeGrades.length > 0 && (!band || !activeGrades.includes(band.grade)));
             const interactive = county != null && !dimmed;
+            const selected = interactive && activeCounty?.id === county.id && activeCounty.selected;
             return (
               <path
                 key={cp.name}
                 d={cp.path}
                 fill={fill}
                 stroke='var(--county-map-boundary)'
-                strokeWidth={interactive && hoveredGadm === cp.name ? 1.8 : 0.7}
+                strokeWidth={0.7}
                 opacity={dimmed ? 0.2 : 1}
                 role={interactive ? 'link' : undefined}
                 tabIndex={interactive ? 0 : undefined}
+                data-grade={band?.grade}
+                aria-controls={interactive ? 'county-map-readout' : undefined}
+                aria-current={selected ? 'true' : undefined}
                 aria-label={
                   county
                     ? `${county.name}, ${t('counties.map.tooltip_grade')}: ${getGrade(county.financial_health_score).letter}`
                     : cp.name
                 }
-                onClick={() => {
-                  if (interactive) router.push(countyHref(county));
+                onClick={(event) => {
+                  const input = pointerType.current;
+                  pointerType.current = null;
+                  if (!interactive) return;
+                  const touchOrCoarse =
+                    event.detail > 0 &&
+                    (input === 'touch' ||
+                      (input !== 'mouse' && window.matchMedia('(pointer: coarse)').matches));
+                  if (touchOrCoarse && !selected) selectCounty(county.id);
+                  else router.push(countyHref(county));
                 }}
-                onKeyDown={(e) => {
-                  if (interactive && e.key === 'Enter') router.push(countyHref(county));
+                onKeyDown={(event) => {
+                  if (!interactive) return;
+                  if (event.key === 'Enter') router.push(countyHref(county));
+                  if (event.key === ' ') {
+                    event.preventDefault();
+                    selectCounty(county.id);
+                  }
                 }}
                 onFocus={() => {
-                  if (interactive) {
-                    setHoveredCountyId(county.id);
-                    setHoveredGadm(cp.name);
-                  }
+                  if (interactive) previewCounty(county.id);
                 }}
-                onMouseEnter={() => {
-                  if (interactive) {
-                    setHoveredCountyId(county.id);
-                    setHoveredGadm(cp.name);
-                  }
+                onPointerEnter={(event) => {
+                  if (interactive && event.pointerType === 'mouse') previewCounty(county.id);
                 }}>
                 <title>{county?.name ?? cp.name}</title>
               </path>
@@ -696,11 +726,11 @@ function CountyPerformanceMap({
           })}
         </svg>
       </div>
-      <div className={styles.mapReadout}>
+      <div id='county-map-readout' className={styles.mapReadout} aria-live='polite' aria-atomic='true'>
         {inspected && (
           <>
             <Link href={countyHref(inspected)}>
-              {inspected.name}
+              {COUNTY_EXPLORER_MESSAGES['counties.map.open'][lang].replace('{county}', inspected.name)}
               <span aria-hidden='true'>↗</span>
             </Link>
             <dl>
