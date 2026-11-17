@@ -1,6 +1,42 @@
 import { expect, test } from '@playwright/test';
 import { waitForAppReady } from './utils/selectors';
 
+test('the Home questions offer keyboard navigation to the existing public pages', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 780 });
+  await page.goto('/');
+  await waitForAppReady(page);
+  await expect(page.getByRole('heading', { name: 'Where does Kenya’s money go?', level: 1 })).toBeVisible();
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /from official records\./);
+
+  const topics = page.getByRole('navigation', { name: 'What do you want to know?' });
+  const destinations = [
+    ['How much does Kenya owe?', '/debt'],
+    ['Where do my taxes go?', '/budget'],
+    ['How is my county doing?', '/counties'],
+    ['What did the Auditor-General find?', '/audits'],
+  ] as const;
+  await expect(topics.getByRole('link')).toHaveCount(destinations.length);
+  for (const [question, href] of destinations) {
+    await expect(topics.getByRole('link', { name: question, exact: true })).toHaveAttribute('href', href);
+  }
+
+  const hero = page.getByRole('region', { name: 'Where does Kenya’s money go?' });
+  await expect(hero).toContainText('Data from the Central Bank, Treasury, Auditor-General and Controller of Budget.');
+  const firstTopic = topics.getByRole('link', { name: destinations[0][0] });
+  await firstTopic.focus();
+  for (const [question] of destinations) {
+    await expect(topics.getByRole('link', { name: question })).toBeFocused();
+    await page.keyboard.press('Tab');
+  }
+  const sources = hero.getByRole('link', { name: 'Data & sources' });
+  await expect(sources).toBeFocused();
+  await expect(sources).toHaveAttribute('href', '/sources');
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/audits\/?$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Audit Findings' })).toBeVisible();
+});
+
 test('home dashboard renders and allows county selection via map', async ({ page }) => {
   await page.goto('/');
   await waitForAppReady(page);
