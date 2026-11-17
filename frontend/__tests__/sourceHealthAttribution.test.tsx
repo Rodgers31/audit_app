@@ -1,10 +1,13 @@
 import '@testing-library/jest-dom';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import SourcesPage from '@/app/sources/page';
 
 const get = jest.fn();
-jest.mock('@/lib/api/axios', () => ({ __esModule: true, default: { get: (...args: unknown[]) => get(...args) } }));
+jest.mock('@/lib/api/axios', () => {
+  const client = { get: (...args: unknown[]) => get(...args) };
+  return { __esModule: true, default: client, apiClient: client };
+});
 jest.mock('@/components/layout/PageShell', () => ({ __esModule: true, default: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
 
 const publishers = [
@@ -12,12 +15,19 @@ const publishers = [
   { source_id: 'knbs', name: 'Kenya National Bureau of Statistics (KNBS)', row_count: 1 },
 ];
 
+function openHealth() {
+  const details = screen.getByText('For researchers: data health').closest('details')!;
+  details.open = true;
+  fireEvent(details, new Event('toggle'));
+}
+
 function renderHealth(fields: Record<string, unknown>) {
-  get.mockImplementation((url: string) => Promise.resolve({ data: url === '/sources/summary'
-    ? { total_documents: 0, sources: [] }
-    : { tables: [{ table: 'gdp_data', label: 'GDP Data', row_count: 2, source: null, status: 'degraded', document_bytes_checked: false, attribution_basis: 'coherent_observation_identity', represented_publishers: [], unresolved_source_rows: 0, ...fields }] } }));
+  get.mockImplementation((url: string) => Promise.resolve({ data: url === '/provenance/health'
+    ? { tables: [{ table: 'gdp_data', label: 'GDP Data', row_count: 2, source: null, status: 'degraded', document_bytes_checked: false, attribution_basis: 'coherent_observation_identity', represented_publishers: [], unresolved_source_rows: 0, ...fields }] }
+    : { total_documents: 0, sources: [] } }));
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(<QueryClientProvider client={client}><SourcesPage /></QueryClientProvider>);
+  openHealth();
 }
 
 it('renders mixed stored lineage with both publishers and no verification claim', async () => {
@@ -36,7 +46,7 @@ it('makes partial lineage explicit instead of crediting the whole table to one p
 
 it('renders an explicit absence for unresolved attribution', async () => {
   renderHealth({ attribution_status: 'unresolved', unresolved_source_rows: 2 });
-  expect(await screen.findByText('Stored lineage unresolved')).toBeInTheDocument();
+  expect(await screen.findByText('Not yet linked to a source document')).toBeVisible();
   expect(screen.getByText('2 rows without resolved lineage')).toBeInTheDocument();
 });
 
@@ -54,11 +64,12 @@ it('distinguishes an empty cohort from unresolved rows', async () => {
 
 it('renders captured full-main PostgreSQL HTTP cohort responses', async () => {
   const capture = require('./fixtures/sourceHealthAttribution.json');
-  get.mockImplementation((url: string) => Promise.resolve({ data: url === '/sources/summary'
-    ? { total_documents: 0, sources: [] }
-    : capture.metadata_only_population }));
+  get.mockImplementation((url: string) => Promise.resolve({ data: url === '/provenance/health'
+    ? capture.metadata_only_population
+    : { total_documents: 0, sources: [] } }));
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(<QueryClientProvider client={client}><SourcesPage /></QueryClientProvider>);
+  openHealth();
   expect(await screen.findByText('Partial stored lineage')).toBeInTheDocument();
   expect(screen.getByText('Stored observation lineage')).toBeInTheDocument();
   expect(screen.getByText('1 row without resolved lineage')).toBeInTheDocument();
