@@ -73,7 +73,27 @@ class ConfigurationTests(unittest.TestCase):
                 if "uses" in step:
                     self.assertRegex(step["uses"], r"^[^@]+@[0-9a-f]{40}$")
         self.assertEqual(set(re.findall(r"secrets\.([A-Z0-9_]+)", raw)), {"CODECOV_TOKEN"})
-        self.assertNotIn("alembic upgrade head", raw)
+        self.assertEqual(raw.count("alembic upgrade head"), 1)
+        [(job_name, schema_guard)] = [
+            (name, step) for name, job in jobs.items() for step in job["steps"]
+            if "alembic upgrade head" in step.get("run", "")
+        ]
+        self.assertEqual(job_name, "test-backend")
+        self.assertEqual(schema_guard["name"], "Check migrated public table access")
+        self.assertEqual(schema_guard["timeout-minutes"], 5)
+        self.assertEqual(schema_guard["env"], {
+            "SCHEMA_GUARD_CONTAINER": "${{ job.services.schema-guard-postgres.id }}",
+            "PUBLIC_SCHEMA_GUARD_CI_URL": "postgresql://postgres:postgres@127.0.0.1:55498/auditgava_schema_guard",
+            "PYTHON_DOTENV_DISABLED": "1",
+        })
+        self.assertIn(
+            'DATABASE_URL="$PUBLIC_SCHEMA_GUARD_CI_URL?hostaddr=127.0.0.1" python -m alembic upgrade head',
+            schema_guard["run"].splitlines(),
+        )
+        service = jobs["test-backend"]["services"]["schema-guard-postgres"]
+        self.assertEqual(service["image"], jobs["test-backend"]["services"]["postgres"]["image"])
+        self.assertEqual(service["ports"], ["127.0.0.1:55498:5432"])
+        self.assertEqual(service["env"]["POSTGRES_DB"], "auditgava_schema_guard")
 
     def assert_job_deadlines(self, workflow, backend_minutes):
         expected = {
