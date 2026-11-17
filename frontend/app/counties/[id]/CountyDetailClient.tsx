@@ -13,6 +13,7 @@ import PDFExportButton from '@/components/PDFExportButton';
 import WatchButton from '@/components/WatchButton';
 import { useLang } from '@/lib/i18n/LangProvider';
 import type { TranslationKey } from '@/lib/i18n/messages';
+import { COUNTY_TAB_LABELS } from '@/lib/i18n/messages/countyDetail';
 import {
   useCountyAccountability,
   useCountyComprehensive,
@@ -23,14 +24,10 @@ import { CountyComprehensive, FinancialHealthComponentName } from '@/types';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft,
-  Award,
-  Banknote,
-  CircleDollarSign,
   Clock,
   ExternalLink,
   Grid3x3,
   Info,
-  Landmark,
   ShieldAlert,
   X,
 } from 'lucide-react';
@@ -44,6 +41,7 @@ import { fmtKES, fmtLabel, fmtPop, hasIngestedAudit, pct, Tab } from './shared';
 import TabSkeleton from './tabs/TabSkeleton';
 import TabErrorBoundary from './tabs/TabErrorBoundary';
 import styles from '../CountyExperience.module.css';
+import tabStyles from './CountyTabs.module.css';
 import CountyDetailSkeleton from './CountyDetailSkeleton';
 import { gradeSignal, SignalMark } from '../CountySignals';
 import { FINANCIAL_HEALTH_BANDS, financialHealthBand } from '@/lib/counties/financialHealth';
@@ -72,27 +70,8 @@ const AccountabilityTab = dynamic(() => import('./tabs/AccountabilityTab'), {
   ssr: false,
   loading: () => <TabSkeleton />,
 });
-// ProjectsTab withdrawn — see the note on the TABS array below.
-
-const TABS: { id: Tab; labelKey: TranslationKey; icon: React.ElementType }[] = [
-  { id: 'overview', labelKey: 'county.tab.overview', icon: Landmark },
-  { id: 'money', labelKey: 'county.tab.money', icon: Banknote },
-  { id: 'budget', labelKey: 'county.tab.budget_debt', icon: CircleDollarSign },
-  { id: 'audit', labelKey: 'county.tab.audit_findings', icon: ShieldAlert },
-  { id: 'accountability', labelKey: 'county.tab.accountability', icon: Award },
-  // The "Projects" tab was withdrawn (credibility audit F6). It rendered 25
-  // hand-written records from backend/seeding/real_data/stalled_projects.json
-  // against 21 named counties, each carrying an Auditor-General case reference
-  // (e.g. "OAG/MSA/2023/HLT-004"), a contract value, a completion percentage
-  // and a narrative cause. No OAG report was ever read for any of them: the
-  // domain's own fetcher records mark_fixture(reason="no_live_source", "...
-  // source is OAG audit reports, for which no extractor exists yet"), and all
-  // 25 records have amount_paid/contracted_amount equal to an exact whole
-  // percent drawn only from {20,30,40,50,60}. Publishing a case number asserts
-  // that a document exists. The fixture was deleted in #230 and the API now
-  // carries COB's own per-county tables with a page citation on every row;
-  // re-enabling this tab on that data is an open decision for the maintainer.
-];
+// Projects remain withdrawn after the source review in #230.
+const TABS: readonly Tab[] = ['overview', 'money', 'budget', 'audit', 'accountability'];
 
 /** Tiny inline SVG sparkline — renders a trend without pulling in a chart lib.
  * Used under the HEALTH and AUDIT badges to show whether a county is trending
@@ -602,7 +581,7 @@ function SourcesFooter() {
    Main Page
    ═══════════════════════════════════════════ */
 export default function CountyDetailClient() {
-  const { t } = useLang();
+  const { lang, t } = useLang();
   const params = useParams();
   const searchParams = useSearchParams();
   useReconcileInitialQuery(searchParams.toString());
@@ -632,9 +611,50 @@ export default function CountyDetailClient() {
   const { data: acctData } = useCountyAccountability(countyId);
 
   const requestedTab = searchParams.get('tab');
-  const urlTab: Tab = TABS.some(({ id }) => id === requestedTab) ? requestedTab as Tab : 'overview';
+  const urlTab: Tab = TABS.find((id) => id === requestedTab) ?? 'overview';
   const [tab, setTab] = useState<Tab>(urlTab);
+  const [focusedTab, setFocusedTab] = useState<Tab | null>(null);
+  const tabsId = useId();
+  const tabAnchorRef = useRef<HTMLDivElement>(null);
+  const tabListRef = useRef<HTMLDivElement>(null);
+  const tabButtons = useRef<Partial<Record<Tab, HTMLButtonElement>>>({});
   useEffect(() => setTab(urlTab), [urlTab]);
+
+  const revealTab = useCallback((id: Tab) => {
+    const list = tabListRef.current;
+    const button = tabButtons.current[id];
+    if (!list || !button) return;
+    const strip = list.getBoundingClientRect();
+    const target = button.getBoundingClientRect();
+    if (target.left < strip.left) list.scrollLeft += target.left - strip.left;
+    else if (target.right > strip.right) list.scrollLeft += target.right - strip.right;
+  }, []);
+  const hasCounty = Boolean(data && !isLoading && !error);
+  useEffect(() => {
+    if (hasCounty) revealTab(tab);
+  }, [hasCounty, lang, revealTab, tab]);
+
+  function moveTabFocus(event: React.KeyboardEvent<HTMLButtonElement>, index: number) {
+    let next: number;
+    switch (event.key) {
+      case 'ArrowLeft':
+        next = (index + TABS.length - 1) % TABS.length;
+        break;
+      case 'ArrowRight':
+        next = (index + 1) % TABS.length;
+        break;
+      case 'Home':
+        next = 0;
+        break;
+      case 'End':
+        next = TABS.length - 1;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    tabButtons.current[TABS[next]]?.focus({ preventScroll: true });
+  }
   const [showHealthModal, setShowHealthModal] = useState(false);
   const closeHealthModal = useCallback(() => setShowHealthModal(false), []);
 
@@ -645,7 +665,6 @@ export default function CountyDetailClient() {
   // The tab is client state; only `fy` is an input to the server page. A
   // router navigation here unnecessarily suspends on a new Flight stream and
   // can strand the resolved lazy tab when that stream loses its render retry.
-  const tabBarRef = useRef<HTMLDivElement | null>(null);
   const handleTabChange = useCallback(
     (next: Tab) => {
       setTab(next);
@@ -659,14 +678,10 @@ export default function CountyDetailClient() {
       }
       window.history.replaceState(null, '', `${current.pathname}${current.search}${current.hash}`);
 
-      // Scroll the tab bar into view. Without this, the browser preserves
-      // pixel-offset scroll position — if the user was deep into Overview
-      // and clicks Budget & Debt (shorter), they'd land on the footer.
+      // The strip is already visible when sticky. Its in-flow anchor still
+      // marks the start of the newly selected report.
       requestAnimationFrame(() => {
-        tabBarRef.current?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start',
-        });
+        tabAnchorRef.current?.scrollIntoView({ block: 'start', behavior: 'instant' });
       });
     },
     []
@@ -811,7 +826,10 @@ export default function CountyDetailClient() {
                     }
                     label={t('county.grade.audit')}
                     title={t('county.grade.audit_tooltip')}
-                    onClick={() => handleTabChange('accountability')}
+                    onClick={() => {
+                      handleTabChange('accountability');
+                      tabButtons.current.accountability?.focus({ preventScroll: true });
+                    }}
                     sparklineValues={acctData?.audit_severity_history?.map((h) => h.score)}
                   />
                 </div>
@@ -859,25 +877,61 @@ export default function CountyDetailClient() {
               ))}
             </div>
           </header>
-          <div ref={tabBarRef} className={styles.sectionNavigation}>
-            <p className={styles.sectionNavLabel}>{t('county.sections.label')}</p>
-            <nav className={styles.tabs} aria-label={t('county.page.title_fallback')}>
-              {TABS.map((item) => (
+          <div ref={tabAnchorRef} className={tabStyles.anchor} aria-hidden='true' />
+          <div className={tabStyles.sticky}>
+            <div className={tabStyles.identity}>
+              <span>{data.name} {t('county.page.name_suffix')}</span>
+              {data.budget.fiscal_year && (
+                <span className={tabStyles.period}>
+                  FY{data.budget.fiscal_year.replace(/^FY\s*/i, '')}
+                </span>
+              )}
+            </div>
+            <div
+              ref={tabListRef}
+              role='tablist'
+              aria-label={t('county.sections.label')}
+              className={tabStyles.list}
+              onBlur={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget)) setFocusedTab(null);
+              }}>
+              {TABS.map((id, index) => (
                 <button
-                  key={item.id}
-                  onClick={() => handleTabChange(item.id)}
-                  aria-pressed={tab === item.id}>
-                  <item.icon size={17} aria-hidden='true' />
-                  <span>{t(item.labelKey)}</span>
+                  key={id}
+                  ref={(button) => { tabButtons.current[id] = button ?? undefined; }}
+                  id={`${tabsId}-${id}-tab`}
+                  type='button'
+                  role='tab'
+                  aria-selected={tab === id}
+                  aria-controls={`${tabsId}-${id}-panel`}
+                  tabIndex={(focusedTab ?? tab) === id ? 0 : -1}
+                  onFocus={() => {
+                    setFocusedTab(id);
+                    revealTab(id);
+                  }}
+                  onKeyDown={(event) => moveTabFocus(event, index)}
+                  onClick={() => handleTabChange(id)}>
+                  {COUNTY_TAB_LABELS[id][lang]}
                 </button>
               ))}
-            </nav>
+            </div>
           </div>
-          <div className={styles.reportBody}>
-            <TabErrorBoundary key={`${countyId}:${tab}`} tab={tab}>
-              <TabContent data={data} />
-            </TabErrorBoundary>
-          </div>
+          {TABS.map((id) => (
+            <div
+              key={id}
+              id={`${tabsId}-${id}-panel`}
+              role='tabpanel'
+              aria-labelledby={`${tabsId}-${id}-tab`}
+              hidden={tab !== id}
+              tabIndex={tab === id ? 0 : undefined}
+              className={styles.reportBody}>
+              {tab === id && (
+                <TabErrorBoundary key={`${countyId}:${tab}`} tab={tab}>
+                  <TabContent data={data} />
+                </TabErrorBoundary>
+              )}
+            </div>
+          ))}
           <SourcesFooter />
         </div>
       </div>

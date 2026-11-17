@@ -89,7 +89,7 @@ test.describe('Back-navigation state preservation', () => {
     await waitForAppReady(page);
 
     // Navigate to a different county tab
-    const accountability = page.getByRole('button', { name: /^Accountability$/ });
+    const accountability = page.getByRole('tab', { name: /^Score$/ });
     await accountability.click();
     await expect(page).toHaveURL(/[?&]tab=accountability/, { timeout: 5_000 });
 
