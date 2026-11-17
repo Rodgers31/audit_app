@@ -18,11 +18,12 @@ import { CONSTITUTION_META, loadChapter } from '@/data/constitution';
 import type { ConstitutionChapter } from '@/data/constitution/types';
 import { useLang } from '@/lib/i18n/LangProvider';
 import { learnCopy } from '@/lib/i18n/messages/learn';
-import { Menu, X } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState, type TouchEvent } from 'react';
+import { Menu, Search, X } from 'lucide-react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type TouchEvent } from 'react';
 
 import ArticleViewer, { type ReadingMode } from './ArticleViewer';
 import ChapterSidebar from './ChapterSidebar';
+import ReaderSearch from './ReaderSearch';
 import type { ReferenceTarget } from './prose';
 import { DEFAULT_READER_LOCATION, pushArticleLocation, readArticleLocation } from './readerLocation';
 
@@ -54,6 +55,12 @@ export default function ConstitutionBook({
   const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
   const [mode, setMode] = useState<ReadingMode>('plain');
   const drawerButton = useRef<HTMLButtonElement>(null);
+  const searchPanelId = useId();
+  const searchButton = useRef<HTMLButtonElement>(null);
+  const articleTitle = useRef<HTMLHeadingElement>(null);
+  const pendingSearchFocus = useRef(false);
+  const [searchOpen, setSearchOpen] = useState(() => Boolean(seedQuery));
+  const [searchSelection, setSearchSelection] = useState<{ article: number; query: string; terms?: string[] } | null>(null);
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
   // Breadcrumb of positions the reader left when they clicked a
   // reference inside the prose. Pushed in navigateToReference(),
@@ -84,6 +91,7 @@ export default function ConstitutionBook({
     }
 
     function restoreArticle() {
+      pendingSearchFocus.current = false;
       const location = readArticleLocation() ?? DEFAULT_READER_LOCATION;
       setActiveChapter(location.chapter);
       setActiveArticle(location.article);
@@ -135,6 +143,7 @@ export default function ConstitutionBook({
     return articleList?.findIndex((a) => a.number === activeArticle) ?? -1;
   }, [articleList, activeArticle]);
   const currentArticle = currentIdx >= 0 ? articleList?.[currentIdx] : null;
+  const articleSearch = searchSelection?.article === currentArticle?.number ? searchSelection : null;
   const prevArticle = currentIdx > 0 ? articleList?.[currentIdx - 1] : null;
   const nextArticle = currentIdx >= 0 ? articleList?.[currentIdx + 1] : null;
 
@@ -194,6 +203,24 @@ export default function ConstitutionBook({
     []
   );
 
+  function selectSearchResult(chapterNumber: number, articleNumber: number, query: string, terms?: string[]) {
+    pendingSearchFocus.current = true;
+    setSearchSelection({ article: articleNumber, query, terms });
+    setSearchOpen(false);
+    selectArticle(chapterNumber, articleNumber);
+  }
+
+  useEffect(() => {
+    if (!pendingSearchFocus.current || !searchSelection) return;
+    if (activeArticle !== searchSelection.article) {
+      pendingSearchFocus.current = false;
+    } else if (currentArticle?.number === searchSelection.article) {
+      pendingSearchFocus.current = false;
+      articleTitle.current?.focus({ preventScroll: true });
+      articleTitle.current?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [activeArticle, currentArticle, searchSelection]);
+
   /** Follow a cross-reference from inside the prose. Pushes the
    * current location onto refHistory so the viewer's Back pill can
    * rewind — possibly across several hops. Chapter refs land on the
@@ -243,7 +270,7 @@ export default function ConstitutionBook({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.defaultPrevented || e.altKey || e.metaKey || e.ctrlKey ||
-        (e.target as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+        (e.target as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable="true"], [data-reader-search]')) return;
       if (e.key === 'ArrowRight') goNext();
       else if (e.key === 'ArrowLeft') goPrev();
     };
@@ -290,18 +317,41 @@ export default function ConstitutionBook({
         <h3 className='font-display text-xl font-semibold text-neutral-text sm:text-2xl'>
           {learnCopy(lang, 'bookHeading')}
         </h3>
-        <button
-          type='button'
-          ref={drawerButton}
-          className='inline-flex min-h-11 items-center gap-2 rounded border border-neutral-border bg-surface-elevated px-3 text-sm font-semibold text-neutral-text hover:bg-surface-sunken lg:hidden'
-          onClick={() => setDrawerOpen((v) => !v)}
-          onKeyDown={({ key }) => { if (key === 'Escape' && drawerOpen) closeDrawer(); }}
-          aria-expanded={drawerOpen}
-          aria-controls='constitution-drawer'>
-          {drawerOpen ? <X aria-hidden='true' size={16} /> : <Menu aria-hidden='true' size={16} />}
-          {learnCopy(lang, 'chapters')}
-        </button>
+        <div className='flex flex-wrap gap-2'>
+          <button
+            ref={searchButton}
+            type='button'
+            className='audit-control bg-surface-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-signal-good'
+            aria-expanded={searchOpen}
+            aria-controls={searchPanelId}
+            data-reader-search
+            onClick={() => setSearchOpen((open) => !open)}>
+            <Search aria-hidden='true' size={16} />
+            {learnCopy(lang, 'readerSearch')}
+          </button>
+          <button
+            type='button'
+            ref={drawerButton}
+            className='inline-flex min-h-11 items-center gap-2 rounded border border-neutral-border bg-surface-elevated px-3 text-sm font-semibold text-neutral-text hover:bg-surface-sunken lg:hidden'
+            onClick={() => setDrawerOpen((v) => !v)}
+            onKeyDown={({ key }) => { if (key === 'Escape' && drawerOpen) closeDrawer(); }}
+            aria-expanded={drawerOpen}
+            aria-controls='constitution-drawer'>
+            {drawerOpen ? <X aria-hidden='true' size={16} /> : <Menu aria-hidden='true' size={16} />}
+            {learnCopy(lang, 'chapters')}
+          </button>
+        </div>
       </div>
+      <ReaderSearch
+        id={searchPanelId}
+        open={searchOpen}
+        initialQuery={seedQuery}
+        onClose={() => {
+          setSearchOpen(false);
+          searchButton.current?.focus();
+        }}
+        onSelect={selectSearchResult}
+      />
 
       {/* ── Body ── */}
       <div className='grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)]'>
@@ -359,7 +409,9 @@ export default function ConstitutionBook({
           {currentArticle ? (
             <ArticleViewer
               article={currentArticle}
-              query={seedQuery}
+              titleRef={articleTitle}
+              query={articleSearch?.query ?? seedQuery}
+              queryTerms={articleSearch?.terms}
               mode={highlightClause ? 'official' : mode}
               onModeChange={changeMode}
               prevArticle={prevArticle?.number}
