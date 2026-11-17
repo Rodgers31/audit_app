@@ -1,5 +1,4 @@
-import { render, screen } from '@testing-library/react';
-import MoneyFlowHero from '@/components/transparency/MoneyFlowHero';
+import { render } from '@testing-library/react';
 import MoneyFlowOverview from '@/components/transparency/MoneyFlowOverview';
 import FollowTheMoney from '@/components/FollowTheMoney';
 import type { AuditAmountCoverage, MoneyFlowData } from '@/types';
@@ -21,31 +20,28 @@ const flow = (amount: number | null, c = coverage): MoneyFlowData => ({
   ],
 });
 
-it.each([0, 5.25])('shows a finite partial subtotal of %s with coverage', (amount) => {
-  render(<MoneyFlowHero data={flow(amount)} />);
-  expect(screen.getAllByText(/Partial subtotal: 1 of 3 cited findings/).length).toBeGreaterThan(0);
-  expect(document.body.textContent).toContain(`KES ${amount}`);
+function renderOverview(flagged: number | null, amountCoverage: AuditAmountCoverage) {
+  render(<MoneyFlowOverview fiscalYear='2024/25' projected={false} insights={{
+    allocated: 100, spent: 60, flagged, gap: 40, unspentPct: 40, efficiency: 60,
+    audit_amount_coverage: amountCoverage,
+  }} />);
+}
+
+it.each([0, 5.25])('shows finite audit subtotal %s with coverage in the separate overview', (flagged) => {
+  renderOverview(flagged, coverage);
+  expect(document.body.textContent).toContain(`KES ${flagged}`);
+  expect(document.body.textContent).toContain('Partial subtotal: 1 of 3 cited findings');
   expect(document.body.textContent).toContain('1 missing and 1 invalid amounts');
-  expect(document.body.textContent).not.toContain('Of which the Auditor General flagged');
+  expect(document.body.textContent).not.toContain('records no questioned amount');
 });
 
 it('explains an all-invalid null without asserting the report was unpublished', () => {
-  const allInvalid: AuditAmountCoverage = { ...coverage, status: 'unavailable',
-    reason: 'invalid_stored_amount', total_findings: 1, findings_with_amount: 0,
-    findings_without_amount: 0 };
-  render(<MoneyFlowHero data={flow(null, allInvalid)} />);
+  renderOverview(null, {
+    ...coverage, status: 'unavailable', reason: 'invalid_stored_amount',
+    total_findings: 1, findings_with_amount: 0, findings_without_amount: 0,
+  });
   expect(document.body.textContent).toContain('Amount unavailable: 0 of 1 cited findings');
   expect(document.body.textContent).not.toContain('report not yet published');
-});
-
-it('shows overview coverage next to the real zero', () => {
-  render(<MoneyFlowOverview fiscalYear='2024/25' projected={false} insights={{
-    allocated: 100, spent: 60, flagged: 0, gap: 40, unspentPct: 40, efficiency: 60,
-    audit_amount_coverage: coverage,
-  }} />);
-  expect(document.body.textContent).toContain('KES 0');
-  expect(document.body.textContent).toContain('Partial subtotal: 1 of 3 cited findings');
-  expect(document.body.textContent).not.toContain('records no questioned amount');
 });
 
 it('shows county waterfall coverage without changing allocation or expenditure', () => {

@@ -1,114 +1,82 @@
-/**
- * The Follow the Money waterfall on /transparency captioned its Allocated
- * stage "CRA equitable share + conditional grants", and its footer opened
- * "Allocations follow the Commission on Revenue Allocation formula" — both
- * fixed strings, on a page whose allocation figure is the Controller of
- * Budget's own CBIRR aggregate wherever the report has landed.
- *
- * The API now reports which rows produced that figure (`budget_source`, the
- * same vocabulary ModelledDataNote switches on — see
- * backend/tests/test_money_flow_stage_provenance.py). The hero has to follow
- * it, including the other way: a CRA equitable-share projection period is
- * still a model and must still say so.
- */
 import MoneyFlowHero from '@/components/transparency/MoneyFlowHero';
 import type { BudgetSource, MoneyFlowData } from '@/types';
 import { render, screen } from '@testing-library/react';
 
-const flow = (budget_source: BudgetSource): MoneyFlowData => ({
-  county_id: null,
-  county_name: 'National (All Counties)',
-  fiscal_year: 'FY2024/25',
-  budget_source,
-  stages: [
-    {
-      stage: 'Allocated',
-      label: 'Budget Allocation',
-      amount: 633_303_870_000,
-    },
-    {
-      stage: 'Spent',
-      label: 'Actual Expenditure',
-      amount: 421_000_000_000,
-      gap_from_prev: 212_303_870_000,
-      gap_label: 'Unspent Funds',
-    },
-    {
-      stage: 'Flagged',
-      label: 'Auditor Flagged',
-      amount: 12_000_000_000,
-      gap_label: 'Irregular/Unsupported Expenditure',
-    },
-  ],
-  total_waste_estimate: 12_000_000_000,
-  efficiency_score: 66.5,
+const report = 'https://cob.go.ke/reports/example-cbirr.pdf';
+
+function flow(allocated: number | null, spent: number | null, budget_source: BudgetSource = 'cob_cbirr'): MoneyFlowData {
+  return {
+    county_id: null, county_name: 'National', fiscal_year: 'FY2024/25 9M', budget_source,
+    source_document_url: report, total_waste_estimate: null, efficiency_score: null,
+    stages: [
+      { stage: 'Allocated', label: 'Budget Allocation', amount: allocated },
+      { stage: 'Spent', label: 'Actual Expenditure', amount: spent },
+    ],
+  };
+}
+
+const bar = () => screen.queryByTestId('national-spending-flow');
+
+it('renders one proportional bar and its exact source for compatible reported figures', () => {
+  render(<MoneyFlowHero data={flow(40e9, 31e9)} selectedYear='2024/25 9M' />);
+  expect(screen.getByText('Counties · FY 2024/25 9M')).toBeVisible();
+  expect(screen.getByRole('heading')).toHaveTextContent(
+    'Counties spent 78% of their allocation (KES 31.00B of KES 40.00B).'
+  );
+  expect(bar()?.firstElementChild).toHaveStyle({ width: '77.5%' });
+  expect(screen.getByText('KES 9.00B not yet spent at the time of the report.')).toBeVisible();
+  const disclosure = screen.getByText('Source and method').closest('details')!;
+  expect(disclosure).not.toHaveAttribute('open');
+  expect(disclosure.querySelector('a')).toHaveAttribute('href', report);
+  expect(disclosure).toHaveTextContent('KES 40,000,000,000');
+  expect(disclosure).toHaveTextContent('KES 31,000,000,000');
 });
 
-const heroText = () => document.body.textContent ?? '';
+it.each([
+  { allocated: 100, spent: 0, percent: '0%', width: '0%', note: 'KES 100 not yet spent' },
+  { allocated: 100, spent: 100, percent: '100%', width: '100%', note: 'KES 0 not yet spent' },
+  { allocated: 100, spent: 105, percent: '105%', width: '100%', note: 'exceeded the allocation by KES 5' },
+])('represents spending of $spent against $allocated', ({ allocated, spent, percent, width, note }) => {
+  render(<MoneyFlowHero data={flow(allocated, spent)} />);
+  expect(screen.getByRole('heading')).toHaveTextContent(`Counties spent ${percent}`);
+  expect(bar()?.firstElementChild).toHaveStyle({ width });
+  expect(screen.getByText(new RegExp(note))).toBeVisible();
+});
 
-describe('MoneyFlowHero — Allocated stage provenance', () => {
-  it('retains a reported zero allocation without drawing undefined proportional comparisons', () => {
-    const zero = flow('cob_cbirr');
-    zero.stages[0].amount = 0;
-    render(<MoneyFlowHero data={zero} />);
-    expect(heroText()).toContain('KES 0');
-    expect(screen.queryAllByRole('img')).toHaveLength(0);
-  });
+it.each([
+  { allocated: 0, spent: 60, amount: 'KES 0', note: 'requires a positive allocation' },
+  { allocated: null, spent: 60, amount: 'KES 60', note: 'allocation is unavailable' },
+  { allocated: 100, spent: null, amount: 'KES 100', note: 'spending is unavailable' },
+])('preserves reported values with allocation $allocated and spending $spent', ({ allocated, spent, amount, note }) => {
+  render(<MoneyFlowHero data={flow(allocated, spent)} />);
+  expect(screen.getByText(amount)).toBeVisible();
+  expect(screen.getByText(new RegExp(note))).toBeVisible();
+  expect(bar()).not.toBeInTheDocument();
+});
 
-  it('does not credit the CRA formula for a Controller of Budget figure', () => {
-    render(<MoneyFlowHero data={flow('cob_cbirr')} />);
-    const text = heroText();
+it.each([null, 'javascript:alert(1)'])('keeps reported figures without a traceable joint report (%s)', (url) => {
+  render(<MoneyFlowHero data={{ ...flow(100, 60), source_document_url: url }} />);
+  expect(screen.getByText('KES 100')).toBeVisible();
+  expect(screen.getByText('KES 60')).toBeVisible();
+  expect(screen.getByText(/comparison from one published report/)).toBeVisible();
+  expect(bar()).not.toBeInTheDocument();
+  expect(document.querySelector('a')).toBeNull();
+});
 
-    // The figure really is on screen — otherwise this asserts about nothing.
-    expect(screen.getAllByText(/633\.3B/).length).toBeGreaterThan(0);
+it('withholds stale figures from a different period of the same fiscal year', () => {
+  render(<MoneyFlowHero data={flow(100, 60)} selectedYear='2024/25' />);
+  expect(screen.getByRole('heading')).toHaveTextContent('National spending figures unavailable');
+  expect(screen.queryByText('KES 100')).not.toBeInTheDocument();
+  expect(bar()).not.toBeInTheDocument();
+});
 
-    expect(text).not.toMatch(/CRA equitable share \+ conditional grants/i);
-    expect(text).not.toMatch(/Allocations follow the Commission on Revenue Allocation formula/i);
-    expect(text).toMatch(/Controller of Budget/i);
-  });
-
-  it('still calls a CRA projection modelled', () => {
-    // A fix that hardcodes the CBIRR wording is the same defect reversed.
-    render(<MoneyFlowHero data={flow('cra_model')} />);
-    const text = heroText();
-
-    expect(text).toMatch(/CRA equitable-share model/i);
-    expect(text).toMatch(/Commission on Revenue Allocation formula/i);
-    expect(text).toMatch(/modelled/i);
-  });
-
-  it('names both sources for a figure pooled across both', () => {
-    // A national total over a partly-ingested CBIRR is neither one source nor
-    // the other; naming one is wrong about the other half of the money.
-    render(<MoneyFlowHero data={flow('mixed')} />);
-    const text = heroText();
-
-    expect(text).toMatch(/CoB CBIRR where published/i);
-    expect(text).toMatch(/Commission on Revenue Allocation/i);
-  });
-
-  it('does not describe a Released stage it never renders', () => {
-    // The hero draws Allocated → Spent → Flagged. Its footer credited the CBIRR
-    // for "Releases and expenditure", and the projected-year line promised
-    // "release and spend figures" — both naming a stage the reader cannot find
-    // above them, fed by exchequer data no source here ingests.
-    render(<MoneyFlowHero data={flow('cob_cbirr')} />);
-    expect(heroText()).not.toMatch(/\brelease[sd]?\b/i);
-  });
-
-  it('does not promise release figures on a year with no execution yet', () => {
-    const projected = flow('cra_model');
-    projected.stages = [projected.stages[0], { ...projected.stages[1], amount: null }];
-    render(<MoneyFlowHero data={projected} />);
-    expect(heroText()).not.toMatch(/\brelease[sd]?\b/i);
-  });
-
-  it('claims no allocation source when the API reports none', () => {
-    render(<MoneyFlowHero data={flow(null)} />);
-    const text = heroText();
-
-    expect(text).not.toMatch(/CRA equitable share \+ conditional grants/i);
-    expect(text).not.toMatch(/Allocations follow the Commission on Revenue Allocation formula/i);
-    expect(text).not.toMatch(/Allocations are the Controller of Budget/i);
-  });
+it.each([
+  { source: 'cra_model', label: 'Modelled allocation', publisher: 'equitable-share formula' },
+  { source: 'mixed', label: 'Reported and modelled allocation', publisher: 'Commission on Revenue Allocation estimates' },
+] as const)('labels $source provenance without a published verdict', ({ source, label, publisher }) => {
+  render(<MoneyFlowHero data={flow(100, source === 'cra_model' ? null : 60, source)} />);
+  expect(screen.getByText(label)).toBeVisible();
+  expect(document.body.textContent).toContain(publisher);
+  expect(document.querySelector('a')).toBeNull();
+  expect(bar()).not.toBeInTheDocument();
 });

@@ -68,6 +68,7 @@ const NATIONAL = {
   county_name: 'National',
   fiscal_year: DEFAULT_YEAR,
   efficiency_score: 52.4,
+  source_document_url: 'https://cob.go.ke/reports/example-cbirr.pdf',
   budget_source: 'cob_cbirr',
   stages: [
     { stage: 'Allocated', amount: 633_303_870_000, gap_from_prev: null },
@@ -165,7 +166,7 @@ function hydratedWrapper(state: ReturnType<typeof dehydrate>) {
 /* ── the document ───────────────────────────────────────────────────── */
 
 describe('/transparency — what the prerendered document contains', () => {
-  it('server-renders the waterfall hero with its figures, not a skeleton', async () => {
+  it('server-renders the national spending verdict with its figures, not a skeleton', async () => {
     const state = await serverState();
     const Wrapper = hydratedWrapper(state);
 
@@ -176,8 +177,8 @@ describe('/transparency — what the prerendered document contains', () => {
     );
 
     // The hero. Pre-fix the document took the `nationalLoading` branch.
-    expect(html).toContain('Where the money went');
-    expect(html).not.toContain('Loading money-flow waterfall');
+    expect(html).toContain('Counties spent 52%');
+    expect(html).not.toContain('Loading national spending');
     // A figure, in the document, before any client fetch. #221 observed the
     // served HTML contained no occurrence of "KES" at all.
     expect(html).toContain('KES');

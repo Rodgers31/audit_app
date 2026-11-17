@@ -1,22 +1,13 @@
 'use client';
 
 import { BookOpenCheck, ExternalLink } from 'lucide-react';
+import { evidenceUrl } from '@/lib/evidence/qualification';
 import type { BudgetSource, MoneyFlowData } from '@/types';
 
 interface Props {
   fiscalYear: string;
   budgetSource?: BudgetSource;
   data?: MoneyFlowData | null;
-}
-
-function sourceURL(value: string | null | undefined): string | null {
-  if (!value) return null;
-  try {
-    const url = new URL(value);
-    return ['https:', 'http:'].includes(url.protocol) ? url.href : null;
-  } catch {
-    return null;
-  }
 }
 
 const DIRECTORIES = {
@@ -44,7 +35,7 @@ export default function MoneyFlowSourceReconciliation({ fiscalYear, budgetSource
               ? 'Controller of Budget / Commission on Revenue Allocation'
               : 'Allocation source unavailable';
     const documentURL =
-      sourceURL(published?.source_doc) ?? (isCoB ? sourceURL(data?.source_document_url) : null);
+      evidenceUrl(published?.source_doc) ?? (isCoB ? evidenceUrl(data?.source_document_url) : null);
     const directory =
       stage === 'Flagged'
         ? DIRECTORIES.oag
@@ -61,7 +52,7 @@ export default function MoneyFlowSourceReconciliation({ fiscalYear, budgetSource
       title:
         documentURL &&
         isCoB &&
-        documentURL === sourceURL(data?.source_document_url) &&
+        documentURL === evidenceUrl(data?.source_document_url) &&
         data?.source_document_title
           ? data.source_document_title
           : `${stage === 'Allocated' && isCRA ? 'Modelled allocation' : stage} · FY ${period}`,

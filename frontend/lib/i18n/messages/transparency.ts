@@ -120,3 +120,125 @@ export const countySpendingMessages = {
   onTarget: { en: 'On target', sw: 'Limelenga shabaha', plain: 'On target' },
   above: { en: 'Above target', sw: 'Juu ya lengo', plain: 'Above target' },
 } as const;
+
+export const nationalSpendingMessages = {
+  subtitle: {
+    en: 'See what counties were allocated, what they spent and what auditors questioned.',
+    sw: 'Angalia mgao wa kaunti, matumizi yao na kiasi kilichohojiwa na wakaguzi.',
+    plain: 'See how much money counties were given, how much they spent and what auditors questioned.',
+  },
+  period: {
+    en: 'Counties · FY {year}', sw: 'Kaunti · Mwaka wa fedha {year}', plain: 'Counties · Financial year {year}',
+  },
+  verdict: {
+    en: 'Counties spent {percent}',
+    sw: 'Kaunti zilitumia {percent}',
+    plain: 'Counties spent {percent}',
+  },
+  comparison: {
+    en: 'of their allocation ({spent} of {allocated}).',
+    sw: 'ya mgao wao ({spent} kati ya {allocated}).',
+    plain: 'of the money they were given ({spent} out of {allocated}).',
+  },
+  spentSegment: {
+    en: 'Spent {amount}', sw: 'Imetumika {amount}', plain: 'Spent {amount}',
+  },
+  remaining: {
+    en: '{amount} not yet spent at the time of the report.',
+    sw: '{amount} zilikuwa bado hazijatumika wakati wa ripoti.',
+    plain: '{amount} was still unspent when the report was written.',
+  },
+  overspend: {
+    en: 'Reported spending exceeded the allocation by {amount}.',
+    sw: 'Matumizi yaliyoripotiwa yalizidi mgao kwa {amount}.',
+    plain: 'Counties spent {amount} more than they were given.',
+  },
+  loading: {
+    en: 'Loading national spending…',
+    sw: 'Inapakia matumizi ya kitaifa…',
+    plain: 'Loading spending for all counties…',
+  },
+  error: {
+    en: 'National spending could not be loaded.',
+    sw: 'Takwimu za matumizi ya kitaifa hazikupakiwa.',
+    plain: 'We couldn’t load spending for all counties.',
+  },
+  retry: {
+    en: 'Try again', sw: 'Jaribu tena', plain: 'Try again',
+  },
+  reported: {
+    en: 'National spending figures', sw: 'Takwimu za matumizi ya kitaifa', plain: 'Spending figures for all counties',
+  },
+  unavailable: {
+    en: 'National spending figures unavailable',
+    sw: 'Takwimu za matumizi ya kitaifa hazipatikani',
+    plain: 'Spending figures for all counties are unavailable',
+  },
+  noComparison: {
+    en: 'A comparison from one published report is unavailable for this period.',
+    sw: 'Ulinganisho kutoka ripoti moja iliyochapishwa haupatikani kwa kipindi hiki.',
+    plain: 'We don’t have one published report that supports a comparison for this period.',
+  },
+  allocationUnavailable: {
+    en: 'The national allocation is unavailable for this period.',
+    sw: 'Mgao wa kitaifa haupatikani kwa kipindi hiki.',
+    plain: 'We don’t have the total amount counties were given for this period.',
+  },
+  spendingUnavailable: {
+    en: 'Reported spending is unavailable for this period.',
+    sw: 'Matumizi yaliyoripotiwa hayapatikani kwa kipindi hiki.',
+    plain: 'We don’t have a published spending figure for this period.',
+  },
+  zeroAllocation: {
+    en: 'A spending percentage requires a positive allocation.',
+    sw: 'Asilimia ya matumizi huhitaji mgao ulio zaidi ya sifuri.',
+    plain: 'We need an allocation above zero to calculate the share spent.',
+  },
+  allocation: {
+    en: 'Reported allocation', sw: 'Mgao ulioripotiwa', plain: 'Amount given',
+  },
+  spending: {
+    en: 'Reported spending', sw: 'Matumizi yaliyoripotiwa', plain: 'Amount spent',
+  },
+  estimate: {
+    en: 'Modelled allocation', sw: 'Makadirio ya mgao', plain: 'Estimated allocation',
+  },
+  mixedAllocation: {
+    en: 'Reported and modelled allocation',
+    sw: 'Mgao ulioripotiwa na uliokadiriwa',
+    plain: 'Published and estimated allocation',
+  },
+  projected: {
+    en: 'Modelled county allocation',
+    sw: 'Makadirio ya mgao wa kaunti',
+    plain: 'Estimated allocation for all counties',
+  },
+  source: {
+    en: 'Source and method', sw: 'Chanzo na mbinu', plain: 'Where the figures come from',
+  },
+  reportLink: {
+    en: 'Controller of Budget county implementation report',
+    sw: 'Ripoti ya Mdhibiti wa Bajeti kuhusu utekelezaji wa bajeti za kaunti',
+    plain: 'Controller of Budget report on county spending',
+  },
+  method: {
+    en: 'Allocation and expenditure use the county budget totals in this report. Any unspent amount is the difference between those totals at the time of the report.',
+    sw: 'Mgao na matumizi yanatumia jumla za bajeti za kaunti katika ripoti hii. Kiasi ambacho hakijatumika ni tofauti ya jumla hizo wakati wa ripoti.',
+    plain: 'We use the totals from this report for both figures. Any money still unspent is the difference between what counties were given and what they spent by the time of the report.',
+  },
+  cob: {
+    en: 'The allocation uses county budget figures from the Controller of Budget.',
+    sw: 'Mgao huu umetokana na takwimu za bajeti za kaunti kutoka kwa Mdhibiti wa Bajeti.',
+    plain: 'The allocation uses county budget figures from the Controller of Budget.',
+  },
+  craModel: {
+    en: 'The allocation is estimated using the Commission on Revenue Allocation’s equitable-share formula.',
+    sw: 'Mgao umekadiriwa kwa kutumia fomula ya mgao sawa ya Tume ya Ugawaji wa Mapato.',
+    plain: 'The estimate uses the Commission on Revenue Allocation’s formula for sharing revenue.',
+  },
+  mixed: {
+    en: 'The allocation combines Controller of Budget figures with Commission on Revenue Allocation estimates.',
+    sw: 'Mgao unajumuisha takwimu za Mdhibiti wa Bajeti na makadirio ya Tume ya Ugawaji wa Mapato.',
+    plain: 'The allocation combines published figures from the Controller of Budget with estimates from the Commission on Revenue Allocation.',
+  },
+} as const;

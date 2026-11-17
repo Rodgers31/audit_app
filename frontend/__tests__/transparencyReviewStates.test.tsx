@@ -40,7 +40,10 @@ jest.mock('@/lib/react-query', () => ({
   }),
 }));
 jest.mock('@/lib/react-query/useMoneyFlow', () => ({
-  useNationalMoneyFlow: () => ({ data: mockNational, isLoading: false }),
+  useNationalMoneyFlow: () => ({
+    data: mockNational, isLoading: mockNationalLoading, isError: mockNationalError,
+    refetch: mockRefetchNational,
+  }),
   useAllCountiesMoneyFlow: () => ({
     data: mockCounties,
     isLoading: mockCountiesLoading,
@@ -89,7 +92,10 @@ function flow({
 }
 
 let mockYear: string;
-let mockNational: MoneyFlowData;
+let mockNational: MoneyFlowData | undefined;
+let mockNationalLoading: boolean;
+let mockNationalError: boolean;
+const mockRefetchNational = jest.fn();
 let mockCounties: MoneyFlowData[] | undefined;
 let mockCountiesLoading: boolean;
 
@@ -106,6 +112,9 @@ describe('Review regression: national summary and source states', () => {
     jest.setSystemTime(new Date('2026-09-28T12:00:00Z'));
     mockYear = '2026/27';
     mockNational = flow();
+    mockNationalLoading = false;
+    mockNationalError = false;
+    mockRefetchNational.mockClear();
     mockCounties = [
       flow({ countyId: 1, name: 'Alpha County', allocated: 20e9 }),
       flow({ countyId: 2, name: 'Beta County', allocated: null }),
@@ -113,6 +122,19 @@ describe('Review regression: national summary and source states', () => {
     mockCountiesLoading = false;
   });
   afterEach(() => jest.useRealTimers());
+
+  it('distinguishes a pending national read from an error and allows a retry', () => {
+    mockNational = undefined;
+    mockNationalLoading = true;
+    const view = render(<TransparencyPage />);
+    expect(screen.getByRole('status')).toHaveTextContent('Loading national spending');
+    mockNationalLoading = false;
+    mockNationalError = true;
+    view.rerender(<TransparencyPage />);
+    expect(screen.getByRole('status')).toHaveTextContent('National spending could not be loaded');
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(mockRefetchNational).toHaveBeenCalledTimes(1);
+  });
 
   it('uses the complete national response rather than the partial county allocation pool', () => {
     render(<TransparencyPage />);
@@ -165,19 +187,19 @@ describe('Review regression: national summary and source states', () => {
 
   it('does not mistake a closed CBIRR period with missing expenditure for a current CRA projection', () => {
     render(<MoneyFlowHero data={flow({ year: '2023/24', budgetSource: 'cob_cbirr' })} />);
-    expect(screen.getByText('Controller of Budget CBIRR county aggregates')).toBeInTheDocument();
+    expect(screen.getByText('Reported spending is unavailable for this period.')).toBeInTheDocument();
+    expect(document.body.textContent).toContain('county budget figures from the Controller of Budget');
     expect(screen.queryByText(/CRA Budget Estimate/)).not.toBeInTheDocument();
     expect(screen.queryByText(/This fiscal year is still being executed/)).not.toBeInTheDocument();
   });
 
   it('does not attribute CRA allocations to Controller of Budget when expenditure is available', () => {
-    const { container } = render(
-      <MoneyFlowHero data={flow({ spent: 50e9, budgetSource: 'cra_model' })} />
-    );
-    const sourceLabel = container.querySelector('header > p');
-    expect(sourceLabel).toHaveTextContent(/CRA/);
-    expect(sourceLabel).not.toHaveTextContent(/^Controller of Budget \+ OAG/);
-    expect(screen.getByText('CRA equitable-share model — not CoB-reported')).toBeInTheDocument();
+    render(<MoneyFlowHero data={flow({ spent: 50e9, budgetSource: 'cra_model' })} />);
+    expect(screen.getByText('Modelled allocation')).toBeVisible();
+    expect(screen.getByText('KES 50.00B')).toBeVisible();
+    expect(document.body.textContent).toContain('Commission on Revenue Allocation');
+    expect(document.body.textContent).not.toContain('Controller of Budget');
+    expect(screen.queryByTestId('national-spending-flow')).not.toBeInTheDocument();
   });
 
   it('does not replace published audit or efficiency figures with projection placeholders', () => {
@@ -200,7 +222,7 @@ describe('Review regression: national summary and source states', () => {
     expect(
       within(sources)
         .getAllByRole('link')
-        .some((link) => link.getAttribute('href') === mockNational.source_document_url)
+        .some((link) => link.getAttribute('href') === mockNational?.source_document_url)
     ).toBe(true);
     const cra = within(sources).queryByText('Commission on Revenue Allocation');
     if (cra) expect(cra.closest('li')).not.toHaveTextContent('Feeds: Allocated');

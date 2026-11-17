@@ -1,20 +1,5 @@
 'use client';
 
-/**
- * Follow the Money — narrative-first redesign.
- *
- * The page now mirrors the Budget and Debt pages:
- *   1. A small intro strip
- *   2. Reporting-period selector drives the entire page
- *   3. MoneyFlowHero — the centrepiece waterfall (Allocated → Spent →
- *      Flagged) with explicit gap callouts between stages
- *   4. Open summary — allocated / unspent / flagged / national efficiency
- *   5. Responsive county comparison list (sortable, searchable)
- *   6. "What can you do" action cards
- *   7. Source reconciliation panel so every figure is traceable to an
- *      official CoB / OAG / CRA document for the chosen fiscal year
- */
-
 import MoneyFlowHero from '@/components/transparency/MoneyFlowHero';
 import MoneyFlowSourceReconciliation from '@/components/transparency/MoneyFlowSourceReconciliation';
 import MoneyFlowPeriodPicker from '@/components/transparency/MoneyFlowPeriodPicker';
@@ -26,6 +11,8 @@ import type {
   CountySortKey as SortKey,
 } from '@/components/transparency/moneyFlowPresentation';
 import PageShell from '@/components/layout/PageShell';
+import { useLang } from '@/lib/i18n/LangProvider';
+import { nationalSpendingMessages } from '@/lib/i18n/messages/transparency';
 import { useCountyFiscalYears } from '@/lib/react-query';
 import { SSR_HYDRATED_STALE_TIME_MS } from '@/lib/react-query/isr';
 import { useAllCountiesMoneyFlow, useNationalMoneyFlow } from '@/lib/react-query/useMoneyFlow';
@@ -39,7 +26,6 @@ import {
   Clock,
   ExternalLink,
   GraduationCap,
-  Loader2,
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -256,7 +242,13 @@ export default function TransparencyPage() {
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const { data: nationalFlow, isLoading: nationalLoading } = useNationalMoneyFlow(selectedYear);
+  const { lang } = useLang();
+  const {
+    data: nationalFlow,
+    isLoading: nationalLoading,
+    isError: nationalError,
+    refetch: retryNational,
+  } = useNationalMoneyFlow(selectedYear);
   const {
     data: allCountyFlows,
     isLoading: allCountyFlowsLoading,
@@ -367,44 +359,30 @@ export default function TransparencyPage() {
   const countiesWithData = countyRows.filter((row) => row.allocated != null).length;
 
   return (
-    <PageShell
-      title='Follow the Money'
-      subtitle='Trace every shilling from the Treasury to citizens — and see what the Auditor-General has questioned.'>
-      {/* ═══ 1. Narrative intro ═══ */}
-      <Section>
-        <div className='max-w-3xl'>
-          <p className='text-base text-gov-dark/70 dark:text-white/70 leading-relaxed'>
-            Every year, the Treasury allocates trillions of shillings to Kenya&apos;s 47 counties.
-            But how much actually reaches citizens? The waterfall below traces the journey — from
-            what was <strong>allocated</strong> to the counties, to what they actually{' '}
-            <strong>spent</strong>, to the portion the Auditor General
-            <strong> questioned</strong> as irregular or unsupported.
-          </p>
+    <PageShell title='Follow the Money' subtitle={nationalSpendingMessages.subtitle[lang]}>
+      <MoneyFlowPeriodPicker
+        years={pickerYears}
+        selected={selectedYear}
+        onSelect={setPickedYear}
+      />
+
+      {nationalLoading ? (
+        <p role='status' className='py-5 text-neutral-muted'>
+          {nationalSpendingMessages.loading[lang]}
+        </p>
+      ) : nationalError && !nationalFlow ? (
+        <div className='py-5'>
+          <p role='status'>{nationalSpendingMessages.error[lang]}</p>
+          <button
+            type='button'
+            className='min-h-11 text-sm font-semibold text-neutral-text underline underline-offset-4'
+            onClick={() => void retryNational()}>
+            {nationalSpendingMessages.retry[lang]}
+          </button>
         </div>
-      </Section>
-
-      {/* ═══ 2. Fiscal year picker drives the page ═══ */}
-      <Section delay={0.05}>
-        <MoneyFlowPeriodPicker
-          years={pickerYears}
-          selected={selectedYear}
-          onSelect={setPickedYear}
-        />
-      </Section>
-
-      {/* ═══ 3. The waterfall hero ═══ */}
-      <Section delay={0.08}>
-        {nationalLoading ? (
-          <div className='rounded-2xl bg-white dark:bg-surface-base border border-neutral-border/40 shadow-surface p-16 flex items-center justify-center'>
-            <Loader2 className='w-6 h-6 animate-spin text-gov-sage' />
-            <span className='ml-3 text-gov-dark/60 dark:text-white/60 font-medium'>
-              Loading money-flow waterfall…
-            </span>
-          </div>
-        ) : (
-          <MoneyFlowHero data={nationalFlow} />
-        )}
-      </Section>
+      ) : (
+        <MoneyFlowHero data={nationalFlow} selectedYear={selectedYear} />
+      )}
 
       {/* ═══ 4. National summary ═══ */}
       {insights && (

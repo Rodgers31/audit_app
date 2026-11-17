@@ -489,140 +489,123 @@
 .flow {
   padding: 4px 0 16px;
 }
-.flowHead {
-  margin-bottom: 28px;
-}
 .sourceLabel {
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.5;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  margin-bottom: 6px;
   color: var(--flow-good);
-  margin-bottom: 12px;
+  font-size: 12px;
+  font-weight: 600;
 }
 .flowTitle {
-  font-size: clamp(21px, 1rem + 0.8cqi, 28px);
-  font-weight: 600;
+  max-width: 32ch;
+  margin-bottom: 12px;
+  font-size: clamp(22px, 1.125rem + 1.1cqi, 34px);
+  font-weight: 500;
   line-height: 1.3;
   letter-spacing: -0.025em;
-  margin-bottom: 12px;
-  text-wrap: balance;
+}
+.flowTitle strong {
+  font-weight: 700;
 }
 .flowDescription {
+  max-width: 68ch;
+  color: var(--flow-muted);
   font-size: 14px;
   line-height: 1.6;
-  color: var(--flow-muted);
-  max-width: 78ch;
 }
-.questionedRatio {
+.spendingFlow {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-  align-items: baseline;
-  margin-top: 20px;
-  color: var(--flow-tone);
-  font-size: 13px;
+  height: 30px;
+  margin-bottom: 8px;
 }
-.questionedRatio > strong {
-  font-size: 18px;
+.spentSegment,
+.remainingSegment {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 4px;
+  container: spending-segment / inline-size;
 }
-.questionedRatio p {
-  flex: 1 1 320px;
-  color: var(--flow-muted);
+.spentSegment {
+  color: rgb(var(--c-surface-base));
+  background: var(--signal-good);
+}
+.remainingSegment {
+  color: var(--signal-caution);
+  outline: 1.5px dashed currentColor;
+  outline-offset: -2px;
+}
+.segmentLabel {
+  display: none;
+  padding-inline: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 12px;
+  font-weight: 700;
 }
-.chartHeading {
+@container spending-segment (min-width: 4.5rem) {
+  .remainingSegment .segmentLabel {
+    display: block;
+  }
+}
+@container spending-segment (min-width: 8.5rem) {
+  .spentSegment .segmentLabel {
+    display: block;
+  }
+}
+.flowAmounts,
+.sourceAmounts {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 20px;
-  font-size: 13px;
-  font-weight: 600;
-}
-.chartHeading span {
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--flow-muted);
-}
-.stageHeading {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 8px 20px;
+  gap: 10px 32px;
   margin-bottom: 10px;
 }
-.stageName {
-  font-size: 14px;
+.sourceAmounts {
+  margin: 12px 0;
+}
+.flowAmounts dt,
+.sourceAmounts dt {
+  color: var(--flow-muted);
+  font-size: 13px;
+}
+.flowAmounts dd,
+.sourceAmounts dd {
   font-weight: 600;
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  flex-wrap: wrap;
 }
-.stageName small {
+.flowSource {
+  max-width: 68ch;
   color: var(--flow-muted);
-  font-weight: 400;
-  font-size: 12px;
-}
-.stageAmount {
-  font-size: 16px;
-  font-weight: 500;
-  letter-spacing: -0.025em;
-}
-.stageTrack {
-  height: 18px;
-  border-radius: 5px;
-  background: var(--flow-track);
-}
-.stageFill {
-  height: 100%;
-  border-radius: inherit;
-  background: var(--flow-tone);
-}
-.stagePercentage {
-  font-size: 12px;
-  color: var(--flow-muted);
-  margin-top: 6px;
-}
-.stageGap {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 8px;
-  margin: 16px 0 20px;
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.6;
-  color: var(--flow-muted);
 }
-.stageGap > span:last-child {
-  margin-left: auto;
-}
-.stageMissing {
-  padding: 14px 16px;
-  border: 1px dashed var(--flow-line);
-  border-radius: 6px;
-  color: var(--flow-muted);
-  font-size: 12px;
-  line-height: 1.5;
-}
-.flowCaveat {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  border-top: 1px solid var(--flow-line);
-  padding-top: 20px;
-  margin-top: 24px;
-  font-size: 12px;
-  line-height: 1.65;
-  color: var(--flow-muted);
-}
-.flowCaveat svg {
-  flex-shrink: 0;
-  margin-top: 3px;
+.flowSource summary,
+.flowSource a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
   color: var(--flow-good);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.flowSource summary {
+  list-style: none;
+  cursor: pointer;
+}
+.flowSource summary::-webkit-details-marker {
+  display: none;
+}
+.flowSource summary svg {
+  transition-property: none;
+}
+.flowSource[open] summary svg {
+  transform: rotate(180deg);
+}
+.flowSource p,
+.flowSource a {
+  overflow-wrap: anywhere;
 }
 @container money-flow (min-width: 640px) {
   .metrics {
