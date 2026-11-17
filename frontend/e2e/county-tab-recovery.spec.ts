@@ -38,7 +38,7 @@ for (const width of [375, 1280]) {
       await expect.poll(() => rejected).toBe(1);
       const alert = page.getByRole('alert').filter({ hasText: 'Could not load this section.' });
       await expect(alert).toBeVisible();
-      await expect(countyTabs.followTheMoney(page)).toHaveAttribute('aria-pressed', 'true');
+      await expect(countyTabs.followTheMoney(page)).toHaveAttribute('aria-selected', 'true');
       expect(moneyCalls).toBe(0);
       await expect(page.getByRole('status', { name: 'Loading tab content' })).toHaveCount(0);
       const reload = alert.getByRole('button', { name: 'Reload section', exact: true });

@@ -14,9 +14,9 @@ const invalidFields = [
 async function detailResponse(page: Page, handle: (route: Route) => Promise<void>) {
   await page.goto('/counties/001');
   await expect(page.getByRole('heading', { name: 'Nairobi County', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Budget & Debt', exact: true }).click();
+  await page.getByRole('tab', { name: 'Budget', exact: true }).click();
   await expect(page).toHaveURL(/tab=budget/);
-  await page.getByRole('button', { name: 'Overview', exact: true }).click();
+  await page.getByRole('tab', { name: 'Overview', exact: true }).click();
   await expect(page).toHaveURL('/counties/001');
   let calls = 0;
   await page.route(url => url.pathname === '/api/v1/counties/001/comprehensive' && url.searchParams.get('fiscal_year') === 'FY2024/25', async route => {

@@ -48,14 +48,12 @@ test.describe('Mobile — 390×844', () => {
     await page.goto('/counties/001');
     await waitForAppReady(page);
 
-    // Tabs container has `overflow-x-auto` at mobile width
-    await expect(page.getByRole('button', { name: /Overview|Muhtasari/i })).toBeVisible();
-    // Budget & Debt is the last tab now that Projects has been withdrawn —
-    // reaching it is what proves the row still scrolls horizontally.
-    const budgetAndDebt = page.getByRole('button', { name: /^(Budget & Debt|Bajeti na Deni)$/i });
-    await budgetAndDebt.click();
-    await expect(budgetAndDebt).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.getByRole('button', { name: /^(Projects|Miradi)$/i })).toHaveCount(0);
+    const tabList = page.getByRole('tablist', { name: /Explore this county|Chunguza kaunti hii/i });
+    await expect(tabList.getByRole('tab')).toHaveCount(5);
+    const score = tabList.getByRole('tab', { name: /^(Score|Alama)$/ });
+    await score.click();
+    await expect(score).toHaveAttribute('aria-selected', 'true');
+    await expect(tabList.getByRole('tab', { name: /^(Projects|Miradi)$/i })).toHaveCount(0);
   });
 });
 

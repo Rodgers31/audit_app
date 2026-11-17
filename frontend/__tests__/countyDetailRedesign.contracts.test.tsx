@@ -125,16 +125,20 @@ it('opens all five tabs, preserving fy and origin in the URL', () => {
   renderPage();
   const historyLength = window.history.length;
   const cases: [string, string | null][] = [
-    ['Follow the Money', 'money'],
-    ['Budget & Debt', 'budget'],
-    ['Audit Findings', 'audit'],
-    ['Accountability', 'accountability'],
+    ['Money', 'money'],
+    ['Budget', 'budget'],
+    ['Audit', 'audit'],
+    ['Score', 'accountability'],
     ['Overview', null],
   ];
   for (const [label, tab] of cases) {
-    const button = screen.getByRole('button', { name: label });
+    const button = screen.getByRole('tab', { name: label });
     fireEvent.click(button);
-    expect(button).toHaveAttribute('aria-pressed', 'true');
+    expect(button).toHaveAttribute('aria-selected', 'true');
+    const panel = screen.getByRole('tabpanel', { name: label });
+    expect(panel).toHaveAttribute('id', button.getAttribute('aria-controls'));
+    expect(panel).toHaveAttribute('aria-labelledby', button.id);
+    expect(screen.getAllByRole('tabpanel')).toHaveLength(1);
     const url = new URL(window.location.href);
     const query = url.searchParams;
     expect(query.get('tab')).toBe(tab);
@@ -149,13 +153,13 @@ it('opens all five tabs, preserving fy and origin in the URL', () => {
 it('restores a valid tab on first render and lets the audit grade update the URL', () => {
   mockSearch.set('tab', 'budget');
   renderPage();
-  expect(screen.getByRole('button', { name: 'Budget & Debt' })).toHaveAttribute(
-    'aria-pressed',
+  expect(screen.getByRole('tab', { name: 'Budget' })).toHaveAttribute(
+    'aria-selected',
     'true'
   );
   fireEvent.click(screen.getByRole('button', { name: /AUDIT grade/ }));
-  expect(screen.getByRole('button', { name: 'Accountability' })).toHaveAttribute(
-    'aria-pressed',
+  expect(screen.getByRole('tab', { name: 'Score' })).toHaveAttribute(
+    'aria-selected',
     'true'
   );
   const query = new URL(window.location.href).searchParams;
@@ -167,7 +171,7 @@ it('restores a valid tab on first render and lets the audit grade update the URL
 it('falls back from unsupported tabs and stale fiscal years', () => {
   mockSearch = new URLSearchParams('fy=FY1900/01&tab=projects&from=home-map');
   renderPage();
-  expect(screen.getByRole('button', { name: 'Overview' })).toHaveAttribute('aria-pressed', 'true');
+  expect(screen.getByRole('tab', { name: 'Overview' })).toHaveAttribute('aria-selected', 'true');
   expect(mockComprehensive).toHaveBeenCalledWith('012', undefined);
   expect(screen.getByRole('link', { name: /Back to map/ })).toHaveAttribute('href', '/#home-map');
   expect(screen.getByRole('link', { name: 'All Counties' })).toHaveAttribute('href', '/counties');

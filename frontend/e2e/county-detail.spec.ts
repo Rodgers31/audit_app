@@ -74,17 +74,18 @@ test.describe('/counties/[id] — tabs', () => {
     expect(beforeY).toBeGreaterThan(300);
 
     await countyTabs.budgetDebt(page).click();
-    // smooth scroll is ~300ms — poll until it settles
-    await expect
-      .poll(async () => page.evaluate(() => window.scrollY), { timeout: 3_000 })
-      .toBeLessThan(beforeY);
-
-    // The user should land above the page's total height, not at its end.
-    const afterY = await page.evaluate(() => window.scrollY);
-    const pageHeight = await page.evaluate(
-      () => document.documentElement.scrollHeight - window.innerHeight
-    );
-    expect(afterY).toBeLessThan(pageHeight - 100);
+    const panel = page.getByRole('tabpanel', { name: 'Budget' });
+    await expect(panel.getByRole('heading', { name: /Budget Summary/i })).toBeVisible();
+    const sticky = page.getByRole('tablist', { name: 'Explore this county' }).locator('..');
+    const banner = page.getByRole('banner');
+    await expect.poll(async () => {
+      const header = (await banner.boundingBox())!;
+      const anchorTop = await sticky.evaluate((element) => (
+        element.previousElementSibling!.getBoundingClientRect().top
+      ));
+      return Math.abs(anchorTop - (header.y + header.height));
+    }).toBeLessThanOrEqual(1);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThan(beforeY - 100);
   });
 
   test('Audit Findings tab renders without throwing', async ({ page }) => {
@@ -95,7 +96,7 @@ test.describe('/counties/[id] — tabs', () => {
 
     // If `audit.findings` is undefined again, the tab will throw and this
     // locator will never resolve. Give it enough time to mount.
-    await expect(page.locator('body')).toContainText(
+    await expect(page.getByRole('tabpanel', { name: 'Audit' })).toContainText(
       /Audit Findings|Matokeo ya Ukaguzi|by_severity|Findings/i,
       { timeout: 10_000 }
     );

@@ -57,17 +57,17 @@ export const langSwitcher = {
 
 export const countyTabs = {
   overview: (page: Page): Locator =>
-    page.getByRole('button', { name: /^(Overview|Muhtasari)$/ }),
+    page.getByRole('tab', { name: /^(Overview|Muhtasari)$/ }),
   followTheMoney: (page: Page): Locator =>
-    page.getByRole('button', { name: /^(Follow the Money|Fuatilia Pesa)$/ }),
+    page.getByRole('tab', { name: /^(Money|Fedha)$/ }),
   budgetDebt: (page: Page): Locator =>
-    page.getByRole('button', { name: /^(Budget & Debt|Bajeti na Deni)$/ }),
+    page.getByRole('tab', { name: /^(Budget|Bajeti)$/ }),
   auditFindings: (page: Page): Locator =>
-    page.getByRole('button', { name: /^(Audit Findings|Matokeo ya Ukaguzi)$/ }),
+    page.getByRole('tab', { name: /^(Audit|Ukaguzi)$/ }),
   accountability: (page: Page): Locator =>
-    page.getByRole('button', { name: /^(Accountability|Uwajibikaji)$/ }),
+    page.getByRole('tab', { name: /^(Score|Alama)$/ }),
   projects: (page: Page): Locator =>
-    page.getByRole('button', { name: /^(Projects|Miradi)$/ }),
+    page.getByRole('tab', { name: /^(Projects|Miradi)$/ }),
 };
 
 /* ═══════════ PageShell (used on every sub-page) ═══════════ */
