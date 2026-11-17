@@ -2,20 +2,22 @@
 
 import { useLang } from '@/lib/i18n/LangProvider';
 import { countySpendingMessages } from '@/lib/i18n/messages/transparency';
+import CountySpendingDistribution from './CountySpendingDistribution';
 import { ArrowUpDown, Search, X } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
 import {
   auditAmountCoverageNote,
+  COUNTY_SPENDING_TARGET as TARGET,
   formatEfficiency,
   formatFlowKES,
   type CountyFlowRow,
+  type CountySpendingPoint,
   type CountySortKey,
 } from './moneyFlowPresentation';
 import styles from './MoneyFlowPresentation.module.css';
 
 const INITIAL_COUNT = 10;
-const TARGET = 70;
 const executionBands = [
   { min: 0, verdict: 'wellBelow', range: 'below65' },
   { min: 65, verdict: 'below', range: 'below70' },
@@ -28,6 +30,8 @@ interface Props {
   rows: (CountyFlowRow & { rank: number })[];
   fiscalYear: string;
   countiesWithData: number;
+  distribution: CountySpendingPoint[];
+  distributionNational: number | null;
   nationalEfficiency: number | null;
   nationalAllocated: number | null;
   projected: boolean;
@@ -51,9 +55,11 @@ function percentWidth(percent: number) {
 }
 
 export default function CountySpendingList({
-  rows,
+  rows: searchedRows,
   fiscalYear,
   countiesWithData,
+  distribution,
+  distributionNational,
   nationalEfficiency,
   nationalAllocated,
   projected,
@@ -72,6 +78,14 @@ export default function CountySpendingList({
   const searchInput = useRef<HTMLInputElement>(null);
   const firstAdditionalCounty = useRef<HTMLAnchorElement>(null);
   const [showAll, setShowAll] = useState(false);
+  const [belowTargetOnly, setBelowTargetOnly] = useState(false);
+  const belowTarget = new Set(distribution.filter(
+    (point) => point.percentage != null && point.percentage < TARGET
+  ).map((point) => point.id));
+  const filtering = belowTargetOnly && belowTarget.size > 0;
+  const rows = filtering
+    ? searchedRows.filter((row) => belowTarget.has(row.county_id))
+    : searchedRows;
   useEffect(() => {
     if (showAll) firstAdditionalCounty.current?.focus();
   }, [showAll]);
@@ -109,6 +123,18 @@ export default function CountySpendingList({
           </p>
         )}
       </header>
+      {fiscalYear && !loading && !error && (
+        <CountySpendingDistribution
+          counties={distribution}
+          national={distributionNational}
+          belowCount={belowTarget.size}
+          filtering={filtering}
+          onFilter={() => {
+            setBelowTargetOnly(!filtering);
+            setShowAll(false);
+          }}
+        />
+      )}
       <div className={styles.controls}>
         <div className={styles.searchWrap}>
           <label htmlFor='county-search' className='sr-only'>{copy('search')}</label>
@@ -168,7 +194,7 @@ export default function CountySpendingList({
           </p>
         </>
       )}
-      {search.trim() && !loading && !error && rows.length > 0 && (
+      {(filtering || search.trim()) && !loading && !error && rows.length > 0 && (
         <p role='status' className={styles.countyNote}>
           {rows.length === 1 ? copy('oneCounty') : copy('countyCount', { count: rows.length })}
         </p>
@@ -179,7 +205,7 @@ export default function CountySpendingList({
         <p className={styles.empty} role='alert'>{copy('error')}</p>
       ) : rows.length === 0 ? (
         <p className={styles.empty} role='status'>
-          {search.trim() ? copy('noMatch') : copy('noData')}
+          {filtering ? copy('noBelowMatch') : search.trim() ? copy('noMatch') : copy('noData')}
         </p>
       ) : (
         <>
