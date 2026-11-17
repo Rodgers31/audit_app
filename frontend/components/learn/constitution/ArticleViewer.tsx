@@ -5,15 +5,17 @@ import { useLang } from '@/lib/i18n/LangProvider';
 import { learnCopy } from '@/lib/i18n/messages/learn';
 import { ArrowLeft, ArrowRight, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useRef, type Ref } from 'react';
 
-import { renderProse, type ReferenceTarget } from './prose';
+import { highlightSearch, renderProse, type ReferenceTarget } from './prose';
 
 export type ReadingMode = 'plain' | 'official';
 
 interface ArticleViewerProps {
   article: ConstitutionArticle;
+  titleRef: Ref<HTMLHeadingElement>;
   query?: string;
+  queryTerms?: string[];
   mode: ReadingMode;
   onModeChange: (mode: ReadingMode) => void;
   prevArticle?: number;
@@ -49,38 +51,11 @@ const LINKS_BY_ARTICLE: Record<number, readonly (keyof typeof ARTICLE_LINKS)[]> 
 
 const CONSTITUTION_SOURCE = 'https://new.kenyalaw.org/akn/ke/act/2010/constitution/eng%402010-09-03/source.pdf';
 
-/** Cheap, allocation-light highlight: splits on case-insensitive query. */
-function highlight(text: string, query: string): React.ReactNode {
-  if (!query || query.length < 2) return text;
-  const q = query.trim();
-  if (!q) return text;
-  const lower = text.toLowerCase();
-  const needle = q.toLowerCase();
-  const out: React.ReactNode[] = [];
-  let i = 0;
-  let n = 0;
-  while (i < text.length) {
-    const j = lower.indexOf(needle, i);
-    if (j === -1) {
-      out.push(text.slice(i));
-      break;
-    }
-    if (j > i) out.push(text.slice(i, j));
-    out.push(
-      <mark
-        key={`h-${n++}`}
-        className='rounded bg-gov-gold/30 px-0.5 text-gov-dark dark:text-white'>
-        {text.slice(j, j + q.length)}
-      </mark>
-    );
-    i = j + q.length;
-  }
-  return <>{out}</>;
-}
-
 export default function ArticleViewer({
   article,
+  titleRef,
   query = '',
+  queryTerms,
   mode,
   onModeChange,
   prevArticle,
@@ -99,7 +74,7 @@ export default function ArticleViewer({
   const modeId = useId();
   const clauseRef = useRef<HTMLParagraphElement>(null);
   const currentMode = article.summary ? mode : 'official';
-  const proseOptions = { query, onRefClick: onReferenceClick };
+  const proseOptions = { query, queryTerms, onRefClick: onReferenceClick };
   const links = LINKS_BY_ARTICLE[article.number];
 
   useEffect(() => {
@@ -121,8 +96,8 @@ export default function ArticleViewer({
         <span className='shrink-0 font-mono text-[13px] font-semibold text-signal-alarm'>
           {learnCopy(lang, 'article', { number: article.number })}
         </span>
-        <h4 lang='en' className='min-w-0 break-words font-display text-[22px] font-semibold leading-tight text-neutral-text sm:text-2xl'>
-          {highlight(article.title, query)}
+        <h4 ref={titleRef} tabIndex={-1} lang='en' className='min-w-0 scroll-mt-24 break-words font-display text-[22px] font-semibold leading-tight text-neutral-text sm:text-2xl'>
+          {highlightSearch(article.title, query, queryTerms)}
         </h4>
       </header>
 

@@ -78,13 +78,14 @@ export type ReferenceTarget =
 
 interface RenderProseOptions {
   query?: string;
+  queryTerms?: string[];
   onRefClick?: (target: ReferenceTarget) => void;
 }
 
 /** Single entry point — returns JSX ready to splat into a <p>. */
 export function renderProse(
   text: string,
-  { query, onRefClick }: RenderProseOptions = {},
+  { query, queryTerms, onRefClick }: RenderProseOptions = {},
 ): React.ReactNode {
   const refs = findReferences(text);
   const out: React.ReactNode[] = [];
@@ -96,7 +97,7 @@ export function renderProse(
     if (ref.start > cursor) {
       out.push(
         <span key={`t-${key++}`}>
-          {highlightSearch(text.slice(cursor, ref.start), query)}
+          {highlightSearch(text.slice(cursor, ref.start), query, queryTerms)}
         </span>,
       );
     }
@@ -108,14 +109,14 @@ export function renderProse(
           type='button'
           onClick={() => onRefClick(ref.target!)}
           className='inline rounded px-0.5 font-semibold text-gov-forest dark:text-emerald-100 decoration-gov-forest/40 decoration-dotted underline-offset-2 hover:bg-gov-forest/5 hover:underline focus:outline-none focus:ring-2 focus:ring-gov-forest/30'>
-          {highlightSearch(label, query)}
+          {highlightSearch(label, query, queryTerms)}
         </button>,
       );
     } else {
       // Unknown article/chapter number — render as plain text so we
       // never ship a button that goes nowhere.
       out.push(
-        <span key={`u-${key++}`}>{highlightSearch(label, query)}</span>,
+        <span key={`u-${key++}`}>{highlightSearch(label, query, queryTerms)}</span>,
       );
     }
     cursor = ref.end;
@@ -123,7 +124,7 @@ export function renderProse(
   if (cursor < text.length) {
     out.push(
       <span key={`tail-${key++}`}>
-        {highlightSearch(text.slice(cursor), query)}
+        {highlightSearch(text.slice(cursor), query, queryTerms)}
       </span>,
     );
   }
@@ -198,32 +199,22 @@ function buildTarget(
     : null;
 }
 
-/** Cheap case-insensitive token highlight — mirror of the old helper
- * inside ArticleViewer. Kept here so prose rendering is a single pass. */
-function highlightSearch(text: string, query?: string): React.ReactNode {
-  if (!query || query.length < 2) return text;
-  const q = query.trim();
-  if (!q) return text;
-  const lower = text.toLowerCase();
-  const needle = q.toLowerCase();
-  const out: React.ReactNode[] = [];
-  let i = 0;
-  let n = 0;
-  while (i < text.length) {
-    const j = lower.indexOf(needle, i);
-    if (j === -1) {
-      out.push(text.slice(i));
-      break;
-    }
-    if (j > i) out.push(text.slice(i, j));
-    out.push(
+/** Prefer the full phrase, then show literal keyword matches when provided. */
+export function highlightSearch(text: string, query?: string, queryTerms?: string[]): React.ReactNode {
+  const q = query?.trim();
+  if (!q || q.length < 2) return text;
+  const escape = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = text.toLowerCase().includes(q.toLowerCase())
+    ? escape(q)
+    : queryTerms?.length ? `\\b(?:${queryTerms.map(escape).join('|')})\\b` : '';
+  if (!pattern) return text;
+  return <>{text.split(new RegExp(`(${pattern})`, 'gi')).map((part, index) =>
+    index % 2 === 0 ? part : (
       <mark
-        key={`h-${n++}`}
+        key={index}
         className='rounded bg-gov-gold/30 px-0.5 text-gov-dark dark:text-white'>
-        {text.slice(j, j + q.length)}
-      </mark>,
-    );
-    i = j + q.length;
-  }
-  return <>{out}</>;
+        {part}
+      </mark>
+    )
+  )}</>;
 }
