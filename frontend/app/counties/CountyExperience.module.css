@@ -334,16 +334,33 @@
   width: 100%;
   max-width: 420px;
   height: 330px;
+  touch-action: manipulation;
 }
 .mapSvg path[role='link'] {
+  --county-map-outline: #101b14;
   cursor: pointer;
-  transition: opacity 0.15s;
 }
-.mapSvg path[role='link']:hover,
-.mapSvg path[role='link']:focus {
-  stroke: var(--county-ink);
-  stroke-width: 2px;
+/* Grade C has the darkest fill, so it needs the cream outline in either theme. */
+.mapSvg path[data-grade='C'] {
+  --county-map-outline: #f0eade;
+}
+@media (hover: hover) {
+  .mapSvg path[role='link']:hover {
+    stroke: var(--county-map-outline);
+    stroke-width: 2px;
+    vector-effect: non-scaling-stroke;
+  }
+}
+.mapSvg path[role='link']:is([aria-current='true'], :focus-visible) {
+  stroke: var(--county-map-outline);
+  stroke-width: 3px;
+  vector-effect: non-scaling-stroke;
   outline: none;
+}
+@media (forced-colors: active) {
+  .mapSvg path[role='link']:focus-visible {
+    outline: 2px solid Highlight;
+  }
 }
 .mapReadout {
   display: flex;
@@ -358,6 +375,7 @@
 .mapReadout > a {
   display: inline-flex;
   min-height: 44px;
+  min-width: 44px;
   align-items: center;
   gap: 16px;
   font-size: 18px;
@@ -373,7 +391,7 @@
   gap: 12px 24px;
 }
 .mapReadout dt {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--county-muted);
   margin-bottom: 4px;
 }
