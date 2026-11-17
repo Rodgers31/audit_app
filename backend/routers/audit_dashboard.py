@@ -192,6 +192,9 @@ class FindingDetail(BaseModel):
     page_ref: Optional[str] = None
     period_id: int
     finding_text: str
+    finding_title: Optional[str] = Field(
+        None, description="Recorded heading from the finding's cited report extraction."
+    )
     severity: str
     recommended_action: Optional[str] = None
     query_type: Optional[str] = None
@@ -758,6 +761,7 @@ def get_audit_findings(
                 Audit.id.label("audit_id"),
                 Audit.entity_id,
                 Audit.extraction_id,
+                Audit.source_document_id,
                 Audit.period_id,
                 Audit.finding_text,
                 Audit.severity,
@@ -776,9 +780,11 @@ def get_audit_findings(
                 Entity.slug,
                 SourceDocument.url.label("document_url"),
                 SourceDocument.meta["extraction_stats"].label("extraction_stats"),
+                Extraction.source_document_id.label("extraction_source_document_id"),
                 Extraction.extracted_json["entity_name"].label("extracted_entity_name"),
                 Extraction.extracted_json["auditee"].label("extracted_auditee"),
                 Extraction.extracted_json["volume_kind"].label("extracted_volume_kind"),
+                Extraction.extracted_json["title"].label("extracted_title"),
                 extraction_json_type(
                     Extraction.extracted_json, db.get_bind().dialect.name
                 ).label("extraction_payload_type"),
@@ -821,7 +827,15 @@ def get_audit_findings(
                     "entity_name": row.extracted_entity_name,
                     "auditee": row.extracted_auditee,
                     "volume_kind": row.extracted_volume_kind,
+                    "title": row.extracted_title,
                 }
+            # The heading must come from the linked extraction of the cited report.
+            title = (
+                extracted.get("title")
+                if row.extraction_source_document_id == row.source_document_id
+                else None
+            )
+            finding_title = (title.strip() or None) if isinstance(title, str) else None
             # The document the finding was extracted from, else a reference
             # that is itself a link, else nothing. external_reference is an
             # internal key ("OAG-BB-2024/2025-V2091-P11"); this used to be
@@ -846,6 +860,7 @@ def get_audit_findings(
                     page_ref=row.page_ref,
                     period_id=row.period_id,
                     finding_text=row.finding_text,
+                    finding_title=finding_title,
                     severity=row.severity.value if hasattr(row.severity, "value") else str(row.severity),
                     recommended_action=row.recommended_action,
                     # The row's own label must match the facet the reader

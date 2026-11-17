@@ -66,3 +66,52 @@ test('long audit section values fit narrow viewports and keep their accessible f
   await menu.click();
   await expect(page.getByRole('dialog', { name: /mobile navigation/i })).toBeVisible();
 });
+
+test('phone finding cards show the cited title or published text and keep the report page link', async ({ page }) => {
+  const source = 'https://example.test/reports/audit.pdf#page=31';
+  const title = 'Unsupported inventory adjustments';
+  const paragraph = 'The inventory register did not explain the adjustments.';
+  const fallback = 'The report describes a record without a separate heading.';
+  const entry = {
+    entity_id: 101, audited_entity_name: 'County Assembly of Nairobi', period_id: 21,
+    audit_year: 2024, query_type: 'Report on Effectiveness of Internal Controls, Risk Management and Governance',
+    severity: 'warning',
+  };
+  await page.clock.setFixedTime(new Date(Date.now() + 2 * 60 * 60 * 1000));
+  await page.route('**/api/v1/audit/findings?**', (route) => route.fulfill({
+    json: {
+      page: 1, limit: 20, total: 2,
+      items: [
+        { ...entry, id: 701, finding_title: title, finding_text: paragraph, amount: 0, page_ref: 'p.31', source_document_url: source },
+        { ...entry, id: 702, finding_title: null, finding_text: fallback, amount: null, source_document_url: null },
+      ],
+    },
+  }));
+
+  await page.setViewportSize({ width: 360, height: 780 });
+  await page.goto('/audits');
+  const cards = page.getByRole('list', { name: 'All findings', exact: true });
+  const titled = cards.getByRole('listitem').filter({ has: page.getByRole('heading', { name: title, exact: true }) });
+  await expect(titled.getByText('County Assembly of Nairobi')).toBeVisible();
+  await expect(titled.getByText(/2024$/)).toBeVisible();
+  await expect(titled.getByText('Warning', { exact: true })).toBeVisible();
+  await expect(titled.getByText('Section: Internal controls', { exact: true })).toBeVisible();
+  await expect(titled.getByText('Amount: KES 0', { exact: true })).toBeVisible();
+  await expect(titled.getByText(paragraph, { exact: true })).toHaveCount(0);
+  const link = titled.getByRole('link', { name: 'Source: report p.31' });
+  await expect(link).toHaveAttribute('href', source);
+  expect((await link.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+  const untitled = cards.getByRole('listitem').filter({ has: page.getByRole('heading', { name: fallback, exact: true }) });
+  await expect(untitled.getByText('Amount: not stated', { exact: true })).toBeVisible();
+  await expect(untitled.getByRole('link')).toHaveCount(0);
+
+  await page.setViewportSize({ width: 767, height: 900 });
+  await expect(cards).toBeVisible();
+  await page.setViewportSize({ width: 768, height: 900 });
+  await expect(cards).toHaveCount(0);
+  const table = page.getByRole('table').filter({
+    has: page.getByRole('columnheader', { name: 'Severity', exact: true }),
+  });
+  await expect(table.getByRole('row').nth(1)).toHaveAttribute('title', paragraph);
+  await expect(table.getByRole('link', { name: 'View OAG source report, p.31' })).toHaveAttribute('href', source);
+});

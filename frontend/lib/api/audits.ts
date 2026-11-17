@@ -385,6 +385,7 @@ export interface FindingDetailItem {
   page_ref?: string | null;
   period_id: number;
   finding_text: string;
+  finding_title?: string | null;
   severity: string;
   recommended_action: string | null;
   query_type: string | null;

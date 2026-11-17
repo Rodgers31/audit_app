@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from datetime import date, datetime, timezone
 import json
 
+import pytest
 from sqlalchemy import event
 
 from models import (
@@ -224,6 +225,44 @@ def test_findings_select_only_extraction_identity_fields(
         "County Assembly of Nairobi", "County Assembly of Nairobi"
     ]
     assert sum(read["bytes"] for read in selected) < 10_000, selected
+
+
+@pytest.mark.parametrize("encode", [dict, json.dumps], ids=["structured", "legacy-string"])
+def test_findings_publish_only_titles_bound_to_the_cited_report(
+    client, db_session, seed_country, seed_entity, seed_fiscal_period, encode
+):
+    doc = _doc(db_session, seed_country)
+    other_doc = _doc(db_session, seed_country, url="https://oagkenya.go.ke/another.pdf")
+    title = "Missing inventory records"
+    text = "The transfer register did not account for the items examined."
+    titled = _finding(
+        db_session, seed_entity, seed_fiscal_period, doc,
+        payload=encode({"title": title}), text=text,
+    )
+    no_title = _finding(
+        db_session, seed_entity, seed_fiscal_period, doc,
+        payload=encode({"finding_text": "Paragraph without a heading"}),
+    )
+    wrong_type = _finding(
+        db_session, seed_entity, seed_fiscal_period, doc,
+        payload=encode({"title": ["Invalid recorded title"]}),
+    )
+    cross_report = _finding(
+        db_session, seed_entity, seed_fiscal_period, other_doc,
+        payload=encode({"title": "Finding from another report"}),
+    )
+    cross_report.source_document_id = doc.id
+    db_session.commit()
+
+    response = client.get("/api/v1/audit/findings")
+    assert response.status_code == 200
+    rows = {row["id"]: row for row in response.json()["items"]}
+    assert {row_id: row["finding_title"] for row_id, row in rows.items()} == {
+        titled.id: title, no_title.id: None, wrong_type.id: None, cross_report.id: None,
+    }
+    assert rows[titled.id]["finding_text"] == text
+    assert rows[titled.id]["page_ref"] == "p.11"
+    assert all(row["source_document_url"] == URL + "#page=11" for row in rows.values())
 
 
 def test_unaccounted_cases_select_only_extraction_context_fields(
