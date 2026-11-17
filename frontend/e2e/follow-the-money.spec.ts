@@ -38,7 +38,7 @@ async function reportedYears(request: APIRequestContext) {
   return { years, defaultYear, metadata };
 }
 
-test.describe('Follow the Money — waterfall shape', () => {
+test.describe('County detail — Follow the Money waterfall', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(`/counties/${COUNTY_ID}`);
     await waitForAppReady(page);
@@ -220,7 +220,7 @@ test.describe('Follow the Money — national page (/transparency)', () => {
     );
   });
 
-  test('selecting another period refreshes both national figures and county spending', async ({
+  test('selecting another period refreshes the national spending verdict and county cards', async ({
     page,
     request,
   }) => {
@@ -251,7 +251,11 @@ test.describe('Follow the Money — national page (/transparency)', () => {
         { stage: 'Flagged', label: 'Questioned', amount: flagged },
       ],
     });
-    const national = makeFlow(null, 'All counties', 40e9, 28e9, 2e9, 70);
+    const national = {
+      ...makeFlow(null, 'All counties', 40e9, 28e9, 2e9, 70),
+      source_document_url: 'https://cob.go.ke/reports/synthetic-county-implementation.pdf',
+      source_document_title: 'Synthetic county budget implementation report',
+    };
     const counties = [
       makeFlow(1, 'Nairobi County', 20e9, 12e9, 2e9, 60),
       makeFlow(2, 'Kiambu County', 20e9, 16e9, 0, 80),
@@ -290,9 +294,18 @@ test.describe('Follow the Money — national page (/transparency)', () => {
 
     await expect(picker).toHaveValue(year);
     await expect(picker.locator('option:checked')).toContainText(`FY ${year}`);
-    await expect(
-      page.getByRole('heading', { name: 'KES 40.0B allocated, KES 28.0B reached programmes' })
-    ).toBeVisible();
+    const verdict = page.getByRole('region', { name: /^Counties spent 70%/ });
+    await expect(verdict.getByRole('heading')).toHaveText(
+      'Counties spent 70% of their allocation (KES 28.00B of KES 40.00B).'
+    );
+    await expect(verdict.getByTestId('national-spending-flow')).toHaveCount(1);
+    await expect(verdict.getByText('KES 12.00B not yet spent at the time of the report.')).toBeVisible();
+    const source = verdict.getByText('Source and method');
+    await source.focus();
+    await page.keyboard.press('Enter');
+    await expect(verdict.getByRole('link')).toHaveAttribute('href', national.source_document_url);
+    await page.keyboard.press('Tab');
+    await expect(verdict.getByRole('link')).toBeFocused();
     await expect(summary).toContainText(`FY ${year}`);
     await expect(summary).toContainText('KES 40.00B');
     await expect(summary).toContainText('KES 12.00B');
