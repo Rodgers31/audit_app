@@ -90,8 +90,6 @@ jobs:
           CREATE ROLE service_role BYPASSRLS;
           CREATE DATABASE auditgava_schema_upgrade;
           SQL
-          DATABASE_URL="$PUBLIC_SCHEMA_MIGRATION_TEST_URL?hostaddr=127.0.0.1" python -m alembic upgrade head
-          DATABASE_URL="${PUBLIC_SCHEMA_MIGRATION_TEST_URL%/*}/auditgava_schema_upgrade?hostaddr=127.0.0.1" python -m alembic upgrade a756b20a0001
           python -m pytest --noconftest -q tests/test_public_schema_rls_migration.py
 
       - name: Install backend acceptance tools

@@ -56,16 +56,9 @@ def assert_protected_schema(cursor, *, allowed_sequence=None):
     assert cursor.fetchall() == []
 
 
-def test_fresh_replay_protects_public_tables_and_sequences():
-    with closing(connect_fixture(fixture_url())) as connection, connection.cursor() as cursor:
-        cursor.execute("SELECT version_num FROM public.alembic_version")
-        assert cursor.fetchall() == [("b953a11e0001",)]
-        assert_protected_schema(cursor)
-
-
-def upgrade_database(url):
+def upgrade_database(url, revision="head"):
     return subprocess.run(
-        [sys.executable, "-m", "alembic", "upgrade", "head"],
+        [sys.executable, "-m", "alembic", "upgrade", revision],
         cwd=Path(__file__).resolve().parents[1],
         env={
             "PATH": os.environ["PATH"],
@@ -78,8 +71,20 @@ def upgrade_database(url):
     )
 
 
+def test_fresh_replay_protects_public_tables_and_sequences():
+    url = fixture_url()
+    result = upgrade_database(url)
+    assert result.returncode == 0, result.stderr
+    with closing(connect_fixture(url)) as connection, connection.cursor() as cursor:
+        cursor.execute("SELECT version_num FROM public.alembic_version")
+        assert cursor.fetchall() == [("b953a11e0001",)]
+        assert_protected_schema(cursor)
+
+
 def test_upgrade_removes_browser_grants_and_preserves_authorized_writes():
     url = fixture_url().set(database="auditgava_schema_upgrade")
+    result = upgrade_database(url, "a756b20a0001")
+    assert result.returncode == 0, result.stderr
     with closing(connect_fixture(url)) as connection, connection.cursor() as cursor:
         cursor.execute("SELECT current_database(), version_num FROM public.alembic_version")
         assert cursor.fetchall() == [("auditgava_schema_upgrade", "a756b20a0001")]
