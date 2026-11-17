@@ -23,6 +23,7 @@ import {
   TrendingDown,
 } from 'lucide-react';
 import DebtExplainerModal from './DebtExplainerModal';
+import HomeCountySearch from './HomeCountySearch';
 
 /* ── Formatting helpers ── */
 // fmtBillionKES imported from @/lib/utils — expects billions input (FiscalSummary data)
@@ -60,6 +61,8 @@ export default function HeroSection() {
             ))}
           </ul>
         </nav>
+
+        <HomeCountySearch />
 
         <div className='mt-3 flex flex-wrap items-center gap-x-3 text-audit-caption text-neutral-muted'>
           <p>{HOME_TOPICS_MESSAGES['home.topics.publishers'][lang]}</p>

@@ -41,4 +41,24 @@ export const HOME_TOPICS_MESSAGES = {
     sw: 'Takwimu kutoka Benki Kuu ya Kenya, Hazina ya Taifa, Mkaguzi Mkuu wa Hesabu za Serikali na Mdhibiti wa Bajeti.',
     plain: 'Data from the Central Bank, Treasury, Auditor-General and Controller of Budget.',
   },
+  'home.county_search.label': {
+    en: 'Find your county',
+    sw: 'Tafuta kaunti yako',
+    plain: 'Find your county',
+  },
+  'home.county_search.placeholder': {
+    en: 'Type your county, e.g. Kisumu',
+    sw: 'Andika jina la kaunti, k.m. Kisumu',
+    plain: 'Type your county name, for example Kisumu',
+  },
+  'home.county_search.clear': {
+    en: 'Clear county search',
+    sw: 'Futa utafutaji wa kaunti',
+    plain: 'Clear county search',
+  },
+  'home.county_search.no_matches': {
+    en: 'No counties found.',
+    sw: 'Hakuna kaunti iliyopatikana.',
+    plain: 'No counties match that name.',
+  },
 } satisfies Record<string, Translation>;
