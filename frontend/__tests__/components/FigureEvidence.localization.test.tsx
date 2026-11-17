@@ -44,16 +44,18 @@ it.each([
 });
 
 it.each([
-  ['sw', 'Ushahidi wa takwimu', 'Thamani iliyohifadhiwa: 0', 'Onyesha ushahidi upya'],
-  ['plain', 'Evidence for this observation', 'Saved value: 0', 'Check evidence again'],
-])('switches the exact detail page to %s and preserves zero and selector', async (lang, title, value, refresh) => {
-  (api.get as jest.Mock).mockResolvedValue({ data: { value: '0', reason: null, qualifications: { allocated_amount: original } } });
+  ['sw', 'Mgao wa bajeti: 0', 'Kipindi cha takwimu', 'Chanzo kilipatikana'],
+  ['plain', 'Budget allocation: 0', 'Describes', 'Source retrieved'],
+])('switches the exact detail page to %s and preserves zero and selector', async (lang, title, periodLabel, retrievalLabel) => {
+  (api.get as jest.Mock).mockResolvedValue({ data: { ...fixture.budget_lines, value: '0' } });
   const client = renderWithLanguage(<FigureEvidencePage table='budget_lines' id='1' />);
-  await screen.findByText('Stored value: 0');
+  await screen.findByRole('heading', { name: 'Budget allocation: 0' });
   fireEvent.click(screen.getByRole('button', { name: lang }));
   expect(screen.getByRole('heading', { name: title })).toBeInTheDocument();
-  expect(screen.getByText(value)).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: refresh })).toBeInTheDocument();
+  expect(document.title).toBe(`${title} | AuditGava`);
+  expect(screen.getByText(periodLabel)).toBeInTheDocument();
+  expect(screen.getByText(retrievalLabel)).toBeInTheDocument();
+  expect(screen.getByText('FY2024/25')).toBeInTheDocument();
   expect(api.get).toHaveBeenCalledTimes(1);
   expect(api.get).toHaveBeenCalledWith('/provenance/verify/budget_lines', expect.objectContaining({ params: { record_id: '1' } }));
   client.clear();
@@ -98,7 +100,10 @@ it('localizes loading, missing publication and malformed-record fallbacks withou
   fireEvent.click(screen.getByRole('button', { name: 'sw' }));
   expect(screen.getByRole('status')).toHaveTextContent('Inapakia ushahidi wa takwimu…');
   resolve({ data: { value: null, reason: null, qualifications: { unknown_measure: { status: 'verified', identity: null, reason: null, publisher: null, source_kind: 'unknown', document_bytes_checked: false, value_checked: false } } } });
-  await screen.findByText('Thamani iliyohifadhiwa: Haijachapishwa');
+  await screen.findByText('Haijachapishwa');
+  expect(screen.getByText('Chanzo hakijarekodiwa')).toBeInTheDocument();
+  expect(screen.getByText('Kipindi cha takwimu hakijarekodiwa')).toBeInTheDocument();
+  expect(screen.getByText('Tarehe ya kupata chanzo haijarekodiwa')).toBeInTheDocument();
   expect(screen.getByText('unknown measure · Ushahidi haupatikani')).toBeInTheDocument();
   expect(screen.getByText('Utambulisho wa takwimu haupatikani')).toBeInTheDocument();
   expect(screen.getByText('Sababu ya hali ya uthibitisho haipatikani')).toBeInTheDocument();

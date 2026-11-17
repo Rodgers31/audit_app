@@ -1,0 +1,60 @@
+import type { Lang } from '@/lib/i18n/messages';
+import type { QualificationTable } from '@/lib/evidence/qualification';
+
+export const figureLabels = {
+  budget_lines: { en: 'Budget allocation', sw: 'Mgao wa bajeti', plain: 'Budget allocation' },
+  loans: { en: 'Outstanding debt balance', sw: 'Salio la deni', plain: 'Debt still owed' },
+  gdp_data: { en: 'Gross domestic product', sw: 'Pato la taifa', plain: 'Economic output' },
+  economic_indicators: { en: 'Economic indicator', sw: 'Kiashiria cha uchumi', plain: 'Economic figure' },
+  poverty_indices: { en: 'Poverty rate', sw: 'Kiwango cha umaskini', plain: 'Share living in poverty' },
+  debt_timeline: { en: 'Total public debt', sw: 'Jumla ya deni la umma', plain: 'Total public debt' },
+  revenue_by_source: { en: 'Revenue by source', sw: 'Mapato kwa kila chanzo', plain: 'Money received by source' },
+} satisfies Record<QualificationTable, Record<Lang, string>>;
+
+export const figureReceiptCopy = {
+  en: {
+    title: 'Figure evidence',
+    receipt: 'Source receipt',
+    publishedIn: 'Published in',
+    describes: 'Describes',
+    sourceRetrieved: 'Source retrieved',
+    noSource: 'Source not recorded',
+    openSource: 'Open source document',
+    noPeriod: 'Observation period not recorded',
+    conflictingDates: 'The source dates disagree',
+    invalidDates: 'The recorded date is invalid',
+    noRetrieval: 'Retrieval date not recorded',
+    table: 'Table {number}',
+    page: 'p. {number}',
+  },
+  sw: {
+    title: 'Ushahidi wa takwimu',
+    receipt: 'Rejeo la chanzo',
+    publishedIn: 'Imechapishwa katika',
+    describes: 'Kipindi cha takwimu',
+    sourceRetrieved: 'Chanzo kilipatikana',
+    noSource: 'Chanzo hakijarekodiwa',
+    openSource: 'Fungua hati chanzo',
+    noPeriod: 'Kipindi cha takwimu hakijarekodiwa',
+    conflictingDates: 'Tarehe za vyanzo zinatofautiana',
+    invalidDates: 'Tarehe iliyorekodiwa si halali',
+    noRetrieval: 'Tarehe ya kupata chanzo haijarekodiwa',
+    table: 'Jedwali la {number}',
+    page: 'uk. {number}',
+  },
+  plain: {
+    title: 'Where this figure comes from',
+    receipt: 'Source receipt',
+    publishedIn: 'Published in',
+    describes: 'Describes',
+    sourceRetrieved: 'Source retrieved',
+    noSource: 'Source not recorded',
+    openSource: 'Open the source document',
+    noPeriod: 'Observation period not recorded',
+    conflictingDates: 'The source dates disagree',
+    invalidDates: 'The recorded date is invalid',
+    noRetrieval: 'Retrieval date not recorded',
+    table: 'Table {number}',
+    page: 'p. {number}',
+  },
+};
