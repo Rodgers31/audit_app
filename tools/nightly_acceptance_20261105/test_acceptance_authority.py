@@ -58,21 +58,21 @@ def test_origin_is_observed_but_inert_body_never_earns_publication(owned_databas
 def test_actual_revision_role_rls_and_acl_are_observed(owned_database):
     with owned_database.begin() as connection:
         connection.execute(text('CREATE TABLE alembic_version(version_num varchar(32) PRIMARY KEY)'))
-        connection.execute(text("INSERT INTO alembic_version VALUES ('a756b20a0001')"))
+        connection.execute(text("INSERT INTO alembic_version VALUES ('b953a11e0001')"))
         connection.execute(text('ALTER TABLE ingestion_jobs ENABLE ROW LEVEL SECURITY'))
         connection.execute(text('ALTER TABLE ingestion_jobs FORCE ROW LEVEL SECURITY'))
         connection.execute(text('REVOKE ALL ON ingestion_jobs FROM PUBLIC'))
     with Session(owned_database) as db:
         read_only(db)
-        observed = observe_catalog(db, ['ingestion_jobs'], expected_revision='a756b20a0001', expected_role='postgres')
+        observed = observe_catalog(db, ['ingestion_jobs'], expected_revision='b953a11e0001', expected_role='postgres')
         row = observed['tables'][0]
         assert row['rls'] is True and row['force_rls'] is True
         assert observed['role_flags'][0] is True and observed['policy_accepted'] is False
-        assert row['columns'] and row['constraints'] and observed['revision'] == 'a756b20a0001'
+        assert row['columns'] and row['constraints'] and observed['revision'] == 'b953a11e0001'
         with pytest.raises(Refusal, match='revision'):
             observe_catalog(db, ['ingestion_jobs'], expected_revision='wrong', expected_role='postgres')
         with pytest.raises(Refusal, match='role'):
-            observe_catalog(db, ['ingestion_jobs'], expected_revision='a756b20a0001', expected_role='inert')
+            observe_catalog(db, ['ingestion_jobs'], expected_revision='b953a11e0001', expected_role='inert')
 
 
 def test_current_run_recomputed_from_actual_pg_refuses_forged_cli_report(tmp_path):
@@ -91,7 +91,7 @@ def test_current_run_recomputed_from_actual_pg_refuses_forged_cli_report(tmp_pat
                           cra='false', opendata='false', discovery='false')
         now = datetime.now(timezone.utc)
         context = dict(floor=0, source_sha='a'*40, admitted_sha='a'*40, planned_sha='a'*40,
-            schema_head='a756b20a0001', planned_identity=plan_identity(plan), prior_success='true',
+            schema_head='b953a11e0001', planned_identity=plan_identity(plan), prior_success='true',
             cli_outcome='success', cli_executed='true', cli_exit='0', run_id='1234', run_attempt='1',
             cli_run_id='1234', cli_run_attempt='1', cli_floor='0',
             cli_started=(now-timedelta(minutes=45)).strftime('%Y-%m-%dT%H:%M:%SZ'),
@@ -130,9 +130,9 @@ def test_revision_cannot_be_borrowed_from_another_visible_schema(owned_database)
         decoy_schema = decoy.info_acceptance['schema']
         with decoy.begin() as connection:
             connection.execute(text('CREATE TABLE alembic_version(version_num varchar(32))'))
-            connection.execute(text("INSERT INTO alembic_version VALUES ('a756b20a0001')"))
+            connection.execute(text("INSERT INTO alembic_version VALUES ('b953a11e0001')"))
         with Session(owned_database) as db:
             read_only(db)
             db.execute(text('SET LOCAL search_path='+target_schema+','+decoy_schema+',pg_catalog'))
             with pytest.raises(Refusal, match='revision|schema'):
-                observe_catalog(db,['ingestion_jobs'],expected_revision='a756b20a0001',expected_role='postgres')
+                observe_catalog(db,['ingestion_jobs'],expected_revision='b953a11e0001',expected_role='postgres')

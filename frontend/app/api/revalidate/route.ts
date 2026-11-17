@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
           !exactKeys(context, ['source_sha', 'plan_sha256', 'run_id', 'run_attempt', 'schema_head']) ||
           !pattern(context.source_sha, /^[a-f0-9]{40}$/) || !pattern(context.plan_sha256, /^[a-f0-9]{64}$/) ||
           !pattern(context.run_id, /^[1-9][0-9]{0,17}$/) || !pattern(context.run_attempt, /^[1-9][0-9]{0,4}$/) ||
-          context.schema_head !== 'a756b20a0001' || context.source_sha !== process.env.VERCEL_GIT_COMMIT_SHA ||
+          context.schema_head !== 'b953a11e0001' || context.source_sha !== process.env.VERCEL_GIT_COMMIT_SHA ||
           !Array.isArray(paths) || new Set(paths).size !== paths.length || paths.some(p => !REVALIDATE_PATHS.has(p)))
         throw new RequestFailure(400, 'nightly_refresh_refused');
     }

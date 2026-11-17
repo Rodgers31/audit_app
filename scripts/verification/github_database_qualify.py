@@ -18,7 +18,7 @@ from urllib.parse import parse_qsl, unquote, urlsplit
 
 PROJECT = 'xznjxwrkbkahwtnbstbj'
 CLUSTER = '7626352619084395911'
-REVISION = 'a756b20a0001'
+REVISION = 'b953a11e0001'
 CA_HASH = '700723581420dd1ac98fd7e9ac529f0ef210eadcaf87fc868a3ad7d114c2f3b7'
 CA = Path(__file__).with_name('supabase-project-ca.crt')
 _spec = importlib.util.spec_from_file_location('github_database_tls_policy',

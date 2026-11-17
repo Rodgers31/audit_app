@@ -229,7 +229,7 @@ def test_actual_workflow_launcher_to_native_job_and_result_gate(opendata_pg,tmp_
     steps = {name: dict(outcome='success', conclusion='success', outputs={}) for name in PRIOR_STEPS}
     steps['cli'] = dict(outcome=outcome, conclusion=outcome, outputs=receipt)
     env.update(SEED_PLANNED_SHA=env['GITHUB_SHA'], SEED_ADMITTED_SHA=env['GITHUB_SHA'],
-               SEED_SCHEMA_HEAD='a756b20a0001', SEED_PLANNED_IDENTITY=plan_identity(selected),
+               SEED_SCHEMA_HEAD='b953a11e0001', SEED_PLANNED_IDENTITY=plan_identity(selected),
                SEED_PRIOR_SUCCESS=str(exit_code == 0).lower(), SEED_PRIOR_JOB_STATUS=outcome,
                SEED_CLI_OUTCOME=outcome, SEED_PRIOR_STEPS=json.dumps(steps))
     for key in ('executed', 'exit_code', 'run_id', 'run_attempt', 'job_floor', 'started_at', 'finished_at'):

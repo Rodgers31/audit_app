@@ -48,9 +48,9 @@ def test_native_writers_depend_on_the_qualified_schema_job():
     assert 'alembic upgrade' not in commands
     assert 'alembic stamp' not in commands
     assert 'github_database_qualify.py --seed' in commands
-    assert "test \"$(alembic heads)\" = 'a756b20a0001 (head)'" in commands
+    assert "test \"$(alembic heads)\" = 'b953a11e0001 (head)'" in commands
     assert SEED['concurrency'] == {'group':'seed-production-database','cancel-in-progress':'false'}
-    assert set(jobs['validate']['needs']) == {'migrate','seed'}
+    assert set(jobs['validate']['needs']) == {'migrate','seed','bootstrap'}
     assert "needs.migrate.result == 'success'" in jobs['validate']['if']
     for name in ('migrate','seed','bootstrap','validate'):
         assert jobs[name]['env']['AUDIT_GITHUB_DATABASE_TLS'] == '1'

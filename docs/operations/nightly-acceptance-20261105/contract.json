@@ -135,5 +135,5 @@
       "criterion": "Separate Sunday03UTC (nowSaturday21:00 CST) weekly bootstrap/native opt-in plan including OpenData, cold-cache capacity, actual CLI/PG rows and refusal/refresh evidence; latest sampled weekly seed never executed."
     }
   ],
-  "schema_revision": "a756b20a0001"
+  "schema_revision": "b953a11e0001"
 }

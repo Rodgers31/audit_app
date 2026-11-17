@@ -54,7 +54,7 @@ def context_valid(context):
             and all(type(context[k]) is str and re.fullmatch(pattern, context[k]) for k, pattern in {
                 'source_sha': '[0-9a-f]{40}', 'plan_sha256': '[0-9a-f]{64}',
                 'run_id': '[1-9][0-9]{0,17}', 'run_attempt': '[1-9][0-9]{0,4}'}.items())
-            and context['schema_head'] == 'a756b20a0001')
+            and context['schema_head'] == 'b953a11e0001')
 
 
 class NoRedirect(HTTPRedirectHandler):

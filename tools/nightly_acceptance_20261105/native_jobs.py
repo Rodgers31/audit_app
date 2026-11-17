@@ -34,7 +34,7 @@ LOCAL_ENV = {
     'PYTHON_DOTENV_DISABLED': '1',
 }
 PROBES = {
-    'migrate': (('/opt/ingestion/bin/alembic', 'heads'), 'a756b20a0001 (head)'),
+    'migrate': (('/opt/ingestion/bin/alembic', 'heads'), 'b953a11e0001 (head)'),
     'bootstrap': (('-B', '-c', 'from bootstrap import initialize_reference_data; '
                    'from github_database_tls import bundle_bytes; '
                    'print(initialize_reference_data.__name__, len(bundle_bytes()) > 1367)'),

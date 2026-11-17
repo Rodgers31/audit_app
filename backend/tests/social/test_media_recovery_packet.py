@@ -14,7 +14,7 @@ from test_media_support import ACTOR, media, media_db
 
 CONTEXT = {**{k: 'a' * 64 for k in ('runtime_sha256', 'policy_sha256', 'decision_sha256',
     'writer_inventory_sha256', 'appointments_sha256', 'dependencies_sha256')},
-    'source_commit': 'b' * 40, 'source_tree': 'c' * 40, 'schema_revision': 'a756b20a0001'}
+    'source_commit': 'b' * 40, 'source_tree': 'c' * 40, 'schema_revision': 'b953a11e0001'}
 
 
 @pytest.fixture
