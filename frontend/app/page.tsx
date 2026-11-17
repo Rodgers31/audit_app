@@ -19,7 +19,7 @@ import { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'AuditGava — Kenya Public Money Tracker',
   description:
-    "Track how Kenya's government spends public money. Real-time data on county budgets, national debt, audit findings, and financial accountability.",
+    "See where Kenya's public money goes. Explore county budgets, national debt and audit findings from official records.",
 };
 import { getNationalBudgetSummary } from '@/lib/api/budget';
 import { getCounties } from '@/lib/api/counties';
@@ -43,11 +43,10 @@ const SSR_TIMEOUT_MS = 5000;
 
 /**
  * ISR: regenerate the page in the background at most once an hour.
- * Without this the page is prerendered ONCE at deploy time and the
- * baked data ages until the next deploy — while the hero claims
- * "updated nightly". Hourly revalidation keeps the static-CDN speed
- * (visitors always get the cached copy; regeneration is background)
- * and caps homepage data staleness at ~1h behind the backend.
+ * Without this the page is prerendered once at deploy time and the
+ * cached figures age until the next deploy. Hourly revalidation lets
+ * the homepage pick up changes from the backend while continuing to
+ * serve cached responses during background regeneration.
  */
 export const revalidate = 3600;
 

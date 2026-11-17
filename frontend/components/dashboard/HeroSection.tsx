@@ -7,12 +7,12 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { useDebtTimeline, useNationalDebtOverview } from '@/lib/react-query/useDebt';
 import { useFiscalSummary } from '@/lib/react-query/useFiscal';
 import { useLang } from '@/lib/i18n/LangProvider';
+import { HOME_TOPICS_MESSAGES } from '@/lib/i18n/messages/homeTopics';
 import { registerSourceLabel, summedRegisterRows } from '@/lib/debt/registerScope';
 import { publishedHeadlineRatio, headlineRatioDisclosure, publishedTimelineRatio, debtRatioDisclosure } from '@/lib/debt/qualification';
 import { frameworkOf, frameworkUses } from '@/lib/fiscal/framework';
 import { dsaCitation, dsaHref, dsaIsAlarm, dsaSourceLabel, dsaVintageLabel, readDsaRating } from '@/lib/debt/dsaRating';
 import { fmtBillionKES, toRawKES } from '@/lib/utils';
-import { motion, useReducedMotion } from 'framer-motion';
 import {
   AlertTriangle,
   Banknote,
@@ -27,60 +27,46 @@ import DebtExplainerModal from './DebtExplainerModal';
 /* ── Formatting helpers ── */
 // fmtBillionKES imported from @/lib/utils — expects billions input (FiscalSummary data)
 
-/**
- * Dashboard Hero — full hero zone with title + 3-container card layout.
- *
- *  ┌─────────────────────────────────────────────────────────┬──────────────┐
- *  │  Title: "Kenya Public Money Tracker"                    │              │
- *  │  Subtitle: "Where your taxes go, in real time"          │              │
- *  ├─ Container A (glass outer) ─────────────────────────────┤ Container C  │
- *  │  ┌ Summary strip: 🇰🇪 <total>  <pct>%  ● <risk> ───┐ │  (county     │
- *  │  │                                                      │ │   overview)  │
- *  │  ├─ Container B (white inner): Kenya's National Debt ──┤ │              │
- *  │  │  [chart] + [bottom facts row]                        │ │              │
- *  │  └──────────────────────────────────────────────────────┘ │              │
- *  └─────────────────────────────────────────────────────────┴──────────────┘
- */
-export default function HeroSection() {
-  const { t } = useLang();
-  const reduceMotion = useReducedMotion();
-  return (
-    <section className='border-b border-neutral-border bg-gov-cream pt-16 dark:bg-[#0d1711]'>
-      <div className='mx-auto grid max-w-[1400px] gap-6 px-5 py-9 sm:px-6 sm:py-12 lg:grid-cols-[minmax(0,1fr)_280px] lg:px-8 lg:py-14'>
-        <motion.div
-          initial={false}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{
-            duration: reduceMotion ? 0 : 0.42,
-            ease: [0.22, 1, 0.36, 1],
-            delay: reduceMotion ? 0 : 0.05,
-          }}
-          className='ledger-enter relative border-l-[5px] border-gov-copper pl-5 sm:pl-7'>
-          <p className='source-label text-gov-sage'>National public-finance evidence desk</p>
-          <h1 className='mt-3 max-w-[18ch] font-display text-[3.15rem] font-semibold uppercase leading-[0.88] tracking-[0.01em] text-gov-dark dark:text-white sm:text-7xl lg:text-[5rem]'>
-            {t('home.hero.title')}
-          </h1>
-          <p className='mt-5 max-w-2xl text-base leading-7 text-neutral-muted sm:text-lg'>
-            {t('home.hero.subtitle')}. Public money, traced to evidence.
-          </p>
-        </motion.div>
+const TOPIC_LINKS = [
+  ['home.topics.debt', '/debt'],
+  ['home.topics.budget', '/budget'],
+  ['home.topics.counties', '/counties'],
+  ['home.topics.audits', '/audits'],
+] as const;
 
-        <aside className='border-t border-neutral-border pt-5 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-2'>
-          <p className='source-label'>Primary source index</p>
-          <div className='mt-4 space-y-3 font-mono text-[11px] uppercase tracking-[0.08em] text-gov-dark dark:text-white'>
-            {[
-              ['CBK', 'Debt & monetary data'],
-              ['Treasury', 'Budget & fiscal data'],
-              ['OAG', 'Audit findings'],
-              ['CoB', 'Budget execution'],
-            ].map(([source, scope]) => (
-              <div key={source} className='grid grid-cols-[70px_1fr] gap-3 border-b border-neutral-border pb-2'>
-                <span className='font-semibold text-gov-sage'>{source}</span>
-                <span className='text-neutral-muted'>{scope}</span>
-              </div>
+export default function HeroSection() {
+  const { lang, t } = useLang();
+  return (
+    <section aria-labelledby='home-hero-title' className='border-b border-neutral-border bg-gov-sand pt-16 dark:bg-surface-sunken'>
+      <div className='mx-auto max-w-dashboard px-4 py-4 sm:px-6 sm:py-8 lg:px-8 lg:py-10'>
+        <h1 id='home-hero-title' className='max-w-[17rem] text-pretty font-display text-[1.875rem] font-bold uppercase leading-none sm:max-w-none sm:text-audit-title lg:text-audit-hero'>
+          {HOME_TOPICS_MESSAGES['home.topics.hero_title'][lang]}
+        </h1>
+        <p className='mt-1.5 text-audit-control text-neutral-muted sm:text-audit-body'>
+          {HOME_TOPICS_MESSAGES['home.topics.hero_description'][lang]}
+        </p>
+
+        <nav aria-labelledby='home-topic-title' className='mt-3 sm:mt-5'>
+          <h2 id='home-topic-title' className='text-audit-control font-semibold'>
+            {HOME_TOPICS_MESSAGES['home.topics.heading'][lang]}
+          </h2>
+          <ul role='list' className='mt-2 flex flex-wrap gap-2'>
+            {TOPIC_LINKS.map(([label, href]) => (
+              <li key={href}>
+                <Link href={href} className='inline-flex min-h-11 min-w-11 items-center rounded-full border border-neutral-border bg-surface-base px-3 py-1.5 text-audit-label font-semibold underline-offset-4 hover:underline'>
+                  {HOME_TOPICS_MESSAGES[label][lang]}
+                </Link>
+              </li>
             ))}
-          </div>
-        </aside>
+          </ul>
+        </nav>
+
+        <div className='mt-3 flex flex-wrap items-center gap-x-3 text-audit-caption text-neutral-muted'>
+          <p>{HOME_TOPICS_MESSAGES['home.topics.publishers'][lang]}</p>
+          <Link href='/sources' className='inline-flex min-h-11 min-w-11 items-center text-audit-control font-medium text-gov-sage underline underline-offset-4'>
+            {t('shell.footer_sources')}
+          </Link>
+        </div>
       </div>
     </section>
   );
