@@ -286,12 +286,12 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
                         {pts > 0 ? `+${pts}` : pts} {t('county.acct.pt_suffix')}
                       </span>
                     </div>
-                    <div className='flex items-center gap-2'>
+                    <div className='flex items-start gap-2'>
                       <span
-                        className={`inline-block text-[11px] uppercase tracking-widest font-semibold px-1.5 py-0.5 rounded border ${style.chip}`}>
+                        className={`shrink-0 whitespace-nowrap text-xs font-semibold px-1.5 py-0.5 rounded border ${style.chip}`}>
                         {t(style.labelKey)}
                       </span>
-                      <span className='text-xs text-gray-500 dark:text-neutral-muted/80'>
+                      <span className='min-w-0 break-words text-sm text-neutral-muted'>
                         {f.detail}
                       </span>
                     </div>
