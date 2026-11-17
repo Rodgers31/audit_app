@@ -30,12 +30,11 @@
  * interest + principal over tax + non-tax revenue).
  */
 
-import { motion } from 'framer-motion';
 import type { FiscalMeasureQualification, FiscalTaxObservation } from '@/lib/api/fiscal';
 import { useLang } from '@/lib/i18n/LangProvider';
 import FiscalMeasureDisclosure from './FiscalMeasureDisclosure';
 import { ArrowDownRight, Info } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import BudgetFlowChart, { formatBudgetPart, formatBudgetShare, type BudgetFlowSegment } from './BudgetFlowChart';
 
 import {
   frameworkCitation,
@@ -78,209 +77,71 @@ interface Props {
 /* ────────────────────────────── helpers ────────────────────────────── */
 
 function fmtT(billionKES?: number | null): string {
-  if (billionKES == null) return '—';
-  if (billionKES >= 1000) return `${(billionKES / 1000).toFixed(2)}T`;
-  return `${billionKES.toFixed(0)}B`;
+  return billionKES == null ? '—' : formatBudgetPart(billionKES);
 }
-
-function pct(v: number, total: number): number {
-  return total > 0 ? (v / total) * 100 : 0;
-}
-
-/* ──────────────────────── segment types & colors ──────────────────────── */
-
-interface Segment {
-  key: string;
-  label: string;
-  valueB: number; // KES billions
-  share: number; // % of parent total
-  gradStart: string;
-  gradEnd: string;
-  accent: string; // flat color for text/icons
-  note: string; // hover tooltip
-}
-
-const FLOW_BAR_HEIGHT = 44;
 
 export default function BudgetFlowHero({ data }: Props) {
   const { t } = useLang();
-  const [hover, setHover] = useState<string | null>(null);
 
   const fy = data?.fiscal_year ?? '—';
   const budget = data?.appropriated_budget ?? null;
   const redemptionB = data?.debt_redemption_billion ?? null;
 
-  // The flow is all-or-nothing and comes from one object. `null` means no
-  // Budget Summary column supplies this year on one basis — and a blank
-  // breakdown is not a finding that these amounts are zero.
+  // Each side needs its own qualified, reconciling parts. The old duplicate
+  // donut could show qualified uses even if the source rows were withheld.
   const ff = frameworkOf(data);
   const uses = frameworkUses(ff);
   const sources = frameworkSources(ff);
   const hasFlow = uses != null && sources != null;
+  const hasAnyBreakdown = uses != null || sources != null;
   const issue = data?.fiscal_framework_absent_reason ?? Object.values(ff?.absent_reasons ?? {})[0];
   const withholdingReason = typeof issue === 'string' && /invalid|contradict/.test(issue)
     ? 'Some component evidence conflicts with the stored figures.'
     : typeof issue === 'string' && /reconcile|disagree/.test(issue)
       ? 'The available figures do not reconcile on the same basis.'
       : 'Compatible source evidence for every component is not yet confirmed.';
-  const flowTotal = uses?.total ?? null;
+  const flowTotal = uses?.total ?? sources?.total ?? null;
   const citation = frameworkCitation(ff);
   const qualifiedShare = qualifiedFrameworkValue(ff, 'county_equitable_share_billion');
   const qualifiedTransfers = qualifiedFrameworkValue(ff, 'county_transfers_billion');
   const equitableShareB = qualifiedShare != null && qualifiedTransfers != null && qualifiedShare <= qualifiedTransfers ? qualifiedShare : null;
 
-  const debtService = data?.debt_service_cost ?? null;
   const debtServiceCents = data?.debt_service_per_shilling ?? null;
 
-  /* ── Sources (money in) ── */
-  const sourceSegments: Segment[] = useMemo(() => {
-    if (!sources || !flowTotal) return [];
-    const revenueSegs: Segment[] =
-      sources.tax != null && sources.nonTax != null
-        ? [
-            {
-              key: 'tax',
-              label: 'Tax revenue',
-              valueB: sources.tax,
-              share: pct(sources.tax, flowTotal),
-              gradStart: '#2F6343',
-              gradEnd: '#1F4A30',
-              accent: '#1B3A2A',
-              note: 'Income tax, VAT, excise and import duty — collected by KRA.',
-            },
-            {
-              key: 'nonTax',
-              label: 'Non-tax revenue',
-              valueB: sources.nonTax,
-              share: pct(sources.nonTax, flowTotal),
-              gradStart: '#4B8564',
-              gradEnd: '#2F6343',
-              accent: '#2F6343',
-              note: 'Investment income, fees, fines and other ordinary revenue that is not tax.',
-            },
-          ]
-        : [
-            {
-              key: 'ordinary',
-              label: 'Tax & non-tax revenue',
-              valueB: sources.ordinaryRevenue,
-              share: pct(sources.ordinaryRevenue, flowTotal),
-              gradStart: '#2F6343',
-              gradEnd: '#1F4A30',
-              accent: '#1B3A2A',
-              note: 'The Budget Summary edition for this year prints no separate tax and non-tax rows.',
-            },
-          ];
-    const segs: Segment[] = [
-      ...revenueSegs,
-      {
-        key: 'aia',
-        label: 'A-i-A',
-        valueB: sources.aia,
-        share: pct(sources.aia, flowTotal),
-        gradStart: '#6A9E7F',
-        gradEnd: '#4B8564',
-        accent: '#3E7655',
-        note: 'Appropriations-in-Aid: money ministries collect and spend directly (levies, fees, project loans routed through them).',
-      },
-      {
-        key: 'grants',
-        label: 'Grants',
-        valueB: sources.grants,
-        share: pct(sources.grants, flowTotal),
-        gradStart: '#8DB89C',
-        gradEnd: '#6A9E7F',
-        accent: '#4B8564',
-        note: 'Donor grants — not repaid.',
-      },
-      {
-        key: 'borrowing',
-        label: 'Net borrowing',
-        valueB: sources.borrowing,
-        share: pct(sources.borrowing, flowTotal),
-        gradStart: '#B83E3E',
-        gradEnd: '#7E2424',
-        accent: '#9E3030',
-        note: 'The fiscal deficit, financed by net domestic and net foreign borrowing — adds to the debt stock.',
-      },
-    ];
-    if (sources.cashAdjustment > 0.05) {
-      segs.push({
-        key: 'cashAdj',
-        label: 'Cash-basis adjustment',
-        valueB: sources.cashAdjustment,
-        share: pct(sources.cashAdjustment, flowTotal),
-        gradStart: '#B38628',
-        gradEnd: '#7D591A',
-        accent: '#A6781F',
-        note: "The table's own 'Adjustment to Cash Basis' less its 'Statistical discrepancy' — printed rows, not a figure computed here.",
-      });
-    }
-    return segs;
-  }, [sources, flowTotal]);
-
-  /* ── Uses (money out) ── */
-  const useSegments: Segment[] = useMemo(() => {
-    if (!uses) return [];
-    const t = uses.total;
-    return [
-      {
-        key: 'interest',
-        label: 'Interest on debt',
-        valueB: uses.interest,
-        share: pct(uses.interest, t),
-        gradStart: '#9E3030',
-        gradEnd: '#4C1616',
-        accent: '#7E2424',
-        note:
-          'Interest on domestic and foreign debt — the part of debt service that is spending. ' +
-          'Principal repaid on maturing loans is financing, not spending, so it is not in this bar.',
-      },
-      {
-        key: 'recurrentExInterest',
-        label: 'Recurrent (ex-interest)',
-        valueB: uses.recurrentExInterest,
-        share: pct(uses.recurrentExInterest, t),
-        gradStart: '#6B7280',
-        gradEnd: '#3F4754',
-        accent: '#4B5563',
-        note: 'Salaries, pensions, operations & maintenance — keeps existing services running.',
-      },
-      {
-        key: 'development',
-        label: 'Development',
-        valueB: uses.development,
-        share: pct(uses.development, t),
-        gradStart: '#3B7251',
-        gradEnd: '#1F4A30',
-        accent: '#2F6343',
-        note: 'Capital projects and net lending — roads, hospitals, water systems.',
-      },
-      {
-        key: 'counties',
-        label: 'Counties',
-        valueB: uses.counties,
-        share: pct(uses.counties, t),
-        gradStart: '#4B8564',
-        gradEnd: '#295B3E',
-        accent: '#3E7655',
-        note:
-          equitableShareB != null
-            ? `Transfers to the 47 county governments: the equitable share (KES ${fmtT(equitableShareB)}) plus conditional allocations.`
-            : 'Transfers to the 47 county governments: the equitable share plus conditional allocations.',
-      },
-      {
-        key: 'contingency',
-        label: 'Contingency fund',
-        valueB: uses.contingency,
-        share: pct(uses.contingency, t),
-        gradStart: '#B38628',
-        gradEnd: '#7D591A',
-        accent: '#A6781F',
-        note: 'Set aside for urgent and unforeseen needs.',
-      },
-    ];
-  }, [uses, equitableShareB]);
+  const sourceSegments: BudgetFlowSegment[] = sources ? [
+    sources.tax != null
+      ? { id: 'tax', amount: sources.tax }
+      : { id: 'ordinary', amount: sources.ordinaryRevenue },
+    { id: 'aia', amount: sources.aia },
+    ...(sources.nonTax != null ? [{ id: 'nonTax' as const, amount: sources.nonTax }] : []),
+    { id: 'grants', amount: sources.grants },
+    { id: 'borrowing', amount: sources.borrowing },
+    { id: 'cashAdjustment', amount: sources.cashAdjustment },
+  ] : [];
+  const useSegments: BudgetFlowSegment[] = uses ? [
+    { id: 'interest', amount: uses.interest },
+    { id: 'recurrent', amount: uses.recurrentExInterest },
+    { id: 'development', amount: uses.development },
+    { id: 'counties', amount: uses.counties },
+    { id: 'contingency', amount: uses.contingency },
+  ] : [];
+  const sourceTakeaway = sources && sources.total > 0 ? [
+    sources.tax != null
+      ? t('budget.flow.tax_share').replace('{tax}', formatBudgetShare(sources.tax, sources.total))
+      : t('budget.flow.ordinary_share').replace('{revenue}', formatBudgetShare(sources.ordinaryRevenue, sources.total)),
+    t('budget.flow.borrowing_share').replace('{borrowing}', formatBudgetShare(sources.borrowing, sources.total)),
+  ].join(' ') : '';
+  const usesTakeaway = uses
+    ? t(ff?.source?.column === 'Actual' ? 'budget.flow.interest_actual' : 'budget.flow.interest_plan')
+        .replace('{interest}', formatBudgetShare(uses.interest, uses.total))
+    : '';
+  const sourcesNotes: string[] = [];
+  if (sources && sources.cashAdjustment < 0) {
+    sourcesNotes.push(t('budget.flow.negative_cash').replace('{amount}', `KES ${formatBudgetPart(sources.cashAdjustment)}`));
+  }
+  if (sources && sources.borrowing < 0) {
+    sourcesNotes.push(t('budget.flow.negative_borrowing').replace('{amount}', `KES ${formatBudgetPart(sources.borrowing)}`));
+  }
 
   if (!data) {
     return null;
@@ -294,21 +155,24 @@ export default function BudgetFlowHero({ data }: Props) {
 
   return (
     <section
-      className='rounded-2xl bg-gradient-to-br from-white via-gov-sand/30 to-white dark:from-surface-elevated dark:via-surface-base dark:to-surface-elevated border border-neutral-border/40 shadow-surface overflow-hidden'>
+      className='min-w-0 space-y-5'>
       {/* Header */}
-      <div className='px-5 sm:px-8 pt-6 sm:pt-8 pb-4'>
+      <div className='pt-2'>
         <div className='flex items-start justify-between gap-4 flex-wrap'>
           <div className='min-w-0 max-w-full [overflow-wrap:anywhere]'>
-            <div className='text-[11px] font-semibold uppercase tracking-[0.18em] text-gov-forest/80 dark:text-emerald-100/80'>
-              National Budget · {fy}
+            <div className='text-xs font-semibold text-gov-forest dark:text-emerald-100'>
+              National budget · {fy}
             </div>
             <h2 className='font-display text-[26px] sm:text-3xl text-gov-dark dark:text-white leading-tight mt-1'>
               {budget == null ? `Approved budget for ${fy} withheld` : `KES ${fmtT(budget)} approved for ${fy}`}
             </h2>
             <p className='text-sm text-neutral-muted mt-1 max-w-2xl'>
-              {hasFlow
-                ? `The approved gross budget, on the Controller of Budget basis. Below, the same year on Treasury's fiscal framework: KES ${fmtT(flowTotal)} of spending and how it is paid for — sources on top, uses on the bottom.`
-                : 'The approved gross budget, on the Controller of Budget basis.'}
+              The approved gross budget, on the Controller of Budget basis.
+              {hasAnyBreakdown && (
+                <> {hasFlow
+                  ? t('budget.flow.complete').replace('{total}', fmtT(flowTotal))
+                  : t('budget.flow.partial')}</>
+              )}
             </p>
 
             <FiscalMeasureDisclosure qualifications={data?.measure_qualifications} absentReasons={data?.absent_reasons} taxObservation={data?.tax_split_observation} />
@@ -351,14 +215,12 @@ export default function BudgetFlowHero({ data }: Props) {
                     .
                   </p>
                 )}
-                {hasFlow && (
+                {hasAnyBreakdown && (
                   <p>
-                    The flow below is Treasury&apos;s <strong>fiscal framework</strong>{' '}
-                    for the same year: KES {fmtT(flowTotal)} of spending and net
-                    lending, which counts interest but not principal, and counts
-                    transfers to counties. It is a different total from the gross
-                    figure above, so the flow is drawn against its own total rather
-                    than against the gross budget.
+                    The breakdown below is Treasury&apos;s <strong>fiscal framework</strong>{' '}
+                    for the same year. It reports KES {fmtT(flowTotal)} of
+                    spending and net lending, including interest and county
+                    transfers. Principal repayments appear in financing.
                   </p>
                 )}
                 <p>
@@ -389,8 +251,8 @@ export default function BudgetFlowHero({ data }: Props) {
       </div>
 
       {/* The source may exist while its component evidence is unconfirmed. */}
-      {!hasFlow && (
-        <div className='px-5 sm:px-8 pb-7 pt-2'>
+      {!hasAnyBreakdown && (
+        <div>
           <div className='rounded-xl border border-neutral-border/60 bg-surface-sunken/40 px-4 py-4'>
             <div className='flex items-start gap-2.5'>
               <Info
@@ -412,68 +274,61 @@ export default function BudgetFlowHero({ data }: Props) {
         </div>
       )}
 
-      {/* Sources bar */}
-      {hasFlow && flowTotal != null && (
-      <div className='px-5 sm:px-8 pb-1 pt-2'>
-        <div className='flex items-baseline justify-between gap-2 mb-2'>
-          <h3 className='text-[13px] font-semibold text-gov-dark dark:text-white tracking-tight'>
-            Where the money comes from
-          </h3>
-          <span className='text-[11px] text-neutral-muted'>
-            Total KES {fmtT(flowTotal)} · revenue KES {fmtT(sources!.ordinaryRevenue)}
-          </span>
+      {hasAnyBreakdown && (
+        <div className='grid min-w-0 gap-6 lg:grid-cols-2'>
+          {sources ? (
+            <BudgetFlowChart
+              key={`${fy}-sources`}
+              heading={t('budget.flow.sources')}
+              basis={t('budget.flow.source_total')
+                .replace('{total}', fmtT(sources.total))
+                .replace('{revenue}', fmtT(sources.ordinaryRevenue))}
+              takeaway={sourceTakeaway}
+              total={sources.total}
+              segments={sourceSegments}
+              notes={sourcesNotes}
+            />
+          ) : (
+            <div>
+              <h3 className='font-display text-xl font-bold leading-tight'>{t('budget.flow.sources')}</h3>
+              <p className='text-sm text-neutral-muted'>{t('budget.flow.missing_sources')}</p>
+            </div>
+          )}
+          {uses ? (
+            <BudgetFlowChart
+              key={`${fy}-uses`}
+              heading={t('budget.flow.uses')}
+              basis={t('budget.flow.uses_total').replace('{total}', fmtT(uses.total))}
+              takeaway={usesTakeaway}
+              total={uses.total}
+              segments={useSegments}
+              notes={equitableShareB == null ? undefined : [
+                t('budget.flow.equitable_share').replace('{amount}', `KES ${fmtT(equitableShareB)}`),
+              ]}
+            />
+          ) : (
+            <div>
+              <h3 className='font-display text-xl font-bold leading-tight'>{t('budget.flow.uses')}</h3>
+              <p className='text-sm text-neutral-muted'>{t('budget.flow.missing_uses')}</p>
+            </div>
+          )}
         </div>
-        <FlowBar segments={sourceSegments} total={flowTotal} hover={hover} setHover={setHover} />
-        <SegmentLegend segments={sourceSegments} hover={hover} setHover={setHover} />
-        {sources!.cashAdjustment < -0.05 && (
-          <p className='mt-1.5 text-[11px] text-neutral-muted'>
-            Treasury&apos;s table records a statistical discrepancy for this year, so
-            the sources shown exceed spending by KES {fmtT(-sources!.cashAdjustment)}.
-          </p>
-        )}
-      </div>
-      )}
-
-      {/* Connector */}
-      {hasFlow && (
-      <div className='flex items-center justify-center py-2'>
-        <div className='flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-neutral-muted/80 font-semibold'>
-          <span className='h-px w-8 bg-neutral-border' />
-          Flows into
-          <span className='h-px w-8 bg-neutral-border' />
-        </div>
-      </div>
-      )}
-
-      {/* Uses bar */}
-      {hasFlow && flowTotal != null && (
-      <div className='px-5 sm:px-8 pb-7 pt-1'>
-        <div className='flex items-baseline justify-between gap-2 mb-2'>
-          <h3 className='text-[13px] font-semibold text-gov-dark dark:text-white tracking-tight'>
-            Where it actually goes
-          </h3>
-          <span className='text-[11px] text-neutral-muted'>
-            Spending &amp; net lending KES {fmtT(flowTotal)}
-          </span>
-        </div>
-        <FlowBar segments={useSegments} total={flowTotal} hover={hover} setHover={setHover} />
-        <SegmentLegend segments={useSegments} hover={hover} setHover={setHover} />
-      </div>
       )}
 
       {/* Footer note */}
-      <div className='px-5 sm:px-8 pb-5 pt-0'>
-        <div className='flex items-start gap-2 text-[11px] text-neutral-muted/90 leading-relaxed border-t border-neutral-border/40 pt-3'>
+      <div>
+        <div className='flex items-start gap-2 text-xs text-neutral-muted leading-relaxed border-t border-neutral-border/40 pt-3'>
           <Info size={13} className='mt-0.5 flex-shrink-0 text-gov-forest/70 dark:text-emerald-100/70' />
           <span>
             <strong className='text-gov-dark dark:text-white'>Basis:</strong> the
             headline is the Controller of Budget&apos;s National-Government
             <em> original gross</em> budget.
-            {hasFlow && citation && (
+            {hasAnyBreakdown && citation && (
               <>
-                {' '}The flow is Treasury&apos;s fiscal framework, {citation}: every
-                segment is a printed line of one column, and each bar adds up to that
-                column&apos;s total.
+                {' '}The flow is Treasury&apos;s fiscal framework, {citation}: the
+                figures use one column and reconcile to its total within the report&apos;s
+                rounding. The source table includes the cash-basis adjustment less the
+                statistical discrepancy when Treasury supplies both rows.
               </>
             )}{' '}
             Debt-service callout follows the National Treasury <em>Annual Public Debt
@@ -484,116 +339,5 @@ export default function BudgetFlowHero({ data }: Props) {
         </div>
       </div>
     </section>
-  );
-}
-
-/* ───────────────────────────── flow bar ───────────────────────────── */
-
-function FlowBar({
-  segments,
-  total,
-  hover,
-  setHover,
-}: {
-  segments: Segment[];
-  total: number;
-  hover: string | null;
-  setHover: (s: string | null) => void;
-}) {
-  return (
-    <div
-      className='relative w-full rounded-full bg-gov-sand/60 border border-neutral-border/30 overflow-hidden flex'
-      style={{ height: FLOW_BAR_HEIGHT }}>
-      {segments.map((seg, i) => {
-        const w = pct(seg.valueB, total);
-        if (w < 0.1) return null;
-        const isHover = hover === seg.key;
-        return (
-          <motion.div
-            key={seg.key}
-            initial={{ width: 0 }}
-            animate={{ width: `${w}%` }}
-            transition={{ duration: 0.9, delay: 0.08 * i, ease: [0.22, 1, 0.36, 1] }}
-            onMouseEnter={() => setHover(seg.key)}
-            onMouseLeave={() => setHover(null)}
-            className='relative h-full cursor-default group'
-            style={{
-              background: `linear-gradient(135deg, ${seg.gradStart}, ${seg.gradEnd})`,
-              filter: isHover ? 'brightness(1.08)' : 'brightness(1)',
-              transform: isHover ? 'scaleY(1.06)' : 'scaleY(1)',
-              transformOrigin: 'center',
-              transition: 'filter .2s, transform .2s',
-            }}>
-            {w > 6 && (
-              <span className='absolute inset-0 flex items-center justify-center px-2 text-[11px] font-bold text-white/95 drop-shadow-sm tabular-nums'>
-                {w.toFixed(0)}%
-              </span>
-            )}
-            {isHover && (
-              <motion.div
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.15 }}
-                className='absolute left-1/2 -translate-x-1/2 -top-2 -translate-y-full z-10 bg-white dark:bg-surface-base border border-neutral-border/60 shadow-elevated rounded-lg px-3 py-2 w-56 pointer-events-none'>
-                <div className='text-[11px] font-semibold uppercase tracking-wider' style={{ color: seg.accent }}>
-                  {seg.label}
-                </div>
-                <div className='text-sm font-bold text-gov-dark dark:text-white tabular-nums leading-tight'>
-                  KES {fmtT(seg.valueB)} · {seg.share > 0 && seg.share < 0.1 ? '<0.1' : seg.share.toFixed(1)}%
-                </div>
-                <div className='text-[11px] text-neutral-muted leading-snug mt-1'>
-                  {seg.note}
-                </div>
-              </motion.div>
-            )}
-          </motion.div>
-        );
-      })}
-    </div>
-  );
-}
-
-/* ───────────────────────── segment legend chips ───────────────────────── */
-
-function SegmentLegend({
-  segments,
-  hover,
-  setHover,
-}: {
-  segments: Segment[];
-  hover: string | null;
-  setHover: (s: string | null) => void;
-}) {
-  return (
-    <div className='mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5'>
-      {segments.map((seg) => {
-        const isHover = hover === seg.key;
-        return (
-          <button
-            key={seg.key}
-            type='button'
-            onMouseEnter={() => setHover(seg.key)}
-            onMouseLeave={() => setHover(null)}
-            className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-left transition-all ${
-              isHover
-                ? 'bg-white dark:bg-surface-base border border-neutral-border/60 shadow-sm'
-                : 'border border-transparent'
-            }`}>
-            <span
-              className='w-2 h-5 rounded-sm flex-shrink-0'
-              style={{ background: `linear-gradient(180deg, ${seg.gradStart}, ${seg.gradEnd})` }}
-            />
-            <span className='flex-1 min-w-0'>
-              <span className='block text-[11px] font-semibold text-gov-dark dark:text-white truncate'>
-                {seg.label}
-              </span>
-              <span className='block text-[11px] text-neutral-muted tabular-nums'>
-                KES {fmtT(seg.valueB)} · {seg.share > 0 && seg.share < 0.1 ? '<0.1' : seg.share.toFixed(1)}%
-              </span>
-            </span>
-          </button>
-        );
-      })}
-    </div>
   );
 }

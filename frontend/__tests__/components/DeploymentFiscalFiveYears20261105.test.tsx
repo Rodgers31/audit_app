@@ -99,7 +99,7 @@ test.each(expected)('real budget picker renders $year with its own source column
   expect(hero).toHaveTextContent(`Fiscal framework: ${e.vintage}`);
   expect(hero).toHaveTextContent(e.display);
   expect(within(hero).getByText('Where the money comes from')).toBeInTheDocument();
-  expect(within(hero).getByText('Where it actually goes')).toBeInTheDocument();
+  expect(within(hero).getByText('Where it goes')).toBeInTheDocument();
   expect(hero).toHaveTextContent(ff!.source!.edition!);
   expect(hero).toHaveTextContent(String(ff!.source!.page));
   if (e.year === 'FY 2022/23') {
@@ -110,7 +110,8 @@ test.each(expected)('real budget picker renders $year with its own source column
     expect(row.non_tax_revenue).toBeNull();
     expect(frameworkSources(ff)!.tax).toBeNull();
   } else {
-    expect(within(hero).queryByText(/^KES \d+(?:\.\d+)?$/)).not.toBeInTheDocument();
+    const debtCallout = within(hero).getByRole('complementary', { name: /Treasury APDMR/ });
+    expect(within(debtCallout).queryByText(/^KES \d+(?:\.\d+)?$/)).not.toBeInTheDocument();
   }
 });
 

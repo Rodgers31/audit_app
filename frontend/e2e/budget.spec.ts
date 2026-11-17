@@ -5,10 +5,58 @@ test('budget page filter toggles and chart renders', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'KES 180B approved for FY 2025/26' })).toBeVisible();
   await expect(page.getByText('Spending & net lending KES 150B', { exact: true })).toBeVisible();
   await expect(page.getByText('Tax revenue', { exact: true }).first().locator('..')).toContainText('80B');
-  await expect(page.locator('.recharts-wrapper').first()).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Explore Where it goes', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'FY2024/25', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'KES 150B approved for FY 2024/25' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'KES 180B approved for FY 2025/26' })).toHaveCount(0);
+});
+
+test.describe('Budget segmented flow', () => {
+  test.use({ hasTouch: true, viewport: { width: 360, height: 820 }, reducedMotion: 'reduce' });
+
+  test('opens the same exact values by touch, hover and keyboard and clears selection', async ({ page }) => {
+    await page.goto('/budget');
+    const uses = page.getByRole('region', { name: 'Where it goes' });
+    const bar = uses.getByRole('button', { name: 'Explore Where it goes', exact: true });
+    const readout = uses.locator('[aria-live=polite]');
+    const legend = uses.getByRole('button', { name: 'Interest on debt KES 30B' });
+    await expect(bar).toBeVisible();
+    const bounds = (await bar.boundingBox())!;
+    const interest = { x: bounds.width * 0.1, y: bounds.height / 2 };
+    await bar.tap({ position: interest });
+    await expect(readout).toHaveText('Interest on debt · KES 30,000,000,000 · 20%');
+    await expect(legend).toHaveAttribute('aria-pressed', 'true');
+    await bar.tap({ position: interest });
+    await expect(legend).toHaveAttribute('aria-pressed', 'false');
+    await expect(readout).toBeEmpty();
+    await bar.tap({ position: interest });
+    await uses.getByRole('heading', { name: 'Where it goes' }).tap();
+    await expect(readout).toBeEmpty();
+
+    await bar.hover({ position: interest });
+    await expect(readout).toHaveText('Interest on debt · KES 30,000,000,000 · 20%');
+    await legend.focus();
+    await expect(legend).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(legend).toHaveAttribute('aria-pressed', 'true');
+    await page.keyboard.press('Escape');
+    await expect(readout).toBeEmpty();
+    await expect(legend).toHaveAttribute('aria-pressed', 'false');
+
+    await bar.focus();
+    await page.keyboard.press('End');
+    await expect(readout).toContainText('Counties');
+    await page.keyboard.press('Home');
+    await expect(readout).toContainText('Interest on debt');
+    await uses.getByText('Read chart data', { exact: true }).tap();
+    await expect(uses.getByRole('row', { name: /Interest on debt/ })).toContainText('KES 30,000,000,000 · 20%');
+    await expect(page.getByRole('heading', { name: /budget, visualised/i })).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'FY2024/25', exact: true }).tap();
+    await expect(page.getByRole('heading', { name: 'KES 150B approved for FY 2024/25' })).toBeVisible();
+    await expect(uses.getByRole('table')).toHaveCount(0);
+    await expect(readout).toBeEmpty();
+  });
 });
 
 test('Budget trend cards and Treasury callout fit their content boxes', async ({ page }, testInfo) => {

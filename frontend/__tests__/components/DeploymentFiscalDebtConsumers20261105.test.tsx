@@ -110,7 +110,7 @@ test('an optional equitable share needs its own proof without suppressing a qual
   delete ff.measure_qualifications?.county_equitable_share_billion;
   expect(qualifiedFrameworkValue(ff, 'county_equitable_share_billion')).toBeNull();
   const { container } = render(<BudgetFlowHero data={{ ...FY_2026_27_BILLIONS, fiscal_framework: ff }} />);
-  expect(container.textContent).toMatch(/Where it actually goes/);
+  expect(container.textContent).toMatch(/Where it goes/);
   expect(container.textContent).not.toMatch(/421B/);
 });
 

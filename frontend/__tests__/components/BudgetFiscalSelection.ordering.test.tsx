@@ -64,7 +64,6 @@ jest.mock('@/components/budget/EconomicContextStrip', () => ({ __esModule: true,
 jest.mock('@/components/budget/ExecutionAuditLens', () => ({ __esModule: true, default: () => null }));
 jest.mock('@/components/budget/FiscalTrendStrip', () => ({ __esModule: true, default: () => null }));
 jest.mock('@/components/budget/RevenueMix', () => ({ __esModule: true, default: () => null }));
-jest.mock('@/components/budget/SpendDonut', () => ({ __esModule: true, default: () => null }));
 
 import BudgetSpendingPage from '@/app/budget/BudgetPageClient';
 
