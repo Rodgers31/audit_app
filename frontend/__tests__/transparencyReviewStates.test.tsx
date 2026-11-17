@@ -229,14 +229,15 @@ describe('Review regression: national summary and source states', () => {
   });
 
   it('keeps a stage-level source document when the national source URL is absent', () => {
+    const allocationURL = 'https://cob.go.ke/reports/synthetic-allocation.pdf';
     mockYear = '2025/26 9M';
     mockNational = flow({ year: mockYear, budgetSource: 'cob_cbirr', spent: 50e9 });
-    mockNational.stages[0].source_doc = 'https://cob.go.ke/reports/synthetic-allocation.pdf';
+    mockNational.stages[0].source_doc = allocationURL;
     render(<TransparencyPage />);
     expect(
       within(sourceSection())
         .getAllByRole('link')
-        .some((link) => link.getAttribute('href') === mockNational.stages[0].source_doc)
+        .some((link) => link.getAttribute('href') === allocationURL)
     ).toBe(true);
   });
 
