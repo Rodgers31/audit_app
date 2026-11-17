@@ -1,5 +1,5 @@
 import React from 'react';
-import {render,screen,fireEvent,waitFor} from '@testing-library/react';
+import {act,fireEvent,render,screen} from '@testing-library/react';
 import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
 import FigureEvidence from '@/components/evidence/FigureEvidence';
 import FigureEvidencePage from '@/app/sources/figures/[table]/[id]/FigureEvidencePage';
@@ -8,7 +8,7 @@ import fixture from '../fixtures/figure-qualifications.json';
 import type {Qualifications,FigureQualification} from '@/lib/evidence/qualification';
 import api from '@/lib/api/axios';
 jest.mock('@/lib/api/axios',()=>({__esModule:true,default:{get:jest.fn()}}));
-jest.mock('@/components/layout/PageShell',()=>({__esModule:true,default:({children}:any)=><main>{children}</main>}));
+jest.mock('@/components/layout/PageShell',()=>({__esModule:true,default:({children,title}:any)=><main><h1>{title}</h1>{children}</main>}));
 jest.mock('framer-motion',()=>({motion:new Proxy({}, {get:()=>({children,initial:_i,whileInView:_w,viewport:_v,transition:_t,...props}:any)=><div {...props}>{children}</div>})}));
 const original=fixture.budget_lines.qualifications.allocated_amount as FigureQualification;
 it.each(Object.entries(fixture))('renders actual %s handler DTO with separate checks',(_table,response)=>{
@@ -33,17 +33,24 @@ it('retains zero GDP and inflation and shows absent context evidence',()=>{
  expect(screen.getByText('KES 0B')).toBeInTheDocument();expect(screen.getByText('0.0%')).toBeInTheDocument();
  expect(screen.getAllByText('No source document yet').length).toBeGreaterThan(0);
 });
-it('replaces cached verified result on explicit refresh downgrade and then failure',async()=>{
+it('replaces cached verified result on downgrade and offers recovery after failure',async()=>{
  const get=api.get as jest.Mock;
- get.mockResolvedValueOnce({data:{...fixture.budget_lines,value:'0'}}).mockResolvedValueOnce({data:{value:null,reason:'no_rows',qualifications:{}}}).mockRejectedValueOnce(new Error('synthetic offline'));
+ get.mockResolvedValueOnce({data:{...fixture.budget_lines,value:'0'}})
+   .mockResolvedValueOnce({data:{value:null,reason:'no_rows',qualifications:{}}})
+   .mockRejectedValueOnce(new Error('synthetic offline'))
+   .mockResolvedValueOnce({data:{...fixture.budget_lines,value:'0'}});
  const client=new QueryClient({defaultOptions:{queries:{retry:false,gcTime:0}}});
  render(<QueryClientProvider client={client}><FigureEvidencePage table='budget_lines' id='1'/></QueryClientProvider>);
- await screen.findByText('Stored value: 0');expect(screen.getAllByText(/Verified observation/).length).toBeGreaterThan(0);
- fireEvent.click(screen.getByRole('button',{name:'Refresh evidence'}));
- await screen.findByText('Stored value: Not published');expect(screen.queryByText(/Verified observation/)).not.toBeInTheDocument();
- fireEvent.click(screen.getByRole('button',{name:'Refresh evidence'}));
- await screen.findByRole('alert');expect(screen.queryByText(/Stored value/)).not.toBeInTheDocument();
- await waitFor(()=>expect(get).toHaveBeenCalledTimes(3));client.clear();
+ await screen.findByRole('heading',{name:'Budget allocation: 0'});expect(screen.getAllByText(/Verified observation/).length).toBeGreaterThan(0);
+ expect(screen.queryByRole('button',{name:'Refresh evidence'})).not.toBeInTheDocument();
+ await act(() => client.invalidateQueries({queryKey:['figure-evidence','budget_lines','1']}));
+ await screen.findByText('Not published');expect(screen.queryByText(/Verified observation/)).not.toBeInTheDocument();
+ await act(() => client.invalidateQueries({queryKey:['figure-evidence','budget_lines','1']}));
+ await screen.findByRole('alert');expect(screen.queryByRole('heading',{name:/Budget allocation/})).not.toBeInTheDocument();
+ fireEvent.click(screen.getByRole('button',{name:'Try again'}));
+ await screen.findByRole('heading',{name:'Budget allocation: 0'});
+ expect(get).toHaveBeenCalledTimes(4);
+ client.clear();
 });
 
 it('refuses malformed observation identity even when checks claim success',()=>{
