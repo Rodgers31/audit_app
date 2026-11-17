@@ -312,6 +312,7 @@ test.describe('Follow the Money — national page (/transparency)', () => {
     await expect(summary).toContainText('KES 2.00B');
     await expect(summary).toContainText('70%');
     await expect(spending).toContainText(`FY ${year}`);
+    await expect(spending.getByText('National 70%', { exact: true })).toBeVisible();
     await expect(spending.getByRole('listitem')).toHaveCount(2);
     const nairobi = spending
       .getByRole('listitem')
@@ -334,6 +335,96 @@ test.describe('Follow the Money — national page (/transparency)', () => {
     await expect(picker).toHaveValue(defaultYear);
     await expect(summary).toHaveText(initialSummary!);
     await expect(spending).toContainText(`FY ${defaultYear}`);
+  });
+
+  test.describe('county distribution on a touch screen', () => {
+    test.use({ hasTouch: true });
+
+    test('explores 47 recorded shares and filters below-target counties alongside search', async ({
+      page, request,
+    }) => {
+      await page.setViewportSize({ width: 360, height: 900 });
+      const { years, defaultYear } = await reportedYears(request);
+      const year = years.find((value) => value !== defaultYear)!;
+      expect(year).toBeTruthy();
+      const boundary = 69.96;
+      const makeFlow = (id: number, label: string, percentage: number | null): MoneyFlowData => ({
+        county_id: id, county_name: label, fiscal_year: year, budget_source: 'cob_cbirr',
+        total_waste_estimate: null, efficiency_score: percentage,
+        stages: [
+          { stage: 'Allocated', label: 'Allocation', amount: 10e9 },
+          { stage: 'Spent', label: 'Expenditure', amount: percentage == null ? null : percentage * 100e6 },
+        ],
+      });
+      const counties = [
+        makeFlow(1, 'Anchor', 0),
+        ...Array.from({ length: 7 }, (_, index) => makeFlow(index + 2, `Boundary ${index + 1}`, boundary)),
+        ...Array.from({ length: 39 }, (_, index) => makeFlow(index + 9, `County ${index + 9}`, 70 + index / 2)),
+      ];
+      const unavailable = makeFlow(48, 'Unreported', null);
+      await page.route(
+        (url) => url.pathname === '/api/v1/money-flow/all-counties' && url.searchParams.get('year') === year,
+        (route) => route.fulfill({ json: counties })
+      );
+      await page.route(
+        (url) => url.pathname === '/api/v1/audit/money-flow/national' && url.searchParams.get('year') === year,
+        (route) => route.fulfill({ json: { ...unavailable, county_id: null, efficiency_score: 71 } })
+      );
+      await page.goto('/transparency');
+      await waitForAppReady(page);
+      const picker = page.getByRole('combobox', { name: 'Fiscal year & reporting period' });
+      await picker.selectOption(year);
+      const section = page.getByRole('region', { name: 'County spending' });
+      const plot = section.getByRole('button', { name: 'Explore county spending shares' });
+      const readout = section.locator('figure p[aria-live="polite"]');
+      await expect(section.getByText('8 of 47 reporting counties spent less than the 70% target.')).toBeVisible();
+      await expect(plot.locator('[data-below]')).toHaveCount(47);
+      await expect(section.getByText('National 71%', { exact: true })).toHaveCount(0);
+      const coincidentDot = plot.locator('[data-below=true]').nth(1);
+      await coincidentDot.scrollIntoViewIfNeeded();
+      const bounds = await coincidentDot.boundingBox();
+      expect(bounds).toBeTruthy();
+      for (const label of ['Boundary 1 · 69.96%', 'Boundary 7 · 69.96%']) {
+        await page.touchscreen.tap(bounds!.x + bounds!.width / 2, bounds!.y + bounds!.height / 2);
+        await expect(readout).toHaveText(label);
+      }
+      const search = section.getByRole('searchbox', { name: 'Find your county' });
+      await search.tap();
+      await expect(readout).toBeEmpty();
+      await plot.focus();
+      await page.keyboard.press('Home');
+      await expect(readout).toHaveText('Anchor · 0%');
+      await page.keyboard.press('ArrowRight');
+      await expect(readout).toHaveText('Boundary 1 · 69.96%');
+      await section.getByRole('button', { name: 'Next county' }).click();
+      await expect(readout).toHaveText('Boundary 2 · 69.96%');
+      const tableToggle = section.getByText('Read chart data');
+      await tableToggle.focus();
+      await page.keyboard.press('Enter');
+      await expect(section.getByRole('row', { name: 'Boundary 7 69.96%' })).toBeVisible();
+      await expect(section.getByRole('table').getByRole('row')).toHaveCount(48);
+      await expect(readout).toHaveText('Boundary 2 · 69.96%');
+      await page.keyboard.press('Escape');
+      await expect(readout).toBeEmpty();
+      await tableToggle.click();
+
+      const chip = section.getByRole('button', { name: '8 below target' });
+      const cards = section.getByRole('list', { name: /Counties ordered by/ });
+      await chip.click();
+      await expect(chip).toHaveAttribute('aria-pressed', 'true');
+      await expect(cards.getByRole('listitem')).toHaveCount(8);
+      await expect(cards.getByText('KES 10.00B allocated').first()).toBeVisible();
+      await search.fill('County 9');
+      await expect(section.getByText('No counties below the target match your search.')).toBeVisible();
+      await chip.click();
+      await expect(cards.getByRole('link', { name: 'County 9', exact: true })).toBeVisible();
+      await search.fill('');
+      await chip.click();
+      await picker.selectOption(defaultYear);
+      await expect(chip).toHaveCount(0);
+      await picker.selectOption(year);
+      await expect(chip).toHaveAttribute('aria-pressed', 'false');
+    });
   });
 
   test('shows ten rich county cards and searches all 47 before expansion', async ({ page, request }) => {

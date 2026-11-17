@@ -5,7 +5,12 @@ import MoneyFlowSourceReconciliation from '@/components/transparency/MoneyFlowSo
 import MoneyFlowPeriodPicker from '@/components/transparency/MoneyFlowPeriodPicker';
 import MoneyFlowOverview from '@/components/transparency/MoneyFlowOverview';
 import CountySpendingList from '@/components/transparency/CountySpendingList';
-import { isProjectedMoneyFlow } from '@/components/transparency/moneyFlowPresentation';
+import {
+  countyDistributionPoints,
+  isProjectedMoneyFlow,
+  nationalDistributionGuide,
+  sameMoneyFlowPeriod,
+} from '@/components/transparency/moneyFlowPresentation';
 import type {
   CountyFlowRow,
   CountySortKey as SortKey,
@@ -307,7 +312,11 @@ export default function TransparencyPage() {
     });
   }, [allCountyFlows]);
 
-  const isProjectedFY = isProjectedMoneyFlow(nationalFlow);
+  const isProjectedFY = isProjectedMoneyFlow(sameMoneyFlowPeriod(nationalFlow, selectedYear));
+  const distribution = useMemo(
+    () => isProjectedFY ? [] : countyDistributionPoints(allCountyFlows ?? [], selectedYear),
+    [allCountyFlows, isProjectedFY, selectedYear]
+  );
   const isProjectedCountyList =
     isProjectedFY &&
     countyRows.every(
@@ -408,6 +417,8 @@ export default function TransparencyPage() {
         rows={sortedRows}
         fiscalYear={stripFY(selectedYear)}
         countiesWithData={countiesWithData}
+        distribution={distribution}
+        distributionNational={nationalDistributionGuide(nationalFlow, selectedYear)}
         nationalEfficiency={insights?.efficiency ?? null}
         nationalAllocated={insights?.allocated ?? null}
         projected={isProjectedCountyList}

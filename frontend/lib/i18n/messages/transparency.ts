@@ -63,6 +63,11 @@ export const countySpendingMessages = {
     sw: 'Kiasi kilichohojiwa kinajadiliwa kwenye ripoti za ukaguzi. Hakionyeshi hasara au wizi uliothibitishwa. Kistari kinaonyesha kiasi hakipatikani.',
     plain: 'Auditors raised questions about these amounts. That does not mean the money was proven lost or stolen. A dash means the amount is unavailable.',
   },
+  noBelowMatch: {
+    en: 'No counties below the target match your search.',
+    sw: 'Hakuna kaunti iliyo chini ya lengo inayolingana na utafutaji wako.',
+    plain: 'Your search did not find any counties below the target.',
+  },
   oneCounty: { en: '1 county', sw: 'Kaunti 1', plain: '1 county' },
   countyCount: { en: '{count} counties', sw: 'Kaunti {count}', plain: '{count} counties' },
   orderedBy: {
@@ -241,4 +246,43 @@ export const nationalSpendingMessages = {
     sw: 'Mgao unajumuisha takwimu za Mdhibiti wa Bajeti na makadirio ya Tume ya Ugawaji wa Mapato.',
     plain: 'The allocation combines published figures from the Controller of Budget with estimates from the Commission on Revenue Allocation.',
   },
+} as const;
+
+export const countyDistributionMessages = {
+  takeaway: {
+    en: '{below} of {reported} reporting counties spent less than the {target}% target.',
+    sw: 'Kaunti {below} kati ya {reported} zilizoripoti zilitumia chini ya lengo la {target}%.',
+    plain: '{below} of {reported} counties with figures spent less than the {target}% target.',
+  },
+  coverage: {
+    en: 'Reported spending shares for {reported} of 47 counties.',
+    sw: 'Asilimia za matumizi ziliripotiwa kwa kaunti {reported} kati ya 47.',
+    plain: 'We have a spending percentage for {reported} of 47 counties.',
+  },
+  unavailable: {
+    en: 'Reported county spending shares are unavailable for this period.',
+    sw: 'Asilimia za matumizi ya kaunti hazipatikani kwa kipindi hiki.',
+    plain: 'We don’t have county spending percentages for this period.',
+  },
+  belowChip: {
+    en: '{count} below target', sw: '{count} chini ya lengo', plain: '{count} below target',
+  },
+  targetGuide: {
+    en: '{percent}% target', sw: 'Lengo la {percent}%', plain: '{percent}% target',
+  },
+  nationalGuide: {
+    en: 'National {percent}%', sw: 'Kitaifa {percent}%', plain: 'National {percent}%',
+  },
+  plot: {
+    en: 'Explore county spending shares',
+    sw: 'Chunguza asilimia za matumizi ya kaunti',
+    plain: 'Explore county spending percentages',
+  },
+  plotHelp: {
+    en: 'Select a dot or use the arrows to read each county.',
+    sw: 'Chagua nukta au tumia mishale kusoma takwimu za kila kaunti.',
+    plain: 'Choose a dot or use the arrows to see each county’s percentage.',
+  },
+  previous: { en: 'Previous county', sw: 'Kaunti iliyotangulia', plain: 'Previous county' },
+  next: { en: 'Next county', sw: 'Kaunti inayofuata', plain: 'Next county' },
 } as const;
