@@ -1,0 +1,61 @@
+.anchor {
+  scroll-margin-top: var(--public-header-height);
+}
+
+.sticky {
+  position: sticky;
+  top: var(--public-header-height);
+  z-index: 20;
+  background: rgb(var(--c-surface-base));
+}
+
+.identity {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--county-line);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.period {
+  color: var(--county-muted);
+  font-family: var(--font-audit-mono, 'IBM Plex Mono'), monospace;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.list {
+  display: flex;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--county-line);
+}
+
+.list > button {
+  flex: 1 0 auto;
+  min-width: 56px;
+  min-height: 44px;
+  padding: 0 8px;
+  border-bottom: 3px solid transparent;
+  color: var(--county-muted);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.list > button:is([aria-selected='true'], :hover, :focus-visible) {
+  color: var(--county-ink);
+}
+
+.list > button[aria-selected='true'] {
+  border-bottom-color: var(--county-accent);
+}
+
+.list > button:focus-visible {
+  outline: 2px solid var(--county-accent);
+  outline-offset: -4px;
+}

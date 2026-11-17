@@ -91,7 +91,7 @@ test.describe('Chart Data Validation - County Details', () => {
   test.fixme('county chart tooltips show category details', async () => {});
   test('audit status chart matches data', async ({ page }) => {
     await page.goto('/counties/001');
-    await page.getByRole('button', { name: 'Audit Findings', exact: true }).click();
+    await page.getByRole('tab', { name: 'Audit', exact: true }).click();
     await expect(page.locator('main')).toContainText('Synthetic browser finding');
     await expect(page.locator('main')).toContainText('Kshs.1,000,000.');
     await expect(page.getByRole('link', { name: 'Source report, p. 2' }).first()).toHaveAttribute('href', /example\.invalid.*#page=2$/);

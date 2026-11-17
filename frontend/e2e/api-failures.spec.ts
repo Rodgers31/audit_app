@@ -19,7 +19,7 @@ for (const path of ['/counties', '/counties/001', '/sources', '/accountability/u
           : route.continue();
       });
       await page.goto(path);
-      await page.getByRole('button', { name: 'Follow the Money', exact: true }).click();
+      await page.getByRole('tab', { name: 'Money', exact: true }).click();
       await expect.poll(() => calls).toBe(1);
       const unavailable = page.locator('[class*="moneyReport"]').getByRole('alert');
       await expect(unavailable).toContainText('Could not load money flow for this period.');

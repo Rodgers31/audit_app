@@ -519,9 +519,9 @@ test.describe('Follow the Money — efficiency + provenance', () => {
 // shell-click committed-note regression above separately covers lazy selection (#450).
 test.describe('Follow the Money — read states', () => {
   for (const [lang, tabName, failedMessage, loadingMessage, emptyMessage, retryName] of [
-    ['en', 'Follow the Money', 'Could not load money flow for this period.', 'Tracing the money...', 'No money flow data available for this period.', 'Try again'],
-    ['sw', 'Fuatilia Pesa', 'Imeshindikana kupakia mtiririko wa pesa kwa kipindi hiki.', 'Inafuatilia pesa...', 'Hakuna data ya mtiririko wa pesa inayopatikana kwa kipindi hiki.', 'Jaribu tena'],
-    ['plain', 'Follow the Money', 'We could not load money flow for this period.', 'Loading money flow...', 'No money flow data is available for this period.', 'Try again'],
+    ['en', 'Money', 'Could not load money flow for this period.', 'Tracing the money...', 'No money flow data available for this period.', 'Try again'],
+    ['sw', 'Fedha', 'Imeshindikana kupakia mtiririko wa pesa kwa kipindi hiki.', 'Inafuatilia pesa...', 'Hakuna data ya mtiririko wa pesa inayopatikana kwa kipindi hiki.', 'Jaribu tena'],
+    ['plain', 'Money', 'We could not load money flow for this period.', 'Loading money flow...', 'No money flow data is available for this period.', 'Try again'],
   ] as const) {
     for (const width of [375, 1280]) {
       test(`${lang} at ${width}px distinguishes failed, pending and successful absence reads`, async ({ page, request }, testInfo) => {
@@ -548,7 +548,7 @@ test.describe('Follow the Money — read states', () => {
         });
         await page.goto(`/counties/${COUNTY_ID}?tab=money`);
         await waitForAppReady(page);
-        await expect(page.getByRole('button', { name: tabName, exact: true })).toHaveAttribute('aria-pressed', 'true');
+        await expect(page.getByRole('tab', { name: tabName, exact: true })).toHaveAttribute('aria-selected', 'true');
         const panel = page.locator('[class*="moneyReport"]');
         await expect(panel.getByRole('alert')).toContainText(failedMessage);
         await expect(panel.getByText(emptyMessage, { exact: true })).toHaveCount(0);
@@ -599,7 +599,7 @@ for (const width of [375, 1280]) {
     });
     await page.goto(`/counties/${COUNTY_ID}?tab=money`);
     await waitForAppReady(page);
-    await expect(countyTabs.followTheMoney(page)).toHaveAttribute('aria-pressed', 'true');
+    await expect(countyTabs.followTheMoney(page)).toHaveAttribute('aria-selected', 'true');
     const panel = page.locator('[class*="moneyReport"]');
     await expect(panel.getByRole('status')).toContainText('Loading reporting periods...');
     expect(moneyCalls).toBe(0);
@@ -623,7 +623,7 @@ for (const width of [375, 1280]) {
     await page.route(url => url.pathname === '/api/v1/counties/fiscal-years', route => route.fulfill({ json: { default: null, years: [] } }));
     await page.goto(`/counties/${COUNTY_ID}?tab=money`);
     await waitForAppReady(page);
-    await expect(countyTabs.followTheMoney(page)).toHaveAttribute('aria-pressed', 'true');
+    await expect(countyTabs.followTheMoney(page)).toHaveAttribute('aria-selected', 'true');
     const panel = page.locator('[class*="moneyReport"]');
     await expect(panel.getByRole('status')).toContainText('No reporting periods are available for money flow.');
     await expect(panel.getByRole('combobox')).toHaveCount(0);
