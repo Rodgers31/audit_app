@@ -22,19 +22,103 @@ test('the Home questions offer keyboard navigation to the existing public pages'
 
   const hero = page.getByRole('region', { name: 'Where does Kenya’s money go?' });
   await expect(hero).toContainText('Data from the Central Bank, Treasury, Auditor-General and Controller of Budget.');
+  const countySearch = hero.getByRole('combobox', { name: 'Find your county' });
+  await expect(countySearch).toBeEnabled();
   const firstTopic = topics.getByRole('link', { name: destinations[0][0] });
   await firstTopic.focus();
   for (const [question] of destinations) {
     await expect(topics.getByRole('link', { name: question })).toBeFocused();
     await page.keyboard.press('Tab');
   }
+  await expect(countySearch).toBeFocused();
+  await page.keyboard.press('Tab');
   const sources = hero.getByRole('link', { name: 'Data & sources' });
   await expect(sources).toBeFocused();
   await expect(sources).toHaveAttribute('href', '/sources');
   await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('Shift+Tab');
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/audits\/?$/);
   await expect(page.getByRole('heading', { level: 1, name: 'Audit Findings' })).toBeVisible();
+});
+
+test('Home county search navigates a list and opens the selected county with the keyboard', async ({ page }) => {
+  await page.goto('/');
+  const search = page.getByRole('combobox', { name: 'Find your county' });
+  const suggestions = page.getByRole('listbox', { name: 'Find your county' });
+
+  await search.fill('Kis');
+  await expect(suggestions.getByRole('option')).toHaveText(['Kisii', 'Kisumu']);
+  await search.press('ArrowDown');
+  await expect(suggestions.getByRole('option', { name: 'Kisii', selected: true })).toBeVisible();
+  await search.press('ArrowDown');
+  const kisumu = suggestions.getByRole('option', { name: 'Kisumu', selected: true });
+  await expect(kisumu).toBeVisible();
+  await expect(search).toHaveAttribute('aria-activedescendant', (await kisumu.getAttribute('id'))!);
+  await search.press('Escape');
+  await expect(search).toBeFocused();
+  await expect(search).toHaveValue('Kis');
+  await expect(search).toHaveAttribute('aria-expanded', 'false');
+  await expect(search).not.toHaveAttribute('aria-activedescendant');
+  await expect(suggestions).toHaveCount(0);
+
+  await search.press('ArrowUp');
+  await expect(kisumu).toBeVisible();
+  await search.press('Tab');
+  await expect(search).not.toBeFocused();
+  await expect(suggestions).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Clear county search' }).press('Enter');
+  await expect(search).toBeFocused();
+  await expect(search).toHaveValue('');
+
+  await search.fill('Kis');
+  await search.press('ArrowUp');
+  await search.press('Enter');
+  await expect(page).toHaveURL(/\/counties\/kisumu\/?$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Kisumu County' })).toBeVisible();
+
+  await page.goto('/');
+  await search.fill('murang’a county');
+  await expect(suggestions.getByRole('option', { name: "Murang'a" }))
+    .toHaveAttribute('href', '/counties/Murang%27a');
+  await search.press('Enter');
+  await expect(page).toHaveURL(/\/counties\/Murang%27a\/?$/);
+  await expect(page.getByRole('heading', { level: 1, name: "Murang'a County" })).toBeVisible();
+});
+
+test.describe('Home county search on touch screens', () => {
+  test.use({ hasTouch: true, viewport: { width: 360, height: 780 } });
+
+  test('dismisses suggestions, clears a no-match query, and opens a multiword county', async ({ page }) => {
+    await page.goto('/');
+    const search = page.getByRole('combobox', { name: 'Find your county' });
+    const suggestions = page.getByRole('listbox', { name: 'Find your county' });
+    const clear = page.getByRole('button', { name: 'Clear county search' });
+
+    await search.tap();
+    await search.fill('homa');
+    await expect(suggestions.getByRole('option', { name: 'Homa Bay' })).toBeVisible();
+    await page.getByRole('heading', { level: 1, name: 'Where does Kenya’s money go?' }).tap();
+    await expect(search).toHaveAttribute('aria-expanded', 'false');
+    await expect(search).toHaveValue('homa');
+
+    await search.tap();
+    await search.fill('zzzz');
+    await expect(page.getByRole('status').filter({ hasText: 'No counties found.' })).toBeVisible();
+    await expect(suggestions).toHaveCount(0);
+    await clear.tap();
+    await expect(search).toHaveValue('');
+    await expect(search).toBeFocused();
+    await expect(clear).toHaveCount(0);
+
+    await search.fill('HOMA-BAY');
+    const county = suggestions.getByRole('option', { name: 'Homa Bay' });
+    await expect(county).toHaveAttribute('href', '/counties/homa-bay');
+    await county.tap();
+    await expect(page).toHaveURL(/\/counties\/homa-bay\/?$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Homa Bay County' })).toBeVisible();
+  });
 });
 
 test('home dashboard renders and allows county selection via map', async ({ page }) => {
