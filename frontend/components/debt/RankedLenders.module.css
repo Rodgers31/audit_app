@@ -1,0 +1,128 @@
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  color: rgb(var(--c-neutral-muted));
+  font-size: 12px;
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatch {
+  inline-size: 9px;
+  block-size: 9px;
+  flex: none;
+}
+
+.swatch,
+.bar {
+  background: var(--lender-color);
+  border-radius: 2px;
+}
+
+:is(.swatch, .bar)[data-type='domestic'] {
+  --lender-color: var(--chart-teal);
+}
+
+:is(.swatch, .bar)[data-type='external'] {
+  --lender-color: var(--chart-gold);
+}
+
+:is(.swatch, .bar)[data-type='unclassified'] {
+  --lender-color: var(--chart-context);
+}
+
+.ranking > li {
+  border-bottom: 1px solid rgb(var(--c-neutral-border));
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 3px 10px;
+  inline-size: 100%;
+  min-block-size: 44px;
+  padding-block: 8px;
+  text-align: start;
+}
+
+.row:hover .name,
+.row:focus-visible .name {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.name {
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.amount {
+  font-family: var(--font-audit-display, 'Barlow Condensed'), sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.track {
+  grid-column: 1 / -1;
+  height: 8px;
+  border-radius: 2px;
+  background: rgb(var(--c-surface-sunken));
+}
+
+.bar {
+  display: block;
+  height: 100%;
+}
+
+.identity {
+  color: rgb(var(--c-neutral-muted));
+  font-size: 12px;
+}
+
+.chevron {
+  align-self: center;
+  justify-self: end;
+  color: rgb(var(--c-neutral-muted));
+}
+
+.row[aria-expanded='true'] .chevron {
+  transform: rotate(180deg);
+}
+
+.details {
+  padding: 8px 0 12px 12px;
+  border-inline-start: 2px solid rgb(var(--c-neutral-border));
+}
+
+.exactAmount {
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.lenders {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.lenders li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: baseline;
+  padding-block: 6px;
+  overflow-wrap: anywhere;
+}
+
+.lenders li + li {
+  border-top: 1px solid rgb(var(--c-neutral-border));
+}

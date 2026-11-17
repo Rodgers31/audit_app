@@ -1,5 +1,5 @@
 /**
- * The treemap's slice arithmetic (credibility audit F25).
+ * The lender breakdown's slice arithmetic (credibility audit F25).
  *
  * On the live site the seven slices summed to 106.9%. `percentage_of_total`
  * comes from the backend divided by a total that EXCLUDES pending bills, while
@@ -10,16 +10,16 @@
  * borrowed money — the backend's own `_is_debt_loan` says so and keeps them
  * out of every debt total) and computes shares over what it actually draws.
  *
- * These tests import the production adapter (lib/debt/lenderTreemapAdapter),
+ * These tests import the production adapter (lib/debt/lenderBreakdown),
  * which DebtPageClient also uses, so they exercise the shipped path rather than
  * a copy of it. The numbers below are the real ones from GET /debt/national.
  */
 
 import {
-  toTreemapCategories as adaptCategories,
-  treemapTotal,
+  toLenderCategories as adaptCategories,
+  lenderCategoryTotal,
   type ApiCategory as AdapterApiCategory,
-} from '@/lib/debt/lenderTreemapAdapter';
+} from '@/lib/debt/lenderBreakdown';
 
 /** The API shape these fixtures use, plus the backend's own share field. */
 type ApiCategory = AdapterApiCategory & { percentage_of_total?: number };
@@ -30,9 +30,9 @@ type ApiCategory = AdapterApiCategory & { percentage_of_total?: number };
  * reimplement it, so a regression in the page could leave every assertion here
  * green.
  */
-function toTreemapCategories(categories: Record<string, ApiCategory>) {
+function toLenderCategories(categories: Record<string, ApiCategory>) {
   const adapted = adaptCategories(categories);
-  return { categories: adapted, total: treemapTotal(adapted) };
+  return { categories: adapted, total: lenderCategoryTotal(adapted) };
 }
 
 // GET /api/v1/debt/national, 2026-09-03.
@@ -46,7 +46,7 @@ const LIVE: Record<string, ApiCategory> = {
   domestic_overdraft: { total_outstanding: 89_651_700_000, percentage_of_total: 0.66 },
 };
 
-describe('treemap slice arithmetic', () => {
+describe('lender breakdown slice arithmetic', () => {
   it('reproduces the defect from the API figures', () => {
     // What the page did: render every category, using the backend's share.
     const sum = Object.values(LIVE).reduce((s, c) => s + (c.percentage_of_total as number), 0);
@@ -55,13 +55,13 @@ describe('treemap slice arithmetic', () => {
   });
 
   it('slices now sum to 100%', () => {
-    const { categories } = toTreemapCategories(LIVE);
+    const { categories } = toLenderCategories(LIVE);
     const sum = categories.reduce((s, c) => s + c.share, 0);
     expect(sum).toBeCloseTo(100, 6);
   });
 
   it('excludes pending bills, which are not borrowed money', () => {
-    const { categories, total } = toTreemapCategories(LIVE);
+    const { categories, total } = toLenderCategories(LIVE);
     expect(categories.map((c) => c.category)).not.toContain('pending_bills');
     // The stated whole is the sum of what is drawn, not a total that
     // silently contains something the chart omits.
@@ -82,7 +82,7 @@ describe('treemap slice arithmetic', () => {
 
   it('drops empty categories without disturbing the shares', () => {
     const withEmpty = { ...LIVE, domestic_legacy: { total_outstanding: 0, percentage_of_total: 0 } };
-    const { categories } = toTreemapCategories(withEmpty);
+    const { categories } = toLenderCategories(withEmpty);
     expect(categories.map((c) => c.category)).not.toContain('domestic_legacy');
     expect(categories.reduce((s, c) => s + c.share, 0)).toBeCloseTo(100, 6);
   });
@@ -117,32 +117,16 @@ describe('treemap slice arithmetic', () => {
       },
       domestic_bonds: { total_outstanding: 5_878_982_400_000, percentage_of_total: 0 },
     };
-    const { categories } = toTreemapCategories(many);
+    const { categories } = toLenderCategories(many);
     expect(categories.reduce((s, c) => s + c.share, 0)).toBeCloseTo(100, 6);
     const creditorCount = categories.reduce((s, c) => s + c.lenders.length, 0);
     expect(creditorCount).toBe(42);
   });
 
-  it('folds the long tail instead of dropping it', () => {
-    // The drill-down names 8 and sums the rest. Whatever it shows must still
-    // add up to the category, or the panel disagrees with its own header.
-    const lenders = Array.from({ length: 17 }, (_, i) => ({
-      lender: `Creditor ${i}`,
-      outstanding: (17 - i) * 1e10,
-    }));
-    const NAMED = 8;
-    const named = lenders.slice(0, NAMED);
-    const tail = lenders.slice(NAMED);
-    const tailTotal = tail.reduce((s, l) => s + l.outstanding, 0);
 
-    expect(tail.length).toBe(9);
-    expect(
-      named.reduce((s, l) => s + l.outstanding, 0) + tailTotal
-    ).toBeCloseTo(lenders.reduce((s, l) => s + l.outstanding, 0), 6);
-  });
 });
 
-describe('the API response the treemap actually receives', () => {
+describe('the API response the lender breakdown actually receives', () => {
   /**
    * /api/v1/debt/national returns the largest 8 lenders per category plus an
    * explicit remainder — it does not return all 42. Earlier fixtures here
@@ -165,29 +149,29 @@ describe('the API response the treemap actually receives', () => {
   };
 
   it('keeps the remainder so a category can still account for itself', () => {
-    const { categories } = toTreemapCategories(TRUNCATED);
+    const { categories } = toLenderCategories(TRUNCATED);
     const multilateral = categories.find((c) => c.category === 'external_multilateral')!;
 
     expect(multilateral.lenders).toHaveLength(8);
     expect(multilateral.otherLenderCount).toBe(5);
 
-    const named = multilateral.lenders.reduce((s, l) => s + l.outstanding, 0);
+    const named = multilateral.lenders.reduce((s, l) => s + l.outstanding!, 0);
     expect(named).toBeLessThan(multilateral.outstanding);
     // Named + folded remainder must reconstruct the category total, or the
     // drill-down disagrees with the header printed above it.
-    expect(named + multilateral.otherOutstanding).toBeCloseTo(
+    expect(named + multilateral.otherOutstanding!).toBeCloseTo(
       multilateral.outstanding,
       0
     );
   });
 
   it('shares still sum to 100% on a truncated response', () => {
-    const { categories } = toTreemapCategories(TRUNCATED);
+    const { categories } = toLenderCategories(TRUNCATED);
     expect(categories.reduce((s, c) => s + c.share, 0)).toBeCloseTo(100, 6);
   });
 
   it('a category with no remainder reports none', () => {
-    const { categories } = toTreemapCategories({
+    const { categories } = toLenderCategories({
       domestic_bonds: {
         total_outstanding: 300,
         items: [{ lender: 'A', outstanding: 200 }, { lender: 'B', outstanding: 100 }],
@@ -199,7 +183,7 @@ describe('the API response the treemap actually receives', () => {
 });
 
 /**
- * Creditor names reach the treemap through this same adapter, so the padding
+ * Creditor names reach the lender breakdown through this same adapter, so the padding
  * the source API ships has to be gone by the time a lender row exists.
  *
  * World Bank IDS pads its creditor labels to a fixed column width with
@@ -225,7 +209,7 @@ describe('creditor names carry no source padding by the time they are drawn', ()
   };
 
   it('trims the padding out of every lender name', () => {
-    const { categories } = toTreemapCategories(PADDED);
+    const { categories } = toLenderCategories(PADDED);
     const names = categories.flatMap((c) => c.lenders.map((l) => l.lender));
     expect(names).toEqual([
       'Multilateral (World Bank-IDA)',
@@ -235,7 +219,7 @@ describe('creditor names carry no source padding by the time they are drawn', ()
   });
 
   it('leaves no invisible whitespace anywhere in the drawn names', () => {
-    const { categories } = toTreemapCategories(PADDED);
+    const { categories } = toLenderCategories(PADDED);
     for (const c of categories) {
       for (const l of c.lenders) {
         expect(l.lender).not.toMatch(/[\u00a0\u2000-\u200d\u202f\u205f\u3000\ufeff]/);
@@ -245,10 +229,33 @@ describe('creditor names carry no source padding by the time they are drawn', ()
   });
 
   it('does not disturb the amounts beside the names', () => {
-    const { categories } = toTreemapCategories(PADDED);
+    const { categories } = toLenderCategories(PADDED);
     const multi = categories.find((c) => c.category === 'external_multilateral')!;
     expect(multi.lenders.map((l) => l.outstanding)).toEqual([
       1_600_000_000_000, 524_800_000_000, 262_500_000_000,
     ]);
   });
+});
+
+it('distinguishes missing amounts from zero and labels principal fallbacks', () => {
+  const { categories } = toLenderCategories({
+    domestic_bonds: {
+      total_outstanding: null,
+      total_principal: '250',
+      items: [
+        { lender: 'A', outstanding: null },
+        { lender: 'B', outstanding: 0, principal: 200 },
+        { lender: 'C', principal: '250' },
+      ],
+      other_lender_count: 2,
+      items_truncated: true,
+    },
+  });
+  const [group] = categories;
+  expect(group).toMatchObject({ outstanding: 250, basis: 'principal', otherOutstanding: null });
+  expect(group.lenders).toEqual([
+    { lender: 'A', outstanding: null, basis: 'principal' },
+    { lender: 'B', outstanding: 0, basis: 'outstanding' },
+    { lender: 'C', outstanding: 250, basis: 'principal' },
+  ]);
 });

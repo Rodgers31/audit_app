@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import nationalObservation from './fixtures/debt_overview.json';
+import lenderGroups from './fixtures/debt_lender_groups.json';
 import { registerApiMocks } from './utils/mockApi';
 
 test.beforeEach(async ({ page }) => { await registerApiMocks(page); });
@@ -107,4 +108,71 @@ test('debt page source line names the ratio inputs explicitly', async ({ page })
   await expect(page.getByText(/Uses tax & non-tax revenue; debt figure includes total debt service/i)).toContainText('(interest + principal redemptions)');
   await expect(page.getByText(/FY 2025\/26 debt service is from Synthetic local fixture/))
     .toContainText('Synthetic browser fiscal framework (p. 1)');
+});
+
+test.describe('ranked lender groups', () => {
+  test.use({ hasTouch: true, viewport: { width: 360, height: 820 }, reducedMotion: 'reduce' });
+
+  test('ranks every group, opens full lender names and preserves the published tail', async ({ page }) => {
+    await page.route('**/api/v1/debt/national', route => route.fulfill({ json: {
+      ...nationalObservation,
+      data: { ...nationalObservation.data, categories: lenderGroups },
+    } }));
+    await page.goto('/debt');
+    const section = page.getByRole('region', { name: 'Who Kenya owes' });
+    await expect(section.getByText('Domestic lenders hold more than half of the debt shown (55%).')).toBeVisible();
+    const ranking = section.getByRole('list').nth(1);
+    const categories = ranking.getByRole('button');
+    await expect(categories).toHaveCount(5);
+    await expect(categories.first()).toContainText('Domestic bonds');
+    await expect(categories.nth(1)).toContainText('World Bank and other multilaterals');
+    await expect(section.locator('.recharts-wrapper')).toHaveCount(0);
+
+    const multilaterals = section.getByRole('button', { name: /World Bank and other multilaterals/ });
+    await multilaterals.focus();
+    await page.keyboard.press('Enter');
+    await expect(multilaterals).toHaveAttribute('aria-expanded', 'true');
+    await expect(section.getByText('World Bank International Development Association', { exact: true })).toBeVisible();
+    await expect(section.getByText('Synthetic ninth named lender with an intentionally long full name', { exact: true })).toBeVisible();
+    const tail = section.getByText('Other lenders (4 reported)', { exact: true }).locator('..');
+    await expect(tail).toContainText('KES 400,000,000,000');
+    await page.keyboard.press('Space');
+    await expect(multilaterals).toHaveAttribute('aria-expanded', 'false');
+
+    const more = section.getByRole('button', { name: 'Show 2 more groups', exact: true });
+    await more.tap();
+    await expect(categories).toHaveCount(7);
+    await expect(categories.nth(5)).toBeFocused();
+    const unclassified = section.getByRole('button', { name: /Future External Lenders/ });
+    await expect(unclassified).toContainText('Lender type unclassified');
+    await unclassified.tap();
+    await expect(section.getByText('Individual lenders are unavailable for this group.')).toBeVisible();
+    await expect(section.getByText(/Shares use the KES 13\.00T total of the lender groups shown/)).toBeVisible();
+    await expect(section.getByRole('button', { name: /pending bills/i })).toHaveCount(0);
+  });
+});
+
+test('discloses the basis of principal-only amounts and keeps small positive shares legible', async ({ page }) => {
+  await page.route('**/api/v1/debt/national', route => route.fulfill({ json: {
+    ...nationalObservation,
+    data: { ...nationalObservation.data, categories: {
+      domestic_bonds: { total_outstanding: 9980 },
+      future_external_lenders: {
+        total_principal: 20,
+        items: [{ lender: 'Synthetic lender with a zero balance', outstanding: 0 }],
+        other_lender_count: 3,
+        items_truncated: true,
+      },
+    } },
+  } }));
+  await page.goto('/debt');
+  const section = page.getByRole('region', { name: 'Who Kenya owes' });
+  await expect(section.getByText('The largest group is Domestic bonds, with 99.8% of the amounts shown.')).toBeVisible();
+  await expect(section.getByText('Groups labeled original principal use the loan amount originally recorded.')).toBeVisible();
+  await expect(section.getByText(/Shares use the KES 10,000 total of the amounts shown/)).toBeVisible();
+  const small = section.getByRole('button', { name: /Future External Lenders/ });
+  await expect(small).toContainText('0.2% · Lender type unclassified · Original principal');
+  await small.click();
+  await expect(section.getByText('Synthetic lender with a zero balance').locator('..')).toContainText('KES 0');
+  await expect(section.getByText('Other lenders (3 reported)').locator('..')).toContainText('Amount unavailable');
 });
