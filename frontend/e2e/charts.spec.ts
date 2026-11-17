@@ -129,7 +129,7 @@ test.describe('Chart Responsiveness', () => {
     test(`charts resize on ${name} viewport`, async ({ page }) => {
       await page.setViewportSize({ width, height });
       await page.goto('/budget');
-      const chart = page.locator('.recharts-wrapper').first();
+      const chart = page.getByRole('button', { name: 'Explore Where it goes', exact: true });
       await expect(chart).toBeVisible();
       const box = await chart.boundingBox();
       expect(box).not.toBeNull();
@@ -139,19 +139,21 @@ test.describe('Chart Responsiveness', () => {
   }
   test('charts maintain bounds on resize', async ({ page }) => {
     await page.goto('/budget');
-    const chart = page.locator('.recharts-wrapper').first();
+    const chart = page.getByRole('button', { name: 'Explore Where it goes', exact: true });
     await expect(chart).toBeVisible();
     await page.setViewportSize({ width: 768, height: 1024 });
     await expect.poll(async () => (await chart.boundingBox())!.width).toBeLessThanOrEqual(768);
-    await expect(chart.locator('.recharts-pie-sector')).toHaveCount(4);
+    await expect(chart.locator('..').locator('[aria-hidden=true] > [data-segment]')).toHaveCount(4);
   });
 });
 
 test.describe('Chart Accessibility', () => {
   test('charts have descriptive labels', async ({ page }) => {
     await page.goto('/budget');
-    await expect(page.getByRole('heading', { name: 'The FY 2025/26 budget, visualised', exact: true })).toBeVisible();
-    await expect(page.getByText('Interest on debt', { exact: true }).last().locator('../..')).toContainText('KES 30B');
+    const uses = page.getByRole('region', { name: 'Where it goes' });
+    await expect(uses.getByRole('button', { name: 'Interest on debt KES 30B' })).toBeVisible();
+    await uses.getByText('Read chart data', { exact: true }).click();
+    await expect(uses.getByRole('row', { name: /Interest on debt/ })).toContainText('KES 30,000,000,000 · 20%');
   });
   test('charts have ARIA labels', async ({ page }) => {
     await registerApiMocks(page); await page.goto('/debt');
@@ -227,12 +229,12 @@ test.describe('Chart Performance', () => {
   test('charts load within reasonable time', async ({ page }) => {
     const start = Date.now();
     await page.goto('/budget');
-    await expect(page.locator('.recharts-wrapper').first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Explore Where it goes', exact: true })).toBeVisible();
     expect(Date.now() - start).toBeLessThan(15_000);
   });
   test('multiple charts render without blocking UI', async ({ page }) => {
     await page.goto('/budget');
-    await expect(page.locator('.recharts-wrapper').first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Explore Where it goes', exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'FY2024/25', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'KES 150B approved for FY 2024/25' })).toBeVisible();
   });

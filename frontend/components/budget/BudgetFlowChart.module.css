@@ -1,0 +1,128 @@
+.plot {
+  position: relative;
+}
+
+.plotControl {
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+}
+
+.bar {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.part {
+  flex-basis: 0;
+  min-width: 0;
+  display: grid;
+  place-items: center;
+  container-type: inline-size;
+}
+
+.part[data-highlighted='true'] {
+  box-shadow: inset 0 0 0 2px currentColor;
+}
+
+.share {
+  display: none;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+@container (min-width: 36px) {
+  .share {
+    display: inline;
+  }
+}
+
+.part,
+.swatch {
+  background: var(--part-fill);
+  color: var(--part-text, #fff);
+}
+
+:is(.part, .swatch)[data-segment='tax'],
+:is(.part, .swatch)[data-segment='ordinary'] {
+  --part-fill: var(--chart-teal);
+}
+
+:is(.part, .swatch)[data-segment='aia'] {
+  --part-fill: color-mix(in srgb, var(--chart-teal) 62%, #fff);
+  --part-text: #101b14;
+}
+
+:is(.part, .swatch)[data-segment='nonTax'],
+:is(.part, .swatch)[data-segment='grants'] {
+  --part-fill: color-mix(in srgb, var(--chart-teal) 38%, #fff);
+  --part-text: #101b14;
+}
+
+:is(.part, .swatch)[data-segment='grants'] {
+  --part-fill: var(--chart-context);
+}
+
+:is(.part, .swatch)[data-segment='borrowing'],
+:is(.part, .swatch)[data-segment='interest'] {
+  --part-fill: var(--signal-alarm);
+}
+
+:is(.part, .swatch)[data-segment='recurrent'] {
+  --part-fill: var(--chart-blue);
+}
+
+:is(.part, .swatch)[data-segment='development'] {
+  --part-fill: var(--chart-clay);
+}
+
+:is(.part, .swatch)[data-segment='counties'],
+:is(.part, .swatch)[data-segment='cashAdjustment'],
+:is(.part, .swatch)[data-segment='contingency'] {
+  --part-fill: var(--chart-gold);
+  --part-text: #101b14;
+}
+
+:is(.part, .swatch)[data-segment='cashAdjustment'] {
+  --part-fill: var(--chart-context);
+}
+
+:is(.part, .swatch)[data-segment='contingency'] {
+  --part-fill: var(--signal-caution-fill);
+}
+
+:global(.dark) .part {
+  --part-text: #101b14;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 8px;
+}
+
+.legendButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 4px;
+  text-align: start;
+  font-size: 12px;
+}
+
+.legendButton[data-highlighted='true'] {
+  text-decoration: underline;
+}
+
+.swatch {
+  flex: none;
+  width: 9px;
+  height: 9px;
+}

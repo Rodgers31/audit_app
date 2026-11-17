@@ -10,12 +10,11 @@ import { toRawKES } from '@/lib/utils';
  *
  *   1. BudgetFlowHero              — "where money comes from / where it goes"
  *   2. FiscalTrendStrip            — multi-year sparklines (is the gap widening?)
- *   3. SpendDonut                  — macro-bucket donut
- *   4. RevenueMix                  — KRA revenue streams with YoY deltas
- *   5. ExecutionAuditLens          — sectors ranked by unspent (the audit lens)
- *   6. CountyUtilizationStrip      — best / worst absorbers + link to /counties
- *   7. EconomicContextStrip        — GDP ratios, inflation, per-capita
- *   8. BudgetSourceReconciliation  — sources and known caveats
+ *   3. RevenueMix                  — KRA revenue streams with YoY deltas
+ *   4. ExecutionAuditLens          — sectors ranked by unspent (the audit lens)
+ *   5. CountyUtilizationStrip      — best / worst absorbers + link to /counties
+ *   6. EconomicContextStrip        — GDP ratios, inflation, per-capita
+ *   7. BudgetSourceReconciliation  — sources and known caveats
  *
  * The previous version of this file was ~1,620 lines of inline chart JSX.
  * Breaking it into chapters makes each section independently auditable
@@ -39,7 +38,6 @@ import ExecutionAuditLens from '@/components/budget/ExecutionAuditLens';
 import FiscalTrendStrip from '@/components/budget/FiscalTrendStrip';
 import FiscalYearPicker from '@/components/budget/FiscalYearPicker';
 import RevenueMix from '@/components/budget/RevenueMix';
-import SpendDonut from '@/components/budget/SpendDonut';
 import { useBudgetEnhanced, useBudgetOverview } from '@/lib/react-query';
 import { useFiscalSummary } from '@/lib/react-query/useFiscal';
 import { motion } from 'framer-motion';
@@ -266,7 +264,7 @@ export default function BudgetSpendingPage() {
     for (let i = fiscalHistory.length - 1; i >= 0; i--) {
       if (complete(fiscalHistory[i])) return fiscalHistory[i].fiscal_year;
     }
-    return currentFiscal?.fiscal_year ?? null;
+    return null;
   }, [fiscalHistory, currentFiscal]);
 
   // User-selected fiscal year — defaults to the newest year that EXISTS.
@@ -281,7 +279,7 @@ export default function BudgetSpendingPage() {
   //
   // The right behaviour is the audit's own rule applied at the right level:
   // publish what is sourced, withhold only the parts that are not. The hero
-  // and donut already withhold an incomplete decomposition on their own.
+  // withholds each incomplete decomposition independently.
   const [selectedFY, setSelectedFY] = useState<string | null>(null);
   useEffect(() => {
     const newest = currentFiscal?.fiscal_year ?? newestFYWithFlow;
@@ -292,13 +290,6 @@ export default function BudgetSpendingPage() {
     }
   }, [selectedFY, currentFiscal, newestFYWithFlow]);
 
-  // Does the SELECTED year have the full sources/uses split, or only a
-  // headline budget? Drives the explanatory note below rather than a redirect.
-  const selectedHasFlow = useMemo(
-    () => !!selectedFY && fyKeyOf(selectedFY) === fyKeyOf(newestFYWithFlow),
-    [selectedFY, newestFYWithFlow]
-  );
-
   // Row matching the user's selection — falls back to current.
   const selectedFiscal: FlowHeroInput | null = useMemo(() => {
     if (!selectedFY) return currentFiscal;
@@ -308,7 +299,12 @@ export default function BudgetSpendingPage() {
     return currentFiscal;
   }, [selectedFY, fiscalHistory, currentFiscal]);
 
-  // The selected year controls hero + donut. Sector-level execution +
+  const selectedHasFlow = useMemo(() => {
+    const framework = frameworkOf(selectedFiscal);
+    return frameworkSources(framework) != null && frameworkUses(framework) != null;
+  }, [selectedFiscal]);
+
+  // The selected year controls the hero. Sector-level execution +
   // county utilisation come from the overview endpoint, which is pinned to
   // ONE fiscal period of its own (`_meta.fiscal_period`, e.g. "FY2025/26 9M").
   // Compare against that period rather than against `fiscal.current` — those
@@ -409,24 +405,10 @@ export default function BudgetSpendingPage() {
       {/* ─── 2. Multi-year trend strip ─── */}
       <FiscalTrendStrip history={fiscalHistory} />
 
-      {/* ─── 3. Where the money goes (donut) ─── */}
-      <SpendDonut
-        data={{
-          fiscal_year: selectedFiscal?.fiscal_year ?? undefined,
-          appropriated_budget: selectedFiscal?.appropriated_budget ?? null,
-          recurrent_spending: selectedFiscal?.recurrent_spending ?? null,
-          debt_service_cost: selectedFiscal?.debt_service_cost ?? null,
-          development_spending: selectedFiscal?.development_spending ?? null,
-          county_allocation: selectedFiscal?.county_allocation ?? null,
-          fiscal_framework: selectedFiscal?.fiscal_framework ?? null,
-          // `sectors` (the county-sector outer ring) was withdrawn — F11.
-        }}
-      />
-
-      {/* ─── 4. Where revenue comes from ─── */}
+      {/* ─── 3. Where revenue comes from ─── */}
       <RevenueMix revenueBySource={revenueBySource as any} />
 
-      {/* ─── 5. The audit lens: execution by sector ─── */}
+      {/* ─── 4. The audit lens: execution by sector ─── */}
       {viewingExecutionFY && (
         <ExecutionAuditLens
           rows={executionBySector as any}
@@ -437,7 +419,7 @@ export default function BudgetSpendingPage() {
         />
       )}
 
-      {/* ─── 6. County best/worst absorbers ─── */}
+      {/* ─── 5. County best/worst absorbers ─── */}
       {viewingCurrentFY && (
         <CountyUtilizationStrip
           top={countyUtil?.top_5 ?? []}
@@ -446,21 +428,18 @@ export default function BudgetSpendingPage() {
         />
       )}
 
-      {/* The enacted year: budget published, execution not yet reported. */}
+      {/* Help readers find a year with both qualified breakdowns. */}
       {!selectedHasFlow && selectedFiscal?.appropriated_budget != null && (
         <div className='rounded-xl border border-gov-gold/40 bg-gov-gold/[0.07] px-5 py-4 flex items-start gap-3 text-[12.5px] text-neutral-muted'>
           <Info size={15} className='mt-0.5 text-gov-gold flex-shrink-0' />
           <div>
             <span className='font-semibold text-gov-dark dark:text-white'>
-              {selectedFY}: the budget is enacted, the spending is not yet reported.
+              {selectedFY}: the full Treasury breakdown is unavailable.
             </span>{' '}
             Parliament approves the Estimates in June, so the budget total above is
-            final and citable. How it is financed and where it is spent comes from
-            the Controller of Budget&apos;s implementation review, published 45 days
-            after each quarter closes — so the first FY{' '}
-            {selectedFY?.replace(/^FY\s*/, '')} figures are due in November. The
-            sources-and-uses breakdown, the spending donut and the execution panels
-            are withheld until then rather than estimated.
+            sourced separately. The breakdowns above use Treasury figures that
+            reconcile on the same basis. The execution panels use Controller of
+            Budget implementation reports when available.
             {newestFYWithFlow && (
               <>
                 {' '}For a year with the full picture, see{' '}
@@ -494,10 +473,10 @@ export default function BudgetSpendingPage() {
         </div>
       )}
 
-      {/* ─── 7. Economic context ─── */}
+      {/* ─── 6. Economic context ─── */}
       <EconomicContextStrip ctx={economicContext} />
 
-      {/* ─── 8. Sources & reconciliation ─── */}
+      {/* ─── 7. Sources & reconciliation ─── */}
       <BudgetSourceReconciliation
         meta={meta}
         lastUpdated={overview?.last_updated}
