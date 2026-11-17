@@ -16,6 +16,13 @@ export const AUDITS_MESSAGES = {
   'audits.internal_controls': { en: 'Internal controls', sw: 'Udhibiti wa ndani', plain: 'Internal controls' },
   'audits.recurring_findings': { en: 'Problems reported in more than one year', sw: 'Matatizo yaliyoripotiwa kwa zaidi ya mwaka mmoja', plain: 'Problems reported in more than one year' },
   'audits.source_report': { en: 'Source report', sw: 'Ripoti ya chanzo', plain: 'Source report' },
+  'audits.finding_source': { en: 'Source: report', sw: 'Chanzo: ripoti', plain: 'Source: report' },
+  'audits.finding_amount': { en: 'Amount', sw: 'Kiasi', plain: 'Amount' },
+  'audits.amount_not_stated': { en: 'Amount: not stated', sw: 'Kiasi: hakijatajwa', plain: 'Amount: not stated' },
+  'audits.institution_not_identified': { en: 'Audited institution not identified', sw: 'Taasisi iliyokaguliwa haijatambuliwa', plain: 'Audited institution unknown' },
+  'audits.severity_critical': { en: 'Critical', sw: 'Tatizo kubwa sana', plain: 'Critical' },
+  'audits.severity_warning': { en: 'Warning', sw: 'Onyo', plain: 'Warning' },
+  'audits.severity_info': { en: 'Information', sw: 'Taarifa', plain: 'Information' },
   'audits.qualified_basis': { en: 'Basis for qualified opinion', sw: 'Msingi wa maoni yenye masharti', plain: 'Why the auditor raised concerns' },
 } satisfies Record<string, Translation>;
 

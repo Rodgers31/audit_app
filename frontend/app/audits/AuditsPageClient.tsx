@@ -2,8 +2,9 @@
 
 import DataFreshnessBadge from '@/components/DataFreshnessBadge';
 import PageShell from '@/components/layout/PageShell';
-import type { FindingsFilters } from '@/lib/api/audits';
+import type { FindingDetailItem, FindingsFilters } from '@/lib/api/audits';
 import { useLang } from '@/lib/i18n/LangProvider';
+import type { Lang } from '@/lib/i18n/messages';
 import { AUDITS_MESSAGES, auditSectionLabel } from '@/lib/i18n/messages/audits';
 import {
   AUDIT_FINDINGS_INITIAL_FILTERS,
@@ -571,7 +572,13 @@ export default function AuditFindingsPage() {
               {findings.total.toLocaleString()} findings
             </div>
 
-            <ResponsiveTable>
+            <ul role='list' aria-label={copy('audits.all_findings')} className='space-y-2 md:hidden'>
+              {findings.items.map((finding) => (
+                <MobileFindingCard key={finding.id} finding={finding} lang={lang} />
+              ))}
+            </ul>
+
+            <ResponsiveTable className='hidden md:block'>
               <table className='w-full text-sm'>
                 <thead>
                   <tr className='border-b border-gov-dark/10 text-left'>
@@ -765,6 +772,59 @@ function FilterSelect({
         ))}
       </select>
     </div>
+  );
+}
+
+const MOBILE_SEVERITY: Record<string, { label: keyof typeof AUDITS_MESSAGES; tone: string }> = {
+  critical: { label: 'audits.severity_critical', tone: 'text-signal-alarm' },
+  warning: { label: 'audits.severity_warning', tone: 'text-signal-caution' },
+  info: { label: 'audits.severity_info', tone: 'text-neutral-muted' },
+};
+
+function MobileFindingCard({ finding, lang }: { finding: FindingDetailItem; lang: Lang }) {
+  const copy = (key: keyof typeof AUDITS_MESSAGES) => AUDITS_MESSAGES[key][lang];
+  const severity = MOBILE_SEVERITY[finding.severity.toLowerCase()];
+
+  return (
+    <li className='min-w-0 space-y-2 rounded border border-neutral-border bg-surface-base p-3 [overflow-wrap:anywhere]'>
+      <p className='flex flex-wrap items-baseline gap-x-2 text-audit-label text-neutral-muted'>
+        <span className='min-w-0'>
+          {finding.audited_entity_name ?? copy('audits.institution_not_identified')}
+        </span>
+        {finding.audit_year != null && (
+          <span className='font-mono'><span aria-hidden='true'>· </span>{finding.audit_year}</span>
+        )}
+      </p>
+      <h3 className='text-sm font-bold text-neutral-text'>
+        {finding.finding_title ?? finding.finding_text}
+      </h3>
+      <p className='flex flex-wrap items-baseline gap-x-2 gap-y-1 text-audit-label text-neutral-muted'>
+        <span className={`rounded bg-surface-sunken px-1.5 font-semibold ${severity?.tone ?? 'text-neutral-muted'}`}>
+          {severity ? copy(severity.label) : finding.severity}
+        </span>
+        <span>
+          {finding.amount == null
+            ? copy('audits.amount_not_stated')
+            : `${copy('audits.finding_amount')}: ${fmtKES(finding.amount)}`}
+        </span>
+        {finding.query_type && (
+          <span>{copy('audits.section')}: {auditSectionLabel(finding.query_type, lang)}</span>
+        )}
+      </p>
+      {finding.source_document_url && (
+        <a
+          href={finding.source_document_url}
+          target='_blank'
+          rel='noopener noreferrer'
+          className='inline-flex min-h-11 min-w-11 max-w-full items-center gap-1 text-audit-label font-semibold text-signal-good underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2'>
+          <span className='min-w-0'>
+            {copy('audits.finding_source')}
+            {finding.page_ref && <> <span className='font-mono'>{finding.page_ref}</span></>}
+          </span>
+          <ExternalLink className='h-3 w-3 shrink-0' aria-hidden='true' />
+        </a>
+      )}
+    </li>
   );
 }
 
