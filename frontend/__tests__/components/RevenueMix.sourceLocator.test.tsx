@@ -1,15 +1,9 @@
 /** Independent regression probes for source-shaped JSON without a usable locator. */
 import RevenueMix, { type RevSource } from '@/components/budget/RevenueMix';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import React from 'react';
 
-jest.mock('framer-motion', () => ({
-  motion: new Proxy({}, {
-    get: () => ({ children, initial: _i, animate: _a, whileInView: _w, viewport: _v, transition: _t, ...props }: any) => (
-      <div {...props}>{children}</div>
-    ),
-  }),
-}));
+import { publishedObservation } from '@/tests/revenueMixTestUtils';
 
 const ABSENT = 'No verifiable source version was recorded for this PAYE row.';
 
@@ -25,9 +19,8 @@ function renderSource(source: unknown, sourceAbsent?: string) {
       revenue_type: 'VAT', amount: 12, basis: 'published',
     }],
   }]} />);
-  const card = screen.getByText('PAYE').closest('[data-revenue-card]');
-  if (!(card instanceof HTMLElement)) throw new Error('Expected a PAYE card');
-  return within(card);
+  expect(screen.getByRole('button', { name: /^PAYE.*KES 0B/ })).toBeVisible();
+  return publishedObservation('PAYE');
 }
 
 describe('RevenueMix source URL publication boundary', () => {
@@ -47,7 +40,7 @@ describe('RevenueMix source URL publication boundary', () => {
     const card = renderSource(source, ABSENT);
     expect(card.queryByText('Source version')).not.toBeInTheDocument();
     expect(card.getByText(ABSENT)).toBeInTheDocument();
-    expect(card.getByText('KES 0B')).toBeInTheDocument();
+    expect(card.getByText('PAYE · KES 0 · Publisher-stated')).toBeVisible();
   });
 
   it('shows a default absence explanation for a legacy source with no URL or reason', () => {
@@ -67,7 +60,7 @@ describe('RevenueMix source URL publication boundary', () => {
     const card = renderSource(source, ABSENT);
     expect(card.getByRole('link', { name: 'Source version' })).toHaveAttribute('href', url);
     expect(card.queryByText(ABSENT)).not.toBeInTheDocument();
-    expect(card.getByText('KES 0B')).toBeInTheDocument();
+    expect(card.getByText('PAYE · KES 0 · Publisher-stated')).toBeVisible();
   });
 });
 
@@ -85,14 +78,14 @@ describe('RevenueMix publisher totals use the same URL boundary', () => {
         { revenue_type: 'Total Tax Revenue', category: 'total', amount: 0, basis: 'published', source },
       ],
     }]} />);
-    const total = screen.getByText(/Total Tax Revenue: KES 0B/);
-    expect(total).toHaveTextContent('publisher-stated');
+    const total = publishedObservation('Total Tax Revenue');
+    expect(total.getByText('Total Tax Revenue · KES 0 · Publisher-stated')).toBeVisible();
     if (url) {
-      expect(within(total).getByRole('link', { name: 'Source version' })).toHaveAttribute('href', url);
-      expect(total).not.toHaveTextContent('Source URL unavailable.');
+      expect(total.getByRole('link', { name: 'Source version' })).toHaveAttribute('href', url);
+      expect(total.queryByText('Source URL unavailable.')).toBeNull();
     } else {
-      expect(within(total).queryByRole('link')).not.toBeInTheDocument();
-      expect(total).toHaveTextContent('Source URL unavailable.');
+      expect(total.queryByRole('link')).not.toBeInTheDocument();
+      expect(total.getByText('Source URL unavailable.')).toBeVisible();
     }
   });
 });

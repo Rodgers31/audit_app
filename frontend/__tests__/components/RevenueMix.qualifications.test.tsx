@@ -2,13 +2,7 @@ import RevenueMix, { type RevSource } from '@/components/budget/RevenueMix';
 import { render, screen, within } from '@testing-library/react';
 import React from 'react';
 
-jest.mock('framer-motion', () => ({
-  motion: new Proxy({}, {
-    get: () => ({ children, initial: _i, animate: _a, whileInView: _w, viewport: _v, transition: _t, ...props }: any) => (
-      <div {...props}>{children}</div>
-    ),
-  }),
-}));
+import { publishedObservation, revenueDetails } from '@/tests/revenueMixTestUtils';
 
 const CAUTION = 'Dashboard version; not independently reconciled to the KRA annual PDF.';
 const SOURCE = {
@@ -28,18 +22,14 @@ function subject(kind: 'head' | 'total', source: unknown, absentReason: string |
   render(<RevenueMix revenueBySource={[{
     fiscal_year: 'FY 2025/26', sources: [row, { revenue_type: 'VAT', amount: 12, basis: 'published' }],
   }]} />);
-  const el = kind === 'head'
-    ? screen.getByText('PAYE').closest('[data-revenue-card]')
-    : screen.getByText(/Total Agency Revenue: KES 0B/);
-  if (!(el instanceof HTMLElement)) throw new Error('Expected rendered observation');
-  return within(el);
+  return publishedObservation(row.revenue_type);
 }
 
 describe.each(['head', 'total'] as const)('RevenueMix %s observation qualifications', (kind) => {
   it('preserves stated zero, retrieval date and known reconciliation with a valid locator', () => {
     const row = subject(kind, SOURCE);
-    expect(row.getByText(/stated KES 0B/)).toBeInTheDocument();
-    expect(row.getByText(/retrieved 2026-09-27/)).toBeInTheDocument();
+    expect(row.getByText(/stated KES 0B/i)).toBeInTheDocument();
+    expect(row.getByText(/retrieved 2026-09-27/i)).toBeInTheDocument();
     expect(row.getByText(new RegExp(CAUTION.replace('.', '\\.')))).toBeInTheDocument();
     expect(row.getByRole('link', { name: 'Source version' })).toHaveAttribute('href', SOURCE.data_url);
   });
@@ -56,13 +46,13 @@ describe.each(['head', 'total'] as const)('RevenueMix %s observation qualificati
     const row = subject(kind, { ...SOURCE, url, data_url: undefined });
     expect(row.queryByRole('link')).not.toBeInTheDocument();
     expect(row.getByText(new RegExp(CAUTION.replace('.', '\\.')))).toBeInTheDocument();
-    expect(row.getByText(/retrieved 2026-09-27/)).toBeInTheDocument();
+    expect(row.getByText(/retrieved 2026-09-27/i)).toBeInTheDocument();
   });
 
   it('does not deny a recorded date or edition when the API omits its absence explanation', () => {
     const row = subject(kind, { ...SOURCE, url: undefined, data_url: undefined }, null);
     expect(row.getByText('Source URL unavailable.')).toBeInTheDocument();
-    expect(row.getByText(/retrieved 2026-09-27/)).toBeInTheDocument();
+    expect(row.getByText(/retrieved 2026-09-27/i)).toBeInTheDocument();
     expect(row.queryByText(/observation date unavailable/i)).not.toBeInTheDocument();
   });
 });
@@ -79,9 +69,10 @@ it('keeps a partial current release distinct from historical values and withhold
       { revenue_type: 'Other Tax Revenue', amount: 216.247, basis: 'residual' },
     ] },
   ]} />);
-  expect(screen.getByText('KRA revenue collections · FY 2025/26')).toBeInTheDocument();
+  expect(screen.getByText(/KRA collections, FY 2025\/26/)).toBeVisible();
   expect(screen.getByText('KES 0B')).toBeInTheDocument();
-  expect(screen.queryByText('VAT')).not.toBeInTheDocument();
-  expect(screen.queryByText('Other Tax Revenue')).not.toBeInTheDocument();
-  expect(screen.getByText(/percentage shares are unavailable/)).toBeInTheDocument();
+  expect(screen.getByText('Amount unavailable for VAT.')).toBeVisible();
+  expect(screen.queryByRole('button', { name: /^VAT/ })).toBeNull();
+  expect(screen.queryByRole('button', { name: /^Other Tax Revenue/ })).toBeNull();
+  expect(within(revenueDetails()).getByText(/percentage shares are unavailable/)).toBeVisible();
 });

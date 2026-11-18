@@ -1,0 +1,26 @@
+[
+  {
+    "fiscal_year": "FY 2024/25",
+    "sources": [
+      {"revenue_type":"PAYE","amount":550.25,"basis":"derived","basis_note":"Derived: Historical amount based on the source growth rate."}
+    ]
+  },
+  {
+    "fiscal_year": "FY 2025/26",
+    "sources": [
+      {"revenue_type":"Customs & Import Duty","measure":"Customs departmental collections, including agency levies","amount":981.125,"yoy_growth_pct":12.5,"basis":"published","category":"tax","source":{"url":"https://www.kra.go.ke/synthetic-annual-performance","data_url":"https://www.kra.go.ke/synthetic-annual-report.json","version":"dashboard_bundle","period":"FY 2025/26","retrieved_at":"2026-09-29T14:15:00Z","publication_date":null,"reconciliation":"Dashboard version; not independently reconciled to the KRA annual PDF. Synthetic cut for browser validation.","stated_amount_billion_kes":"981.125"},"qualifications":{"amount_billion_kes":{"status":"qualified","reason":"dashboard_annual_pdf_comparison_pending","source_kind":"web","identity":{"measure":"amount_billion_kes","entity_id":null,"geography":"KEN","period":"FY 2025/26","unit":"billion_KES","basis":"actual","dimensions":{"revenue_type":"Customs & Import Duty","category":"tax"}},"source_document_id":9,"source_url":"https://www.kra.go.ke/synthetic-annual-performance","publisher":"Kenya Revenue Authority","receipt_id":6,"digest":"synthetic-browser-fixture-digest","locator":{"pointer":"collections.customs"},"document_bytes_checked":true,"value_checked":true}}},
+      {"revenue_type":"PAYE","measure":"PAYE","amount":604.5,"yoy_growth_pct":6.7,"basis":"published","category":"tax","source":{"url":"https://www.kra.go.ke/synthetic-annual-performance","data_url":"https://www.kra.go.ke/synthetic-annual-report.json","version":"dashboard_bundle","period":"FY 2025/26","retrieved_at":"2026-09-29T14:15:00Z","publication_date":null,"reconciliation":"Dashboard version; not independently reconciled to the KRA annual PDF. Synthetic cut for browser validation.","stated_amount_billion_kes":"604.5"}},
+      {"revenue_type":"VAT","measure":"Domestic VAT","amount":351.25,"yoy_growth_pct":8.5,"basis":"published","category":"tax","source":{"url":"https://www.kra.go.ke/synthetic-annual-performance","data_url":"https://www.kra.go.ke/synthetic-annual-report.json","version":"dashboard_bundle","period":"FY 2025/26","retrieved_at":"2026-09-29T14:15:00Z","publication_date":null,"reconciliation":"Dashboard version; not independently reconciled to the KRA annual PDF. Synthetic cut for browser validation.","stated_amount_billion_kes":"351.25"}},
+      {"revenue_type":"Corporation Tax","measure":"Corporation Tax","amount":343.87,"yoy_growth_pct":13.9,"basis":"published","category":"tax","source":{"url":"https://www.kra.go.ke/synthetic-annual-performance","data_url":"https://www.kra.go.ke/synthetic-annual-report.json","version":"dashboard_bundle","period":"FY 2025/26","retrieved_at":"2026-09-29T14:15:00Z","publication_date":null,"reconciliation":"Dashboard version; not independently reconciled to the KRA annual PDF. Synthetic cut for browser validation.","stated_amount_billion_kes":"343.87"}},
+      {"revenue_type":"Excise Duty","measure":"Domestic excise","amount":65.125,"yoy_growth_pct":-10.9,"basis":"published","category":"tax","source":{"url":"https://www.kra.go.ke/synthetic-annual-performance","data_url":"https://www.kra.go.ke/synthetic-annual-report.json","version":"dashboard_bundle","period":"FY 2025/26","retrieved_at":"2026-09-29T14:15:00Z","publication_date":null,"reconciliation":"Dashboard version; not independently reconciled to the KRA annual PDF. Synthetic cut for browser validation.","stated_amount_billion_kes":"65.125"}},
+      {"revenue_type":"Total Agency Revenue","amount":125.5,"category":"total","basis":"published","source":{"url":"https://www.kra.go.ke/synthetic-annual-performance","data_url":"https://www.kra.go.ke/synthetic-annual-report.json","version":"dashboard_bundle","period":"FY 2025/26","retrieved_at":"2026-09-29T14:15:00Z","publication_date":null,"reconciliation":"Dashboard version; not independently reconciled to the KRA annual PDF. Synthetic cut for browser validation."}},
+      {"revenue_type":"Other Tax Revenue","amount":null,"category":"tax","basis":"residual","absent_reason":"Residual withheld because Customs includes agency levies."}
+    ]
+  },
+  {
+    "fiscal_year": "FY 2026/27",
+    "sources": [
+      {"revenue_type":"PAYE","amount":722.5,"category":"tax","basis":"projected"}
+    ]
+  }
+]

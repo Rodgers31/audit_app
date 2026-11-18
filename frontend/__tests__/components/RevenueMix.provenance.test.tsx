@@ -1,256 +1,82 @@
-/**
- * The revenue mix must say which of its figures KRA actually published.
- *
- * Six tax heads render as equal cards under one section credit reading
- * "Source: KRA Annual Performance". Two of the six are not KRA figures:
- *
- *  - "Other Tax Revenue" is a subtraction — the exchequer total less the
- *    identified heads — and rendered at KES 181B, 7.8% of the displayed mix,
- *    described as "Stamp duty, agricultural cess, minor taxes lumped
- *    together", which is not even what the row's own note says it covers;
- *  - FY 2022/23 is back-computed in every head, and is the leftmost bar of
- *    all six sparklines.
- *
- * The page's own idiom for this already exists a section above, on the
- * budget flow: "the two segments marked residual are computed balancing
- * items, not published lines". These pin the same standard here.
- *
- * The credit is asserted as a property of the rendered rows rather than as a
- * fixed string: whatever the section claims about its source has to follow
- * from what it is showing, so this keeps holding when the years move on.
- */
-import RevenueMix, { type RevFy } from '@/components/budget/RevenueMix';
+import RevenueMix, { type RevFy, type RevSource } from '@/components/budget/RevenueMix';
 import { render, screen, within } from '@testing-library/react';
-import React from 'react';
+import { publishedObservation, revenueDetails } from '@/tests/revenueMixTestUtils';
 
-jest.mock('framer-motion', () => ({
-  motion: new Proxy(
-    {},
-    {
-      get:
-        () =>
-        ({ children, initial: _i, animate: _a, whileInView: _w, viewport: _v, transition: _t, ...props }: any) => (
-          <div {...props}>{children}</div>
-        ),
-    }
-  ),
-}));
-
-/* The shape /api/v1/budget/enhanced serves, with the FY 2022/23 and residual
-   rows exactly as the fixture declares them. */
-const PUBLISHED_NOTE = (fy: string, head: string, amt: string) =>
-  `KRA Annual Performance ${fy}: ${head} collected KES ${amt}`;
-
-const HEADS: [string, number, number, number][] = [
-  // head, FY22/23 (derived), FY23/24 (published), FY24/25 (published)
-  ['Customs & Import Duty', 754.4, 791.4, 879.3],
-  ['PAYE', 495.2, 543.2, 561.0],
-  ['VAT', 272.5, 314.2, 327.3],
-  ['Corporation Tax', 265.2, 278.2, 304.8],
-  ['Excise Duty', 68.1, 73.6, 69.4],
+const report = { url: 'https://www.kra.go.ke/performance', version: 'dashboard_bundle' };
+const heads: RevSource[] = [
+  { revenue_type: 'PAYE', amount: 599, basis: 'published', source: report, yoy_growth_pct: 6.7 },
+  { revenue_type: 'VAT', measure: 'Domestic VAT', amount: 355, basis: 'published', source: report },
+  { revenue_type: 'Customs & Import Duty', measure: 'Customs departmental collections, including agency levies',
+    amount: 989, basis: 'published', source: report, yoy_growth_pct: 12.5 },
+  { revenue_type: 'Excise Duty', measure: 'Domestic excise', amount: 62, basis: 'published', source: report, yoy_growth_pct: -10.9 },
+  { revenue_type: 'Corporation Tax', amount: 347, basis: 'published', source: report },
 ];
 
-const RESIDUAL_NOTE =
-  'Residual: Exchequer 2323B minus identified tax heads. Includes withholding tax, ' +
-  'capital gains, stamp duty, betting taxes, digital economy taxes.';
+const latest: RevFy = { fiscal_year: 'FY 2025/26', sources: heads };
+const rows = () => Array.from(document.querySelectorAll<HTMLElement>('[data-revenue-card]'));
 
-const SERIES: RevFy[] = [
-  {
-    fiscal_year: 'FY 2022/23',
-    sources: [
-      ...HEADS.map(([head, a]) => ({
-        revenue_type: head,
-        category: 'tax',
-        amount: a,
-        basis: 'derived',
-        basis_note: `Derived: FY 2023/24 ${head} grew 4.9%, implies prior year ~${a}B`,
-      })),
-      {
-        revenue_type: 'Other Tax Revenue',
-        category: 'tax',
-        amount: 174.6,
-        basis: 'residual',
-        basis_note: 'Residual: Exchequer ~2030B minus identified tax heads.',
-      },
-    ],
-  },
-  {
-    fiscal_year: 'FY 2023/24',
-    sources: [
-      ...HEADS.map(([head, , b]) => ({
-        revenue_type: head,
-        category: 'tax',
-        amount: b,
-        basis: 'published',
-        basis_note: PUBLISHED_NOTE('FY 2023/24', head, `${b}B`),
-      })),
-      {
-        revenue_type: 'Other Tax Revenue',
-        category: 'tax',
-        amount: 222.4,
-        basis: 'residual',
-        basis_note: RESIDUAL_NOTE,
-      },
-    ],
-  },
-  {
-    fiscal_year: 'FY 2024/25',
-    sources: [
-      ...HEADS.map(([head, , , c]) => ({
-        revenue_type: head,
-        category: 'tax',
-        amount: c,
-        basis: 'published',
-        basis_note: PUBLISHED_NOTE('FY 2024/25', head, `${c}B`),
-      })),
-      {
-        revenue_type: 'Other Tax Revenue',
-        category: 'tax',
-        amount: 181.2,
-        basis: 'residual',
-        basis_note: RESIDUAL_NOTE,
-      },
-    ],
-  },
-];
-
-const cardFor = (head: string) => {
-  const heading = screen.getByText(head);
-  const card = heading.closest('[data-revenue-card]');
-  if (!card) throw new Error(`no card element found for ${head}`);
-  return card as HTMLElement;
-};
-
-describe('RevenueMix — per-row provenance', () => {
-  it('keeps a publisher-reported zero in the latest year and sparkline', () => {
-    render(<RevenueMix revenueBySource={[
-      { fiscal_year: 'FY 2024/25', sources: [
-        { revenue_type: 'PAYE', amount: 12, basis: 'published' },
-        { revenue_type: 'VAT', amount: 8, basis: 'published' },
-      ] },
-      { fiscal_year: 'FY 2025/26', sources: [
-        { revenue_type: 'PAYE', amount: 0, basis: 'published' },
-        { revenue_type: 'VAT', amount: 0, basis: 'published' },
-      ] },
-    ]} />);
-    expect(within(cardFor('PAYE')).getByText('KES 0B')).toBeInTheDocument();
-    expect(screen.getByText('KRA revenue collections · FY 2025/26')).toBeInTheDocument();
-    const zeroBar = within(cardFor('PAYE')).getAllByTestId('spark-bar').find((bar) => bar.dataset.year === '2025/26');
-    expect(zeroBar).toHaveStyle({ height: '0%' });
-  });
-
-  it('withholds the incompatible residual even from an older API', () => {
-    render(<RevenueMix revenueBySource={SERIES} />);
-    expect(screen.queryByText('Other Tax Revenue')).not.toBeInTheDocument();
-    expect(screen.getByText(/Other Tax Revenue and percentage shares are unavailable/)).toBeInTheDocument();
-  });
-
-  it('does not mark the KRA-published heads', () => {
-    render(<RevenueMix revenueBySource={SERIES} />);
-    for (const [head] of HEADS) {
-      const card = cardFor(head);
-      expect(card).toHaveAttribute('data-basis', 'published');
-      expect(within(card).queryByText(/residual|derived|projected/i)).toBeNull();
-    }
-  });
-
-  it('does not describe the withdrawn residual as a set of measured taxes', () => {
-    render(<RevenueMix revenueBySource={SERIES} />);
-    expect(screen.queryByText(/Includes withholding tax/)).not.toBeInTheDocument();
-  });
-
-  it('names the charted years that are not published figures', () => {
-    // FY 2022/23 is the leftmost bar of every sparkline and every one of its
-    // heads is back-computed. A reader looking at that bar must be told.
-    render(<RevenueMix revenueBySource={SERIES} />);
-    const note = screen.getByTestId('revenue-basis-footnote');
-    expect(note.textContent).toMatch(/2022\/23/);
-    expect(note.textContent).toMatch(/derived|back-computed/i);
-    expect(note.textContent).not.toMatch(/2024\/25/);
-  });
-
-  it('marks the derived years inside the sparkline itself', () => {
-    render(<RevenueMix revenueBySource={SERIES} />);
-    const card = cardFor('PAYE');
-    const bars = within(card).getAllByTestId('spark-bar');
-    const byYear = Object.fromEntries(
-      bars.map((b) => [b.getAttribute('data-year'), b.getAttribute('data-basis')])
-    );
-    expect(byYear['2022/23']).toBe('derived');
-    expect(byYear['2023/24']).toBe('published');
-    expect(byYear['2024/25']).toBe('published');
-  });
+it('ranks the reported measures on one scale and uses the publisher’s signed growth', () => {
+  render(<RevenueMix revenueBySource={[latest]} />);
+  expect(rows().map(row => row.querySelector('button span')?.textContent)).toEqual([
+    'Customs (incl. agency levies)', 'PAYE', 'Domestic VAT', 'Corporation tax', 'Domestic excise',
+  ]);
+  expect(screen.getByText(/Customs .* is the largest amount shown, at KES 989B/)).toBeVisible();
+  expect(screen.getByRole('button', { name: /^Domestic excise/ })).toHaveAccessibleDescription('KES 62,000,000,000 · -10.9% year over year, as reported');
+  expect(screen.getByText(/the 16% on most goods/)).toBeVisible();
+  expect(screen.getByTestId('revenue-section-source')).toHaveTextContent('Source: KRA annual performance (dashboard edition)');
 });
 
-describe('RevenueMix — the section credit follows the rows', () => {
-  it('does not credit KRA for a mix that contains figures KRA did not publish', () => {
-    render(<RevenueMix revenueBySource={SERIES} />);
-    const credit = screen.getByTestId('revenue-section-source');
-    // The mix shown includes the residual, so an unqualified KRA credit is a
-    // claim about a figure KRA never published.
-    expect(credit.textContent).toMatch(/KRA/);
-    expect(credit.textContent).toMatch(/residual|partly|except/i);
-  });
-
-  it('credits KRA plainly when every displayed head is published', () => {
-    const allPublished: RevFy[] = SERIES.map((fy) => ({
-      ...fy,
-      sources: fy.sources
-        .filter((s) => s.revenue_type !== 'Other Tax Revenue')
-        .map((s) => ({ ...s, basis: 'published' })),
-    }));
-    render(<RevenueMix revenueBySource={allPublished} />);
-    const credit = screen.getByTestId('revenue-section-source');
-    expect(credit.textContent).toMatch(/KRA/);
-    expect(credit.textContent).not.toMatch(/residual|derived|projected/i);
-  });
-
-  it('keeps the editorial blurb when a row carries a note but no basis', () => {
-    // The deploy window: rows seeded before `basis` existed still carry
-    // `notes`. An undeclared basis is not evidence the figure is unpublished,
-    // so the card must not swap its blurb for the raw provenance note — which
-    // would print "KRA Annual Performance FY 2024/25: PAYE collected KES
-    // 560.963B" where the reader expects a description of the tax, and would
-    // put a KRA sourcing claim back on the page through the side door.
-    const noBasis: RevFy[] = SERIES.map((fy) => ({
-      ...fy,
-      sources: fy.sources.map(({ basis: _b, ...rest }) => rest),
-    }));
-    render(<RevenueMix revenueBySource={noBasis} />);
-    const card = cardFor('PAYE');
-    expect(card.textContent).toMatch(/income tax withheld from salaries/i);
-    expect(card.textContent).not.toMatch(/KRA Annual Performance/);
-    expect(screen.queryByTestId('revenue-section-source')).toBeNull();
-  });
-
-  it('makes no source claim at all when no row declares one', () => {
-    // Absence of provenance must read as absence, not as a KRA credit. This
-    // is the same rule as never publishing a zero for an unmeasured figure.
-    const undeclared: RevFy[] = SERIES.map((fy) => ({
-      ...fy,
-      sources: fy.sources.map(({ basis: _b, basis_note: _n, ...rest }) => rest),
-    }));
-    render(<RevenueMix revenueBySource={undeclared} />);
-    expect(screen.queryByTestId('revenue-section-source')).toBeNull();
-    expect(screen.queryByText(/KRA Annual Performance/)).toBeNull();
-  });
+it('keeps zero, separate publisher totals and exact qualified historical amounts', () => {
+  const current = { ...latest, sources: [
+    { ...heads[0], amount: 0 },
+    { revenue_type: 'Other Tax Revenue', basis: 'residual', amount: 181.2, basis_note: 'Includes withholding tax' },
+    { revenue_type: 'Total Agency Revenue', amount: 7.4, basis: 'published', category: 'total' },
+  ] };
+  render(<RevenueMix revenueBySource={[
+    { fiscal_year: 'FY 2022/23', sources: [{ ...heads[0], amount: 495.235, basis: 'derived', basis_note: 'Derived from published growth.' }] },
+    current,
+  ]} />);
+  expect(rows()).toHaveLength(1);
+  expect(screen.getByRole('button', { name: /^PAYE.*KES 0B/ })).toBeVisible();
+  expect(rows()[0].querySelector('span[aria-hidden]')).toBeNull();
+  expect(screen.queryByRole('button', { name: /Total Agency Revenue|Other Tax Revenue/ })).toBeNull();
+  const sheet = within(revenueDetails());
+  expect(sheet.getByText('KES 7,400,000,000 · Publisher-stated')).toBeVisible();
+  expect(publishedObservation('PAYE', 'FY 2022/23').getByText('PAYE · KES 495,235,000,000 · Derived amount')).toBeVisible();
+  expect(publishedObservation('Other Tax Revenue').queryByText(/181|Includes withholding tax/)).toBeNull();
 });
 
-describe('RevenueMix — nothing is dropped or zeroed to achieve this', () => {
-  it('keeps the five observed collection lines without inventing a total', () => {
-    render(<RevenueMix revenueBySource={SERIES} />);
-    for (const [head] of HEADS) expect(screen.getByText(head)).toBeInTheDocument();
-    expect(screen.queryByText('Other Tax Revenue')).not.toBeInTheDocument();
-    expect(screen.queryByText(/How KRA collected KES/)).not.toBeInTheDocument();
-  });
+it('uses the actual release independently of projections and labels compatible adjacent comparisons', () => {
+  render(<RevenueMix revenueBySource={[
+    { fiscal_year: 'FY 2026/27', sources: [{ ...heads[1], amount: 998, basis: 'projected' }] },
+    { fiscal_year: 'FY 2024/25', sources: [
+      { ...heads[1], amount: 325 },
+      { ...heads[2], amount: 1 },
+      { ...heads[4], amount: 340, absent_reason: 'UNAVAILABLE' },
+      { ...heads[3], amount: 1, measure: 'Different excise coverage', yoy_growth_pct: null },
+    ] },
+    latest,
+  ]} />);
+  expect(screen.getByText(/KRA collections, FY 2025\/26/)).toBeVisible();
+  expect(screen.getByRole('button', { name: /^Domestic VAT/ })).toHaveAccessibleDescription(/\+9.2% year over year, calculated/);
+  expect(screen.getByRole('button', { name: /^Customs/ })).toHaveAccessibleDescription(/\+12.5% year over year, as reported/);
+  expect(screen.getByRole('button', { name: /^Corporation tax/ })).toHaveAccessibleDescription(/Year-over-year change unavailable/);
+});
 
-  it('keeps FY 2022/23 in the sparkline rather than withholding it', () => {
-    render(<RevenueMix revenueBySource={SERIES} />);
-    const bars = within(cardFor('VAT')).getAllByTestId('spark-bar');
-    expect(bars.map((b) => b.getAttribute('data-year'))).toEqual([
-      '2022/23',
-      '2023/24',
-      '2024/25',
-    ]);
-  });
+it('withholds lifetime-gap or incompatible growth and avoids unsupported publisher credit', () => {
+  const current = { ...latest, sources: [{ ...heads[1] }, { revenue_type: 'PAYE', amount: 1, basis: null, basis_note: 'KRA Annual Performance old note' }] };
+  const { rerender } = render(<RevenueMix revenueBySource={[
+    { fiscal_year: 'FY 2023/24', sources: [{ ...heads[1], amount: 325 }] },
+    current,
+  ]} />);
+  expect(screen.getByRole('button', { name: /^Domestic VAT/ })).toHaveAccessibleDescription(/Year-over-year change unavailable/);
+  expect(screen.getByTestId('revenue-section-source')).not.toHaveTextContent('KRA');
+  expect(rows()[1]).toHaveTextContent('income tax withheld from salaries');
+  expect(rows()[1]).not.toHaveTextContent('KRA Annual Performance');
+
+  rerender(<RevenueMix revenueBySource={[
+    { fiscal_year: 'FY 2024/25', sources: [{ ...heads[1], measure: 'All VAT', amount: 325 }] },
+    current,
+  ]} />);
+  expect(screen.getByRole('button', { name: /^Domestic VAT/ })).toHaveAccessibleDescription(/Year-over-year change unavailable/);
 });
