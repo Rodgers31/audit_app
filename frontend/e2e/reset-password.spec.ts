@@ -19,7 +19,8 @@ test('reset form has its own title, readable guidance and keyboard/touch afforda
 
   await input.focus();
   // WebKit on macOS uses Option-Tab to include buttons in sequential focus.
-  await page.keyboard.press(browserName === 'webkit' ? 'Alt+Tab' : 'Tab');
+  const tabKey = browserName === 'webkit' && process.platform === 'darwin' ? 'Alt+Tab' : 'Tab';
+  await page.keyboard.press(tabKey);
   const show = region.getByRole('button', { name: 'Show new password' });
   await expect(show).toBeFocused();
   await page.keyboard.press('Space');
