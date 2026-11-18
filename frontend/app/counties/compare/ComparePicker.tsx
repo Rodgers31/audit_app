@@ -6,6 +6,7 @@ import { COUNTY_COMPARE_MESSAGES } from '@/lib/i18n/messages/countyCompare';
 import { ChevronDown, Plus, X } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { KeyboardEvent, Ref } from 'react';
+import { MAX_COMPARE_COUNTIES } from './ledgerData';
 
 interface CountyOption {
   id: string;
@@ -201,7 +202,7 @@ export default function ComparePicker({
       data-compare-pickers
       aria-hidden={disabled || undefined}
       className='space-y-3 rounded-xl border border-gray-200 bg-surface-base p-3 sm:p-4 dark:border-neutral-border'>
-      <div className={`grid grid-cols-2 gap-2 sm:gap-3 ${selected.length > 2 ? 'md:grid-cols-3' : ''}`}>
+      <div className={`grid grid-cols-2 gap-2 sm:gap-3 ${selected.length === 3 ? 'md:grid-cols-3' : ''} ${selected.length === 4 ? 'lg:grid-cols-4' : ''}`}>
         {selected.map((id, index) => {
           const label = `${t('compare.county_label')} ${index + 1}`;
           const choices = all.filter((county) => !selected.some((otherId, otherIndex) => county.id === otherId && otherIndex !== index));
@@ -232,7 +233,7 @@ export default function ComparePicker({
           );
         })}
       </div>
-      {selected.length < 3 && (
+      {selected.length < MAX_COMPARE_COUNTIES && (
         <button
           type='button'
           disabled={disabled}
@@ -240,7 +241,7 @@ export default function ComparePicker({
             nextFocus.current = selected.length;
             onAdd?.();
           }}
-          className={ACTION_CLASS}>
+          className={`${ACTION_CLASS} ${selected.length === 3 ? 'hidden lg:inline-flex' : ''}`}>
           <Plus aria-hidden='true' size={16} />
           {COUNTY_COMPARE_MESSAGES.add[lang]}
         </button>

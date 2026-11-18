@@ -17,7 +17,7 @@ import ComparePageClient from './ComparePageClient';
 export const metadata: Metadata = {
   title: 'Compare Counties — AuditGava',
   description:
-    'Compare two or three Kenyan counties side-by-side: budget, execution rate, debt, pending bills, and sector mix.',
+    'Compare Kenyan counties side by side by budget, spending, borrowing, pending bills and published audit findings.',
 };
 
 const SSR_TIMEOUT_MS = 5000;

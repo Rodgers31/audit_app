@@ -115,10 +115,11 @@ test.describe('Chart Interactivity', () => {
   });
   test('chart comparison mode works', async ({ page }) => {
     await page.goto('/counties/compare?ids=001,047');
-    await expect(page.getByRole('columnheader', { name: /Nairobi/ })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: /Mombasa/ })).toBeVisible();
-    await expect(page.locator('table')).toContainText('10.0B');
-    await expect(page.locator('table')).toContainText('60.0%');
+    const comparison = page.getByRole('table', { name: 'County comparison', exact: true });
+    await expect(comparison.getByRole('columnheader', { name: /Nairobi/ })).toBeVisible();
+    await expect(comparison.getByRole('columnheader', { name: /Mombasa/ })).toBeVisible();
+    await expect(comparison).toContainText('10.0B');
+    await expect(comparison).toContainText('60.0%');
   });
 });
 
