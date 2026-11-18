@@ -72,7 +72,7 @@ describe('/counties/compare — the prerendered document, with useSearchParams s
 
     expect(screen.getByRole('heading', { name: 'Compare counties', level: 1 })).toBeInTheDocument();
     expect(
-      screen.getByText(/Line up two or three counties side-by-side/i)
+      screen.getByText(/Line up counties side by side/i)
     ).toBeInTheDocument();
   });
 
@@ -94,7 +94,7 @@ describe('/counties/compare — the prerendered document, with useSearchParams s
     renderWithHydratedCounties();
 
     expect(screen.queryByRole('note')).not.toBeInTheDocument();
-    expect(screen.queryByText('Reading this table')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Tap or select a county name/)).not.toBeInTheDocument();
   });
 
   it('reserves the real empty fields without exposing inactive controls', () => {
