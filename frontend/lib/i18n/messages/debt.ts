@@ -48,6 +48,7 @@ export const DEBT_MESSAGES = {
   'debt.lenders.multilateral_world_bank': { en: 'World Bank and other multilaterals', sw: 'Benki ya Dunia na taasisi nyingine za kimataifa', plain: 'World Bank and other international institutions' },
   'debt.lenders.external_bilateral': { en: 'Other governments (bilateral)', sw: 'Serikali nyingine (mikopo ya nchi mbili)', plain: 'Other governments' },
   'debt.lenders.external_commercial': { en: 'Eurobonds and commercial loans', sw: 'Eurobondi na mikopo ya kibiashara', plain: 'Eurobonds and commercial loans' },
+  'debt.lenders.commercial_only': { en: 'Commercial loans', sw: 'Mikopo ya kibiashara', plain: 'Commercial loans' },
   'debt.lenders.external_eurobond': { en: 'Eurobonds', sw: 'Eurobondi', plain: 'Eurobonds' },
   'debt.lenders.county_guaranteed': { en: 'County guarantees', sw: 'Dhamana za kaunti', plain: 'County guarantees' },
   'debt.lenders.other_group': { en: 'Other groups', sw: 'Makundi mengine', plain: 'Other groups' },

@@ -60,17 +60,19 @@ export default function RankedLenders({
   const exact = new Intl.NumberFormat(lang === 'sw' ? 'sw-KE' : 'en-KE', { maximumFractionDigits: 2 });
   const formatExact = (amount: number) => `KES ${exact.format(amount)}`;
 
+  const hasSeparateEurobonds = categories.some(category => category.category === 'external_eurobond');
   const groups = categories.map((category) => {
     const known = KNOWN_GROUPS.get(category.category);
     const hasWorldBankAndOthers = category.category === 'external_multilateral' &&
       category.lenders.some(lender => isWorldBank(lender.lender)) &&
       category.lenders.some(lender => lender.lender && !isWorldBank(lender.lender));
+    const label = hasWorldBankAndOthers ? 'debt.lenders.multilateral_world_bank'
+      : hasSeparateEurobonds && category.category === 'external_commercial' ? 'debt.lenders.commercial_only'
+      : known?.label;
     return {
       ...category,
       type: known?.type ?? 'unclassified',
-      name: hasWorldBankAndOthers
-        ? t('debt.lenders.multilateral_world_bank')
-        : known ? t(known.label) : category.label,
+      name: label ? t(label) : category.label,
     };
   }).sort((left, right) => right.outstanding - left.outstanding);
   const largest = groups[0];

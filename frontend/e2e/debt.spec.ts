@@ -126,6 +126,7 @@ test.describe('ranked lender groups', () => {
     await expect(categories).toHaveCount(5);
     await expect(categories.first()).toContainText('Domestic bonds');
     await expect(categories.nth(1)).toContainText('World Bank and other multilaterals');
+    await expect(categories.nth(2)).toContainText('Eurobonds and commercial loans');
     await expect(section.locator('.recharts-wrapper')).toHaveCount(0);
 
     const multilaterals = section.getByRole('button', { name: /World Bank and other multilaterals/ });
@@ -150,6 +151,21 @@ test.describe('ranked lender groups', () => {
     await expect(section.getByText(/Shares use the KES 13\.00T total of the lender groups shown/)).toBeVisible();
     await expect(section.getByRole('button', { name: /pending bills/i })).toHaveCount(0);
   });
+});
+
+test('gives separate commercial loans and Eurobonds their own labels when both are reported', async ({ page }) => {
+  await page.route('**/api/v1/debt/national', route => route.fulfill({ json: {
+    ...nationalObservation,
+    data: { ...nationalObservation.data, categories: {
+      external_commercial: { total_outstanding: 160 },
+      external_eurobond: { total_outstanding: 40 },
+    } },
+  } }));
+  await page.goto('/debt');
+  const section = page.getByRole('region', { name: 'Who Kenya owes' });
+  await expect(section.getByRole('button', { name: /^Commercial loans/ })).toBeVisible();
+  await expect(section.getByRole('button', { name: /^Eurobonds/ })).toBeVisible();
+  await expect(section.getByRole('button', { name: /Eurobonds and commercial loans/ })).toHaveCount(0);
 });
 
 test('discloses the basis of principal-only amounts and keeps small positive shares legible', async ({ page }) => {
