@@ -1,494 +1,136 @@
 'use client';
 
-/**
- * RevenueMix
- *
- * Who actually funds Kenya's government?
- *
- * Uses the latest FISCAL YEAR WITH ACTUALS (skipping current-year targets)
- * from the /budget/enhanced `revenue_by_source` series.
- *
- *   Top row:    horizontal stacked flow bar, per-source, largest-first.
- *   Middle:     per-source card grid with YoY deltas, 3-year sparklines,
- *               and a plain-English one-liner describing what the source is.
- *
- * The narrative callout on hover picks out the single largest source and
- * tells the user, "every time you buy fuel, pay rent, or earn wages, you
- * contribute via these tax streams."
- */
+import ChartReadout from '@/components/charts/ChartReadout';
+import { useLang } from '@/lib/i18n/LangProvider';
+import { useEffect, useId, useRef, useState } from 'react';
+import { compactRevenue, hasAmount, isTotal, revenuePublisher, revenueRanking, withheldResidual, type RevFy, type RevSource } from './RevenueMix.data';
+import RevenueSourceSheet from './RevenueSourceSheet';
+import styles from './RevenueMix.module.css';
 
-import FigureEvidence from '@/components/evidence/FigureEvidence';
-import { motion } from 'framer-motion';
-import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
-import { useMemo, useState } from 'react';
+export type { RevFy, RevSource } from './RevenueMix.data';
 
-import type { Qualifications } from '@/lib/evidence/qualification';
+const MEASURES = {
+  'Customs departmental collections, including agency levies': 'budget.revenue.customs',
+  'Customs & Import Duty': 'budget.revenue.customs_legacy',
+  'Domestic VAT': 'budget.revenue.vat',
+  'Domestic excise': 'budget.revenue.excise',
+  'Corporation Tax': 'budget.revenue.corporation',
+} as const;
 
-export interface RevSource {
-  qualifications?: Qualifications;
-  revenue_type: string;
-  category?: string | null;
-  amount?: number | null; // KES billions
-  target?: number | null;
-  share_pct?: number | null;
-  yoy_growth_pct?: number | null;
-  /** What the figure is — see BASIS_LABEL. Absent means nothing was recorded. */
-  basis?: string | null;
-  /** The row's own note explaining the figure, e.g. how it was derived. */
-  basis_note?: string | null;
-  absent_reason?: string | null;
-  source_absent_reason?: string | null;
-  measure?: string | null;
-  source?: { url?: string; data_url?: string; version?: string; period?: string; retrieved_at?: string | null; publication_date?: string | null; reconciliation?: string; stated_amount_billion_kes?: string } | null;
-}
+const DESCRIPTIONS = {
+  'Customs & Import Duty': 'budget.revenue.desc_customs',
+  PAYE: 'budget.revenue.desc_paye',
+  VAT: 'budget.revenue.desc_vat',
+  'Corporation Tax': 'budget.revenue.desc_corporation',
+  'Excise Duty': 'budget.revenue.desc_excise',
+} as const;
 
-// Derived historical values remain labelled. The mixed-basis residual and
-// shares are withheld: departmental Customs includes agency collections.
-const BASIS_LABEL: Record<string, string> = {
-  derived: 'Derived',
-  residual: 'Residual',
-  projected: 'Projected',
-};
+const BASIS = {
+  published: 'budget.revenue.basis_published',
+  derived: 'budget.revenue.basis_derived',
+  residual: 'budget.revenue.basis_residual',
+  projected: 'budget.revenue.basis_projected',
+} as const;
 
-/** True for a figure the cited source states for that year. */
-const isPublished = (basis?: string | null) => basis === 'published';
+export default function RevenueMix({ revenueBySource }: { revenueBySource: RevFy[] }) {
+  const { lang, t } = useLang();
+  const headingId = useId();
+  const chart = useRef<HTMLOListElement>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
 
-export interface RevFy {
-  fiscal_year: string;
-  sources: RevSource[];
-}
-
-/* ─── Palette — each tax stream tagged in a distinct but muted hue so the
-   mix feels editorial rather than dashboard-y. Muted saturation keeps the
-   revenue section visually distinct from the red/green hero flow. ─── */
-const SOURCE_PALETTE: Record<string, { start: string; end: string; accent: string }> = {
-  PAYE: { start: '#3B6FA8', end: '#20477A', accent: '#2F5A8F' },
-  'Corporation Tax': { start: '#5B5591', end: '#2F2A63', accent: '#423C7A' },
-  VAT: { start: '#3F7A5A', end: '#1F4A30', accent: '#2F6343' },
-  'Excise Duty': { start: '#B38628', end: '#7D591A', accent: '#A6781F' },
-  'Customs & Import Duty': { start: '#B84A4A', end: '#7E2424', accent: '#9E3030' },
-  'Other Tax Revenue': { start: '#7C8794', end: '#4B5563', accent: '#5B6672' },
-  'Total Tax Revenue': { start: '#1B3A2A', end: '#0F1A12', accent: '#1B3A2A' },
-  'Total Government Revenue': { start: '#1B3A2A', end: '#0F1A12', accent: '#1B3A2A' },
-};
-
-const FALLBACK_PAL = { start: '#6B7280', end: '#3F4754', accent: '#4B5563' };
-
-const SOURCE_DESC: Record<string, string> = {
-  PAYE: 'Pay-As-You-Earn — income tax withheld from salaries by employers.',
-  'Corporation Tax': "Tax on businesses' profits, paid quarterly by companies.",
-  VAT: 'Value-Added Tax — the 16% on most goods and services you buy.',
-  'Excise Duty': 'Specific-rate tax on fuel, alcohol, tobacco, airtime, sugar.',
-  'Customs & Import Duty': 'Customs departmental collections, including import taxes and agency levies.',
-  // `Other Tax Revenue` deliberately has no blurb here. It used to read
-  // "Stamp duty, agricultural cess, minor taxes lumped together", which named
-  // a cess the row does not cover and read as a measured stream. It is a
-  // residual, and its own note says what it absorbs — so the note is what the
-  // card shows. See descriptionFor.
-};
-
-/** Strip the prefix the badge beside it already carries. */
-function trimBasisPrefix(note: string): string {
-  return note.replace(/^(Derived|Residual|Projected)\s*:\s*/i, '');
-}
-
-/**
- * What the card says the figure is.
- *
- * A row that declares itself unpublished gets its own note, because for those
- * the interesting fact is not what the tax is but where the number came from —
- * and because the generic blurb was wrong for the one row that most needed it
- * to be right. Everything else gets the editorial one-liner.
- *
- * The `basis == null` case is deliberately *not* treated as unpublished. Rows
- * seeded before `basis` existed still carry `notes`, and swapping the blurb for
- * one of those prints "KRA Annual Performance FY 2024/25: PAYE collected KES
- * 560.963B" as the card's description — putting the sourcing claim this change
- * removes straight back on the page, through a field meant to describe the tax.
- */
-function descriptionFor(source: { revenue_type: string; basis?: string | null; basis_note?: string | null }): string {
-  const declaredUnpublished = source.basis != null && !isPublished(source.basis);
-  if (declaredUnpublished && source.basis_note) {
-    return trimBasisPrefix(source.basis_note);
-  }
-  return SOURCE_DESC[source.revenue_type] ?? '';
-}
-
-function paletteFor(name: string) {
-  return SOURCE_PALETTE[name] ?? FALLBACK_PAL;
-}
-
-/** A metadata object is not evidence that a document link can be opened. */
-function sourceUrl(source?: { data_url?: string; url?: string } | null): string | undefined {
-  for (const candidate of [source?.data_url, source?.url]) {
-    if (typeof candidate !== 'string' || !candidate.trim()) continue;
-    try {
-      const url = new URL(candidate);
-      if (['http:', 'https:'].includes(url.protocol) && url.hostname) return candidate;
-    } catch { /* Try the other locator before reporting absence. */ }
-  }
-  return undefined;
-}
-
-function recordedText(value: unknown): string | undefined {
-  return typeof value === 'string' ? value.trim() || undefined : undefined;
-}
-
-/** A missing locator does not erase the observation's recorded qualifications. */
-function SourceQualification({ source, absentReason }: {
-  source: RevSource['source'];
-  absentReason?: string | null;
-}) {
-  const url = sourceUrl(source);
-  const version = recordedText(source?.version);
-  const period = recordedText(source?.period);
-  const publication = recordedText(source?.publication_date);
-  const retrieved = recordedText(source?.retrieved_at);
-  const stated = recordedText(source?.stated_amount_billion_kes);
-  const reconciliation = recordedText(source?.reconciliation);
-  return <>
-    {url ? <a className='underline' href={url}>Source version</a> : <span>{absentReason || 'Source URL unavailable.'}</span>}
-    {source && <>
-      {version && <> · edition {version}</>}
-      {period && <> · source period {period}</>}
-      {stated && <> · stated KES {stated}B</>}
-      {retrieved && <> · retrieved {retrieved.slice(0, 10)}</>}
-      {publication ? <> · published {publication.slice(0, 10)}</> : ' · publication date unavailable'}
-      {reconciliation && <> · {reconciliation}</>}
-    </>}
-  </>;
-}
-
-function fmtB(v?: number | null): string {
-  if (v == null) return '—';
-  if (v >= 1000) return `${(v / 1000).toFixed(2)}T`;
-  return `${v.toFixed(0)}B`;
-}
-
-/* ────────────────────────────── component ────────────────────────────── */
-
-interface Props {
-  revenueBySource: RevFy[];
-}
-
-export default function RevenueMix({ revenueBySource }: Props) {
-  const [hoverKey, setHoverKey] = useState<string | null>(null);
-
-  // Pick the latest FY that has multi-source actuals.
-  const multiSourceActualFYs = useMemo(
-    () =>
-      (revenueBySource ?? []).filter(
-        (fy) =>
-          (fy.sources ?? []).length > 1 &&
-          fy.sources.some((s) => s.amount != null && s.amount >= 0 && !s.absent_reason)
-      ),
-    [revenueBySource]
-  );
-
-  const latest = multiSourceActualFYs[multiSourceActualFYs.length - 1];
-  const prev = multiSourceActualFYs[multiSourceActualFYs.length - 2];
-
-  // Rows for the latest year, excluding aggregate "Total …" rows.
-  const rows = useMemo(() => {
-    if (!latest) return [];
-    const list = (latest.sources ?? [])
-      .filter(
-        (s) =>
-          s.amount != null &&
-          s.amount >= 0 &&
-          !s.absent_reason &&
-          !(s.revenue_type === 'Other Tax Revenue' && s.basis !== 'published') &&
-          !/^total /i.test(s.revenue_type ?? '')
-      )
-      // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- sort comparator
-      .sort((a, b) => (b.amount ?? 0) - (a.amount ?? 0));
-
-    // 3-year series per source for the sparkline
-    const seriesFYs = multiSourceActualFYs.slice(-3);
-
-    return list.map((r) => {
-      const pal = paletteFor(r.revenue_type);
-      const series = seriesFYs
-        .map((fy) => {
-          const row = (fy.sources ?? []).find((s) => s.revenue_type === r.revenue_type);
-          return {
-            year: fy.fiscal_year?.replace('FY ', '') ?? '',
-            amount: row?.absent_reason ? null : row?.amount ?? null,
-            // Carried per point: one stream can be published in the latest
-            // year and back-computed in the earliest, which is exactly the
-            // FY 2022/23 case these bars would otherwise hide.
-            basis: row?.basis ?? null,
-          };
-        })
-        .filter((p) => p.amount != null && p.amount >= 0) as {
-        year: string;
-        amount: number;
-        basis: string | null;
-      }[];
-      const prevVal = prev?.sources?.find((s) => s.revenue_type === r.revenue_type)?.amount ?? null;
-      const yoy =
-        prevVal != null && prevVal > 0 && r.amount != null
-          ? ((r.amount - prevVal) / prevVal) * 100
-          : null;
-      return {
-        key: r.revenue_type,
-        label: r.measure ?? r.revenue_type,
-        qualifications: r.qualifications,
-        source: r.source,
-        sourceAbsent: r.source_absent_reason,
-        // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- the caller filters to fiscal years whose streams all carry amounts, so a null here is unreachable
-        amount: r.amount ?? 0,
-        yoy,
-        pal,
-        desc: descriptionFor(r),
-        basis: r.basis ?? null,
-        series,
-      };
-    });
-  }, [latest, prev, multiSourceActualFYs]);
-
-  /* ── What the section may claim about its source ──────────────────────
-     Built from the rows on screen rather than hardcoded, so the credit
-     cannot outlive the data it describes. Three outcomes:
-       - nothing declared  → no credit at all (absence is not a claim);
-       - everything published → the plain KRA credit;
-       - anything else     → the credit, qualified, with the specifics on
-                             each card and in the footnote below.            */
-  const provenance = useMemo(() => {
-    const cardBases = rows.map((r) => r.basis);
-    // A charted year is called out when a stream KRA publishes today carries a
-    // figure KRA did not publish back then — the FY 2022/23 sparkline bars.
-    // Rows that are unpublished in their own right are labelled on their card
-    // instead, so they do not also drag their whole series into the footnote.
-    const flaggedYears: Record<string, string[]> = {};
-    for (const r of rows) {
-      if (!isPublished(r.basis)) continue;
-      for (const p of r.series) {
-        if (p.basis && !isPublished(p.basis)) {
-          const seen = flaggedYears[p.year] ?? (flaggedYears[p.year] = []);
-          if (!seen.includes(p.basis)) seen.push(p.basis);
-        }
+  useEffect(() => {
+    if (selected == null) return;
+    function clearOutside(event: PointerEvent) {
+      if (event.target instanceof Node && !chart.current?.contains(event.target)) {
+        setPreview(null);
+        setSelected(null);
       }
     }
-    const anyFlaggedYear = Object.keys(flaggedYears).length > 0;
-    const declared = cardBases.some((b) => b != null) || anyFlaggedYear;
-    const unpublished =
-      cardBases.some((b) => b != null && !isPublished(b)) || anyFlaggedYear;
-    return { declared, unpublished, flaggedYears };
-  }, [rows]);
+    document.addEventListener('pointerdown', clearOutside);
+    return () => document.removeEventListener('pointerdown', clearOutside);
+  }, [selected]);
 
-  const basisFootnote = useMemo(() => {
-    const years = Object.keys(provenance.flaggedYears).sort();
-    if (years.length === 0) return null;
-    const words = years
-      .flatMap((y) => provenance.flaggedYears[y])
-      .map((b) => BASIS_LABEL[b]?.toLowerCase() ?? b)
-      .filter((w, i, all) => all.indexOf(w) === i)
-      .sort();
-    const yearList =
-      years.length === 1
-        ? years[0]
-        : `${years.slice(0, -1).join(', ')} and ${years[years.length - 1]}`;
-    return { yearList, plural: years.length > 1, words: words.join(' or ') };
-  }, [provenance.flaggedYears]);
+  const model = revenueRanking(revenueBySource);
+  if (!model) return null;
 
-  if (!latest || rows.length === 0) return null;
-
+  const { latest, ranked, releases } = model;
+  const locale = lang === 'sw' ? 'sw-KE' : 'en-KE';
+  const whole = new Intl.NumberFormat(locale);
+  const percent = new Intl.NumberFormat(locale, {
+    style: 'percent', signDisplay: 'exceptZero', minimumFractionDigits: 1, maximumFractionDigits: 1,
+  });
+  const exact = (amount: number) => `KES ${whole.format(Math.round(amount * 1e9))}`;
+  const label = (row: RevSource) => {
+    const measure = row.measure?.trim() || row.revenue_type;
+    const key = MEASURES[measure as keyof typeof MEASURES];
+    return key ? t(key) : measure;
+  };
+  const basis = (row: RevSource) => {
+    const key = BASIS[row.basis as keyof typeof BASIS];
+    return key ? t(key) : t('budget.history.unconfirmed');
+  };
+  const growthLabel = (row: typeof ranked[number], short = false) => {
+    if (!row.growth) return t('budget.revenue.growth_unavailable');
+    const rate = percent.format(row.growth.amount / 100);
+    if (short) return row.growth.basis === 'calculated' ? t('budget.revenue.growth_calculated_short').replace('{rate}', rate) : rate;
+    return t(row.growth.basis === 'published' ? 'budget.revenue.growth_reported' : 'budget.revenue.growth_calculated')
+      .replace('{rate}', rate);
+  };
+  const yearTakeaway = ranked.length && ranked[0].amount > 0
+    ? t('budget.revenue.largest').replace('{head}', () => label(ranked[0])).replace('{amount}', compactRevenue(ranked[0].amount))
+    : t(ranked.length ? 'budget.revenue.zero' : 'budget.revenue.empty_heads');
+  const rowData = ranked.map(row => ({
+    id: row.revenue_type,
+    label: label(row),
+    value: `${exact(row.amount)} · ${growthLabel(row)}${row.basis === 'published' ? '' : ` · ${basis(row)}`}`,
+  }));
+  const kra = ranked.length > 0 && ranked.every(row => row.basis === 'published' && revenuePublisher(row) === 'KRA');
+  const period = t(kra ? 'budget.revenue.kra_period' : 'budget.revenue.period').replace('{year}', latest.fiscal_year);
+  const missing = latest.sources.filter(row => !isTotal(row) && !withheldResidual(row) && !hasAmount(row)).map(label);
 
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 18 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-60px' }}
-      transition={{ duration: 0.55 }}
-      className='rounded-2xl bg-white dark:bg-surface-base border border-neutral-border/40 shadow-surface p-5 sm:p-7'>
-      <div className='flex items-start justify-between gap-4 flex-wrap mb-4'>
-        <div>
-          <div className='text-[11px] font-semibold uppercase tracking-[0.18em] text-gov-forest/80 dark:text-emerald-100/80'>
-            Where tax revenue comes from
-          </div>
-          <h3 className='font-display text-xl sm:text-[22px] text-gov-dark dark:text-white leading-tight mt-0.5'>
-            KRA revenue collections · {latest.fiscal_year}
-          </h3>
-          <p className='text-[12.5px] text-neutral-muted mt-1 max-w-2xl'>
-            Published collections use different bases. Customs includes agency levies;
-            these lines are not a complete partition of tax or Exchequer revenue.
-            Other Tax Revenue and percentage shares are unavailable until those bases reconcile.
-          </p>
-        </div>
-        {provenance.declared && (
-          <div className='text-right' data-testid='revenue-section-source'>
-            <div className='text-[11px] uppercase tracking-wider font-semibold text-neutral-muted'>
-              Source
-            </div>
-            <div className='text-[12px] font-semibold text-gov-dark dark:text-white'>
-              KRA Annual Performance
-              {provenance.unpublished && (
-                <span className='font-normal text-neutral-muted'>
-                  {' '}
-                  — except where marked
-                </span>
-              )}
-            </div>
-            <div className='text-[11px] text-neutral-muted'>{latest.fiscal_year}</div>
-          </div>
-        )}
-      </div>
-
-      <div className='text-xs text-neutral-muted space-y-1'>
-        {(latest.sources ?? []).filter((s) => s.category === 'total' && s.amount != null).map((s) => (
-          <p key={s.revenue_type}>{s.revenue_type}: KES {fmtB(s.amount)}
-            {s.basis === 'published' ? ' · publisher-stated' : ' · source basis unconfirmed'}
-            {' · '}<SourceQualification source={s.source} absentReason={s.source_absent_reason} />
-          </p>
-        ))}
-      </div>
-
-      {/* Source cards */}
-      <div className='mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5'>
-        {rows.map((r) => {
-          const isHover = hoverKey === r.key;
-          const yoyUp = r.yoy != null && r.yoy > 0.5;
-          const yoyDown = r.yoy != null && r.yoy < -0.5;
-          return (
-            <div
-              key={r.key}
-              data-revenue-card
-              data-basis={r.basis ?? undefined}
-              onMouseEnter={() => setHoverKey(r.key)}
-              onMouseLeave={() => setHoverKey(null)}
-              className={`relative rounded-xl bg-white dark:bg-surface-base border overflow-hidden transition-all ${
-                isHover ? 'border-neutral-border/80 shadow-elevated' : 'border-neutral-border/30 shadow-sm'
-              }`}>
-              {/* Left accent stripe */}
-              <div
-                className='absolute left-0 top-0 bottom-0 w-1'
-                style={{
-                  background: `linear-gradient(180deg, ${r.pal.start}, ${r.pal.end})`,
-                }}
-              />
-              <div className='pl-4 pr-3 py-3'>
-                <div className='flex items-baseline justify-between gap-2 mb-1'>
-                  <span className='text-[12px] font-semibold text-gov-dark dark:text-white truncate'>
-                    {r.label}
+    <section aria-labelledby={headingId} className='min-w-0 space-y-2'>
+      <h2 id={headingId} className='font-display text-2xl font-bold sm:text-3xl'>{t('budget.revenue.title')}</h2>
+      <ChartReadout takeaway={`${period} ${yearTakeaway}`} activeId={preview ?? selected}
+        columns={[t('budget.revenue.tax_head'), t('budget.revenue.amount_growth')]} data={rowData}>
+        {missing.length > 0 && <p className='text-sm text-neutral-muted'>
+          {t('budget.revenue.missing_heads').replace('{heads}', () => new Intl.ListFormat(locale).format(missing))}
+        </p>}
+        <ol ref={chart} role='list' className='m-0 list-none p-0'>
+          {ranked.map((row, index) => {
+            const datum = rowData[index];
+            const exactId = `${headingId}-exact-${index}`;
+            const descriptionKey = DESCRIPTIONS[row.revenue_type as keyof typeof DESCRIPTIONS];
+            const description = row.basis && row.basis !== 'published' && row.basis_note
+              ? row.basis_note.replace(/^(Derived|Residual|Projected)\s*:\s*/i, '')
+              : descriptionKey ? t(descriptionKey) : null;
+            return (
+              <li key={datum.id} data-revenue-card data-basis={row.basis ?? undefined}>
+                <button type='button' className={styles.row} aria-describedby={exactId}
+                  aria-pressed={selected === datum.id} data-highlighted={(preview ?? selected) === datum.id}
+                  onFocus={() => setPreview(datum.id)} onBlur={() => setPreview(null)}
+                  onPointerEnter={event => { if (event.pointerType === 'mouse') setPreview(datum.id); }}
+                  onPointerLeave={event => { if (event.pointerType === 'mouse') setPreview(null); }}
+                  onClick={() => { setPreview(null); setSelected(current => current === datum.id ? null : datum.id); }}
+                  onKeyDown={event => { if (event.key === 'Escape') { setPreview(null); setSelected(null); } }}>
+                  <span className={styles.name}>{datum.label}</span>
+                  <span className={styles.amount}>{compactRevenue(row.amount)}</span>
+                  {row.amount > 0 && <span className={styles.bar} aria-hidden='true'>
+                    <span style={{ width: `${row.amount / ranked[0].amount * 100}%` }} />
+                  </span>}
+                  <span className={styles.description}>{growthLabel(row, true)}{description && <> · {description}</>}
+                    {row.basis !== 'published' && <> · {basis(row)}</>}
                   </span>
-
-                </div>
-                {/* A figure the source did not publish says so beside its own
-                    number, not only in a note at the foot of the section. */}
-                {!isPublished(r.basis) && BASIS_LABEL[r.basis ?? ''] && (
-                  <span className='inline-block mb-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider border border-amber-400/70 bg-amber-50 text-amber-800 dark:border-amber-600/50 dark:bg-amber-950/40 dark:text-amber-200'>
-                    {BASIS_LABEL[r.basis ?? '']} — not a published line
-                  </span>
-                )}
-                <div className='flex items-baseline justify-between gap-2'>
-                  <div className='text-base font-extrabold text-gov-dark dark:text-white tabular-nums tracking-tight'>
-                    KES {fmtB(r.amount)}
-                  </div>
-                  {r.yoy != null && (
-                    <span
-                      className={`inline-flex items-center gap-0.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-full tabular-nums ${
-                        yoyUp
-                          ? 'bg-green-50 text-green-700'
-                          : yoyDown
-                            ? 'bg-red-50 text-red-600'
-                            : 'bg-gray-100 dark:bg-surface-elevated text-gray-500 dark:text-neutral-muted/80'
-                      }`}>
-                      {yoyUp ? <ArrowUp size={11} /> : yoyDown ? <ArrowDown size={11} /> : <Minus size={11} />}
-                      {Math.abs(r.yoy).toFixed(1)}%
-                    </span>
-                  )}
-                </div>
-                <p className='text-[11px] text-neutral-muted mt-1'>
-                  <SourceQualification source={r.source} absentReason={r.sourceAbsent} />
-                </p>
-                <FigureEvidence label={r.label} qualifications={r.qualifications} />
-                {/* Mini multi-year bar */}
-                {r.series.length > 1 && (
-                  <div className='mt-2 flex items-end gap-1 h-6'>
-                    {r.series.map((p, i) => {
-                      const max = Math.max(...r.series.map((s) => s.amount));
-                      const h = max > 0 ? (p.amount / max) * 100 : 0;
-                      const isLatest = i === r.series.length - 1;
-                      // A bar is a quantity claim as much as a printed figure
-                      // is. An unpublished year is drawn hollow so the reader
-                      // can see which bars are not measurements.
-                      const unpublished = p.basis != null && !isPublished(p.basis);
-                      // The asterisk points at the footnote, so it goes only on
-                      // bars the footnote covers: those the card's own badge
-                      // does not already explain. On the residual card every
-                      // bar is a residual and the badge says so — starring them
-                      // would send the reader to a note about a different year.
-                      const needsFootnote = unpublished && p.basis !== r.basis;
-                      return (
-                        <div
-                          key={p.year}
-                          className='flex-1 flex flex-col items-center gap-0.5'>
-                          <div
-                            data-testid='spark-bar'
-                            data-year={p.year}
-                            data-basis={p.basis ?? undefined}
-                            title={
-                              unpublished
-                                ? `${p.year}: ${BASIS_LABEL[p.basis!] ?? p.basis} — not a published figure`
-                                : undefined
-                            }
-                            className={`w-full rounded-t-sm transition-all ${
-                              unpublished ? 'border border-dashed border-amber-500/70' : ''
-                            }`}
-                            style={{
-                              height: `${p.amount === 0 ? 0 : Math.max(h, 10)}%`,
-                              background: unpublished
-                                ? 'transparent'
-                                : isLatest
-                                  ? `linear-gradient(180deg, ${r.pal.start}, ${r.pal.end})`
-                                  : '#E2DDD5',
-                            }}
-                          />
-                          <span
-                            className={`text-[11px] tabular-nums ${
-                              unpublished ? 'text-amber-700 dark:text-amber-300' : 'text-neutral-muted'
-                            }`}>
-                            {p.year}
-                            {needsFootnote && '*'}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-                {r.desc && (
-                  <p className='mt-2 text-[11px] text-neutral-muted leading-snug'>
-                    {r.desc}
-                  </p>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Names the charted years whose bars are not measurements. The cards
-          above label their own figure; this covers the sparkline, where a
-          stream KRA publishes today carries a back-computed figure for an
-          earlier year and nothing on the bar would otherwise say so. */}
-      {basisFootnote && (
-        <p
-          data-testid='revenue-basis-footnote'
-          className='mt-3 text-[11px] leading-snug text-neutral-muted'>
-          <span aria-hidden='true'>* </span>
-          {basisFootnote.plural ? 'The bars marked ' : 'The bar marked '}
-          <strong className='font-semibold text-gov-dark dark:text-white'>
-            {basisFootnote.yearList}
-          </strong>{' '}
-          {basisFootnote.plural ? 'are ' : 'is '}
-          {basisFootnote.words} rather than published: KRA states the growth rate
-          for that year, not the amount per tax head, so each head is
-          back-computed from the following year&rsquo;s figure. Shown because the
-          trend is real; marked because the level is not KRA&rsquo;s own.
-        </p>
-      )}
-      <FigureEvidence label='revenue observations by period' labelKey='evidence.label.revenue_by_period' rows={Object.fromEntries((revenueBySource ?? []).flatMap(fy => (fy.sources ?? []).map((source, index) => [`${fy.fiscal_year}-${index}`, source.qualifications ?? {}])))} />
-    </motion.section>
+                </button>
+                <span id={exactId} hidden>{datum.value}</span>
+              </li>
+            );
+          })}
+        </ol>
+        <p className='text-sm text-neutral-muted'>{t('budget.revenue.scope')}</p>
+        <RevenueSourceSheet latest={latest} releases={releases} label={label} basis={basis} exact={exact} />
+      </ChartReadout>
+    </section>
   );
 }
