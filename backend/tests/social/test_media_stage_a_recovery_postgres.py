@@ -135,11 +135,11 @@ def test_pg_restore_accepts_only_current_metadata_in_empty_owned_target(packet_s
     with target() as engine:
         with engine.begin() as connection:
             connection.exec_driver_sql('CREATE TABLE alembic_version(version_num VARCHAR(32) PRIMARY KEY)')
-            connection.exec_driver_sql("INSERT INTO alembic_version VALUES ('a756b20a0001')")
+            connection.exec_driver_sql("INSERT INTO alembic_version VALUES ('b953a11e0001')")
             connection.execute(text('SET LOCAL row_security=off'))
             restore_stage_a_rows(connection, raw)
             assert connection.exec_driver_sql('SELECT count(*) FROM social_media_assets').scalar_one() == 1
-            assert connection.exec_driver_sql('SELECT version_num FROM alembic_version').scalar_one() == 'a756b20a0001'
+            assert connection.exec_driver_sql('SELECT version_num FROM alembic_version').scalar_one() == 'b953a11e0001'
 
 
 @pytest.mark.parametrize('visibility', ['not_owned', 'owner_forced_rls'])

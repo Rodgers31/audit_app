@@ -7,7 +7,7 @@ import time
 from test_cache_generation_status import isolated, SECRET
 
 CONTEXT = {'source_sha': 'a' * 40, 'plan_sha256': 'b' * 64,
-           'run_id': '1234', 'run_attempt': '1', 'schema_head': 'a756b20a0001'}
+           'run_id': '1234', 'run_attempt': '1', 'schema_head': 'b953a11e0001'}
 
 
 def request(client, path, **changes):

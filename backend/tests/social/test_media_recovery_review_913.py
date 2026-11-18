@@ -74,18 +74,18 @@ def test_restore_refuses_rows_outside_capsule_models_without_changing_target(ret
         engine.dispose()
 
 
-@pytest.mark.parametrize('version', ['a756b20a0001', 'historical', 'ambiguous'])
+@pytest.mark.parametrize('version', ['b953a11e0001', 'historical', 'ambiguous'])
 def test_restore_allows_only_the_explicit_single_current_migration_record(retained, version):
     engine = empty_target()
     try:
         with engine.begin() as connection:
             connection.exec_driver_sql('CREATE TABLE alembic_version(version_num VARCHAR(32) PRIMARY KEY)')
             connection.execute(text('INSERT INTO alembic_version VALUES (:version)'),
-                {'version': 'a756b20a0001' if version != 'historical' else 'a611b12a0001'})
+                {'version': 'b953a11e0001' if version != 'historical' else 'a611b12a0001'})
             if version == 'ambiguous':
                 connection.exec_driver_sql("INSERT INTO alembic_version VALUES ('a611b12a0001')")
         with engine.begin() as connection:
-            if version == 'a756b20a0001':
+            if version == 'b953a11e0001':
                 restore_stage_a_rows(connection, encode_rows(retained[-1]))
                 assert connection.scalar(select(func.count()).select_from(MODELS[0])) == 1
             else:

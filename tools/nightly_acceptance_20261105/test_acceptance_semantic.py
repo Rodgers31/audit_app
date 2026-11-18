@@ -43,11 +43,11 @@ def test_supported_semantic_importer_and_clis_keep_operational_holds(actual_capt
         (root/'prior-original.pdf').write_bytes(BODY);(root/'prior-retained.pdf').write_bytes(store.read(proof['digest']))
         with engine.begin() as connection:
             connection.execute(text('CREATE TABLE alembic_version(version_num varchar(32) PRIMARY KEY)'))
-            connection.execute(text("INSERT INTO alembic_version VALUES ('a756b20a0001')"))
+            connection.execute(text("INSERT INTO alembic_version VALUES ('b953a11e0001')"))
         plan=build_plan(event='workflow_dispatch',schedule='',domain='',dry_run='false',cra='false',opendata='false',discovery='false')
         now=datetime.now(timezone.utc)
         context=dict(floor=prior.job_id,source_sha=run['commit'],admitted_sha=run['commit'],planned_sha=run['commit'],
-            schema_head='a756b20a0001',planned_identity=plan_identity(plan),prior_success='true',cli_outcome='success',
+            schema_head='b953a11e0001',planned_identity=plan_identity(plan),prior_success='true',cli_outcome='success',
             cli_executed='true',cli_exit='0',run_id=str(run['run_id']),run_attempt=str(run['attempt']),
             cli_run_id=str(run['run_id']),cli_run_attempt=str(run['attempt']),cli_floor=str(prior.job_id),
             cli_started=(now-timedelta(minutes=45)).strftime('%Y-%m-%dT%H:%M:%SZ'),cli_finished=now.strftime('%Y-%m-%dT%H:%M:%SZ'),

@@ -65,7 +65,7 @@ def trace():
     iso = datetime.fromtimestamp(now, timezone.utc).isoformat()
     manifest = PATHS.read_bytes()
     paths = json.loads(manifest)['paths']
-    context = dict(source_sha='a'*40, plan_sha256='b'*64, run_id='97531', run_attempt='1', schema_head='a756b20a0001')
+    context = dict(source_sha='a'*40, plan_sha256='b'*64, run_id='97531', run_attempt='1', schema_head='b953a11e0001')
     snapshot = dict(boot_id='00000000-0000-0000-0000-000000000123', pid_namespace_inode=505,
                     supervisor='4:5', workers=['8:9', '9:10'],
                     listeners=[dict(port=8090, inode=151, holders=['4:5', '8:9', '9:10'])])

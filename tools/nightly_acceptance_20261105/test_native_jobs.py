@@ -151,13 +151,13 @@ def test_hosted_preflight_refuses_wrong_runner_context(monkeypatch):
 
 
 @pytest.mark.parametrize('stdout', [
-    'a756b20a0001 (head)\nabcdef123456 (head)\n',
-    'unexpected a756b20a0001 (head) in status\n',
+    'b953a11e0001 (head)\nabcdef123456 (head)\n',
+    'unexpected b953a11e0001 (head) in status\n',
 ])
 def test_migrate_probe_requires_the_sole_admitted_head(stdout):
-    native.verify_probe_output('migrate', 'a756b20a0001 (head)\n', 'a756b20a0001 (head)')
+    native.verify_probe_output('migrate', 'b953a11e0001 (head)\n', 'b953a11e0001 (head)')
     with pytest.raises(Refusal, match='offline job probe output differs'):
-        native.verify_probe_output('migrate', stdout, 'a756b20a0001 (head)')
+        native.verify_probe_output('migrate', stdout, 'b953a11e0001 (head)')
 
 
 def test_nested_layer_refuses_as_invalid_digest(source):
