@@ -23,17 +23,8 @@ export const metadata: Metadata = {
 const SSR_TIMEOUT_MS = 5000;
 
 /**
- * ISR: regenerate at most once an hour, matching `/`, `/counties`, `/audits`
- * and `/transparency`.
- *
- * Required by the change to `ComparePageClient`, not a drive-by. The
- * prefetched list used to sit unread in the HTML — the whole page was
- * client-rendered behind a Suspense fallback — so the prerendered document
- * made no claim and could age until the next deploy. The boundary's fallback
- * now renders the provenance note off that same payload, so a reader sees it,
- * and it has to be kept current. The hook's staleTime is the same hour
- * (`SSR_HYDRATED_STALE_TIME_MS`), so the list is not re-downloaded after
- * hydrating a document served inside its window.
+ * Regenerate the prefetched county list at most once an hour. The
+ * comparison hook uses the same stale time for the hydrated inventory.
  */
 export const revalidate = 3600;
 

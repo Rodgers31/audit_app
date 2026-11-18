@@ -120,7 +120,9 @@ for (const width of [390, 1280]) {
     await expect.poll(() => calls).toBeGreaterThan(before);
     await expect(page.getByRole('alert').filter({ hasText: listError })).toHaveCount(0);
     await expect(page.getByRole('combobox')).toHaveCount(2);
-    await expect(page.getByRole('combobox').first().locator('option')).toHaveCount(48);
+    const firstCounty = page.getByRole('combobox', { name: 'County 1' });
+    await firstCounty.focus();
+    await expect(page.getByRole('listbox', { name: 'County 1' }).getByRole('option')).toHaveCount(47);
     expect(errors).toEqual([]);
   });
 }
