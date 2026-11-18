@@ -251,13 +251,13 @@ export const glossaryTerms: GlossaryTerm[] = [
     term: 'Government Audit',
     category: 'accountability',
     icon: ScrollText,
-    shortDef: 'An independent check that public money was spent lawfully.',
+    shortDef: 'An independent check of whether public money was used lawfully and effectively.',
     longDef:
-      'An audit is a formal review of how a public entity raised and used its money. The Auditor-General audits every national and county entity every year and reports to Parliament — so MPs (and you) can see whether funds were spent as authorised.',
+      'An audit examines how a public entity raised and used its money. The Auditor-General audits national and county accounts each year and sends reports to Parliament or the relevant county assembly.',
     examples: [
-      'The Auditor-General verifies that education funds actually built schools.',
+      'The Auditor-General can check whether funds allocated for schools paid for the work.',
       'Each county receives its own audit opinion — unqualified, qualified, adverse, or disclaimer.',
-      'Reports are tabled in Parliament and published on the OAG website.',
+      'When a county assembly receives an audit report, it must debate the findings and take appropriate action within three months.',
     ],
     relatedArticle: {
       chapter: 12,
@@ -290,12 +290,12 @@ export const glossaryTerms: GlossaryTerm[] = [
     term: 'Consolidated Fund',
     category: 'finance',
     icon: Landmark,
-    shortDef: 'The single national bank account every shilling of revenue flows into.',
+    shortDef: 'The main fund for national government receipts, subject to exceptions set by law.',
     longDef:
-      'All money raised or received by national government — taxes, loans, grants — must first enter the Consolidated Fund at the Central Bank. Payments leave only with parliamentary authority and the Controller of Budget\u2019s signature.',
+      'Money raised or received by or for the national government normally goes into this fund. An Act of Parliament can set aside certain receipts for another public fund created for a specific purpose, or let the state body that received the money keep it to cover its own expenses. Withdrawals need legal authority and approval from the Controller of Budget.',
     examples: [
-      'PAYE deducted this month lands in the Consolidated Fund tomorrow.',
-      'Debt-service payments and judges\u2019 salaries are permanent charges on the Fund.',
+      'An Appropriation Act can authorise a withdrawal to fund a ministry’s services.',
+      'Public debt is charged to the Fund, though an Act of Parliament can charge it to another public fund.',
       'County equitable shares are transferred out of the Fund to County Revenue Funds.',
     ],
     relatedArticle: {

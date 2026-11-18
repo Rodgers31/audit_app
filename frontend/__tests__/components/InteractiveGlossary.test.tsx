@@ -153,3 +153,25 @@ it('keeps constitutional context separate from the definition source', () => {
   expect(screen.getByRole('link', { name: /Office of the Auditor-General/ })).toHaveAttribute('href', expect.stringContaining('libraryir.parliament.go.ke'));
   expect(screen.getByRole('link', { name: 'Audit findings' })).toHaveAttribute('href', '/audits');
 });
+
+it('explains who receives and acts on government audit reports', () => {
+  mockGetCivicFigures.mockResolvedValue({ status: 'success', data_source: 'empty', figures: {} });
+  renderGlossary();
+
+  expect(screen.getByText(/public money was used lawfully and effectively/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Government Audit' }));
+  expect(screen.getByText(/sends reports to Parliament or the relevant county assembly/)).toBeInTheDocument();
+  expect(screen.getByText(/county assembly receives an audit report.*within three months/)).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: /^Article 229.*Auditor-General/ })).toHaveAttribute('href', '/learn?article=229');
+});
+
+it('explains the exceptions and lawful withdrawals from the Consolidated Fund', () => {
+  mockGetCivicFigures.mockResolvedValue({ status: 'success', data_source: 'empty', figures: {} });
+  renderGlossary();
+
+  expect(screen.getByText(/main fund for national government receipts, subject to exceptions set by law/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Consolidated Fund' }));
+  expect(screen.getByText(/public fund created for a specific purpose.*keep it to cover its own expenses/)).toBeInTheDocument();
+  expect(screen.getByText(/Appropriation Act can authorise a withdrawal/)).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: /Article 206.*Consolidated Fund/ })).toHaveAttribute('href', '/learn?article=206');
+});
