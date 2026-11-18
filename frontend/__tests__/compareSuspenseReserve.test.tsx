@@ -30,40 +30,9 @@ import { compareCountiesKey } from '@/lib/react-query/useCounties';
 /* ── fixtures ───────────────────────────────────────────────────────── */
 
 const COUNTIES = [
-  {
-    id: '047',
-    name: 'Nairobi',
-    code: '047',
-    population: 4_397_073,
-    total_budget: 41_000_000_000,
-    total_spent: 25_000_000_000,
-    budget_utilization: 61.2,
-    development_budget: 12_000_000_000,
-    recurrent_budget: 29_000_000_000,
-    pending_bills: 3_000_000_000,
-    debt: null,
-    financial_health_score: 58,
-    audit_rating: 'Qualified',
-    audit_status: 'completed',
-    budget_source: 'cob_cbirr' as const,
-  },
-  {
-    id: '001',
-    name: 'Mombasa',
-    code: '001',
-    population: 1_208_333,
-    total_budget: 15_000_000_000,
-    total_spent: 9_000_000_000,
-    budget_utilization: 60,
-    development_budget: 4_000_000_000,
-    recurrent_budget: 11_000_000_000,
-    pending_bills: 1_000_000_000,
-    debt: null,
-    financial_health_score: 61,
-    audit_rating: 'Qualified',
-    audit_status: 'completed',
-    budget_source: 'cob_cbirr' as const,
-  },
+  { id: '047', name: 'Nairobi', budget_source: 'cob_cbirr' },
+  { id: '001', name: 'Mombasa', budget_source: 'cob_cbirr' },
+  { id: '022', name: 'Kiambu', budget_source: 'cra_model' },
 ];
 
 /**
@@ -112,6 +81,7 @@ describe('/counties/compare — the prerendered document, with useSearchParams s
 
     expect(screen.getByText(/County 1/)).toBeInTheDocument();
     expect(screen.getByText(/County 2/)).toBeInTheDocument();
+    expect(screen.getByText('Nairobi vs Kiambu')).toBeInTheDocument();
   });
 
   it('reserves the empty state the page opens in — the tallest block on a cold load', () => {
@@ -120,33 +90,22 @@ describe('/counties/compare — the prerendered document, with useSearchParams s
     expect(screen.getByText('Pick at least two counties to compare')).toBeInTheDocument();
   });
 
-  it('reserves the legend that sits under the comparison', () => {
+  it('waits for a comparison before showing provenance and the table legend', () => {
     renderWithHydratedCounties();
 
-    expect(screen.getByText('Reading this table')).toBeInTheDocument();
+    expect(screen.queryByRole('note')).not.toBeInTheDocument();
+    expect(screen.queryByText('Reading this table')).not.toBeInTheDocument();
   });
 
-  it('renders the provenance note off the hydrated list, so its height is the real one', () => {
-    renderWithHydratedCounties();
+  it('reserves the real empty fields without exposing inactive controls', () => {
+    const { container } = renderWithHydratedCounties();
 
-    // Not a placeholder: this is `ModelledDataNote` reading the same
-    // prefetched payload the content will read, which is why the fallback
-    // and the content agree on this block's height at any viewport.
-    expect(
-      screen.getByText(/County budget figures are the Controller of Budget/i)
-    ).toBeInTheDocument();
-  });
-
-  it('publishes no figure in the reserved picker — reserved space is not data', () => {
-    renderWithHydratedCounties();
-
-    // The control-shaped box that stands in for the two selects must be
-    // empty. A `0`, a `—` or a county name there would read as a choice the
-    // page had already made.
-    const boxes = screen.getAllByTestId('compare-picker-placeholder');
-    expect(boxes.length).toBe(2);
-    boxes.forEach((b) => {
-      expect(b.textContent?.replace(/ /g, '').trim()).toBe('');
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+    const fields = Array.from(container.querySelectorAll<HTMLInputElement>('[data-compare-pickers] input'));
+    expect(fields).toHaveLength(2);
+    fields.forEach((field) => {
+      expect(field).toBeDisabled();
+      expect(field).toHaveValue('');
     });
   });
 });

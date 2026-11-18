@@ -14,15 +14,17 @@ import ModelledDataNote from '@/components/ModelledDataNote';
 import { getCountyList } from '@/lib/api/counties';
 import { useLang } from '@/lib/i18n/LangProvider';
 import type { TranslationKey } from '@/lib/i18n/messages';
+import { COUNTY_COMPARE_MESSAGES } from '@/lib/i18n/messages/countyCompare';
 import type { BudgetSource } from '@/types';
 import { compareCountiesKey } from '@/lib/react-query/useCounties';
 import { useQuery } from '@tanstack/react-query';
 import { SSR_HYDRATED_STALE_TIME_MS } from '@/lib/react-query/isr';
-import { Loader2, Plus, X } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useMemo, useState, Suspense } from 'react';
 import ResponsiveTable from '@/components/ui/ResponsiveTable';
+import ComparePicker from './ComparePicker';
 
 /**
  * Raw backend sector label → translation key. Some counties publish
@@ -114,64 +116,6 @@ function rankStyle(
   return 'text-gray-900 dark:text-neutral-text';
 }
 
-function ComparePicker({
-  all,
-  selected,
-  onChange,
-  onAdd,
-  onRemove,
-}: {
-  all: CountySummary[];
-  selected: string[];
-  onChange: (index: number, countyId: string) => void;
-  onAdd: () => void;
-  onRemove: (index: number) => void;
-}) {
-  const { t } = useLang();
-  return (
-    <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-4 flex flex-wrap items-end gap-3'>
-      {selected.map((sel, i) => (
-        <div key={`${sel}-${i}`} className='flex-1 min-w-[200px] relative'>
-          <label className='text-[11px] uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-semibold block mb-1'>
-            {t('compare.county_label')} {i + 1}
-          </label>
-          <div className='flex items-center gap-2'>
-            <select
-              value={sel}
-              onChange={(e) => onChange(i, e.target.value)}
-              className='flex-1 text-sm border border-gray-200 dark:border-neutral-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gov-forest/30 bg-white dark:bg-surface-base'>
-              <option value=''>{t('compare.pick_prompt')}</option>
-              {all.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            {selected.length > 2 && (
-              <button
-                type='button'
-                onClick={() => onRemove(i)}
-                className='text-gray-400 dark:text-neutral-muted/80 hover:text-rose-600 p-1'
-                aria-label={t('compare.remove_county').replace('{n}', String(i + 1))}>
-                <X size={16} />
-              </button>
-            )}
-          </div>
-        </div>
-      ))}
-      {selected.length < 3 && (
-        <button
-          type='button'
-          onClick={onAdd}
-          className='text-sm font-semibold text-gov-forest dark:text-emerald-100 hover:text-gov-forest/80 dark:text-emerald-100/80 inline-flex items-center gap-1 px-3 py-2'>
-          <Plus size={14} />
-          {t('compare.add_county')}
-        </button>
-      )}
-    </div>
-  );
-}
-
 interface RowProps {
   label: string;
   values: Array<string>;
@@ -204,9 +148,7 @@ function CompareRow({ label, values, highlight, sublabel }: RowProps) {
  * `CompareFallback`.
  *
  * `app/counties/compare/page.tsx` prefetches this exact key on the server, so
- * both the boundary's fallback and its content are served from the hydrated
- * cache and render the same provenance note — a hand-written second copy of
- * the key is how `/counties` stranded its payload in the HTML (#222).
+ * the boundary's fallback and content use the same list for suggested pairs.
  */
 export function useCompareCounties() {
   return useQuery<CountySummary[]>({
@@ -224,74 +166,31 @@ function CompareEmptyState() {
       <div className='text-base font-semibold text-gray-700 dark:text-neutral-muted mb-1'>
         {t('compare.empty.title')}
       </div>
-      <p className='text-sm text-gray-500 dark:text-neutral-muted/80 max-w-md mx-auto'>
-        {t('compare.empty.body')}
-      </p>
     </div>
   );
 }
 
 /** The "reading this table" legend under the comparison — static copy. */
 function CompareReadingNote() {
-  const { t } = useLang();
+  const { lang, t } = useLang();
   return (
     <div className='bg-gov-forest/5 border border-gov-forest/20 rounded-xl p-5 text-sm text-gray-700 dark:text-neutral-muted leading-relaxed'>
       <p className='font-semibold text-gray-900 dark:text-neutral-text mb-1'>
         {t('compare.footer.title')}
       </p>
-      <p>{t('compare.footer.body')}</p>
+      <p>{COUNTY_COMPARE_MESSAGES.readingNote[lang]}</p>
     </div>
   );
 }
 
-/**
- * What the prerendered document shows while the URL-reading subtree is
- * client-rendered.
- *
- * It reserves the height of the state the page opens in rather than guessing
- * at one: three of its four blocks ARE the real components — the provenance
- * note off the same hydrated query, and the two static copy blocks — so their
- * height is whatever the real layout computes at this viewport and cannot
- * drift from it. Only the picker is a placeholder, and a `<select>`'s height
- * comes from its padding and line-height, not from its options, so the same
- * wrapper with the same label and an empty control-shaped box is the same
- * height as the picker that replaces it.
- *
- * Nothing here stands in for a figure. The placeholder box is empty — no `0`,
- * no `—` — because a reader must not be able to mistake reserved space for a
- * number that was measured.
- */
+const EMPTY_SLOTS = ['', ''];
+
 function CompareFallback() {
-  const { t } = useLang();
-  const { data: all } = useCompareCounties();
+  const { data } = useCompareCounties();
   return (
     <div className='space-y-6'>
-      <ModelledDataNote budgetSource={(all || []).map((c) => c.budget_source)} />
-      <div
-        aria-hidden='true'
-        className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-4 flex flex-wrap items-end gap-3'>
-        {[0, 1].map((i) => (
-          <div key={i} className='flex-1 min-w-[200px] relative'>
-            <label className='text-[11px] uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 font-semibold block mb-1'>
-              {t('compare.county_label')} {i + 1}
-            </label>
-            <div className='flex items-center gap-2'>
-              <div
-                data-testid='compare-picker-placeholder'
-                className='flex-1 text-sm border border-gray-200 dark:border-neutral-border rounded-lg px-3 py-2 bg-gray-50 dark:bg-surface-elevated'>
-                {/* Control-shaped, deliberately empty: reserved space, not a value. */}
-                &nbsp;
-              </div>
-            </div>
-          </div>
-        ))}
-        <span className='text-sm font-semibold inline-flex items-center gap-1 px-3 py-2 opacity-0'>
-          <Plus size={14} />
-          {t('compare.add_county')}
-        </span>
-      </div>
+      <ComparePicker all={data ?? []} selected={EMPTY_SLOTS} disabled />
       <CompareEmptyState />
-      <CompareReadingNote />
     </div>
   );
 }
@@ -300,55 +199,36 @@ function CompareContent() {
   const { t } = useLang();
   const router = useRouter();
   const params = useSearchParams();
-  const urlIds = useMemo(() => (params.get('ids') || '').split(',').filter(Boolean), [params]);
-
-  // Keep at least 2 picker slots; seed from URL if present.
-  const [selected, setSelected] = useState<string[]>(() => {
-    if (urlIds.length >= 2) return urlIds.slice(0, 3);
-    return ['', ''];
+  const [selected, setSelected] = useState(() => {
+    const uniqueIds = new Set(params.get('ids')?.split(',').filter(Boolean));
+    const slots = Array.from(uniqueIds).slice(0, 3);
+    while (slots.length < 2) slots.push('');
+    return slots;
   });
 
   const { data: all, isLoading, error, refetch } = useCompareCounties();
-
-  const byId = useMemo(() => {
-    const m: Record<string, CountySummary> = {};
-    (all || []).forEach((c) => {
-      m[c.id] = c;
-    });
-    return m;
-  }, [all]);
-
-  const picked: CountySummary[] = selected
-    .map((id) => byId[id])
-    .filter((c): c is CountySummary => !!c);
+  const byId = useMemo(() => new Map(all?.map((county) => [county.id, county])), [all]);
+  const picked = selected.flatMap((id) => {
+    const county = byId.get(id);
+    return county ? [county] : [];
+  });
 
   const updateSelected = (next: string[]) => {
     setSelected(next);
-    const filled = next.filter(Boolean);
-    if (filled.length > 0) {
-      router.replace(`/counties/compare?ids=${filled.join(',')}`, { scroll: false });
-    } else {
-      router.replace('/counties/compare', { scroll: false });
-    }
+    const ids = next.filter(Boolean).map(encodeURIComponent).join(',');
+    router.replace(ids ? `/counties/compare?ids=${ids}` : '/counties/compare', { scroll: false });
   };
 
-  const onChange = (i: number, v: string) => {
-    const next = [...selected];
-    next[i] = v;
-    updateSelected(next);
+  const onChange = (index: number, countyId: string) => {
+    if (countyId && (!byId.has(countyId) || selected.includes(countyId))) return;
+    updateSelected(selected.map((id, slot) => slot === index ? countyId : id));
   };
-  const onAdd = () => updateSelected([...selected, '']);
-  const onRemove = (i: number) =>
-    updateSelected(selected.filter((_, idx) => idx !== i));
+  const onAdd = () => setSelected([...selected, '']);
+  const onRemove = (index: number) =>
+    updateSelected(selected.filter((_, slot) => slot !== index));
 
   return (
     <div className='space-y-6'>
-      {/* The counties being compared; before any are picked, the pool they
-          are picked from. */}
-      <ModelledDataNote
-        budgetSource={(picked.length ? picked : all || []).map((c) => c.budget_source)}
-      />
-      {!error && picked.map(county => <FigureEvidence key={county.id} label={`${county.name} budget observations`} labelKey='evidence.label.county_named' labelValues={{ name: county.name }} rows={county.figure_qualifications?.budget_lines} table='budget_lines' />)}
       {isLoading && (
         <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-8 flex items-center justify-center gap-3 text-gray-500 dark:text-neutral-muted/80'>
           <Loader2 className='animate-spin' size={18} />
@@ -371,6 +251,7 @@ function CompareContent() {
             all={all}
             selected={selected}
             onChange={onChange}
+            onPair={updateSelected}
             onAdd={onAdd}
             onRemove={onRemove}
           />
@@ -618,8 +499,22 @@ function CompareContent() {
               </ResponsiveTable>
             </div>
           )}
-
-          <CompareReadingNote />
+          {picked.length >= 2 && (
+            <>
+              <CompareReadingNote />
+              <ModelledDataNote budgetSource={picked.map((county) => county.budget_source)} />
+              {picked.map((county) => (
+                <FigureEvidence
+                  key={county.id}
+                  label={`${county.name} budget observations`}
+                  labelKey='evidence.label.county_named'
+                  labelValues={{ name: county.name }}
+                  rows={county.figure_qualifications?.budget_lines}
+                  table='budget_lines'
+                />
+              ))}
+            </>
+          )}
         </>
       )}
     </div>
@@ -650,7 +545,7 @@ function ComparePageInner() {
 
         PageShell does not read the URL, so it is outside the boundary and
         server-renders. `CompareFallback` reserves the height of the state the
-        page opens in, so the swap the boundary still performs costs nothing.
+        unselected page opens in.
       */}
       <Suspense fallback={<CompareFallback />}>
         <CompareContent />
