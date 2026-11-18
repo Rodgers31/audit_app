@@ -50,7 +50,7 @@ function currentRun(needs, context) {
   let r;
   try { r = JSON.parse(raw); } catch { return null; }
   if (!keys(r,['version','generator_sha256','source_sha','schema_head','plan_sha256','selected_domains','dry_run','bootstrap_selected','job_floor','run_id','run_attempt','cli_executed','cli_exit_zero','cli_exit','classification','cache_eligible','refusals','jobs']) || r.version !== 1 || !hex(r.generator_sha256,64) || !hex(r.source_sha,40) || !hex(r.plan_sha256,64) ||
-      r.schema_head !== 'a756b20a0001' || typeof r.dry_run !== 'boolean' ||
+      r.schema_head !== 'b953a11e0001' || typeof r.dry_run !== 'boolean' ||
       typeof r.bootstrap_selected !== 'boolean' || !count(r.job_floor) ||
       typeof r.cli_executed !== 'boolean' || typeof r.cli_exit_zero !== 'boolean' ||
       !(r.cli_exit === null || count(r.cli_exit) && r.cli_exit <= 255) || r.cli_exit_zero !== (r.cli_exit === 0) ||
@@ -184,7 +184,7 @@ function diagnosticDescription(needs, context) {
       !hex(p.plan_sha256,64) || p.plan_sha256!==needs.source_plan?.outputs?.plan_sha256 || p.plan_sha256!==needs.seed?.outputs?.plan_sha256 ||
       p.run_id!==String(context?.runId) || p.run_attempt!==context?.runAttempt || !count(p.job_floor) ||
       !Array.isArray(selected) || selected.length<1 || selected.length>18 || !selected.every(d=>DOMAINS.has(d)) || new Set(selected).size!==selected.length ||
-      original.version!==1 || original.schema_head!=='a756b20a0001' || original.source_sha!==p.source_sha || original.plan_sha256!==p.plan_sha256 || original.run_id!==p.run_id || original.run_attempt!==p.run_attempt || original.job_floor!==p.job_floor || JSON.stringify(original.selected_domains)!==JSON.stringify(selected) || !Array.isArray(p.rows) || p.rows.length>2 || new Set(p.rows.map(row=>row?.domain)).size!==p.rows.length ||
+      original.version!==1 || original.schema_head!=='b953a11e0001' || original.source_sha!==p.source_sha || original.plan_sha256!==p.plan_sha256 || original.run_id!==p.run_id || original.run_attempt!==p.run_attempt || original.job_floor!==p.job_floor || JSON.stringify(original.selected_domains)!==JSON.stringify(selected) || !Array.isArray(p.rows) || p.rows.length>2 || new Set(p.rows.map(row=>row?.domain)).size!==p.rows.length ||
       JSON.stringify(p.rows.map(row=>row?.domain).sort())!==JSON.stringify(selected.filter(d=>['county_officials','debt_timeline'].includes(d)).sort()))
     return 'Current source component diagnostics: unverified.\n';
   let text='Component diagnostics only; publisher/source authority is separate.\n';

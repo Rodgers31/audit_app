@@ -19,7 +19,7 @@ from urllib.parse import urlsplit
 from .source_plan import environment_plan, validate_plan
 from .refresh_completion import REQUIRED_DOMAINS, accepted_records, fiscal_components_complete, audit_inventory_complete, required_refresh_failures
 
-SCHEMA_HEAD = 'a756b20a0001'
+SCHEMA_HEAD = 'b953a11e0001'
 MAX_JOBS = 18
 PRIOR_STEPS = frozenset(('checkout', 'python', 'ocr', 'setup_python', 'dependencies', 'writer_tls',
     'database', 'pdf_cache_period', 'restore_pdfs', 'native_boundary', 'cli',

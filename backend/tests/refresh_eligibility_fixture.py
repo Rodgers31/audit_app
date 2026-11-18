@@ -14,9 +14,9 @@ PLAN = 'b' * 64
 def needs_fixture():
     needs = {
         'source_plan': {'result': 'success', 'outputs': {'source_sha': SHA, 'plan_sha256': PLAN, 'dry_run': 'false', 'bootstrap': 'false'}},
-        'migrate': {'result': 'success', 'outputs': {'source_sha': SHA, 'schema_head': 'a756b20a0001'}},
+        'migrate': {'result': 'success', 'outputs': {'source_sha': SHA, 'schema_head': 'b953a11e0001'}},
         'seed': {'result': 'failure', 'outputs': {'cache_eligible': 'true', 'classification': 'required_source_incomplete',
-                    'source_sha': SHA, 'plan_sha256': PLAN, 'schema_head': 'a756b20a0001', 'report_version': '1'}},
+                    'source_sha': SHA, 'plan_sha256': PLAN, 'schema_head': 'b953a11e0001', 'report_version': '1'}},
         'bootstrap': {'result': 'skipped', 'outputs': {}},
         'validate': {'result': 'success', 'outputs': {}},
     }
@@ -30,7 +30,7 @@ def needs_fixture():
 
 def execution_fixture():
     plan = SourcePlan(('fiscal_summary', 'pending_bills'), False, False)
-    context = dict(source_sha=SHA, admitted_sha=SHA, planned_sha=SHA, schema_head='a756b20a0001',
+    context = dict(source_sha=SHA, admitted_sha=SHA, planned_sha=SHA, schema_head='b953a11e0001',
         planned_identity=plan_identity(plan), prior_success='true', cli_outcome='success',
         cli_executed='true', cli_exit='0', floor=30, run_id='1234', run_attempt='1',
         cli_run_id='1234', cli_run_attempt='1', cli_floor='30',

@@ -82,7 +82,7 @@ def _wire_context(value):
     for field, pattern in (('run_id', '[1-9][0-9]{0,17}'), ('run_attempt', '[1-9][0-9]{0,4}')):
         require(type(value[field]) is str and re.fullmatch(pattern, value[field]) is not None,
                 'invalid refresh v2 run identity')
-    require(value['schema_head'] == 'a756b20a0001', 'invalid refresh v2 schema head')
+    require(value['schema_head'] == 'b953a11e0001', 'invalid refresh v2 schema head')
 
 
 def _process(value):

@@ -16,7 +16,7 @@ spec.loader.exec_module(refresh)
 from cache import invalidation
 from social.connections.provider import _IdentityBodyStream
 
-CONTEXT = {'source_sha':'a'*40,'plan_sha256':'b'*64,'run_id':'1234','run_attempt':'1','schema_head':'a756b20a0001'}
+CONTEXT = {'source_sha':'a'*40,'plan_sha256':'b'*64,'run_id':'1234','run_attempt':'1','schema_head':'b953a11e0001'}
 
 
 class Reply(io.BytesIO):

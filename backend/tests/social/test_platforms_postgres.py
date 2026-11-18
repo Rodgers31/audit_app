@@ -564,12 +564,12 @@ def test_full_alembic_revision_chain_from_empty_assigned_database(monkeypatch):
         config=Config()
         config.set_main_option('script_location',str(Path(__file__).resolve().parents[2]/'alembic'))
         script=ScriptDirectory.from_config(config)
-        assert script.get_heads()==['a756b20a0001']
+        assert script.get_heads()==['b953a11e0001']
         with engine.begin() as connection:
             with EnvironmentContext(config,script,fn=lambda rev,ctx:script._upgrade_revs('head',rev)) as context:
                 context.configure(connection=connection)
                 context.run_migrations()
-            assert connection.execute(text('SELECT version_num FROM alembic_version')).scalar_one()=='a756b20a0001'
+            assert connection.execute(text('SELECT version_num FROM alembic_version')).scalar_one()=='b953a11e0001'
             assert set(_migration('a703b15a0001_platform_connections.py').TABLES)<=set(inspect(connection).get_table_names())
     finally:
         engine.dispose()
