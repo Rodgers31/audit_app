@@ -158,7 +158,7 @@ test.describe('Learn Page', () => {
 test.describe('Interactive Glossary', () => {
   test('glossary terms are visible', async ({ page }) => {
     await glossary(page);
-    await expect(page.getByText('12 terms across 6 themes', { exact: true })).toBeVisible();
+    await expect(page.getByText('15 terms across 6 themes', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: /^National Debt/ })).toBeVisible();
   });
   test('glossary term cards are clickable', async ({ page }) => {
@@ -171,10 +171,10 @@ test.describe('Interactive Glossary', () => {
   });
   test('glossary category filter works', async ({ page }) => {
     await glossary(page);
-    await page.getByRole('button', { name: /Accountability\s*3/ }).click();
+    await page.getByRole('combobox', { name: 'Category' }).selectOption('accountability');
     await expect(page.getByRole('button', { name: /^Government Audit/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /^National Debt/ })).toHaveCount(0);
-    await expect(page.getByText(/3 terms/).last()).toBeVisible();
+    await expect(page.getByText('4 terms', { exact: true })).toBeVisible();
   });
   test('glossary search filters terms', async ({ page }) => {
     await glossary(page);
@@ -183,6 +183,56 @@ test.describe('Interactive Glossary', () => {
     await page.getByRole('searchbox', { name: 'Search glossary' }).fill('National Debt');
     await expect(page.getByRole('button', { name: /^National Debt/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /^Government Audit/ })).toHaveCount(0);
+  });
+
+  test('wraps the letter index with 44px targets and preserves filters by keyboard', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 840 });
+    await glossary(page);
+    const group = page.getByRole('group', { name: 'Filter by first letter' });
+    await expect(group.getByRole('button')).toHaveCount(26);
+    const letter = group.getByRole('button', { name: 'A', exact: true });
+    expect((await letter.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await expect(group.getByRole('button', { name: 'Z', exact: true })).toBeDisabled();
+    expect((await group.getByRole('button', { name: 'Z', exact: true }).boundingBox())!.y)
+      .toBeGreaterThan((await letter.boundingBox())!.y);
+    await letter.press('Enter');
+    await expect(letter).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', { name: 'Absorption rate' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Pending bills' })).toHaveCount(0);
+
+    const search = page.getByRole('searchbox', { name: 'Search glossary' });
+    await search.fill('supplier arrears');
+    await expect(page.getByRole('button', { name: 'Pending bills' })).toBeVisible();
+    await expect(letter).toBeDisabled();
+    await page.getByRole('button', { name: 'Reset filters' }).press('Enter');
+    await expect(search).toBeFocused();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(360);
+  });
+
+  test('opens exact term anchors and keeps article context and data links separate', async ({ page }) => {
+    await page.goto('/learn/glossary#term-pending-bills');
+    const pending = page.locator('#term-pending-bills');
+    const pendingToggle = pending.getByRole('button', { name: 'Pending bills' });
+    await expect(pendingToggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(pendingToggle).toBeFocused();
+    await expect(pending.getByRole('link', { name: 'Debt', exact: true })).toHaveAttribute('href', '/debt');
+    await expect(pending.getByRole('link', { name: 'Counties', exact: true })).toHaveCount(0);
+
+    await page.getByRole('group', { name: 'Filter by first letter' }).getByRole('button', { name: 'P', exact: true }).click();
+    await pending.getByRole('link', { name: 'Government Expenditure', exact: true }).press('Enter');
+    await expect(page).toHaveURL(/#term-expenditure$/);
+    const expenditure = page.getByRole('button', { name: 'Government Expenditure' });
+    await expect(expenditure).toHaveAttribute('aria-expanded', 'true');
+    await expect(expenditure).toBeFocused();
+    await page.goBack();
+    await expect(pendingToggle).toBeFocused();
+
+    const qualified = page.locator('#term-audit-qualified');
+    await qualified.getByRole('button', { name: 'Qualified opinion', exact: true }).click();
+    await expect(qualified.getByRole('link', { name: /Office of the Auditor-General/ })).toBeVisible();
+    await qualified.getByRole('link', { name: /Constitutional context.*Article 229/ }).click();
+    await expect(page).toHaveURL(/\/learn\?article=229/);
+    await expect(page.getByRole('heading', { name: 'Auditor-General', exact: true })).toBeVisible();
   });
 });
 

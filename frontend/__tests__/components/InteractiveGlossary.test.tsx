@@ -16,21 +16,8 @@ import '@testing-library/jest-dom';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-// framer-motion → plain elements (jsdom can't animate)
-jest.mock('framer-motion', () => ({
-  motion: new Proxy(
-    {},
-    {
-      get:
-        () =>
-        ({ children, ...props }: any) => {
-          // drop framer-only props so React doesn't warn on the DOM node
-          const { animate, initial, exit, transition, ...rest } = props;
-          return <div {...rest}>{children}</div>;
-        },
-    }
-  ),
-  AnimatePresence: ({ children }: any) => <>{children}</>,
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({ back: jest.fn() }),
 }));
 
 jest.mock('next/link', () => ({
@@ -80,7 +67,10 @@ const FIGURES = {
   },
 };
 
-afterEach(() => jest.clearAllMocks());
+afterEach(() => {
+  jest.clearAllMocks();
+  window.history.replaceState(null, '', '/');
+});
 
 it('interpolates live GDP (trillion) and equitable share (billion) figures', async () => {
   mockGetCivicFigures.mockResolvedValue(FIGURES as any);
@@ -117,4 +107,71 @@ it('falls back to the dated example when the API fails', async () => {
       )
     ).toBeInTheDocument()
   );
+});
+
+
+it('indexes the 15 actual terms, keeps search aliases and disables empty letters', () => {
+  mockGetCivicFigures.mockResolvedValue({ status: 'success', data_source: 'empty', figures: {} });
+  renderGlossary();
+  expect(screen.getByText('15 terms across 6 themes')).toBeInTheDocument();
+  const search = screen.getByRole('searchbox', { name: 'Search glossary' });
+  expect(search).toHaveAttribute('placeholder', 'Search 15 terms');
+  expect(screen.getByRole('button', { name: 'Z' })).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: 'A' }));
+  expect(screen.getByRole('button', { name: 'Absorption rate' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Pending bills' })).not.toBeInTheDocument();
+
+  fireEvent.change(search, { target: { value: 'buDget-execution-rate' } });
+  expect(screen.getByRole('button', { name: 'Absorption rate' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'P' })).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: 'Reset filters' }));
+  expect(search).toHaveFocus();
+  expect(screen.getByRole('button', { name: 'Pending bills' })).toBeInTheDocument();
+});
+
+it('keeps the projected basis and only links a supplied live-example receipt', async () => {
+  mockGetCivicFigures.mockResolvedValue({
+    ...FIGURES,
+    figures: { ...FIGURES.figures, equitable_share: {
+      ...FIGURES.figures.equitable_share, data_quality: 'projected',
+      citation: { url: 'https://www.treasury.go.ke/source.pdf' },
+    } },
+  } as Awaited<ReturnType<typeof getCivicFigures>>);
+  renderGlossary();
+  fireEvent.click(screen.getByText('Equitable Share'));
+  expect(await screen.findByText('FY2025/26 projection: about KES 405 billion.')).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Open source' })).toHaveAttribute('href', 'https://www.treasury.go.ke/source.pdf');
+  expect(screen.queryByText(/counties were allocated about KES 405 billion/)).not.toBeInTheDocument();
+});
+
+it('keeps constitutional context separate from the definition source', () => {
+  mockGetCivicFigures.mockResolvedValue({ status: 'success', data_source: 'empty', figures: {} });
+  renderGlossary();
+  expect(screen.getByRole('link', { name: /Constitutional context.*Article 229/ })).toHaveAttribute('href', '/learn?article=229');
+  fireEvent.click(screen.getByRole('button', { name: 'Qualified opinion' }));
+  expect(screen.getByRole('heading', { name: 'Definition source' })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: /Office of the Auditor-General/ })).toHaveAttribute('href', expect.stringContaining('libraryir.parliament.go.ke'));
+  expect(screen.getByRole('link', { name: 'Audit findings' })).toHaveAttribute('href', '/audits');
+});
+
+it('explains who receives and acts on government audit reports', () => {
+  mockGetCivicFigures.mockResolvedValue({ status: 'success', data_source: 'empty', figures: {} });
+  renderGlossary();
+
+  expect(screen.getByText(/public money was used lawfully and effectively/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Government Audit' }));
+  expect(screen.getByText(/sends reports to Parliament or the relevant county assembly/)).toBeInTheDocument();
+  expect(screen.getByText(/county assembly receives an audit report.*within three months/)).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: /^Article 229.*Auditor-General/ })).toHaveAttribute('href', '/learn?article=229');
+});
+
+it('explains the exceptions and lawful withdrawals from the Consolidated Fund', () => {
+  mockGetCivicFigures.mockResolvedValue({ status: 'success', data_source: 'empty', figures: {} });
+  renderGlossary();
+
+  expect(screen.getByText(/main fund for national government receipts, subject to exceptions set by law/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Consolidated Fund' }));
+  expect(screen.getByText(/public fund created for a specific purpose.*keep it to cover its own expenses/)).toBeInTheDocument();
+  expect(screen.getByText(/Appropriation Act can authorise a withdrawal/)).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: /Article 206.*Consolidated Fund/ })).toHaveAttribute('href', '/learn?article=206');
 });

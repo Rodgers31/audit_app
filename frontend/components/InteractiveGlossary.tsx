@@ -1,263 +1,271 @@
-/**
- * Plain-English glossary — search + filter + grouped accordion.
- *
- * Self-contained: no card-in-card wrapper, no per-term animation gimmicks,
- * no dynamically-constructed Tailwind classes. Every term rolls up to a
- * category section; expanding a row reveals the long explanation, a
- * handful of Kenyan examples, and (when it exists) a deep link to the
- * constitutional article that anchors the term.
- */
 'use client';
 
 import {
-  filterTerms,
-  GLOSSARY_CATEGORIES,
-  getCategoryCounts,
-  type GlossaryExample,
-  glossaryTerms,
-  groupByCategory,
-  type GlossaryCategoryId,
+  filterTerms, getCategoryCounts, GLOSSARY_CATEGORIES, glossaryTerms,
+  type GlossaryCategoryId, type GlossaryExample, type GlossaryTerm,
 } from '@/data/glossaryTerms';
 import { type CivicFigure, type CivicFigureKey, getCivicFigures } from '@/lib/api/civic';
+import { evidenceUrl } from '@/lib/evidence/qualification';
+import { useLang } from '@/lib/i18n/LangProvider';
+import { learnCopy } from '@/lib/i18n/messages/learn';
+import SmartBackLink from '@/lib/navigation/SmartBackLink';
 import { formatKesWords } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
-import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, ScrollText, Search } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, ChevronDown, Search } from 'lucide-react';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
-type CivicFigures = Partial<Record<CivicFigureKey, CivicFigure>>;
+type Theme = GlossaryCategoryId | 'all';
+type CivicFigures = Partial<Record<CivicFigureKey, CivicFigure & { citation?: { url?: string } | null }>>;
 
-/**
- * Render a glossary example. Static strings pass through; live examples get
- * the current figure substituted in. When a figure was never seeded or the
- * API is unavailable, we fall back to the dated historical sentence — never a
- * fabricated current number (DESIGN §1: last-known-good, dated).
- */
-function renderExample(ex: GlossaryExample, figures?: CivicFigures): string {
-  if (typeof ex === 'string') return ex;
-  const fig = figures?.[ex.figure];
-  if (!fig?.available || fig.value == null || !fig.period) return ex.fallback;
-  return ex.template
-    .replace('{value}', formatKesWords(fig.value))
-    .replace('{period}', fig.period);
+const LETTERS = Array.from('ABCDEFGHIJKLMNOPQRSTUVWXYZ');
+const sampleOrder = ['pending-bills', 'budget-execution', 'audit-qualified'];
+const byId = new Map(glossaryTerms.map(term => [term.id, term]));
+const counts = getCategoryCounts();
+const availableCategories = GLOSSARY_CATEGORIES.filter(({ id }) => counts[id] > 0);
+const categories = {
+  all: 'glossaryAll',
+  finance: 'glossaryFinance',
+  planning: 'glossaryPlanning',
+  spending: 'glossarySpending',
+  accountability: 'glossaryAccountability',
+  economy: 'glossaryEconomy',
+  devolution: 'glossaryDevolution',
+} as const;
+const focusClass = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gov-forest dark:focus-visible:outline-emerald-100';
+const linkClass = `inline-flex min-h-11 min-w-11 items-center gap-1 rounded text-sm font-semibold text-gov-forest underline underline-offset-4 dark:text-emerald-100 ${focusClass}`;
+
+function firstLetter(term: GlossaryTerm) {
+  return term.term[0].toUpperCase();
 }
 
-interface InteractiveGlossaryProps {
-  /** Optional externally-controlled search term. */
-  searchTerm?: string;
+function orderedTerms(terms: GlossaryTerm[], featured: boolean) {
+  const alphabetical = [...terms].sort((a, b) => a.term.localeCompare(b.term, 'en'));
+  if (!featured) return alphabetical;
+  return [
+    ...sampleOrder.flatMap(id => alphabetical.filter(term => term.id === id)),
+    ...alphabetical.filter(term => !sampleOrder.includes(term.id)),
+  ];
 }
 
-export default function InteractiveGlossary({
-  searchTerm = '',
-}: InteractiveGlossaryProps) {
-  const [internalSearch, setInternalSearch] = useState<string>('');
-  const [category, setCategory] = useState<GlossaryCategoryId | 'all'>('all');
+function GlossaryExampleRow({ example, figures }: { example: GlossaryExample; figures?: CivicFigures }) {
+  const { lang } = useLang();
+  if (typeof example === 'string') return <li lang='en'>{example}</li>;
+  const fig = figures?.[example.figure];
+  const period = typeof fig?.period === 'string' ? fig.period.trim() : '';
+  if (fig?.available !== true || !period || typeof fig.value !== 'number' || !Number.isFinite(fig.value) ||
+      fig.value < 0 || typeof fig.unit !== 'string' || fig.unit.toLowerCase() !== 'kes' ||
+      !['official', 'estimated', 'projected'].includes(fig.data_quality)) {
+    return <li lang='en'>{example.fallback}</li>;
+  }
+
+  const value = formatKesWords(fig.value);
+  const official = fig.data_quality === 'official';
+  const text = official
+    ? example.template.replace('{value}', value).replace('{period}', period)
+    : learnCopy(lang, fig.data_quality === 'projected' ? 'glossaryForecast' : 'glossaryEstimate', { value, period });
+  const sourceLink = evidenceUrl(fig.citation?.url);
+  return (
+    <li>
+      <p lang={official ? 'en' : undefined}>{text}</p>
+      {typeof fig.source === 'string' && fig.source.trim() && (
+        <p className='mt-0.5 text-neutral-muted'>
+          {learnCopy(lang, 'glossaryExampleSource')}{' '}<span lang='en'>{fig.source}</span>
+        </p>
+      )}
+      {sourceLink && (
+        <a href={sourceLink} className={linkClass}>{learnCopy(lang, 'glossaryOpenSource')} <ArrowUpRight size={16} aria-hidden='true' /></a>
+      )}
+    </li>
+  );
+}
+
+function GlossaryCard({ term, open, onToggle, figures }: {
+  term: GlossaryTerm; open: boolean; onToggle: () => void; figures?: CivicFigures;
+}) {
+  const { lang } = useLang();
+  const detail = `term-detail-${term.id}`;
+  return (
+    <li id={`term-${term.id}`} className='scroll-mt-20 border-b border-neutral-border'>
+      <h2>
+        <button type='button' aria-expanded={open} aria-controls={detail} onClick={onToggle}
+          className={`flex min-h-11 w-full items-center justify-between gap-3 rounded py-2 text-left font-semibold ${focusClass}`}>
+          <span className='min-w-0 text-base' lang='en'>
+            {term.term}{term.abbreviation && <span className='ml-2 text-sm text-neutral-muted'>{term.abbreviation}</span>}
+          </span>
+          <ChevronDown size={18} aria-hidden='true' className={open ? 'shrink-0 rotate-180' : 'shrink-0'} />
+        </button>
+      </h2>
+      <p className='pb-2 text-sm leading-relaxed' lang='en'>{term.shortDef}</p>
+      {(term.seenOn || term.articleContext) && (
+        <div className='flex flex-wrap items-center gap-x-3 pb-1 text-sm'>
+          {term.articleContext && term.relatedArticle && (
+            <Link href={`/learn?article=${term.relatedArticle.article}`} className={linkClass}>
+              <span className='sr-only'>{learnCopy(lang, 'glossaryContext')}{' '}</span>
+              <span lang='en'>{term.relatedArticle.label}</span>
+            </Link>
+          )}
+          {term.seenOn && (
+            <div className='flex flex-wrap items-center gap-x-3'>
+              <span className='font-semibold'>{learnCopy(lang, 'glossarySeen')}</span>
+              {term.seenOn.map(({ href, label }) => <Link key={href} href={href} className={linkClass}>{learnCopy(lang, label)}</Link>)}
+            </div>
+          )}
+        </div>
+      )}
+      <div id={detail} hidden={!open} className='space-y-3 pb-4 text-sm leading-relaxed'>
+        {open && (
+          <>
+            <p lang='en'>{term.longDef}</p>
+            <div>
+              <h3 className='mb-1 font-semibold'>{learnCopy(lang, 'glossaryExamples')}</h3>
+              <ul className='list-disc space-y-2 pl-5'>
+                {term.examples.map((example, i) => <GlossaryExampleRow key={i} example={example} figures={figures} />)}
+              </ul>
+            </div>
+            {term.definitionSource && (
+              <div>
+                <h3 className='font-semibold'>{learnCopy(lang, 'glossarySource')}</h3>
+                <a href={term.definitionSource.href} className={linkClass} lang='en'>
+                  <span className='min-w-0 break-words'>{term.definitionSource.label}</span>
+                  <ArrowUpRight size={16} aria-hidden='true' className='shrink-0' />
+                </a>
+              </div>
+            )}
+            {term.relatedArticle && !term.articleContext && (
+              <Link href={`/learn?article=${term.relatedArticle.article}`} className={linkClass} lang='en'>
+                {term.relatedArticle.label}
+              </Link>
+            )}
+            {term.relatedTerms && (
+              <div>
+                <h3 className='font-semibold'>{learnCopy(lang, 'glossaryRelated')}</h3>
+                <ul className='flex flex-wrap gap-x-4'>
+                  {term.relatedTerms.map(id => (
+                    <li key={id}><a className={linkClass} href={`#term-${id}`} lang='en'>{byId.get(id)?.term}</a></li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </li>
+  );
+}
+
+export default function InteractiveGlossary({ searchTerm = '' }: { searchTerm?: string }) {
+  const { lang } = useLang();
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState<Theme>('all');
+  const [letter, setLetter] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
-
-  // Live civic figures (GDP, budget, debt, equitable share) for examples.
-  // On error/loading we simply render the dated fallbacks baked into each term.
+  const [anchor, setAnchor] = useState<{ id: string } | null>(null);
+  const searchInput = useRef<HTMLInputElement>(null);
+  const categoryInput = useRef<HTMLSelectElement>(null);
   const { data: civic } = useQuery({
     queryKey: ['civic-figures'],
     queryFn: ({ signal }) => getCivicFigures(signal),
-    staleTime: 1000 * 60 * 60, // 1h — these change at most a few times a year
+    staleTime: 1000 * 60 * 60,
   });
-  const figures = civic?.figures;
 
-  const searchValue = searchTerm || internalSearch;
-  const counts = useMemo(() => getCategoryCounts(), []);
-  const filtered = useMemo(
-    () => filterTerms(glossaryTerms, searchValue, category),
-    [searchValue, category]
-  );
-  const grouped = useMemo(() => groupByCategory(filtered), [filtered]);
-  const totalMatches = filtered.length;
+  const reset = useCallback(() => {
+    setSearch('');
+    setCategory('all');
+    setLetter(null);
+  }, []);
+
+  useEffect(() => {
+    function revealHash() {
+      const hash = window.location.hash;
+      if (!hash.startsWith('#term-')) return;
+      const id = hash.slice('#term-'.length);
+      if (!byId.has(id)) return;
+      reset();
+      setOpenId(id);
+      setAnchor({ id });
+    }
+    revealHash();
+    window.addEventListener('hashchange', revealHash);
+    return () => window.removeEventListener('hashchange', revealHash);
+  }, [reset]);
+
+  useLayoutEffect(() => {
+    if (!anchor) return;
+    const card = document.getElementById(`term-${anchor.id}`);
+    card?.scrollIntoView({ block: 'start', behavior: 'instant' });
+    card?.querySelector('button')?.focus({ preventScroll: true });
+  }, [anchor]);
+
+  const query = searchTerm || search;
+  const filtered = filterTerms(glossaryTerms, query, category);
+  const activeLetters = new Set(filtered.map(firstLetter));
+  const activeLetter = letter && activeLetters.has(letter) ? letter : null;
+  const filtering = Boolean(query.trim() || category !== 'all' || activeLetter);
+  const shown = orderedTerms(activeLetter ? filtered.filter(term => firstLetter(term) === activeLetter) : filtered, !filtering);
+  const resultText = !filtering
+    ? learnCopy(lang, 'glossaryCoverage', { count: glossaryTerms.length, themes: availableCategories.length - 1 })
+    : learnCopy(lang, shown.length === 1 ? 'glossaryOne' : 'glossaryCount', { count: shown.length });
 
   return (
-    <div className='space-y-5'>
-      {/* ── Toolbar ── */}
-      <div className='sticky top-[64px] z-10 flex flex-col gap-3 rounded-2xl border border-white/60 bg-white/85 p-3 shadow-surface backdrop-blur-md sm:p-4'>
-        {!searchTerm && (
-          <label className='relative block'>
-            <span className='sr-only'>Search glossary</span>
-            <Search
-              size={15}
-              className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-muted'
-            />
-            <input
-              type='search'
-              value={internalSearch}
-              onChange={(e) => setInternalSearch(e.target.value)}
-              placeholder='Search terms, examples, or definitions…'
-              className='w-full rounded-xl border border-neutral-border bg-white/80 dark:bg-surface-elevated py-2.5 pl-9 pr-3 text-sm shadow-inner transition-shadow placeholder:text-neutral-muted focus:outline-none focus:ring-2 focus:ring-gov-sage/40'
-            />
+    <div data-glossary-index className='space-y-3 text-neutral-text'>
+      <div>
+        <SmartBackLink href='/learn' className={`inline-flex min-h-11 items-center gap-2 rounded text-sm text-gov-forest underline-offset-4 hover:underline dark:text-emerald-100 ${focusClass}`}>
+          <ArrowLeft size={16} aria-hidden='true' /> {learnCopy(lang, 'quizBack')}
+        </SmartBackLink>
+        <h1 className='font-display text-[clamp(1.625rem,4vw,2.25rem)] font-bold leading-tight'>{learnCopy(lang, 'glossaryTitle')}</h1>
+      </div>
+      {!searchTerm && (
+        <label className='relative block'>
+          <span className='sr-only'>{learnCopy(lang, 'glossarySearch')}</span>
+          <Search size={18} aria-hidden='true' className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2' />
+          <input ref={searchInput} type='search' value={search} onChange={event => { setSearch(event.target.value); setLetter(null); }}
+            placeholder={learnCopy(lang, 'glossarySearchPlaceholder', { count: glossaryTerms.length })}
+            className={`min-h-[46px] w-full rounded-md border border-neutral-text bg-surface-base pl-10 pr-3 text-base placeholder:text-neutral-muted ${focusClass}`} />
+        </label>
+      )}
+
+      <div role='group' aria-label={learnCopy(lang, 'glossaryLetters')} className='flex max-w-full flex-wrap gap-2'>
+        {LETTERS.map(key => (
+          <button key={key} type='button' disabled={!activeLetters.has(key)} aria-pressed={activeLetter === key}
+            onClick={() => setLetter(activeLetter === key ? null : key)}
+            className={`grid size-11 place-items-center rounded border border-neutral-border bg-surface-base text-sm font-semibold enabled:hover:border-neutral-text aria-pressed:border-neutral-text aria-pressed:bg-neutral-text aria-pressed:text-surface-base disabled:border-transparent disabled:bg-transparent disabled:text-neutral-muted ${focusClass}`}>
+            {key}
+          </button>
+        ))}
+      </div>
+
+      <div className='flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-sm'>
+        <p role='status' className='text-neutral-text'>{resultText}</p>
+        <div className='flex flex-wrap items-center gap-x-3'>
+          <label className='flex min-w-0 flex-wrap items-center gap-2'>
+            <span>{learnCopy(lang, 'glossaryCategory')}</span>
+            <select ref={categoryInput} value={category} onChange={event => { setCategory(event.target.value as Theme); setLetter(null); }}
+              className={`min-h-11 min-w-11 rounded border border-neutral-border bg-surface-base px-2 text-base ${focusClass}`}>
+              {availableCategories.map(({ id }) => (
+                <option key={id} value={id}>{learnCopy(lang, categories[id])} ({counts[id]})</option>
+              ))}
+            </select>
           </label>
-        )}
-
-        <div className='flex flex-wrap items-center gap-2'>
-          {GLOSSARY_CATEGORIES.map((cat) => {
-            const isActive = cat.id === category;
-            const count = counts[cat.id] ?? 0;
-            if (cat.id !== 'all' && count === 0) return null;
-            return (
-              <button
-                key={cat.id}
-                type='button'
-                onClick={() => setCategory(cat.id)}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
-                  isActive
-                    ? 'bg-gov-forest text-white shadow-surface'
-                    : 'bg-gov-forest/5 text-gov-forest dark:text-emerald-100 hover:bg-gov-forest/10'
-                }`}>
-                {cat.label}
-                <span
-                  className={`rounded-full px-1.5 text-[11px] ${
-                    isActive ? 'bg-white/20 text-white' : 'bg-white dark:bg-surface-base text-gov-forest/70 dark:text-emerald-100/70'
-                  }`}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className='flex items-center justify-between text-[11px] text-neutral-muted'>
-          <span>
-            {searchValue ? (
-              <>Showing <strong className='text-gov-dark dark:text-white'>{totalMatches}</strong> {totalMatches === 1 ? 'term' : 'terms'} for &ldquo;{searchValue}&rdquo;</>
-            ) : (
-              <>
-                <strong className='text-gov-dark dark:text-white'>{glossaryTerms.length}</strong> terms across {GLOSSARY_CATEGORIES.length - 1} themes
-              </>
-            )}
-          </span>
-          {(searchValue || category !== 'all') && (
-            <button
-              type='button'
-              onClick={() => {
-                setInternalSearch('');
-                setCategory('all');
-              }}
-              className='font-semibold text-gov-forest dark:text-emerald-100 hover:underline'>
-              Reset filters
-            </button>
+          {filtering && (
+            <button type='button' onClick={() => {
+              reset();
+              (searchInput.current ?? categoryInput.current)?.focus();
+            }} className={linkClass}>{learnCopy(lang, 'glossaryReset')}</button>
           )}
         </div>
       </div>
 
-      {/* ── Grouped sections ── */}
-      {grouped.length === 0 ? (
-        <div className='rounded-2xl border border-dashed border-neutral-border bg-white/60 dark:bg-surface-elevated p-10 text-center'>
-          <Search size={28} className='mx-auto mb-3 text-neutral-muted' />
-          <h3 className='font-display text-lg text-gov-dark dark:text-white'>No matches</h3>
-          <p className='mt-1 text-sm text-neutral-muted'>
-            Try a simpler word, or reset the filters above.
-          </p>
-        </div>
+      {shown.length ? (
+        <ul className='border-t border-neutral-border'>
+          {shown.map(term => <GlossaryCard key={term.id} term={term} open={openId === term.id}
+            onToggle={() => setOpenId(openId === term.id ? null : term.id)} figures={civic?.figures} />)}
+        </ul>
       ) : (
-        grouped.map((group) => (
-          <section
-            key={group.category.id}
-            aria-labelledby={`glossary-${group.category.id}`}
-            className='space-y-2'>
-            <div className='flex flex-wrap items-end justify-between gap-2 border-b border-neutral-border/60 pb-2'>
-              <div>
-                <h3
-                  id={`glossary-${group.category.id}`}
-                  className='font-display text-lg text-gov-dark dark:text-white sm:text-xl'>
-                  {group.category.label}
-                </h3>
-                <p className='text-[13px] text-neutral-muted'>{group.category.blurb}</p>
-              </div>
-              <span className='text-[11px] font-semibold uppercase tracking-wider text-gov-forest/60 dark:text-emerald-100/60'>
-                {group.terms.length} {group.terms.length === 1 ? 'term' : 'terms'}
-              </span>
-            </div>
-
-            <ul className='divide-y divide-neutral-border/60 overflow-hidden rounded-2xl border border-white/70 bg-white/70 dark:bg-surface-elevated shadow-surface'>
-              {group.terms.map((term) => {
-                const Icon = term.icon;
-                const isOpen = openId === term.id;
-                return (
-                  <li key={term.id} id={`term-${term.id}`} className='scroll-mt-20'>
-                    <button
-                      type='button'
-                      onClick={() => setOpenId((v) => (v === term.id ? null : term.id))}
-                      aria-expanded={isOpen}
-                      className={`flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors hover:bg-gov-cream/40 dark:bg-surface-sunken sm:px-5 sm:py-4 ${
-                        isOpen ? 'bg-gov-cream/50 dark:bg-surface-sunken' : ''
-                      }`}>
-                      <span className='mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gov-forest/8 text-gov-forest dark:text-emerald-100'>
-                        <Icon size={16} />
-                      </span>
-                      <span className='min-w-0 flex-1'>
-                        <span className='flex flex-wrap items-center gap-1.5'>
-                          <span className='font-display text-[15.5px] font-semibold text-gov-dark dark:text-white'>
-                            {term.term}
-                          </span>
-                          {term.abbreviation && (
-                            <span className='rounded-md bg-gov-forest/10 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-gov-forest dark:text-emerald-100'>
-                              {term.abbreviation}
-                            </span>
-                          )}
-                        </span>
-                        <span className='mt-0.5 block text-[13.5px] leading-snug text-neutral-text'>
-                          {term.shortDef}
-                        </span>
-                      </span>
-                      <motion.span
-                        animate={{ rotate: isOpen ? 180 : 0 }}
-                        transition={{ duration: 0.2 }}
-                        className='mt-1 shrink-0 text-neutral-muted'>
-                        <ChevronDown size={16} />
-                      </motion.span>
-                    </button>
-
-                    <AnimatePresence initial={false}>
-                      {isOpen && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                          className='overflow-hidden'>
-                          <div className='space-y-4 border-t border-neutral-border/60 bg-gov-cream/30 dark:bg-surface-sunken px-4 py-4 sm:px-5 sm:py-5'>
-                            <p className='text-[14px] leading-relaxed text-gov-dark dark:text-white'>
-                              {term.longDef}
-                            </p>
-                            <div>
-                              <div className='mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-gov-forest/70 dark:text-emerald-100/70'>
-                                In plain life
-                              </div>
-                              <ul className='space-y-1.5'>
-                                {term.examples.map((ex, i) => (
-                                  <li
-                                    key={i}
-                                    className='flex items-start gap-2 text-[13.5px] leading-relaxed text-neutral-text'>
-                                    <span className='mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-gov-gold' />
-                                    <span>{renderExample(ex, figures)}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                            {term.relatedArticle && (
-                              <Link
-                                href={`/learn?article=${term.relatedArticle.article}`}
-                                className='inline-flex min-h-11 items-center gap-2 rounded-lg bg-gov-forest/10 px-3 py-2 text-[12.5px] font-semibold text-gov-forest dark:text-emerald-100 transition-colors hover:bg-gov-forest/15'>
-                                <ScrollText size={13} />
-                                {term.relatedArticle.label}
-                              </Link>
-                            )}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        ))
+        <div className='rounded border border-neutral-border bg-surface-base p-4'>
+          <h2 className='text-audit-heading font-semibold'>{learnCopy(lang, 'glossaryEmpty')}</h2>
+          <p className='mt-1 text-sm'>{learnCopy(lang, 'glossaryEmptyHelp')}</p>
+        </div>
       )}
     </div>
   );

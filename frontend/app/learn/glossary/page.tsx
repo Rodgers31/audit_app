@@ -1,34 +1,17 @@
-/**
- * /learn/glossary — Plain-English index of government finance terms.
- */
-'use client';
-
+import type { Metadata } from 'next';
 import InteractiveGlossary from '@/components/InteractiveGlossary';
-import PageShell from '@/components/layout/PageShell';
-import { glossaryTerms, GLOSSARY_CATEGORIES } from '@/data/glossaryTerms';
+
+export const metadata: Metadata = {
+  title: 'Glossary — AuditGava',
+  description: 'Search plain-English definitions of Kenyan budget, spending and audit terms.',
+};
 
 export default function GlossaryPage() {
-  const termCount = glossaryTerms.length;
-  const themeCount = GLOSSARY_CATEGORIES.length - 1;
-
   return (
-    <PageShell
-      title='Plain-English glossary'
-      subtitle='Every budget, audit and finance term on this site, translated into language that actually makes sense — with real examples and links to the Constitution.'
-      back={{ href: '/learn', label: 'Back to Learning Hub' }}>
-      <div className='flex flex-wrap items-center justify-end gap-4 text-[12.5px] text-neutral-muted'>
-        <span>
-          <strong className='text-gov-dark dark:text-white'>{termCount}</strong> terms
-        </span>
-        <span className='text-neutral-border'>·</span>
-        <span>
-          <strong className='text-gov-dark dark:text-white'>{themeCount}</strong> themes
-        </span>
-        <span className='text-neutral-border'>·</span>
-        <span>Linked to the Constitution</span>
+    <div className='min-h-screen bg-gov-sand dark:bg-surface-sunken'>
+      <div className='mx-auto w-full max-w-screen-lg px-4 pb-8 pt-[calc(var(--public-header-height)+1rem)] sm:px-6'>
+        <InteractiveGlossary />
       </div>
-
-      <InteractiveGlossary />
-    </PageShell>
+    </div>
   );
 }
