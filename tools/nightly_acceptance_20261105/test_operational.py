@@ -42,10 +42,10 @@ def envelope(tmp_path):
     source_data = runtime.read_json(root / source['path'])
     value = dict(schema='nightly-operational-envelope-v1', generated_at=datetime.now(timezone.utc).isoformat(),
                  binding=dict(commit=source_data['commit'],tree=source_data['tree'],admitted_sha=source_data['commit'],
-                              schema_revision='a756b20a0001',run_id=100,attempt=1),
+                              schema_revision='b953a11e0001',run_id=100,attempt=1),
                  source=source,runtime=rt,plan=dict(sha256=identity(plan),original=plan_ref),
                  cli=dict(exit_code=0,executed=True,run_id=100,attempt=1,original=inert),
-                 pg=dict(schema_revision='a756b20a0001',run_id=100,attempt=1,inventory=pg),
+                 pg=dict(schema_revision='b953a11e0001',run_id=100,attempt=1,inventory=pg),
                  domains=[dict(domain=d,job_id=i+1,status='curated' if d=='learning_hub' else 'accepted',
                                components=[dict(id='inert',period='inert',basis='inert',units='inert',
                                                 source_bytes=inert,authority=inert,acquisition=inert,readback=inert)])

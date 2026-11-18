@@ -210,7 +210,7 @@ def test_actual_v2_workflow_and_semantic_entry_points(fixture_db, tmp_path, sour
     if cached_frontend is None:
         pytest.skip('exact cached Next runtime and owned Linux fixture explicitly required')
     engine, _ = fixture_db
-    revision = 'a756b20a0001'
+    revision = 'b953a11e0001'
     with engine.begin() as connection:
         connection.execute(text('CREATE TABLE alembic_version(version_num varchar(32) PRIMARY KEY)'))
         connection.execute(text('INSERT INTO alembic_version VALUES (:revision)'), {'revision': revision})

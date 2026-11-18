@@ -99,7 +99,7 @@ def _refresh_context(body):
             or any(type(context[k]) is not str or re.fullmatch(pattern, context[k]) is None for k, pattern in {
                 'source_sha': '[0-9a-f]{40}', 'plan_sha256': '[0-9a-f]{64}',
                 'run_id': '[1-9][0-9]{0,17}', 'run_attempt': '[1-9][0-9]{0,4}'}.items())
-            or context['schema_head'] != 'a756b20a0001'):
+            or context['schema_head'] != 'b953a11e0001'):
         raise _refuse(400, 'refresh_context_refused')
     if context['source_sha'] != os.getenv('RENDER_GIT_COMMIT'):
         raise _refuse(409, 'serving_source_mismatch')

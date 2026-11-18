@@ -83,7 +83,7 @@ describe('POST /api/revalidate', () => {
 it('binds nightly page acknowledgments to the signed invocation', async () => {
   process.env.REVALIDATE_SECRET = SECRET;
   process.env.VERCEL_GIT_COMMIT_SHA = 'a'.repeat(40);
-  const context = { source_sha: 'a'.repeat(40), plan_sha256: 'b'.repeat(64), run_id: '1234', run_attempt: '1', schema_head: 'a756b20a0001' };
+  const context = { source_sha: 'a'.repeat(40), plan_sha256: 'b'.repeat(64), run_id: '1234', run_attempt: '1', schema_head: 'b953a11e0001' };
   const body = JSON.stringify({protocol:'nightly-refresh-v2', ts:Math.floor(Date.now()/1000), nonce:'c'.repeat(32), context, paths:['/'], backend_adoption_sha256:'d'.repeat(64)});
   const response = await POST(makeRequest(body, sign(body)));
   const raw = await response.text();
@@ -97,7 +97,7 @@ it.each(['stale', 'unknown', 'duplicate'])('refuses %s nightly requests before p
   process.env.REVALIDATE_SECRET = SECRET;
   mockRevalidatePath.mockClear();
   process.env.VERCEL_GIT_COMMIT_SHA = 'a'.repeat(40);
-  const body = JSON.stringify({protocol:kind==='unknown'?'future-v900':'nightly-refresh-v2', ts:Math.floor(Date.now()/1000)-(kind==='stale'?600:0), nonce:'c'.repeat(32), context:{source_sha:'a'.repeat(40),plan_sha256:'b'.repeat(64),run_id:'1234',run_attempt:'1',schema_head:'a756b20a0001'}, paths:kind==='duplicate'?['/','/']:['/'],backend_adoption_sha256:'d'.repeat(64)});
+  const body = JSON.stringify({protocol:kind==='unknown'?'future-v900':'nightly-refresh-v2', ts:Math.floor(Date.now()/1000)-(kind==='stale'?600:0), nonce:'c'.repeat(32), context:{source_sha:'a'.repeat(40),plan_sha256:'b'.repeat(64),run_id:'1234',run_attempt:'1',schema_head:'b953a11e0001'}, paths:kind==='duplicate'?['/','/']:['/'],backend_adoption_sha256:'d'.repeat(64)});
   const response = await POST(makeRequest(body, sign(body)));
   expect(response.status).toBe(400);
   expect(mockRevalidatePath).not.toHaveBeenCalled();

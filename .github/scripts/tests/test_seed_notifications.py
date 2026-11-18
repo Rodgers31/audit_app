@@ -23,14 +23,14 @@ def healthy(weekly=False):
     needs['healthcheck']['outputs'] = {'has_failures': 'false', 'unprobed': '0'}
     sha, plan = 'a'*40, 'b'*64
     needs['source_plan']['outputs'].update(source_sha=sha, plan_sha256=plan, dry_run='false')
-    needs['migrate']['outputs'] = {'source_sha':sha,'schema_head':'a756b20a0001'}
-    receipt = dict(version=1,generator_sha256='d'*64,refusals=[],cli_exit=0,source_sha=sha,schema_head='a756b20a0001',plan_sha256=plan,
+    needs['migrate']['outputs'] = {'source_sha':sha,'schema_head':'b953a11e0001'}
+    receipt = dict(version=1,generator_sha256='d'*64,refusals=[],cli_exit=0,source_sha=sha,schema_head='b953a11e0001',plan_sha256=plan,
         dry_run=False,bootstrap_selected=weekly,job_floor=30,run_id='41268107359',run_attempt='1',
         cli_executed=True,cli_exit_zero=True,classification='complete',cache_eligible=True,
         selected_domains=['audits'],jobs=[dict(domain='audits',job_id=31,status='completed',source_mode='live',
             processed=4,created=0,updated=4,error_count=0,required_completion='complete',document_count=1,
             accepted_documents=1,held_proposals=[],retention={'state':'unverified'})])
-    needs['seed']['outputs'] = {'report':json.dumps(receipt),'source_sha':sha,'schema_head':'a756b20a0001',
+    needs['seed']['outputs'] = {'report':json.dumps(receipt),'source_sha':sha,'schema_head':'b953a11e0001',
         'plan_sha256':plan,'classification':'complete','cache_eligible':'true','report_version':'1'}
     needs['revalidate']['outputs'] = {'backend':'true','pages':'true','protocol':'nightly-refresh-v2','source_sha':sha,'plan_sha256':plan,'run_id':'41268107359','run_attempt':'1','evidence_sha256':'e'*64}
     return needs

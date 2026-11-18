@@ -38,7 +38,7 @@ def pg():
     engine = create_engine(url.set(query={'hostaddr':'127.0.0.1'}), pool_size=4, max_overflow=0)
     with engine.begin() as db:
         assert db.scalar(text('SELECT current_database()')) == 'b83_social_test'
-        assert db.scalar(text('SELECT version_num FROM alembic_version')) == 'a756b20a0001'
+        assert db.scalar(text('SELECT version_num FROM alembic_version')) == 'b953a11e0001'
         tables = db.scalars(text("SELECT tablename FROM pg_tables WHERE schemaname=current_schema() AND tablename LIKE 'social_%'" )).all()
         db.execute(text('TRUNCATE '+','.join('"'+t+'"' for t in tables)+' CASCADE'))
         db.execute(text('TRUNCATE etl_dispatch_worker,etl_dispatch_commands,etl_dispatch_domains,seeding_domain_claims,ingestion_jobs RESTART IDENTITY CASCADE'))

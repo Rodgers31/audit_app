@@ -11,7 +11,7 @@ import pytest
 
 import refresh as r
 
-C = {'source_sha':'a'*40,'plan_sha256':'b'*64,'run_id':'1234','run_attempt':'1','schema_head':'a756b20a0001'}
+C = {'source_sha':'a'*40,'plan_sha256':'b'*64,'run_id':'1234','run_attempt':'1','schema_head':'b953a11e0001'}
 CENSUS = {'scope':'container','instance':'d'*64,'supervisor':'1:100','workers':['2:200','3:300'],'worker':'2:200'}
 MARKER = [123,456,32]
 

@@ -710,7 +710,7 @@ jobs:
         run: |
           python -I -B scripts/verification/github_database_qualify.py --seed
           cd backend
-          test "$(alembic heads)" = 'a756b20a0001 (head)'
+          test "$(alembic heads)" = 'b953a11e0001 (head)'
 
       # A migration that "succeeded" is not a schema that matches the models.
       # `alembic stamp --purge` ASSERTS equivalence to a baseline, it never
@@ -742,7 +742,7 @@ jobs:
               sys.exit(1)
           "
           echo "source_sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
-          echo 'schema_head=a756b20a0001' >> "$GITHUB_OUTPUT"
+          echo 'schema_head=b953a11e0001' >> "$GITHUB_OUTPUT"
 
   # ══════════════════════════════════════════════════════════════════
   # Step 2: Bootstrap seeding (counties, national GDP, population, etc.)
@@ -1516,7 +1516,7 @@ jobs:
           needs.source_plan.outputs.dry_run == 'false' &&
           needs.source_plan.outputs.source_sha == github.sha &&
           needs.migrate.outputs.source_sha == github.sha &&
-          needs.migrate.outputs.schema_head == 'a756b20a0001' &&
+          needs.migrate.outputs.schema_head == 'b953a11e0001' &&
           needs.seed.outputs.source_sha == github.sha &&
           needs.seed.outputs.schema_head == needs.migrate.outputs.schema_head &&
           needs.seed.outputs.plan_sha256 != '' &&
@@ -1570,13 +1570,13 @@ jobs:
           sha, identity = os.environ['GITHUB_SHA'], plan.get('plan_sha256')
           require(re.fullmatch('[0-9a-f]{40}',sha) is not None and type(identity) is str and re.fullmatch('[0-9a-f]{64}',identity) is not None)
           require(all(o.get('source_sha') == sha for o in (plan,admitted,seed)))
-          require(seed.get('plan_sha256') == identity and admitted.get('schema_head') == seed.get('schema_head') == 'a756b20a0001')
+          require(seed.get('plan_sha256') == identity and admitted.get('schema_head') == seed.get('schema_head') == 'b953a11e0001')
           classification = seed.get('classification')
           require((needs['seed']['result'],classification) in (('success','complete'),('failure','required_source_incomplete')))
           require((plan.get('bootstrap'),needs['bootstrap']['result']) in (('true','success'),('false','skipped')))
           report = json.loads(seed['report'])
           require(type(report) is dict and type(report.get('version')) is int and report['version'] == 1)
-          require(report.get('source_sha') == sha and report.get('plan_sha256') == identity and report.get('schema_head') == 'a756b20a0001')
+          require(report.get('source_sha') == sha and report.get('plan_sha256') == identity and report.get('schema_head') == 'b953a11e0001')
           require(report.get('run_id') == os.environ['GITHUB_RUN_ID'] and report.get('run_attempt') == os.environ['GITHUB_RUN_ATTEMPT'])
           require(report.get('cache_eligible') is True and report.get('dry_run') is False and report.get('cli_executed') is True)
           require(type(report.get('cli_exit')) is int and report['cli_exit'] == 0 and report.get('cli_exit_zero') is True)

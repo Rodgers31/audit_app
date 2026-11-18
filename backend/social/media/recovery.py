@@ -38,7 +38,7 @@ MODELS = (SocialMediaAsset, SocialMediaUpload, SocialMediaBudget,
 # database. This reviewed inventory is deliberately not inferred from a caller's
 # ORM registry or prefix. Every present table must be empty; only the exact
 # current migration marker may contain data. New tables/revisions need review.
-TARGET_SCHEMA_REVISION = 'a756b20a0001'
+TARGET_SCHEMA_REVISION = 'b953a11e0001'
 EMPTY_TARGET_TABLES = frozenset({
     'social_posts', 'social_post_revisions', 'social_media_assets',
     'social_revision_assets', 'social_accounts', 'social_publications',
