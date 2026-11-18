@@ -1,0 +1,114 @@
+{
+  "status": "success",
+  "source": {
+    "publisher": "Central Bank of Kenya",
+    "title": "Issues of Treasury Bonds (browser fixture)",
+    "url": "https://www.centralbank.go.ke/bills-bonds/treasury-bonds/",
+    "as_of": "2028-10-11"
+  },
+  "coverage": {
+    "coverage_ratio": 0.592
+  },
+  "withheld_count": 2,
+  "withheld_by_gate": {
+    "count": 3
+  },
+  "instrument_count": 55,
+  "ladder": [
+    {
+      "year": 2029,
+      "face_value": 260000000000,
+      "instruments": 4
+    },
+    {
+      "year": 2030,
+      "face_value": 175000000000,
+      "instruments": 3
+    },
+    {
+      "year": 2031,
+      "face_value": 190000000000,
+      "instruments": 4
+    },
+    {
+      "year": 2032,
+      "face_value": 180000000000,
+      "instruments": 3
+    },
+    {
+      "year": 2033,
+      "face_value": 135000000000,
+      "instruments": 4
+    },
+    {
+      "year": 2034,
+      "face_value": 431240000001.25,
+      "instruments": 5
+    },
+    {
+      "year": 2035,
+      "face_value": 220000000000,
+      "instruments": 3
+    },
+    {
+      "year": 2036,
+      "face_value": 280000000000,
+      "instruments": 3
+    },
+    {
+      "year": 2037,
+      "face_value": 220000000000,
+      "instruments": 4
+    },
+    {
+      "year": 2038,
+      "face_value": 53000000000,
+      "instruments": 1
+    },
+    {
+      "year": 2039,
+      "face_value": 195000000000,
+      "instruments": 4
+    },
+    {
+      "year": 2040,
+      "face_value": 130000000000,
+      "instruments": 3
+    },
+    {
+      "year": 2041,
+      "face_value": 170000000000,
+      "instruments": 4
+    },
+    {
+      "year": 2043,
+      "face_value": 145000000000,
+      "instruments": 2
+    },
+    {
+      "year": 2044,
+      "face_value": 120000000000,
+      "instruments": 2
+    },
+    {
+      "year": 2045,
+      "face_value": 180000000000,
+      "instruments": 2
+    },
+    {
+      "year": 2046,
+      "face_value": 51000000000,
+      "instruments": 1
+    },
+    {
+      "year": 2048,
+      "face_value": 73000000000,
+      "instruments": 2
+    },
+    {
+      "year": 2049,
+      "face_value": 35000000000,
+      "instruments": 1
+    }
+  ]
+}

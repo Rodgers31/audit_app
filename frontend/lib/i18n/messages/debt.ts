@@ -52,4 +52,234 @@ export const DEBT_MESSAGES = {
   'debt.lenders.external_eurobond': { en: 'Eurobonds', sw: 'Eurobondi', plain: 'Eurobonds' },
   'debt.lenders.county_guaranteed': { en: 'County guarantees', sw: 'Dhamana za kaunti', plain: 'County guarantees' },
   'debt.lenders.other_group': { en: 'Other groups', sw: 'Makundi mengine', plain: 'Other groups' },
+  'debt.maturity.title': {
+    en: "When it’s due",
+    sw: "Deni hulipwa lini",
+    plain: "When it’s due",
+  },
+  'debt.maturity.loading': {
+    en: "Loading Treasury bond maturities…",
+    sw: "Inapakia tarehe za ukomavu wa hati fungani za Hazina…",
+    plain: "Loading when the bonds are due…",
+  },
+  'debt.maturity.failed': {
+    en: "The Treasury bond maturity profile could not be loaded.",
+    sw: "Ratiba ya ukomavu wa hati fungani za Hazina haikupakiwa.",
+    plain: "We couldn’t load the bond dates and amounts.",
+  },
+  'debt.maturity.retry': {
+    en: "Try again",
+    sw: "Jaribu tena",
+    plain: "Try again",
+  },
+  'debt.maturity.unavailable': {
+    en: "The Treasury bond register is unavailable.",
+    sw: "Daftari la hati fungani za Hazina halipatikani.",
+    plain: "The list of Treasury bonds is unavailable.",
+  },
+  'debt.maturity.awaiting_setup': {
+    en: "The Treasury bond register is awaiting setup.",
+    sw: "Daftari la hati fungani za Hazina linasubiri kuanzishwa.",
+    plain: "The Treasury bond list is awaiting setup.",
+  },
+  'debt.maturity.not_ingested': {
+    en: "The Treasury bond register has yet to be imported.",
+    sw: "Daftari la hati fungani za Hazina bado halijaingizwa.",
+    plain: "The Treasury bond list is awaiting import.",
+  },
+  'debt.maturity.all_withheld': {
+    en: "All stored Treasury bond records were withheld from publication.",
+    sw: "Rekodi zote za hati fungani za Hazina zimezuiwa kuchapishwa.",
+    plain: "Every stored Treasury bond record was held back from publication.",
+  },
+  'debt.maturity.empty': {
+    en: "The register returned no dated Treasury bond amounts.",
+    sw: "Daftari halikutoa kiasi cha hati fungani za Hazina chenye tarehe.",
+    plain: "The bond list returned no amounts with dates.",
+  },
+  'debt.maturity.amount_unavailable': {
+    en: "Amount unavailable",
+    sw: "Kiasi hakipatikani",
+    plain: "Amount unavailable",
+  },
+  'debt.maturity.range_unavailable': {
+    en: "Five-year window unavailable",
+    sw: "Kipindi cha miaka mitano hakipatikani",
+    plain: "The next five years cannot be dated",
+  },
+  'debt.maturity.due_range': {
+    en: "due {range}",
+    sw: "hukomaa {range}",
+    plain: "due {range}",
+  },
+  'debt.maturity.range_only': {
+    en: 'five-year window · {range}',
+    sw: 'kipindi cha miaka mitano · {range}',
+    plain: 'five-year period · {range}',
+  },
+  'debt.maturity.empty_range': {
+    en: 'The register has no usable amounts for these five years.',
+    sw: 'Daftari halina kiasi kinachoweza kutumika kwa miaka hii mitano.',
+    plain: 'The bond list has no usable amounts for these five years.',
+  },
+  'debt.maturity.reported_range': {
+    en: "reported for {range}",
+    sw: "zimeripotiwa kwa {range}",
+    plain: "reported for {range}",
+  },
+  'debt.maturity.partial_range': {
+    en: "This five-year window lists the amounts available in the register. Some years have no usable amount.",
+    sw: "Kipindi hiki cha miaka mitano kinaonyesha kiasi kinachopatikana katika daftari. Baadhi ya miaka haina kiasi kinachoweza kutumika.",
+    plain: "Some of these five years have no usable amount in the bond list.",
+  },
+  'debt.maturity.due_peak': {
+    en: "in {years} alone · peak",
+    sw: "mwaka {years} pekee · kilele",
+    plain: "in {years} alone · highest year",
+  },
+  'debt.maturity.reported_peak': {
+    en: "largest amount shown · {years}",
+    sw: "kiasi kikubwa zaidi kilichoonyeshwa · {years}",
+    plain: "largest amount shown · {years}",
+  },
+  'debt.maturity.tied_peak': {
+    en: "each in {years} · tied peak",
+    sw: "kila mwaka kati ya {years} · kilele sawa",
+    plain: "each in {years} · highest years",
+  },
+  'debt.maturity.peak_unavailable': {
+    en: "Peak year unavailable",
+    sw: "Mwaka wa kilele haupatikani",
+    plain: "Highest year unavailable",
+  },
+  'debt.maturity.peak': {
+    en: "Peak",
+    sw: "Kilele",
+    plain: "Highest",
+  },
+  'debt.maturity.past': {
+    en: "Earlier year",
+    sw: "Mwaka wa awali",
+    plain: "Earlier year",
+  },
+  'debt.maturity.snapshot_year': {
+    en: "Register year",
+    sw: "Mwaka wa daftari",
+    plain: "Year of the bond list",
+  },
+  'debt.maturity.signed': {
+    en: "Signed amount",
+    sw: "Kiasi chenye ishara",
+    plain: "Negative amount",
+  },
+  'debt.maturity.signed_basis': {
+    en: "Signed amounts are shown as reported. The takeaway and bars use amounts due of zero or more.",
+    sw: "Kiasi chenye ishara kinaonyeshwa kama kilivyoripotiwa. Muhtasari na pau hutumia kiasi kinachodaiwa cha sifuri au zaidi.",
+    plain: "Negative amounts are shown as reported. The summary and bars use amounts due of zero or more.",
+  },
+  'debt.maturity.plot': {
+    en: "Treasury bond face value by calendar maturity year",
+    sw: "Thamani ya hati fungani za Hazina kwa mwaka wa ukomavu",
+    plain: "Treasury bond amounts by year due",
+  },
+  'debt.maturity.readout': {
+    en: "Select a year to read its exact face value.",
+    sw: "Chagua mwaka ili kuona thamani kamili ya hati fungani.",
+    plain: "Select a year to see its exact amount.",
+  },
+  'debt.maturity.explore': {
+    en: "Explore Treasury bond maturity years",
+    sw: "Chunguza miaka ya ukomavu wa hati fungani za Hazina",
+    plain: "Explore the years bonds are due",
+  },
+  'debt.maturity.arrow_help': {
+    en: "Use Up and Down to move between years, Home and End to jump, Enter to select and Escape to clear.",
+    sw: "Tumia mishale ya Juu na Chini kusogea kati ya miaka, Home na End kuruka, Enter kuchagua na Escape kufuta chaguo.",
+    plain: "Use the Up and Down arrow keys to move between years. Use Enter to select and Escape to clear.",
+  },
+  'debt.maturity.scope_short': {
+    en: "Treasury bonds sold at auction. This is a partial register.",
+    sw: "Hati fungani za Hazina zilizouzwa kwa mnada. Hili ni daftari la sehemu tu.",
+    plain: "This list covers some Treasury bonds sold at auction.",
+  },
+  'debt.maturity.scope_one': {
+    en: "{count} auctioned Treasury bond from a partial register.",
+    sw: "Hati fungani {count} ya Hazina iliyouzwa kwa mnada katika daftari la sehemu.",
+    plain: "{count} Treasury bond sold at auction from a partial list.",
+  },
+  'debt.maturity.scope_count': {
+    en: "{count} auctioned Treasury bonds from a partial register.",
+    sw: "Hati fungani {count} za Hazina zilizouzwa kwa mnada katika daftari la sehemu.",
+    plain: "{count} Treasury bonds sold at auction from a partial list.",
+  },
+  'debt.maturity.included': {
+    en: "What’s included?",
+    sw: "Ni nini kimejumuishwa?",
+    plain: "What’s included?",
+  },
+  'debt.maturity.scope_full': {
+    en: "The CBK register covers domestic Treasury bonds sold at auction since 2007. Amounts are face values before amortisation, grouped by calendar maturity year. The scope excludes earlier and non-auction issues, Treasury bills, external debt and unpaid supplier bills.",
+    sw: "Daftari la Benki Kuu ya Kenya linahusu hati fungani za Hazina za ndani zilizouzwa kwa mnada tangu 2007. Kiasi ni thamani ya hati fungani kabla ya marejesho ya awamu, kikigawanywa kwa mwaka wa ukomavu. Hati za awali, zisizo za mnada, hati za muda mfupi za Hazina, deni la nje na bili za wasambazaji ambazo hazijalipwa ziko nje ya wigo huu.",
+    plain: "The Central Bank lists local Treasury bonds sold at auction since 2007 by year due. Amounts are what the bonds state before instalment repayments. Earlier bonds, bonds sold outside auctions, short-term Treasury bills, foreign debt and unpaid supplier bills are outside this list.",
+  },
+  'debt.maturity.snapshot': {
+    en: "Register snapshot dated {date}. The horizon starts with the next full calendar year.",
+    sw: "Picha ya daftari ni ya tarehe {date}. Kipindi huanza mwaka unaofuata kamili wa kalenda.",
+    plain: "The bond list is dated {date}. The five-year period starts with the next full calendar year.",
+  },
+  'debt.maturity.date_unavailable': {
+    en: "Register snapshot date unavailable.",
+    sw: "Tarehe ya picha ya daftari haipatikani.",
+    plain: "The date of the bond list is unavailable.",
+  },
+  'debt.maturity.coverage_ratio': {
+    en: "The source coverage check was about {share} of the CBK’s published Treasury-bond stock.",
+    sw: "Ukaguzi wa wigo wa chanzo ulikuwa karibu {share} ya salio la hati fungani za Hazina lililochapishwa na Benki Kuu ya Kenya.",
+    plain: "The source compared the bond list with the Central Bank’s published total for Treasury bonds. It found coverage of about {share}.",
+  },
+  'debt.maturity.coverage_unavailable': {
+    en: "The share of the CBK’s published Treasury-bond stock covered by this register is unavailable.",
+    sw: "Asilimia ya salio lililochapishwa la hati fungani za Hazina la Benki Kuu inayojumuishwa katika daftari hili haipatikani.",
+    plain: "The share of all Treasury bonds covered by this list is unavailable.",
+  },
+  'debt.maturity.ambiguous': {
+    en: "{count} securities were excluded because their maturity dates were ambiguous in the source.",
+    sw: "Dhamana {count} ziliachwa kwa sababu tarehe zake za ukomavu hazikuwa wazi katika chanzo.",
+    plain: "The source gave unclear dates for {count} securities, so they were left out.",
+  },
+  'debt.maturity.gated': {
+    en: "{count} stored bond records were withheld by publication checks.",
+    sw: "Rekodi {count} za hati fungani zilizohifadhiwa zimezuiwa na ukaguzi wa uchapishaji.",
+    plain: "Publication checks held back {count} stored bond records.",
+  },
+  'debt.maturity.coverage_basis': {
+    en: "The reported coverage comparison comes from before those publication checks.",
+    sw: "Ulinganisho wa wigo uliripotiwa kabla ya ukaguzi huo wa uchapishaji.",
+    plain: "The reported share is from before those publication checks.",
+  },
+  'debt.maturity.source_link': {
+    en: "Central Bank of Kenya source",
+    sw: "Chanzo cha Benki Kuu ya Kenya",
+    plain: "Central Bank of Kenya source",
+  },
+  'debt.maturity.year': {
+    en: "Maturity year",
+    sw: "Mwaka wa ukomavu",
+    plain: "Year due",
+  },
+  'debt.maturity.face_value': {
+    en: "Face value (KES)",
+    sw: "Thamani ya hati (KES)",
+    plain: "Bond amount (KES)",
+  },
+  'debt.maturity.bonds': {
+    en: "Bonds",
+    sw: "Hati fungani",
+    plain: "Bonds",
+  },
+  'debt.maturity.count_unavailable': {
+    en: "Count unavailable",
+    sw: "Idadi haipatikani",
+    plain: "Count unavailable",
+  },
 } as const satisfies Record<string, Translation>;
