@@ -64,6 +64,7 @@ export interface GlossaryTerm {
   term: string;
   /** Optional shorthand (e.g. "GDP", "CoB"). */
   abbreviation?: string;
+  aliases?: string[];
   category: GlossaryCategoryId;
   icon: LucideIcon;
   shortDef: string;
@@ -71,6 +72,10 @@ export interface GlossaryTerm {
   examples: GlossaryExample[];
   /** Point readers to the constitutional article that anchors this term. */
   relatedArticle?: RelatedArticleLink;
+  articleContext?: boolean;
+  relatedTerms?: string[];
+  seenOn?: Array<{ href: string; label: 'glossaryDebt' | 'glossaryCounties' | 'glossaryMoneyFlow' | 'audits' }>;
+  definitionSource?: { href: string; label: string };
 }
 
 export interface GlossaryCategoryMeta {
@@ -364,6 +369,61 @@ export const glossaryTerms: GlossaryTerm[] = [
       label: 'Article 227 — Procurement of public goods and services',
     },
   },
+  {
+    id: 'pending-bills',
+    term: 'Pending bills',
+    aliases: ['Unpaid bills', 'Trade payables', 'Supplier arrears'],
+    category: 'spending',
+    icon: ScrollText,
+    shortDef: 'Money reported as unpaid to suppliers and contractors at a given date.',
+    longDef: 'Pending bills are reported separately from borrowing. Some claims may still need verification or be disputed. Compare bills for the same institution and reporting date. A missing balance does not establish that all bills were paid.',
+    examples: [
+      'A contractor submits an invoice after repairing a county road. If the county records the invoice as unpaid at year-end, it can appear in its pending bills for that date.',
+    ],
+    relatedTerms: ['expenditure', 'debt'],
+    seenOn: [{ href: '/debt', label: 'glossaryDebt' }],
+    definitionSource: {
+      href: 'https://bomet.go.ke/wp-content/uploads/2026/03/CGBIRR.pdf',
+      label: 'Controller of Budget · County Budget Implementation Review Report FY 2024/25',
+    },
+  },
+  {
+    id: 'budget-execution',
+    term: 'Absorption rate',
+    aliases: ['Budget execution rate', 'Budget utilization', 'Budget utilisation', 'Share of the budget spent'],
+    category: 'spending',
+    icon: Calculator,
+    shortDef: 'The share of an approved budget actually spent in the reporting period.',
+    longDef: 'Divide reported spending by the approved budget for the same institution and reporting period. A low rate can reflect delays, funding shortfalls or incomplete reporting. The rate alone cannot establish why spending was low.',
+    examples: ['If a county reports spending KES 7 billion against an approved budget of KES 10 billion, its absorption rate is 70%.'],
+    relatedTerms: ['budget', 'expenditure'],
+    seenOn: [
+      { href: '/transparency#county-spending-heading', label: 'glossaryMoneyFlow' },
+      { href: '/counties', label: 'glossaryCounties' },
+    ],
+    definitionSource: {
+      href: 'https://bomet.go.ke/wp-content/uploads/2026/03/CGBIRR.pdf',
+      label: 'Controller of Budget · County Budget Implementation Review Report FY 2024/25',
+    },
+  },
+  {
+    id: 'audit-qualified',
+    term: 'Qualified opinion',
+    aliases: ['Qualified audit opinion', 'Basis for qualified opinion'],
+    category: 'accountability',
+    icon: Scale,
+    shortDef: 'An audit opinion that identifies significant problems with specific parts of the financial statements.',
+    longDef: 'A qualified opinion concerns the financial statements for the period audited. The auditor identifies material issues, such as errors, omissions or missing evidence, that affect specific parts of the statements. The audit report explains the issues under the basis for the opinion.',
+    examples: ['An auditor may qualify an opinion when an important balance cannot be verified from the available records and the possible effect is limited to specific items.'],
+    relatedTerms: ['audit', 'procurement'],
+    relatedArticle: { chapter: 12, article: 229, label: 'Article 229 — Auditor-General' },
+    articleContext: true,
+    seenOn: [{ href: '/audits', label: 'audits' }],
+    definitionSource: {
+      href: 'https://libraryir.parliament.go.ke/server/api/core/bitstreams/86995048-f127-46ed-b34c-1fb783cb85fa/content',
+      label: 'Office of the Auditor-General · County Assemblies 2024/25, volume 2, section 1.5(b)',
+    },
+  },
 ];
 
 /** Counts per category id, computed once. */
@@ -381,37 +441,27 @@ export function exampleText(ex: GlossaryExample): string {
   return typeof ex === 'string' ? ex : ex.fallback;
 }
 
-/** Case-insensitive search across term, abbreviation, short, and long definitions. */
+function normalizeGlossarySearch(value: string): string {
+  return value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+/** Search term names, aliases, abbreviations, definitions, and examples. */
 export function filterTerms(
   terms: GlossaryTerm[],
   search: string,
   category: GlossaryCategoryId | 'all'
 ): GlossaryTerm[] {
-  const q = search.trim().toLowerCase();
+  const query = normalizeGlossarySearch(search);
   return terms.filter((t) => {
     if (category !== 'all' && t.category !== category) return false;
-    if (!q) return true;
-    const haystack = [
+    if (!query) return true;
+    return [
       t.term,
       t.abbreviation ?? '',
+      ...(t.aliases ?? []),
       t.shortDef,
       t.longDef,
-      t.examples.map(exampleText).join(' '),
-    ]
-      .join(' ')
-      .toLowerCase();
-    return haystack.includes(q);
+      ...t.examples.map(exampleText),
+    ].some((text) => normalizeGlossarySearch(text).includes(query));
   });
-}
-
-/** Bucket filtered terms back into their categories for grouped rendering. */
-export function groupByCategory(
-  terms: GlossaryTerm[]
-): { category: GlossaryCategoryMeta; terms: GlossaryTerm[] }[] {
-  return GLOSSARY_CATEGORIES.filter((c) => c.id !== 'all')
-    .map((category) => ({
-      category,
-      terms: terms.filter((t) => t.category === category.id),
-    }))
-    .filter((g) => g.terms.length > 0);
 }
