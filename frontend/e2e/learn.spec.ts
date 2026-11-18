@@ -6,8 +6,8 @@ async function glossary(page: Page) {
 }
 async function quiz(page: Page) {
   await page.goto('/learn/quiz');
-  await page.getByRole('button', { name: /Public Finance/ }).click();
-  await expect(page.getByText('1/6', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: /Public finance/i }).click();
+  await expect(page.getByRole('progressbar', { name: 'Quiz progress' })).toHaveAttribute('aria-valuetext', '1 of 6');
 }
 
 test.describe('Learn Page', () => {
@@ -198,27 +198,105 @@ test.describe('Engagement Quiz', () => {
   test('quiz section is visible', async ({ page }) => {
     await page.goto('/learn/quiz');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Quiz Games');
-    await expect(page.getByRole('button', { name: /Public Finance/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Public finance/i })).toBeVisible();
   });
   test('quiz cards are interactive', async ({ page }) => {
     await quiz(page);
-    await expect(page.locator('main button').filter({ hasText: /^A/ })).toHaveCount(1);
+    await expect(page.getByRole('group', { name: 'Answers' }).getByRole('button')).toHaveCount(4);
   });
   test('quiz can be navigated through questions', async ({ page }) => {
     await quiz(page);
-    await page.locator('main button').filter({ hasText: /^A/ }).click();
+    await page.getByRole('group', { name: 'Answers' }).getByRole('button').first().click();
     await page.getByRole('button', { name: /Next Question/i }).click();
-    await expect(page.getByText('2/6', { exact: true })).toBeVisible();
+    await expect(page.getByRole('progressbar', { name: 'Quiz progress' })).toHaveAttribute('aria-valuetext', '2 of 6');
   });
   test('quiz shows results after completion', async ({ page }) => {
     await quiz(page);
     for (let n = 1; n <= 6; n++) {
-      await expect(page.getByText(`${n}/6`, { exact: true })).toBeVisible();
-      await page.locator('main button').filter({ hasText: /^A/ }).click();
+      await expect(page.getByRole('progressbar', { name: 'Quiz progress' })).toHaveAttribute('aria-valuetext', `${n} of 6`);
+      await page.getByRole('group', { name: 'Answers' }).getByRole('button').first().click();
       await page.getByRole('button', { name: /Next Question|See Results/i }).click();
     }
     await expect(page.getByRole('heading', { name: 'Review Answers', exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Play Again/i })).toBeVisible();
+    const score = page.getByRole('heading', { name: /^\d of 6 correct$/ });
+    await expect(score).toBeFocused();
+    await expect(page.getByRole('region', { name: 'Review Answers' }).getByRole('listitem')).toHaveCount(6);
+    await page.getByRole('button', { name: /Play Again/i }).click();
+    await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuetext', '1 of 6');
+  });
+
+  test('focus mode preserves keyboard play and restores the launcher on quit', async ({ page }) => {
+    await page.goto('/learn/quiz');
+    const launch = page.getByRole('button', { name: /Public finance/i });
+    await launch.press('Enter');
+    const active = page.getByRole('dialog');
+    await expect(active).toBeVisible();
+    await expect(active.getByRole('heading', { level: 1 })).toBeFocused();
+    await expect(page.getByRole('heading', { name: 'Quiz Games' })).toHaveCount(0);
+    expect(await active.evaluate(node => node.matches(':modal'))).toBe(true);
+    // The browser's native dialog makes the background inert even though
+    // Playwright's role queries can still find those elements in the DOM.
+    const backgroundLink = page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('link').first();
+    await backgroundLink.evaluate((link: HTMLElement) => link.focus());
+    await expect(active.getByRole('heading', { level: 1 })).toBeFocused();
+
+    const choices = active.getByRole('group', { name: 'Answers' }).getByRole('button');
+    await choices.first().press('Enter');
+    await expect(active.getByRole('heading', { level: 2 })).toBeFocused();
+    for (const choice of await choices.all()) await expect(choice).toBeDisabled();
+    await active.getByRole('button', { name: 'Next question' }).press('Enter');
+    await expect(active.getByRole('heading', { level: 1 })).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(active).toHaveCount(0);
+    await expect(launch).toBeFocused();
+  });
+
+  test('keeps a verified article link available after the answer', async ({ page, context }) => {
+    await page.addInitScript(() => { Math.random = () => 0.5; });
+    await quiz(page);
+    const active = page.getByRole('dialog');
+    await active.getByRole('group', { name: 'Answers' }).getByRole('button').first().click();
+    await expect(active.getByRole('link', { name: /Article/ })).toHaveCount(0);
+    await active.getByRole('button', { name: 'Next question' }).click();
+    await active.getByRole('button', { name: 'Controller of Budget', exact: true }).click();
+    await expect(active.getByRole('heading', { name: 'Correct.' })).toBeFocused();
+    const citation = active.getByRole('link', { name: /Article 228\(4\)/ });
+    await expect(citation).toHaveAttribute('href', '/learn?article=228');
+    const newTabPromise = context.waitForEvent('page');
+    await citation.click();
+    const newTab = await newTabPromise;
+    await expect(newTab).toHaveURL(/\/learn\?article=228$/);
+    await expect(newTab.getByRole('heading', { name: 'Controller of Budget', exact: true })).toBeVisible();
+    await newTab.close();
+    await expect(active.getByRole('progressbar')).toHaveAttribute('aria-valuetext', '2 of 6');
+  });
+
+  test('the mobile quiz keeps answers in reach and closes by touch', async ({ browser }, testInfo) => {
+    test.skip(testInfo.project.name === 'firefox', 'Firefox does not support Playwright mobile emulation.');
+    const phone = await browser.newContext({
+      viewport: { width: 360, height: 840 },
+      hasTouch: true, isMobile: true, reducedMotion: 'reduce', baseURL: testInfo.project.use.baseURL,
+    });
+    try {
+      const page = await phone.newPage();
+      await page.goto('/learn/quiz');
+      const launch = page.getByRole('button', { name: /Quick Play/ });
+      await launch.tap();
+      const active = page.getByRole('dialog');
+      await expect(active.getByRole('progressbar')).toHaveAttribute('aria-valuetext', '1 of 10');
+      const choices = active.getByRole('group', { name: 'Answers' }).getByRole('button');
+      const first = (await choices.first().boundingBox())!;
+      const last = (await choices.last().boundingBox())!;
+      expect(first.y).toBeGreaterThanOrEqual(0.4 * 840);
+      expect(last.y + last.height).toBeLessThanOrEqual(840);
+      await choices.first().tap();
+      await expect(active.getByRole('heading', { level: 2 })).toBeFocused();
+      await active.getByRole('button', { name: 'Quit quiz' }).tap();
+      await expect(launch).toBeFocused();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(360);
+    } finally {
+      await phone.close();
+    }
   });
 });
 
