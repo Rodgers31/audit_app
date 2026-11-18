@@ -12,7 +12,7 @@ import { PageSkeleton } from '@/components/ui/Skeleton';
 import PageShell from '@/components/layout/PageShell';
 import PDFExportButton from '@/components/PDFExportButton';
 import { useLang } from '@/lib/i18n/LangProvider';
-import LenderTreemap from '@/components/debt/LenderTreemap';
+import RankedLenders from '@/components/debt/RankedLenders';
 import MaturityLadder from '@/components/debt/MaturityLadder';
 import DebtServiceObservations from '@/components/debt/DebtServiceObservations';
 import {
@@ -40,7 +40,6 @@ import {
   ArrowDown,
   ArrowUp,
   BadgeDollarSign,
-  Building2,
   ChevronDown,
   ChevronUp,
   CircleDollarSign,
@@ -52,9 +51,9 @@ import {
   Users,
 } from 'lucide-react';
 import {
-  toTreemapCategories,
-  treemapTotal,
-} from '@/lib/debt/lenderTreemapAdapter';
+  toLenderCategories,
+  lenderCategoryTotal,
+} from '@/lib/debt/lenderBreakdown';
 import { formatAsAt } from '@/lib/counties/pendingBillsNotes';
 import { displayLenderName } from '@/lib/debt/lenderName';
 import { useEffect, useMemo, useState } from 'react';
@@ -466,35 +465,8 @@ export default function NationalDebtPage() {
     };
   }, [pendingBillsData]);
 
-  /* ── Treemap data adapter ── */
-  //
-  // Two things this fixes.
-  //
-  // 1. The slices used to sum to 106.9%. `percentage_of_total` comes from the
-  //    backend divided by a total that EXCLUDES pending bills, while pending
-  //    bills were rendered as one of the parts (credibility audit F25). Shares
-  //    are now computed here, over the categories actually drawn, so the parts
-  //    make the whole by construction.
-  //
-  // 2. Pending bills are not in the chart at all. They are unpaid obligations,
-  //    not borrowed money — the backend's own `_is_debt_loan` says exactly
-  //    that and keeps them out of every debt total. Charting them beside
-  //    Treasury bonds double-counted them against the page's own "Stalled
-  //    payments" section, which is where they belong.
-  // Adapter lives in lib/debt/lenderTreemapAdapter so its rules are unit-
-  // tested against the shipped code rather than a copy of it.
-  const lenderCategories = useMemo(
-    () => toTreemapCategories(d.categories),
-    [d.categories]
-  );
-
-  // The denominator the treemap actually divides by, so the component can
-  // print the number its percentages are of rather than inheriting a total
-  // that includes something it does not draw.
-  const treemapTotalValue = useMemo(
-    () => treemapTotal(lenderCategories),
-    [lenderCategories]
-  );
+  const lenderCategories = useMemo(() => toLenderCategories(d.categories), [d.categories]);
+  const lenderTotal = useMemo(() => lenderCategoryTotal(lenderCategories), [lenderCategories]);
 
   const dsa = readDsaRating((overview?.data || overview)?.debt_sustainability);
 
@@ -718,27 +690,7 @@ export default function NationalDebtPage() {
       <FigureEvidence label='GDP observations' labelKey='evidence.label.gdp_observations' rows={(overview?.data ?? overview)?.figure_qualifications?.gdp_data} table='gdp_data' />
       <FigureEvidence label='debt timeline observations' labelKey='evidence.label.timeline_observations' rows={Object.fromEntries(timeline.map(row => [String(row.year), row.qualifications ?? {}]))} />
       {/* ═══════════ SECTION 2 — WHO KENYA OWES ═══════════ */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-80px' }}
-        transition={{ duration: 0.5 }}
-        className='space-y-4'>
-        <div>
-          <h2 className='font-display text-2xl sm:text-3xl text-gov-dark dark:text-white flex items-center gap-2'>
-            <Building2 className='text-gov-forest dark:text-emerald-100' size={24} />
-            Who Kenya owes
-          </h2>
-          <p className='text-sm text-neutral-muted mt-1'>
-            The debt broken down by lender category — foreign creditors (external) vs. local banks
-            and pension funds (domestic). Hover to compare.
-          </p>
-        </div>
-        <LenderTreemap
-          categories={lenderCategories}
-          totalOutstanding={treemapTotalValue}
-        />
-      </motion.section>
+      <RankedLenders categories={lenderCategories} totalOutstanding={lenderTotal} />
 
       {/* ═══════════ SECTION 3 — MATURITY LADDER ═══════════
           Restored on real instrument data. The withdrawn version drew its

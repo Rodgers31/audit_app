@@ -1,0 +1,35 @@
+{
+  "external_bilateral": {
+    "total_outstanding": 1010000000000,
+    "items": [{"lender": "Japan", "outstanding": 1010000000000}]
+  },
+  "external_commercial": {
+    "total_outstanding": 1260000000000,
+    "items": [{"lender": "Synthetic commercial lender", "outstanding": 1260000000000}]
+  },
+  "domestic_bills": {"total_outstanding": 1130000000000},
+  "external_multilateral": {
+    "total_outstanding": 3400000000000,
+    "items": [
+      {"lender": "World Bank International Development Association", "outstanding": 1400000000000},
+      {"lender": "African Development Bank", "outstanding": 500000000000},
+      {"lender": "Synthetic named lender 3", "outstanding": 250000000000},
+      {"lender": "Synthetic named lender 4", "outstanding": 250000000000},
+      {"lender": "Synthetic named lender 5", "outstanding": 150000000000},
+      {"lender": "Synthetic named lender 6", "outstanding": 150000000000},
+      {"lender": "Synthetic named lender 7", "outstanding": 100000000000},
+      {"lender": "Synthetic named lender 8", "outstanding": 100000000000},
+      {"lender": "Synthetic ninth named lender with an intentionally long full name", "outstanding": 100000000000}
+    ],
+    "items_truncated": true,
+    "other_lender_count": 4,
+    "other_outstanding": 400000000000
+  },
+  "domestic_bonds": {
+    "total_outstanding": 6020000000000,
+    "items": [{"lender": "Synthetic Treasury bond holder", "outstanding": 6020000000000}]
+  },
+  "county_guaranteed": {"total_outstanding": 100000000000},
+  "future_external_lenders": {"total_outstanding": 80000000000},
+  "pending_bills": {"total_outstanding": 900000000000}
+}

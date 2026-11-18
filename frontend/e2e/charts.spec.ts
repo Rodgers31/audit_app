@@ -66,8 +66,6 @@ test.describe('Chart Data Validation - Debt Page', () => {
     await expect(page.getByText('KES 12.00T', { exact: true })).toBeVisible();
     await expect(page.getByText('Debt-to-GDP', { exact: true }).locator('..')).toContainText('60.0%');
   });
-  // Debt charts have no segment drilldown. Clicking an icon proved nothing. #291.
-  test.fixme('debt chart segments are clickable', async () => {});
   test('debt trend chart shows historical data', async ({ page }) => {
     await page.goto('/debt');
     const chart = page.locator('.recharts-wrapper').filter({ hasText: 'FY 2024/25' }).last();
