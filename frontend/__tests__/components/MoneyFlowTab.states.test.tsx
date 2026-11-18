@@ -56,7 +56,7 @@ it('waits for fiscal-year discovery without claiming absence or starting a disab
   expect(screen.queryByText(/No money flow data/)).not.toBeInTheDocument();
   expect(readFlow).not.toHaveBeenCalled();
   await act(async () => pending.resolve(years));
-  await waitFor(() => expect(screen.getByText('KES 10.00B')).toBeVisible());
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Allocated KES 10.00B' })).toBeVisible());
   expect(readFlow).toHaveBeenCalledWith('001', years.default, expect.any(AbortSignal));
 });
 
@@ -73,7 +73,7 @@ it('reports failed fiscal-year discovery and recovers only after explicit retry'
   await waitFor(() => expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument());
   expect(readYears).toHaveBeenCalledTimes(2);
   await act(async () => pending.resolve(years));
-  await waitFor(() => expect(screen.getByText('KES 10.00B')).toBeVisible());
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Allocated KES 10.00B' })).toBeVisible());
 });
 
 it('reports an unavailable reporting period when discovery succeeds with no selectable year', async () => {
@@ -106,21 +106,21 @@ it('distinguishes a failed read from absence and bounds retry while recovering f
   expect(screen.getByRole('status')).toHaveTextContent('Tracing the money');
   expect(readFlow).toHaveBeenCalledTimes(2);
   await act(async () => pending.resolve(flow));
-  await waitFor(() => expect(screen.getByText('KES 10.00B')).toBeVisible());
-  await waitFor(() => expect(screen.getByText('KES 6.00B')).toBeVisible());
-  expect(screen.getByText(/procurement-encumbered/)).toBeVisible();
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Allocated KES 10.00B' })).toBeVisible());
+  await waitFor(() => expect(screen.getByText('Spent KES 6.00B (60%)')).toBeVisible());
+  expect(screen.getAllByText(/Reported procurement commitments KES/)[0]).toBeVisible();
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 });
 
 it('keeps year selection available on failure and restores the selected cached period', async () => {
-  mount(); await waitFor(() => expect(screen.getByText('KES 10.00B')).toBeVisible());
+  mount(); await waitFor(() => expect(screen.getByRole('button', { name: 'Allocated KES 10.00B' })).toBeVisible());
   readFlow.mockRejectedValueOnce(new Error('Synthetic second period failure'));
   fireEvent.change(screen.getByRole('combobox'), { target: { value: 'FY2024/25' } });
   expect(await screen.findByRole('alert')).toBeVisible();
   expect(screen.queryByText('KES 10.00B')).not.toBeInTheDocument();
   expect(screen.getByRole('combobox')).toHaveValue('FY2024/25');
   fireEvent.change(screen.getByRole('combobox'), { target: { value: years.default } });
-  await waitFor(() => expect(screen.getByText('KES 10.00B')).toBeVisible());
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Allocated KES 10.00B' })).toBeVisible());
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 });
 
