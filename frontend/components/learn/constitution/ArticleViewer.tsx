@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRight, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useId, useRef, type Ref } from 'react';
 
+import ArticleShare from './ArticleShare';
 import { highlightSearch, renderProse, type ReferenceTarget } from './prose';
 
 export type ReadingMode = 'plain' | 'official';
@@ -180,6 +181,8 @@ export default function ArticleViewer({
           </p>
         </details>
       )}
+
+      <ArticleShare key={article.number} articleNumber={article.number} articleTitle={article.title} />
 
       <footer className='flex items-center justify-between gap-3 border-t border-neutral-border pt-1 text-sm font-semibold text-gov-sage'>
         {prevArticle != null && (

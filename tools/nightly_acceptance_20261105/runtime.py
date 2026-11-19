@@ -195,7 +195,8 @@ def native_inventory():
     return result
 
 
-def verify(lock_path=LOCK, native_profile=None):
+def verify_python(lock_path=LOCK):
+    """Verify the Python installation without inspecting system PDF/OCR/JVM tools."""
     lock = load_lock(lock_path)
     target_verified(lock)
     site_roots = {Path(sysconfig.get_path(key)) for key in ('purelib', 'platlib')}
@@ -206,6 +207,14 @@ def verify(lock_path=LOCK, native_profile=None):
     require({n: r['version'] for n, r in actual.items()} == expected, 'installed packages differ from lock')
     subprocess.run([sys.executable, '-I', '-B', '-m', 'pip', '--isolated', 'check'],
                    env=environment(), check=True, timeout=60)
+    return {'lock_sha256': sha256(lock_path), 'python': platform.python_version(),
+            'executable_sha256': sha256(sys.executable), 'stdlib_sha256': stdlib_identity(),
+            'soabi': sysconfig.get_config_var('SOABI'), 'system': platform.system(),
+            'machine': platform.machine(), 'packages': actual}
+
+
+def verify(lock_path=LOCK, native_profile=None):
+    python = verify_python(lock_path)
     native = native_inventory()
     if native_profile is not None:
         expected_native = read_json(native_profile)
@@ -215,10 +224,7 @@ def verify(lock_path=LOCK, native_profile=None):
         require(identity(native) == identity(expected_native['native']), 'native runtime differs from reviewed profile')
     return {'native_profile_sha256': sha256(native_profile) if native_profile else None,
             'qualification': 'PYTHON_AND_REVIEWED_NATIVE' if native_profile else 'PYTHON_ONLY_NATIVE_PENDING',
-            'lock_sha256': sha256(lock_path), 'python': platform.python_version(),
-            'executable_sha256': sha256(sys.executable), 'stdlib_sha256': stdlib_identity(), 'soabi': sysconfig.get_config_var('SOABI'),
-            'system': platform.system(), 'machine': platform.machine(),
-            'packages': actual, 'native': native}
+            **python, 'native': native}
 
 
 def payloads_verified(lock):
@@ -409,7 +415,7 @@ def acquire(lock_path, wheelhouse):
     return wheels_verified(lock, wheelhouse)
 
 
-def install(lock_path, wheelhouse, destination):
+def install(lock_path, wheelhouse, destination, *, python_only=False):
     lock = load_lock(lock_path)
     target_verified(lock)
     wheels_verified(lock, wheelhouse)
@@ -437,25 +443,34 @@ def install(lock_path, wheelhouse, destination):
     subprocess.run([*base, '--force-reinstall', '-r', str(pins)],
                    check=True, env=environment(), timeout=300)
     # ensurepip may add setuptools; exact verification refuses any extra distribution.
-    subprocess.run([str(python), '-B', str(Path(__file__).resolve()), 'verify',
+    action = 'verify-python' if python_only else 'verify'
+    subprocess.run([str(python), '-B', str(Path(__file__).resolve()), action,
                     '--lock', str(Path(lock_path).resolve())], check=True, env=environment(), timeout=120)
     return str(python)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=('acquire', 'wheels', 'install', 'verify'))
+    parser.add_argument('action', choices=('acquire', 'wheels', 'install', 'verify', 'verify-python'))
     parser.add_argument('--lock', type=Path, default=LOCK)
     parser.add_argument('--wheelhouse', type=Path)
     parser.add_argument('--venv', type=Path)
     parser.add_argument('--native-profile', type=Path)
+    parser.add_argument('--python-only', action='store_true', help='verify only Python during install')
     args = parser.parse_args()
+    if args.python_only and args.action != 'install':
+        parser.error('--python-only requires install')
+    if args.native_profile and args.action != 'verify':
+        parser.error('--native-profile requires verify')
     if args.action == 'acquire':
         print(acquire(args.lock, args.wheelhouse))
     elif args.action == 'install':
-        print(install(args.lock, args.wheelhouse, args.venv))
+        print(install(args.lock, args.wheelhouse, args.venv, python_only=args.python_only))
     elif args.action == 'wheels':
         print(wheels_verified(load_lock(args.lock), args.wheelhouse))
+    elif args.action == 'verify-python':
+        verify_python(args.lock)
+        print('Verified reviewed Python runtime.')
     else:
         import json
         print(json.dumps(verify(args.lock, args.native_profile), sort_keys=True))
