@@ -28,8 +28,8 @@ for (const path of ['/counties', '/counties/001', '/sources', '/accountability/u
       await expect(page.getByRole('combobox', { name: 'Fiscal year', exact: true })).toHaveValue('FY2025/26 9M');
       failed = false;
       await unavailable.getByRole('button', { name: 'Try again' }).click();
-      await expect(page.getByText('Budget Allocation', { exact: true }).locator('..')).toContainText('KES 10.00B');
-      await expect(page.getByText(/procurement-encumbered|earmarked for contracts/i)).toBeVisible();
+      await expect(page.getByRole('button', { name: /^Allocated KES/ })).toContainText('KES 10.00B');
+      await expect(page.getByText(/Reported procurement commitments KES/).first()).toBeVisible();
       await expect(unavailable).toHaveCount(0);
       expect(calls).toBe(2);
     } else {

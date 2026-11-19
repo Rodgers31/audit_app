@@ -62,12 +62,14 @@ for (const width of [375, 1280]) {
 
       reject = false;
       await alert.getByRole('button', { name: 'Reload section', exact: true }).press('Enter');
-      await expect(page.getByText(/procurement-encumbered/)).toBeVisible();
+      await expect(page.getByText(/Reported procurement commitments KES/).first()).toBeVisible();
       expect(moneyCalls).toBeGreaterThan(0);
       await expect(page.getByRole('combobox', { name: 'Fiscal year', exact: true })).toHaveValue('FY2024/25');
-      await expect(page.getByText('Budget Allocation', { exact: true }).locator('..')).toContainText('KES 8.00B');
+      await expect(page.getByRole('button', { name: /^Allocated KES/ })).toContainText('KES 8.00B');
+      await page.getByRole('button', { name: 'Source: Synthetic CBIRR browser acceptance publication' }).click();
       await expect(page.getByRole('link', { name: 'Synthetic CBIRR browser acceptance publication', exact: true }))
         .toHaveAttribute('href', 'https://example.invalid/auditgava-local-budget.pdf');
+      await page.keyboard.press('Escape');
       await expect(alert).toHaveCount(0);
       if (entry === 'deep-link') expect(new URL(page.url()).hash).toBe('#recovery-anchor');
       expect(await page.evaluate(() => history.length)).toBe(historyLength);
@@ -75,7 +77,7 @@ for (const width of [375, 1280]) {
       await page.goto('/counties');
       await page.goBack();
       await expect(page).toHaveURL(/tab=money/);
-      await expect(page.getByText(/procurement-encumbered/)).toBeVisible();
+      await expect(page.getByText(/Reported procurement commitments KES/).first()).toBeVisible();
       await page.goForward();
       await expect(page).toHaveURL(/\/counties$/);
     });

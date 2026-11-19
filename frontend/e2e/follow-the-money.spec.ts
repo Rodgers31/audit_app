@@ -1,24 +1,8 @@
-/**
- * Follow the Money — waterfall on the county detail page.
- *
- * Primary regression guards:
- *   - The "Funds Released" stage (labelled as a proxy via
- *     `committed_amount`) must stay OUT of the waterfall — it was
- *     dropped in v1.1.1 because it produced impossible numbers
- *     (spent > released).
- *   - The waterfall must be exactly 3 stages: Allocated / Spent /
- *     Flagged.
- *   - The "Unspent Funds" gap pill must carry the clarifier sub-label
- *     "Not missing" so readers can't confuse it with missing money.
- *   - The CoB source-document title must be a clickable link.
- *   - The FY selector must NOT show "FY FY…" (double prefix regression).
- *   - The default FY follows the API-reported period, rather than a
- *     wall-clock guess that could select a year with no data.
- */
+/** County Money flow, reporting periods, coverage and the separate national page. */
 import { expect, test, type APIRequestContext } from '@playwright/test';
 import type { CountyFiscalYears } from '../lib/utils';
 import type { MoneyFlowData } from '../types';
-import { countyTabs, waterfall, waitForAppReady } from './utils/selectors';
+import { countyTabs, waitForAppReady } from './utils/selectors';
 
 const COUNTY_ID = '001'; // Nairobi — has data across FYs
 
@@ -38,32 +22,22 @@ async function reportedYears(request: APIRequestContext) {
   return { years, defaultYear, metadata };
 }
 
-test.describe('County detail — Follow the Money waterfall', () => {
+test.describe('County detail — Money flow', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(`/counties/${COUNTY_ID}`);
     await waitForAppReady(page);
     await countyTabs.followTheMoney(page).click();
     // Wait for the waterfall to render
-    await expect(waterfall.stage(page, 'Allocated')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('button', { name: /^Allocated KES/ })).toBeVisible({ timeout: 15_000 });
   });
 
-  test('renders exactly three stages: Allocated / Spent / Flagged', async ({ page }) => {
-    await expect(waterfall.stage(page, 'Allocated')).toBeVisible();
-    await expect(waterfall.stage(page, 'Spent')).toBeVisible();
-    await expect(waterfall.stage(page, 'Flagged')).toBeVisible();
-
-    // The misleading 'Released' stage must be absent
-    const releasedStage = page
-      .locator('[class*="rounded"]')
-      .filter({ hasText: /^RELEASED|Funds Released/i });
-    await expect(releasedStage).toHaveCount(0);
-  });
-
-  test('Unspent Funds gap carries the "Not missing" clarifier', async ({ page }) => {
-    await expect(page.getByText(/Unspent Funds/i).first()).toBeVisible();
-    await expect(
-      page.getByText(/Not missing|not yet paid out at report time/i).first()
-    ).toBeVisible();
+  test('shows allocated, spent and unspent on a common flow without a release or ring', async ({ page }) => {
+    const panel = page.getByRole('tabpanel', { name: 'Money', exact: true });
+    await expect(panel.getByRole('button', { name: /^Allocated KES/ })).toBeVisible();
+    await expect(panel.getByRole('button', { name: /^Spent KES/ })).toBeVisible();
+    await expect(panel.getByText(/Unspent KES/)).toBeVisible();
+    await expect(panel.getByText(/Not yet paid out at report time/i)).toBeVisible();
+    await expect(panel.getByText(/Funds Released|Efficiency/)).toHaveCount(0);
   });
 
   test('CoB source document is a clickable link with HTTPS URL', async ({ page, request }) => {
@@ -75,6 +49,7 @@ test.describe('County detail — Follow the Money waterfall', () => {
     const flow: MoneyFlowData = await response.json();
     expect(flow.source_document_title).toBeTruthy();
     expect(flow.source_document_url).toBeTruthy();
+    await page.getByRole('button', { name: 'Source: ' + flow.source_document_title! }).click();
     const source = page.getByRole('link', { name: flow.source_document_title!, exact: true });
     await expect(source).toBeVisible({ timeout: 10_000 });
     const href = await source.getAttribute('href');
@@ -162,9 +137,9 @@ test.describe('Follow the Money — year selector', () => {
       (url) => url.pathname === path && url.searchParams.get('year') === year,
       (route) => route.fulfill({ json: flow })
     );
-    const allocated = page.getByText('Budget Allocation', { exact: true }).locator('..');
-    const spent = page.getByText('Actual Expenditure', { exact: true }).locator('..');
-    const flagged = page.getByText('Auditor Flagged', { exact: true }).locator('..');
+    const allocated = page.getByRole('button', { name: /^Allocated KES/ });
+    const spent = page.getByRole('button', { name: /^Spent KES/ });
+    const flagged = page.getByText(/^Recorded finding amounts for/);
     await expect(allocated).toContainText('KES');
     const initialAllocation = await allocated.textContent();
     const responsePromise = page.waitForResponse((response) => {
@@ -178,11 +153,8 @@ test.describe('Follow the Money — year selector', () => {
     await expect(allocated).toContainText('KES 20.00B');
     await expect(spent).toContainText('KES 12.00B');
     await expect(flagged).toContainText('KES 1.00B');
-    await expect(page.getByText('Unspent Funds', { exact: true }).locator('..')).toContainText(
-      'KES 8.00B'
-    );
-    await expect(page.getByText('60%', { exact: true })).toBeVisible();
-    await expect(page.getByText('Fair Efficiency', { exact: true })).toBeVisible();
+    await expect(spent).toContainText('Unspent KES 8.00B');
+    await expect(page.getByText(/spent 60% of its allocation/)).toBeVisible();
 
     await select.selectOption(metadata.default!);
     await expect(select).toHaveValue(metadata.default!);
@@ -491,15 +463,12 @@ test.describe('Follow the Money — national page (/transparency)', () => {
 });
 
 test.describe('Follow the Money — efficiency + provenance', () => {
-  test('efficiency score is rendered as a percentage ring', async ({ page }) => {
+  test('the paid share is a plain-language statement', async ({ page }) => {
     await page.goto(`/counties/${COUNTY_ID}`);
     await waitForAppReady(page);
     await countyTabs.followTheMoney(page).click();
-
-    await expect(page.getByText('60%', { exact: true })).toBeVisible();
-    await expect(
-      page.getByText(/Good Efficiency|Fair Efficiency|Low Efficiency/i).first()
-    ).toBeVisible();
+    await expect(page.getByText(/spent 60% of its allocation/)).toBeVisible();
+    await expect(page.getByText(/Efficiency/)).toHaveCount(0);
   });
 
   test('committed-amount note is shown when present', async ({ page }) => {
@@ -510,7 +479,7 @@ test.describe('Follow the Money — efficiency + provenance', () => {
     // Copy from FollowTheMoney.tsx — regression guard if the footer gets
     // refactored away by accident.
     await expect(
-      page.getByText(/procurement-encumbered|earmarked for contracts/i)
+      page.getByText(/Reported procurement commitments KES/).first()
     ).toBeVisible({ timeout: 10_000 });
   });
 });
@@ -554,7 +523,7 @@ test.describe('Follow the Money — read states', () => {
         await expect(panel.getByText(emptyMessage, { exact: true })).toHaveCount(0);
         await expect(panel.locator('[data-money-stage]')).toHaveCount(0);
         expect(calls).toBe(1);
-        const picker = panel.getByRole('combobox', { name: 'Fiscal year', exact: true });
+        const picker = panel.getByRole('combobox');
         await expect(picker).toHaveValue(metadata.default!);
         const retry = panel.getByRole('button', { name: retryName, exact: true });
         await retry.focus();
@@ -609,7 +578,7 @@ for (const width of [375, 1280]) {
     expect(moneyCalls).toBe(0);
     await expect(panel.getByText('No money flow data available for this period.')).toHaveCount(0);
     await panel.getByRole('button', { name: 'Try again' }).click();
-    await expect(panel.getByText(/procurement-encumbered/)).toBeVisible();
+    await expect(panel.getByText(/Reported procurement commitments KES/).first()).toBeVisible();
     await expect(panel.getByRole('combobox')).toHaveValue('FY2025/26 9M');
     expect(yearsCalls).toBe(2);
     expect(moneyCalls).toBe(1);

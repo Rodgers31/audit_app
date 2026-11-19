@@ -1,451 +1,193 @@
 'use client';
 
+import ChartReadout from '@/components/charts/ChartReadout';
+import InfoSheet from '@/components/ui/InfoSheet';
+import { countyMoneyAmounts, countySpendShare } from '@/components/county/countyMoneyFlow';
+import styles from '@/components/county/CountyMoneyFlow.module.css';
+import { evidenceUrl } from '@/lib/evidence/qualification';
 import { useLang } from '@/lib/i18n/LangProvider';
-
+import { COUNTY_MONEY_MESSAGES } from '@/lib/i18n/messages/countyDetail';
+import { fmtKES } from '@/lib/utils';
+import { MoneyFlowData } from '@/types';
+import { useEffect, useId, useRef, useState, type MouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { auditAmountCoverageNote } from './transparency/moneyFlowPresentation';
-import { MoneyFlowData, MoneyFlowStage } from '@/types';
-import { motion } from 'framer-motion';
-import { AlertTriangle, ArrowDown, Ban, ChevronDown, Loader2, TrendingDown } from 'lucide-react';
-import React, { useMemo } from 'react';
 
-/* ═══════════ Helpers ═══════════ */
-
-function fmtKES(n: number | null | undefined): string {
-  if (n == null) return '—';
-  if (n === 0) return 'KES 0';
-  const abs = Math.abs(n);
-  if (abs >= 1e12) return `KES ${(n / 1e12).toFixed(2)}T`;
-  if (abs >= 1e9) return `KES ${(n / 1e9).toFixed(2)}B`;
-  if (abs >= 1e6) return `KES ${(n / 1e6).toFixed(1)}M`;
-  if (abs >= 1e3) return `KES ${(n / 1e3).toFixed(0)}K`;
-  return `KES ${n.toLocaleString()}`;
-}
-
-const STAGE_CONFIG: Record<
-  string,
-  { color: string; bgLight: string; border: string; icon: string }
-> = {
-  Allocated: {
-    color: 'text-blue-700',
-    bgLight: 'bg-blue-50',
-    border: 'border-blue-200',
-    icon: '💰',
-  },
-  Released: {
-    color: 'text-emerald-700',
-    bgLight: 'bg-emerald-50',
-    border: 'border-emerald-200',
-    icon: '🏦',
-  },
-  Spent: {
-    color: 'text-amber-700',
-    bgLight: 'bg-amber-50',
-    border: 'border-amber-200',
-    icon: '📊',
-  },
-  Flagged: {
-    color: 'text-red-700',
-    bgLight: 'bg-red-50',
-    border: 'border-red-200',
-    icon: '🚩',
-  },
-};
-
-const GAP_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  'Withheld/Delayed': { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-300' },
-  'Unspent Funds': { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-300' },
-  'Irregular/Unsupported Expenditure': {
-    bg: 'bg-red-50',
-    text: 'text-red-700',
-    border: 'border-red-300',
-  },
-};
-
-/* ═══════════ Stage Card ═══════════ */
-
-function StageCard({
-  stage,
-  maxAmount,
-  index,
-}: {
-  stage: MoneyFlowStage;
-  maxAmount: number;
-  index: number;
-}) {
-  const { lang } = useLang();
-  const config = STAGE_CONFIG[stage.stage] || STAGE_CONFIG.Allocated;
-  const barWidth =
-    stage.amount && maxAmount > 0 ? Math.max((stage.amount / maxAmount) * 100, 8) : 0;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.3, delay: index * 0.1 }}
-      data-money-stage
-      className={`${config.bgLight} border ${config.border} rounded-xl p-4 relative`}>
-      <div className='flex items-start justify-between gap-3'>
-        <div className='flex-1 min-w-0'>
-          <div className='flex items-center gap-2 mb-1'>
-            <span data-money-icon aria-hidden='true' className='text-lg'>{config.icon}</span>
-            <span className={`text-xs font-semibold uppercase tracking-wider ${config.color}`}>
-              {stage.stage}
-            </span>
-          </div>
-          <div className='text-sm text-gray-600 dark:text-neutral-muted mb-1'>{stage.label}</div>
-          {stage.data_unavailable ? (
-            <div className='flex items-center gap-1.5 text-gray-400 dark:text-neutral-muted/80'>
-              <Ban size={14} />
-              <span className='text-sm italic'>Data not available</span>
-            </div>
-          ) : (
-            <div className={`text-xl font-bold ${config.color} tabular-nums`}>
-              {fmtKES(stage.amount)}
-            </div>
-          )}
-          {stage.amount_coverage && (
-            <div className='text-xs text-gray-600 dark:text-neutral-muted mt-1'>
-              {auditAmountCoverageNote(stage.amount_coverage, lang)}
-            </div>
-          )}
-          {stage.source && (
-            <div className='text-[11px] text-gray-400 dark:text-neutral-muted/80 mt-1'>Source: {stage.source}</div>
-          )}
-        </div>
-      </div>
-
-      {/* Proportional bar */}
-      {!stage.data_unavailable && stage.amount != null && stage.amount > 0 && (
-        <div className='mt-3 h-2 bg-gray-200/60 rounded-full overflow-hidden'>
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${barWidth}%` }}
-            transition={{ duration: 0.6, delay: index * 0.1 + 0.2, ease: 'easeOut' }}
-            className={`h-full rounded-full ${
-              stage.stage === 'Flagged'
-                ? 'bg-red-500'
-                : stage.stage === 'Spent'
-                  ? 'bg-amber-500'
-                  : stage.stage === 'Released'
-                    ? 'bg-emerald-500'
-                    : 'bg-blue-500'
-            }`}
-          />
-        </div>
-      )}
-    </motion.div>
-  );
-}
-
-/* ═══════════ Gap Indicator ═══════════ */
-
-/**
- * One-line explainer for each gap label. The gaps in our waterfall have
- * subtly different meanings and an earlier version of the UI let readers
- * (understandably) mistake "Unspent Funds" for "missing money". It isn't:
- * unspent just means the budget line hadn't been paid out YET at the
- * time the CoB report was generated (these are often mid-year H1 reports,
- * so some gap is always expected).
- */
-const GAP_SUBLABEL: Record<string, string> = {
-  'Unspent Funds':
-    'Budget still available — not yet paid out at report time. Not missing.',
-  'Withheld/Delayed':
-    'Allocated but not released by Treasury at report time.',
-  'Irregular/Unsupported Expenditure':
-    'Recorded amounts in cited audit findings; may include balances discussed, not proven loss.',
-};
-
-function GapIndicator({
-  gap,
-  label,
-  index,
-}: {
-  gap: number;
-  label: string;
-  index: number;
-}) {
-  const colors = GAP_COLORS[label] || GAP_COLORS['Unspent Funds'];
-  const sublabel = GAP_SUBLABEL[label];
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.2, delay: index * 0.1 + 0.15 }}
-      className='flex items-start gap-3 px-4 py-2'>
-      {/* Vertical connector line */}
-      <div className='flex flex-col items-center pt-1.5'>
-        <ArrowDown size={16} className='text-gray-300 dark:text-neutral-muted/60' />
-      </div>
-
-      {/* Gap pill */}
-      <div
-        data-money-gap
-        className={`flex flex-col gap-0.5 px-3 py-1.5 rounded-lg border border-dashed ${colors.bg} ${colors.border}`}>
-        <div className='flex items-center gap-2'>
-          <TrendingDown size={14} className={colors.text} />
-          <span className={`text-xs font-semibold ${colors.text}`}>{label}</span>
-          <span className={`text-sm font-bold ${colors.text} tabular-nums`}>
-            {fmtKES(gap)}
-          </span>
-        </div>
-        {sublabel && (
-          <p className='text-[11px] text-gray-500 dark:text-neutral-muted/80 leading-snug max-w-xs pl-5'>
-            {sublabel}
-          </p>
-        )}
-      </div>
-    </motion.div>
-  );
-}
-
-/* ═══════════ Efficiency Score Ring ═══════════ */
-
-function EfficiencyRing({ score }: { score: number }) {
-  const size = 96;
-  const stroke = 6;
-  const r = (size - stroke) / 2;
-  const circ = 2 * Math.PI * r;
-  const offset = circ - (Math.min(score, 100) / 100) * circ;
-  const color = score >= 70 ? '#22c55e' : score >= 50 ? '#f59e0b' : '#ef4444';
-  const label = score >= 70 ? 'Good' : score >= 50 ? 'Fair' : 'Poor';
-
-  return (
-    <div className='flex flex-col items-center'>
-      <div
-        className='relative inline-flex items-center justify-center'
-        style={{ width: size, height: size }}>
-        <svg width={size} height={size} className='-rotate-90'>
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={r}
-            fill='none'
-            stroke='#f3f4f6'
-            strokeWidth={stroke}
-          />
-          <motion.circle
-            cx={size / 2}
-            cy={size / 2}
-            r={r}
-            fill='none'
-            stroke={color}
-            strokeWidth={stroke}
-            strokeLinecap='round'
-            strokeDasharray={circ}
-            initial={{ strokeDashoffset: circ }}
-            animate={{ strokeDashoffset: offset }}
-            transition={{ duration: 1, delay: 0.5, ease: 'easeOut' }}
-          />
-        </svg>
-        <div className='absolute text-center'>
-          <div className='text-xl font-bold text-gray-900 dark:text-neutral-text'>{score.toFixed(0)}%</div>
-        </div>
-      </div>
-      <div className='text-xs font-semibold mt-1' style={{ color }}>
-        {label} Efficiency
-      </div>
-    </div>
-  );
-}
-
-/* ═══════════ Main Component ═══════════ */
-
-interface FollowTheMoneyProps {
+export default function FollowTheMoney({ data, isLoading, findingsCount, onOpenAudit }: {
   data: MoneyFlowData | undefined;
   isLoading?: boolean;
-  compact?: boolean;
-}
+  findingsCount?: number;
+  onOpenAudit?: () => void;
+}) {
+  const { lang, t } = useLang();
+  const words = (key: keyof typeof COUNTY_MONEY_MESSAGES) => COUNTY_MONEY_MESSAGES[key][lang];
+  const chart = useRef<HTMLDivElement>(null);
+  const helpId = useId();
+  const [preview, setPreview] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
+  const active = preview ?? selected;
 
-export default function FollowTheMoney({ data, isLoading, compact }: FollowTheMoneyProps) {
-  const { t } = useLang();
-  const maxAmount = useMemo(() => {
-    if (!data?.stages) return 0;
-    // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- Math.max over stage amounts to scale the chart axis
-    return Math.max(...data.stages.map((s) => s.amount || 0));
-  }, [data]);
+  useEffect(() => {
+    if (!selected) return;
+    const clear = (event: PointerEvent) => {
+      if (event.target instanceof Node && !chart.current?.contains(event.target)) {
+        setPreview(null);
+        setSelected(null);
+      }
+    };
+    document.addEventListener('pointerdown', clear);
+    return () => document.removeEventListener('pointerdown', clear);
+  }, [selected]);
 
-  if (isLoading) {
-    return (
-      <div role='status' className='flex items-center justify-center py-16'>
-        <Loader2 aria-hidden='true' className='w-6 h-6 shrink-0 animate-spin text-gov-sage' />
-        <span className='ml-3 text-gov-dark/60 dark:text-white/60 font-medium'>{t('county.money.loading_read')}</span>
-      </div>
-    );
+  if (isLoading) return <p role='status' className='py-8 text-sm text-neutral-muted'>{t('county.money.loading_read')}</p>;
+  if (!data?.stages?.length) return <p role='status' className='py-8 text-sm text-neutral-muted'>{t('county.money.empty')}</p>;
+
+  const values = countyMoneyAmounts(data);
+  const { allocated, spent, unspent, overspent, ratio, committed, flagged, chartable, scale } = values;
+  const number = new Intl.NumberFormat(lang === 'sw' ? 'sw-KE' : 'en-KE', { maximumFractionDigits: 2 });
+  const exact = (value: number | null) => value == null || !Number.isFinite(value) ? null : `KES ${number.format(value)}`;
+  const amount = (value: number | null) => {
+    if (value == null) return t('foundation.no_chart_value');
+    const absolute = Math.abs(value);
+    return absolute >= 1e9 && absolute < 1e12 ? `KES ${(value / 1e9).toFixed(2)}B` : fmtKES(value);
+  };
+  const year = data.fiscal_year;
+  let takeaway = words('unavailable_verdict').replace('{year}', year);
+  if (overspent != null && allocated != null && allocated >= 0 && spent != null && spent >= 0) {
+    takeaway = words('overspend_verdict').replace('{amount}', amount(overspent)).replace('{year}', year);
+  } else if (ratio != null) {
+    takeaway = words('verdict').replace('{county}', data.county_name).replace('{share}', countySpendShare(ratio)).replace('{year}', year);
+  } else if (allocated === 0 && spent === 0) {
+    takeaway = words('zero_verdict').replace('{year}', year);
   }
-
-  if (!data || !data.stages || data.stages.length === 0) {
-    return (
-      <div role='status' className='text-center py-12 text-gray-600 dark:text-neutral-muted'>
-        <AlertTriangle aria-hidden='true' size={28} className='mx-auto mb-2 text-gray-400 dark:text-neutral-muted/60' />
-        <p className='text-sm'>{t('county.money.empty')}</p>
-      </div>
-    );
+  const entries = [
+    { id: 'allocated', label: words('allocated'), value: exact(allocated) },
+    { id: 'spent', label: words('spent'), value: exact(spent) },
+    { id: overspent == null ? 'unspent' : 'overspent', label: words(overspent == null ? 'unspent' : 'overspent'), value: exact(overspent ?? unspent) },
+    { id: 'committed', label: words('committed'), value: exact(committed) },
+    { id: 'flagged', label: words('flagged'), value: exact(flagged) },
+  ];
+  if (typeof data.total_waste_estimate === 'number' && Number.isFinite(data.total_waste_estimate) && data.total_waste_estimate !== flagged) {
+    entries.push({ id: 'audit_subtotal', label: words('audit_subtotal'), value: exact(data.total_waste_estimate) });
   }
+  const coverage = data.audit_amount_coverage ?? data.stages.find(stage => stage.stage === 'Flagged')?.amount_coverage;
+  const coverageNote = coverage?.reason === 'no_findings'
+    ? words('no_findings').replace('{year}', year) : auditAmountCoverageNote(coverage, lang);
+  const source = data.source_document_title || data.stages.find(stage => stage.stage === 'Allocated')?.source;
+  const sourceUrl = evidenceUrl(data.source_document_url) ??
+    evidenceUrl(data.stages.find(stage => stage.stage === 'Allocated')?.source_doc);
+  const bottomIds = unspent != null && unspent > 0 ? ['spent', 'unspent'] : ['spent'];
 
-  const hasAnyData = data.stages.some((s) => !s.data_unavailable);
+  const toggle = (id: string) => {
+    setPreview(null);
+    setSelected(current => current === id ? null : id);
+  };
+  const bottomAt = (event: MouseEvent<HTMLButtonElement> | ReactPointerEvent<HTMLButtonElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    return spent != null && scale != null && (event.clientX - bounds.left) / bounds.width > spent / scale
+      && unspent != null && unspent > 0 ? 'unspent' : 'spent';
+  };
 
   return (
-    <div className='space-y-1'>
-      {/* Header row with efficiency score */}
-      {!compact && (
-        <div className='flex items-center justify-between mb-4'>
-          <div>
-            <h3 className='text-sm font-semibold text-gray-800 dark:text-neutral-text'>{data.county_name}</h3>
-            <p className='text-xs text-gray-500 dark:text-neutral-muted/80'>
-              FY {data.fiscal_year?.startsWith('FY') ? data.fiscal_year.slice(2) : data.fiscal_year}
-            </p>
+    <div className='min-w-0 space-y-3'>
+      <ChartReadout takeaway={takeaway} columns={[words('flow'), words('amount')]} data={entries} activeId={active}>
+        {chartable && scale != null && allocated != null && spent != null && (
+          <div ref={chart} className={styles.flow} onKeyDown={event => {
+            if (event.key === 'Escape') { setPreview(null); setSelected(null); }
+          }}>
+            <button type='button' className={styles.row} aria-pressed={selected === 'allocated'}
+              data-highlighted={active === 'allocated'}
+              onFocus={() => setPreview('allocated')} onBlur={() => setPreview(null)}
+              onPointerEnter={event => { if (event.pointerType === 'mouse') setPreview('allocated'); }}
+              onPointerLeave={event => { if (event.pointerType === 'mouse') setPreview(null); }}
+              onClick={() => toggle('allocated')}>
+              <span className={styles.rowLabel}>{words('allocated')} {amount(allocated)}</span>
+              <span className={styles.track} aria-hidden='true'>
+                <span className={styles.allocation} style={{ width: `${allocated / scale * 100}%` }} />
+              </span>
+            </button>
+            <span id={helpId} className='sr-only'>{words('arrows')}</span>
+            <button type='button' className={styles.row}
+              data-overspent={overspent != null || undefined}
+              aria-describedby={helpId} aria-pressed={selected === 'spent' || selected === 'unspent'}
+              data-highlighted={active === 'spent' || active === 'unspent'}
+              onFocus={() => setPreview(selected === 'unspent' ? 'unspent' : 'spent')} onBlur={() => setPreview(null)}
+              onPointerMove={event => { if (event.pointerType === 'mouse') setPreview(bottomAt(event)); }}
+              onPointerLeave={event => { if (event.pointerType === 'mouse') setPreview(null); }}
+              onClick={event => toggle(event.detail === 0 ? (preview === 'unspent' ? 'unspent' : 'spent') : bottomAt(event))}
+              onKeyDown={event => {
+                if (['ArrowLeft', 'Home', 'ArrowRight', 'End'].includes(event.key)) {
+                  event.preventDefault();
+                  setPreview(event.key === 'ArrowLeft' || event.key === 'Home' ? 'spent' : bottomIds[bottomIds.length - 1]);
+                }
+              }}>
+              <span className={styles.rowLabel}>{words('spent')} {amount(spent)}{ratio != null && ` (${countySpendShare(ratio)}%)`}</span>
+              <span className={styles.track} aria-hidden='true'>
+                <span className={styles.spent} style={{ width: `${spent / scale * 100}%` }} />
+                {unspent != null && unspent > 0 && <span className={styles.gap} style={{ width: `${unspent / scale * 100}%` }} />}
+              </span>
+              <span className={styles.gapLabel}>{words(overspent == null ? 'unspent' : 'overspent')} {amount(overspent ?? unspent)}</span>
+            </button>
           </div>
-          {data.efficiency_score != null && <EfficiencyRing score={data.efficiency_score} />}
-        </div>
-      )}
+        )}
+        {(allocated != null && allocated < 0 || spent != null && spent < 0) &&
+          <p className={styles.detail}>{words('signed')}</p>}
+        {unspent != null && <p className={styles.detail}>{words('unspent_note')}</p>}
+      </ChartReadout>
 
-      {/* Compact efficiency display */}
-      {compact && data.efficiency_score != null && (
-        <div className='flex items-center justify-end mb-3'>
-          <div className='flex items-center gap-2 bg-gray-50 dark:bg-surface-elevated rounded-lg px-3 py-1.5'>
-            <span className='text-xs text-gray-500 dark:text-neutral-muted/80'>Efficiency:</span>
-            <span
-              className={`text-sm font-bold ${
-                data.efficiency_score >= 70
-                  ? 'text-emerald-600'
-                  : data.efficiency_score >= 50
-                    ? 'text-amber-600'
-                    : 'text-red-600'
-              }`}>
-              {data.efficiency_score.toFixed(1)}%
-            </span>
-          </div>
-        </div>
-      )}
+      <div className={styles.detail}>
+        {committed != null && <p>{words('committed')} {amount(committed)}. {words('commitment_short')}</p>}
+        {coverageNote && <p>{coverageNote}</p>}
+        {flagged != null && <p>{words('selected_period').replace('{year}', year)} · {amount(flagged)}. {words('audit_caveat')}</p>}
+        {typeof findingsCount === 'number' && Number.isInteger(findingsCount) && findingsCount >= 0 &&
+          <p>{words('aggregate').replace('{count}', number.format(findingsCount))}</p>}
+        {onOpenAudit && <button type='button' onClick={onOpenAudit} className='audit-receipt'>{words('audit_link')}</button>}
+      </div>
 
-      {/* Waterfall stages */}
-      {data.stages.map((stage, i) => {
-        // The next stage's gap_from_prev describes the leak BETWEEN stage i and i+1
-        const nextStage = i < data.stages.length - 1 ? data.stages[i + 1] : null;
-        const showGap =
-          nextStage &&
-          nextStage.gap_from_prev != null &&
-          nextStage.gap_from_prev > 0;
-
-        return (
-          <React.Fragment key={stage.stage}>
-            <StageCard stage={stage} maxAmount={maxAmount} index={i} />
-            {showGap && (
-              <GapIndicator
-                gap={nextStage!.gap_from_prev!}
-                label={nextStage!.gap_label || 'Gap'}
-                index={i}
-              />
-            )}
-            {/* Connector arrow when no gap to show */}
-            {!showGap && i < data.stages.length - 1 && (
-              <div className='flex justify-center py-1'>
-                <ArrowDown size={16} className='text-gray-300 dark:text-neutral-muted/60' />
-              </div>
-            )}
-          </React.Fragment>
-        );
-      })}
-
-      {/* Waste summary */}
-      {hasAnyData && data.total_waste_estimate != null && data.total_waste_estimate > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className='bg-red-50 border border-red-200 rounded-xl p-4 mt-3'>
-          <div className='flex items-center gap-3'>
-            <div className='w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0'>
-              <AlertTriangle size={20} className='text-red-600' />
-            </div>
-            <div>
-              <div className='text-sm font-semibold text-red-900'>
-                {fmtKES(data.total_waste_estimate)} in recorded audit finding amounts
-              </div>
-              <div className='text-xs text-red-700'>
-                Amounts may include balances discussed by the Auditor-General; not proven loss or theft
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Committed-to-procurement note (optional) — distinct from "Released"
-          because Treasury disbursements aren't in our data. Showing this as
-          a supplementary figure rather than a waterfall stage is deliberate:
-          it keeps readers from inferring a cause-and-effect "allocated →
-          released → spent" chain that the data doesn't support. */}
-      {hasAnyData && data.committed_amount != null && data.committed_amount > 0 && (
-        <div className='text-xs text-gray-500 dark:text-neutral-muted/80 mt-2 px-1'>
-          Of the spent total, <span className='font-semibold text-gray-700 dark:text-neutral-muted'>{fmtKES(data.committed_amount)}</span>{' '}
-          was procurement-encumbered (earmarked for contracts in progress).
-        </div>
-      )}
-
-      {/* Source provenance — every figure traces back to a specific CoB
-          publication. Surfacing the exact title matters because CoB reports
-          are often half-year or quarterly snapshots, not full-year finals. */}
-      {(data.source_document_title || data.source_document_url) && (
-        <div className='text-[11px] text-gray-500 dark:text-neutral-muted/80 mt-3 pt-3 border-t border-gray-100 dark:border-neutral-border'>
-          <span className='uppercase tracking-wider font-semibold text-gray-400 dark:text-neutral-muted/80 mr-2'>
-            Source
-          </span>
-          {data.source_document_url ? (
-            <a
-              href={data.source_document_url}
-              target='_blank'
-              rel='noopener noreferrer'
-              className='text-gov-forest dark:text-emerald-100 hover:underline'>
-              {data.source_document_title || 'Controller of Budget'}
-            </a>
-          ) : (
-            <span className='text-gray-600 dark:text-neutral-muted'>{data.source_document_title}</span>
-          )}
-        </div>
-      )}
+      <InfoSheet title={words('source')} trigger={props => (
+        <button {...props} type='button' className='audit-receipt text-left' data-figure-evidence='county money flow'
+          onClick={event => { event.currentTarget.focus(); props.onClick(); }}>
+          <span className='h-2 w-2 shrink-0 rounded-full bg-neutral-muted' aria-hidden='true' />
+          {source ? words('source_chip').replace('{source}', source) : words('source_unknown')}
+        </button>
+      )}>
+        <p>{words('source_note')}</p>
+        <p>{year} · {data.budget_source || t('budget.history.unconfirmed')}</p>
+        {source && <p>{source}</p>}
+        {sourceUrl && <a href={sourceUrl} target='_blank' rel='noopener noreferrer' className='inline-flex min-h-11 items-center underline'>{source || t('evidence.open_source')}</a>}
+        <details>
+          <summary className='min-h-11 cursor-pointer py-3 font-semibold'>{t('foundation.technical_details')}</summary>
+          {data.stages.map(stage => {
+            const link = evidenceUrl(stage.source_doc);
+            return <div key={stage.stage} className='space-y-1 border-b border-neutral-border py-2'>
+              <p>{stage.label} · {stage.data_unavailable ? t('foundation.no_chart_value') : exact(stage.amount) ?? t('foundation.no_chart_value')}</p>
+              {stage.source && <p>{stage.source}</p>}
+              {link && <a href={link} target='_blank' rel='noopener noreferrer' className='inline-flex min-h-11 items-center underline'>{t('evidence.open_source')}</a>}
+              {stage.gap_from_prev != null && <p>{stage.gap_label} · {exact(stage.gap_from_prev)}</p>}
+              {stage.amount_coverage && <p>{auditAmountCoverageNote(stage.amount_coverage, lang)}</p>}
+              {stage.amount_coverage?.reason && <p>{stage.amount_coverage.reason.replace(/_/g, ' ')}</p>}
+              {stage.amount_coverage && stage.amount_coverage.withheld_findings > 0 && <p>{words('withheld').replace('{count}', number.format(stage.amount_coverage.withheld_findings))}</p>}
+            </div>;
+          })}
+          {committed != null && <p>{words('committed')} · {exact(committed)}. {words('commitment_note')}</p>}
+          {coverageNote && <p>{coverageNote}</p>}
+          {coverage?.reason && <p>{coverage.reason.replace(/_/g, ' ')}</p>}
+          {coverage && coverage.withheld_findings > 0 && <p>{words('withheld').replace('{count}', number.format(coverage.withheld_findings))}</p>}
+        </details>
+      </InfoSheet>
     </div>
   );
 }
 
-/* ═══════════ Year Selector ═══════════ */
-
-export function YearSelector({
-  value,
-  onChange,
-  years,
-}: {
+export function YearSelector({ value, onChange, years }: {
   value: string;
   onChange: (year: string) => void;
   years: string[];
 }) {
+  const { lang } = useLang();
   return (
-    <div className='relative inline-block'>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        aria-label='Fiscal year'
-        title='Fiscal year'
-        className='text-sm px-3 py-1.5 rounded-lg bg-white dark:bg-surface-base border border-gray-200 dark:border-neutral-border text-gray-700 dark:text-neutral-muted focus:outline-none focus:ring-2 focus:ring-gov-sage/30 focus:border-gov-sage appearance-none pr-8 cursor-pointer'
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'right 8px center',
-        }}>
-        {years.map((y) => {
-          // Backend and util helpers return the FY in two different
-          // formats — some start with "FY" ("FY2024/25"), some don't
-          // ("2024/25"). Strip the prefix before rendering so the
-          // visible label is always exactly one "FY …".
-          const bare = y.startsWith('FY') ? y.slice(2) : y;
-          return (
-            <option key={y} value={y}>
-              FY {bare}
-            </option>
-          );
-        })}
-      </select>
-    </div>
+    <select value={value} onChange={event => onChange(event.target.value)}
+      aria-label={COUNTY_MONEY_MESSAGES.period[lang]} className='audit-control max-w-full bg-surface-base'>
+      {years.map(year => <option key={year} value={year}>FY {year.replace(/^FY\s*/i, '')}</option>)}
+    </select>
   );
 }
