@@ -114,7 +114,7 @@ def qualify():
     root.mkdir(mode=0o700)
     try:
         lock, wheels = prepare(root, revision, None, None)
-        runtime.install(lock, wheels, root / 'writer')
+        runtime.install(lock, wheels, root / 'writer', python_only=True)
         canary(root)
         print(f'Isolated parser provisioned and exercised for {revision}; no production connection.')
     finally:
@@ -156,7 +156,8 @@ def main():
     root.mkdir(mode=0o700)
     lock, wheels = prepare(root, revision, None, None)
     host = root / 'writer'
-    runtime.install(lock, wheels, host)
+    # Native tools execute in the verified parser container exercised by canary().
+    runtime.install(lock, wheels, host, python_only=True)
     canary(root)
     shutil.rmtree(wheels)
     with open(env['GITHUB_PATH'], 'a', encoding='utf-8') as out:

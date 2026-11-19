@@ -180,8 +180,9 @@ jobs:
           INGESTION_SCRATCH="$(mktemp -d -- "$RUNNER_TEMP/ingestion-source-plan.XXXXXXXX")"
           python -B tools/nightly_acceptance_20261105/runtime.py acquire --wheelhouse "$INGESTION_SCRATCH/wheels"
           python -B tools/nightly_acceptance_20261105/runtime.py wheels --wheelhouse "$INGESTION_SCRATCH/wheels"
-          python -B tools/nightly_acceptance_20261105/runtime.py install --wheelhouse "$INGESTION_SCRATCH/wheels" --venv "$INGESTION_SCRATCH/runtime"
-          "$INGESTION_SCRATCH/runtime/bin/python" -B tools/nightly_acceptance_20261105/runtime.py verify
+          # Source planning and health diagnostics do not execute native parsers.
+          python -B tools/nightly_acceptance_20261105/runtime.py install --wheelhouse "$INGESTION_SCRATCH/wheels" --venv "$INGESTION_SCRATCH/runtime" --python-only
+          "$INGESTION_SCRATCH/runtime/bin/python" -B tools/nightly_acceptance_20261105/runtime.py verify-python
           printf '%s\n' "$INGESTION_SCRATCH/runtime/bin" >> "$GITHUB_PATH"
       - name: Validate whitelisted plan
         id: plan
