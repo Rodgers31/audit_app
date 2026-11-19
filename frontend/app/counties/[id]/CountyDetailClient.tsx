@@ -927,7 +927,7 @@ export default function CountyDetailClient() {
               className={styles.reportBody}>
               {tab === id && (
                 <TabErrorBoundary key={`${countyId}:${tab}`} tab={tab}>
-                  <TabContent data={data} />
+                  {tab === 'money' ? <MoneyFlowTab data={data} onOpenAudit={() => handleTabChange('audit')} /> : <TabContent data={data} />}
                 </TabErrorBoundary>
               )}
             </div>

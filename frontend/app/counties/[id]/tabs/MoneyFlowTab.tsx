@@ -2,15 +2,10 @@
 
 import styles from '../../CountyExperience.module.css';
 
-/**
- * MoneyFlowTab — wraps the FollowTheMoney visualization for a specific
- * county + fiscal year. The FollowTheMoney component itself is already
- * a standalone chunk (it pulls in d3/sankey), and by putting it inside
- * a dynamic-imported tab we avoid shipping either until the user clicks
- * "Follow the money".
- */
+/** Fiscal selection and recovery for the lazily loaded county Money report. */
 import FollowTheMoney, { YearSelector } from '@/components/FollowTheMoney';
 import { useLang } from '@/lib/i18n/LangProvider';
+import { COUNTY_MONEY_MESSAGES } from '@/lib/i18n/messages/countyDetail';
 import { useCountyFiscalYears } from '@/lib/react-query';
 import { useCountyMoneyFlow } from '@/lib/react-query/useMoneyFlow';
 import { moneyFlowDefaultYear } from '@/lib/utils';
@@ -18,8 +13,11 @@ import { CountyComprehensive } from '@/types';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 
-export default function MoneyFlowTab({ data: countyData }: { data: CountyComprehensive }) {
-  const { t } = useLang();
+export default function MoneyFlowTab({ data: countyData, onOpenAudit }: {
+  data: CountyComprehensive;
+  onOpenAudit?: () => void;
+}) {
+  const { t, lang } = useLang();
 
   // The year list used to come from /audits/fiscal-years — EVERY fiscal
   // period, including ones with no county budget data — and the default was
@@ -81,24 +79,20 @@ export default function MoneyFlowTab({ data: countyData }: { data: CountyCompreh
       />
     );
   } else {
-    content = <FollowTheMoney data={moneyFlow.data} isLoading={moneyFlow.isPending} />;
+    content = <FollowTheMoney key={`${countyData.id}:${selectedYear}`} data={moneyFlow.data}
+      isLoading={moneyFlow.isPending} findingsCount={countyData.audit?.findings_count} onOpenAudit={onOpenAudit} />;
   }
 
   return (
-    <div className={styles.moneyReport}>
+    <div className={`${styles.moneyReport} w-full min-w-0 max-w-2xl`}>
       {/* Section header — no nested card, just typography */}
       <div className='flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-1'>
         <div>
-          <div className='flex items-center gap-2 mb-1'>
-            <div className='h-6 w-1 rounded-full bg-gov-forest' />
+          <div className='mb-1'>
             <h3 className='text-base font-semibold text-gray-900 dark:text-neutral-text'>
-              {t('county.money.header_prefix')} · {countyData.name}
+              {COUNTY_MONEY_MESSAGES.header[lang]}
             </h3>
           </div>
-          <p className='text-xs text-gray-500 dark:text-neutral-muted/80 ml-3'>
-            {t('county.money.subtitle')}
-            {selectedYear ? ` · ${selectedYear}` : ''}
-          </p>
         </div>
         {/* No selector until the API says which years exist — an empty
             dropdown is a control claiming choices it does not have. */}
@@ -107,7 +101,7 @@ export default function MoneyFlowTab({ data: countyData }: { data: CountyCompreh
         )}
       </div>
 
-      {/* The visualization itself renders its own cards — no wrapper */}
+      {/* Report content stays inside the same width as the reporting-period control. */}
       {content}
     </div>
   );
@@ -121,7 +115,7 @@ function ReadError({ message, retrying, onRetry }: {
   const { t } = useLang();
   return (
     <div role='alert' aria-busy={retrying} className='py-12 text-center text-gray-700 dark:text-neutral-text'>
-      <AlertTriangle aria-hidden='true' size={28} className='mx-auto mb-2 text-amber-600 dark:text-amber-400' />
+      <AlertTriangle aria-hidden='true' size={28} className='mx-auto mb-2 text-signal-caution' />
       <p className='text-sm'>{message}</p>
       <button type='button' onClick={onRetry} disabled={retrying}
         className='mt-3 min-h-11 rounded-lg border border-gray-300 dark:border-white/20 px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gov-forest disabled:opacity-60'>

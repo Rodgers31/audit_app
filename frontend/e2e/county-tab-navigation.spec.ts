@@ -61,11 +61,13 @@ for (const width of [375, 1280]) {
       await expect.poll(() => chunkRequests).toBe(1);
       expect(moneyResponses).toEqual([]);
       releaseChunk();
-      await expect(page.getByText(/procurement-encumbered/)).toBeVisible();
+      await expect(page.getByText(/Reported procurement commitments KES/).first()).toBeVisible();
       await expect(page.getByRole('combobox', { name: 'Fiscal year', exact: true })).toHaveValue('FY2024/25');
-      await expect(page.getByText('Budget Allocation', { exact: true }).locator('..')).toContainText('KES 8.00B');
+      await expect(page.getByRole('button', { name: /^Allocated KES/ })).toContainText('KES 8.00B');
+      await page.getByRole('button', { name: 'Source: Synthetic CBIRR browser acceptance publication' }).click();
       await expect(page.getByRole('link', { name: 'Synthetic CBIRR browser acceptance publication', exact: true }))
         .toHaveAttribute('href', 'https://example.invalid/auditgava-local-budget.pdf');
+      await page.keyboard.press('Escape');
       expect(moneyResponses).toContainEqual({ status: 200, year: 'FY2024/25' });
       expect(tabNavigations).toBe(0);
       expect(await page.evaluate(() => performance.timeOrigin)).toBe(documentOrigin);
@@ -78,7 +80,7 @@ for (const width of [375, 1280]) {
       expect(await page.evaluate(() => history.length)).toBe(historyLength);
 
       await page.reload();
-      await expect(page.getByText(/procurement-encumbered/)).toBeVisible();
+      await expect(page.getByText(/Reported procurement commitments KES/).first()).toBeVisible();
       await expect(countyTabs.followTheMoney(page)).toHaveAttribute('aria-selected', 'true');
       await countyTabs.overview(page).press('Enter');
       await expect(countyTabs.overview(page)).toHaveAttribute('aria-selected', 'true');
@@ -97,12 +99,12 @@ for (const width of [375, 1280]) {
   test(`county tab at ${width}px follows restored query state`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/counties/001?tab=money&fy=FY2024%2F25#from-history');
-    await expect(page.getByText(/procurement-encumbered/)).toBeVisible();
+    await expect(page.getByText(/Reported procurement commitments KES/).first()).toBeVisible();
     await page.evaluate(() => history.pushState(null, '', '/counties/001?tab=budget&fy=FY2024%2F25#from-history'));
     await expect(countyTabs.budgetDebt(page)).toHaveAttribute('aria-selected', 'true');
     await page.goBack();
     await expect(countyTabs.followTheMoney(page)).toHaveAttribute('aria-selected', 'true');
-    await expect(page.getByText(/procurement-encumbered/)).toBeVisible();
+    await expect(page.getByText(/Reported procurement commitments KES/).first()).toBeVisible();
     expect(new URL(page.url()).searchParams.get('fy')).toBe('FY2024/25');
     expect(new URL(page.url()).hash).toBe('#from-history');
   });

@@ -1,0 +1,25 @@
+{
+  "county_id": 1,
+  "county_name": "Nairobi County",
+  "fiscal_year": "FY2025/26 9M",
+  "budget_source": "cob_cbirr",
+  "total_waste_estimate": null,
+  "efficiency_score": 76,
+  "committed_amount": 1290000000,
+  "source_document_title": "Synthetic CBIRR nine-month budget review",
+  "source_document_url": "https://example.invalid/county-budget-9m.pdf",
+  "audit_amount_coverage": {
+    "status": "unavailable",
+    "reason": "no_findings",
+    "total_findings": 0,
+    "findings_with_amount": 0,
+    "findings_without_amount": 0,
+    "findings_with_invalid_amount": 0,
+    "withheld_findings": 0
+  },
+  "stages": [
+    {"stage": "Allocated", "label": "Budget Allocation", "amount": 10080000000},
+    {"stage": "Spent", "label": "Actual Expenditure", "amount": 7670000000, "gap_from_prev": 2410000000, "gap_label": "Unspent Funds"},
+    {"stage": "Flagged", "label": "Auditor Flagged", "amount": null, "data_unavailable": true}
+  ]
+}
