@@ -328,6 +328,8 @@ export interface WithheldFigure {
 }
 
 export interface AuditDashboardSummary {
+  /** Existing publication-gate count, absent on older API responses. */
+  withheld_findings?: number;
   total_irregular_expenditure: WithheldFigure;
   total_unsupported_expenditure: WithheldFigure;
   total_findings: number;
