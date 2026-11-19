@@ -10,7 +10,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[2]
 
 
-@pytest.mark.parametrize('fail', ['', 'acquire', 'wheels', 'install', 'verify'])
+@pytest.mark.parametrize('fail', ['', 'acquire', 'wheels', 'install', 'verify-python'])
 def test_source_plan_provisions_a_private_runtime_before_publishing_path(tmp_path, fail):
     workflow = yaml.safe_load((ROOT / '.github/workflows/seed.yml').read_text())
     script = next(step['run'] for step in workflow['jobs']['source_plan']['steps']
@@ -29,6 +29,8 @@ with open(os.environ['CALLS'], 'a') as log:
     print(action, file=log)
 if action == os.environ['FAIL']:
     sys.exit(42)
+if action == 'verify' or (action == 'install' and '--python-only' not in sys.argv):
+    sys.exit('native inventory exhausted the runner verification budget')
 if action == 'acquire':
     wheels = pathlib.Path(sys.argv[5])
     wheels.mkdir(mode=0o700)  # The real acquire() requires an existing parent.
@@ -48,7 +50,7 @@ elif action == 'install':
                        'CALLS': str(calls), 'FAIL': fail},
         capture_output=True, text=True, timeout=10,
     )
-    order = ['acquire', 'wheels', 'install', 'verify']
+    order = ['acquire', 'wheels', 'install', 'verify-python']
     if fail:
         assert result.returncode == 42, result.stderr
         assert not path_file.exists()
