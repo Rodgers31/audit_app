@@ -435,12 +435,32 @@ def _socket_inodes(pid, remaining):
     return found
 
 
+def _independent_user_process(process, allowed):
+    """Require a separate non-root UID and no serving ancestor."""
+    rows = (process / 'status').read_text().splitlines()
+    uids = next((line.split()[1:] for line in rows if line.startswith('Uid:')), [])
+    if (len(uids) != 4 or len(set(uids)) != 1 or not uids[0].isascii()
+            or not uids[0].isdecimal() or int(uids[0]) in (0, *os.getresuid())):
+        return False
+    # Descendants could inherit a serving descriptor across a UID change.
+    pid = int(process.name)
+    for _ in range(128):
+        if pid in allowed:
+            return False
+        if pid == 0:
+            return True
+        pid = _process(pid)['parent']
+    return False
+
+
 def _listener_scope(allowed):
     """Reject hidden masters/custom servers sharing the actual serving ports.
 
     SO_REUSEPORT creates different inodes, so matching only our inherited socket
-    is insufficient. Inspect every listener on our bound ports and all of its
-    holders. This proof is additional to exact supervisor/child/launch checks.
+    is insufficient. Account for every listener on our bound ports and reject
+    unexpected visible holders. Opaque platform processes run under separate
+    UIDs and outside the application supervisor's descriptor inheritance tree.
+    The deployment must keep listening descriptors inside the serving tree.
     """
     from pathlib import Path
     before = _tcp_listeners()
@@ -449,21 +469,29 @@ def _listener_scope(allowed):
         raise ValueError('Actual serving listener absent')
     ports = {before[inode] for inode in own}
     targets = {inode: port for inode, port in before.items() if port in ports}
+
     def holders():
-        result, remaining = set(), [100000]
+        result, remaining = {inode: set() for inode in targets}, [100000]
         for index, entry in enumerate(Path('/proc').iterdir()):
             if index > 8192:
                 raise ValueError('Kernel process inventory exceeds bound')
             if not entry.name.isdigit():
                 continue
+            pid = int(entry.name)
             try:
-                inodes = _socket_inodes(int(entry.name), remaining)
+                inodes = _socket_inodes(pid, remaining)
             except FileNotFoundError:
                 continue  # An exited non-serving process is not a live holder.
-            if inodes & targets.keys():
-                result.add(int(entry.name))
+            except PermissionError:
+                if not _independent_user_process(entry, allowed):
+                    raise
+                continue
+            for inode in inodes & targets.keys():
+                result[inode].add(pid)
         return result
+
     first, second = holders(), holders()
     after = {inode: port for inode, port in _tcp_listeners().items() if port in ports}
-    if first != second or after != targets or first != set(allowed):
+    if (first != second or after != targets or not all(first.values())
+            or set().union(*first.values()) != set(allowed)):
         raise ValueError('Serving listener holders missing, changed or unaccounted')
