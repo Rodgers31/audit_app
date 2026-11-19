@@ -20,7 +20,7 @@ import AuditsPageClient from './AuditsPageClient';
 export const metadata: Metadata = {
   title: 'Audit Findings — AuditGava',
   description:
-    'Dashboard of Kenyan national-government audit findings from the Office of the Auditor-General: trends, recurring issues, worst counties, and detail.',
+    'Published Auditor-General findings available in AuditGava, with recorded audit years, recurring issues, source references and finding details.',
 };
 
 const SSR_TIMEOUT_MS = 5000;

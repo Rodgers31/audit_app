@@ -1,6 +1,8 @@
 'use client';
 
 import DataFreshnessBadge from '@/components/DataFreshnessBadge';
+import InfoSheet from '@/components/ui/InfoSheet';
+import AuditYearBars from './AuditYearBars';
 import PageShell from '@/components/layout/PageShell';
 import type { FindingDetailItem, FindingsFilters } from '@/lib/api/audits';
 import { useLang } from '@/lib/i18n/LangProvider';
@@ -14,7 +16,6 @@ import {
   useRecurringFindings,
 } from '@/lib/react-query';
 import {
-  AlertTriangle,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -24,7 +25,6 @@ import {
   Loader2,
   Search,
   Shield,
-  TrendingUp,
   X,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -34,9 +34,6 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  Legend,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Text,
   Tooltip,
@@ -56,15 +53,6 @@ function fmtKES(val: number): string {
   if (abs >= 1e9) return `KES ${(val / 1e9).toFixed(1)}B`;
   if (abs >= 1e6) return `KES ${(val / 1e6).toFixed(1)}M`;
   return `KES ${val.toLocaleString()}`;
-}
-
-function fmtShort(val: number): string {
-  if (!val || val === 0) return '0';
-  const abs = Math.abs(val);
-  if (abs >= 1e12) return `${(val / 1e12).toFixed(1)}T`;
-  if (abs >= 1e9) return `${(val / 1e9).toFixed(1)}B`;
-  if (abs >= 1e6) return `${(val / 1e6).toFixed(0)}M`;
-  return val.toLocaleString();
 }
 
 const TYPE_COLORS: Record<string, string> = {
@@ -110,7 +98,7 @@ export default function AuditFindingsPage() {
 
   // --- Data hooks ---
   const { data: summary, isLoading: summaryLoading } = useAuditDashboardSummary();
-  const { data: trends, isLoading: trendsLoading } = useAuditTrends();
+  const { data: trends, isLoading: trendsLoading, isError: trendsError, refetch: retryTrends } = useAuditTrends();
   const { data: recurring, isLoading: recurringLoading } = useRecurringFindings();
   const { data: findings, isLoading: findingsLoading } = useAuditFindings(filters);
 
@@ -121,16 +109,6 @@ export default function AuditFindingsPage() {
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
   }, [summary]);
-
-  const trendsChartData = useMemo(() => {
-    if (!trends) return [];
-    return trends.years.map((year) => ({
-      year: String(year),
-      findings: trends.findings_per_year[String(year)] || 0,
-      // `amount_per_year` aggregates the same amount_involved field the hero
-      // tiles were withdrawn over — omitted rather than plotted (F1).
-    }));
-  }, [trends]);
 
   // `0` here would mean "the Auditor-General issued no adverse or disclaimer
   // opinion", which is a strong claim. Absent key -> null (renders "—");
@@ -191,7 +169,7 @@ export default function AuditFindingsPage() {
   // --- Loading state ---
   if (summaryLoading) {
     return (
-      <PageShell title='Audit Findings' subtitle='National audit findings dashboard'>
+      <PageShell title={copy('audits.title')} subtitle={copy('audits.intro')}>
         <div className='flex items-center justify-center py-32'>
           <Loader2 className='w-8 h-8 animate-spin text-gov-sage' />
           <span className='ml-3 text-gov-dark/60 dark:text-white/60 font-medium'>Loading audit data...</span>
@@ -202,22 +180,48 @@ export default function AuditFindingsPage() {
 
   return (
     <PageShell
-      title='Audit Findings'
-      subtitle='Tracking how public money is spent and where it goes missing'>
-      {/* ═══ A. HERO STATS ═══ */}
+      title={copy('audits.title')}
+      subtitle={copy('audits.intro')}>
+      <section aria-labelledby='audit-collection-heading' className='space-y-2' data-audit-headline>
+        <h2 id='audit-collection-heading' className='text-sm font-semibold text-neutral-text'>{copy('audits.headline')}</h2>
+        <p className='audit-figure text-audit-title text-neutral-text'>
+          {summary && Number.isSafeInteger(summary.total_findings) && summary.total_findings >= 0
+            ? summary.total_findings.toLocaleString(lang === 'sw' ? 'sw-KE' : 'en-KE')
+            : copy('audits.count_unavailable')}
+        </p>
+        <div className='border-l-4 border-signal-caution-fill px-3 py-2 text-sm leading-relaxed text-signal-caution'
+          style={{ backgroundColor: 'color-mix(in srgb, var(--signal-caution-fill) 10%, transparent)' }}>
+          <strong className='block'>{copy('audits.loss_title')}</strong>
+          <p>{copy('audits.loss_note')}</p>
+        </div>
+        {summary?.year_range?.min_year != null && summary?.year_range?.max_year != null && (
+          <p className='text-sm text-neutral-muted'>
+            {summary.year_range.min_year === summary.year_range.max_year
+              ? copy('audits.recorded_year').replace('{year}', String(summary.year_range.min_year))
+              : copy('audits.recorded_years').replace('{start}', String(summary.year_range.min_year)).replace('{end}', String(summary.year_range.max_year))}
+          </p>
+        )}
+        <InfoSheet title={copy('audits.source_title')} trigger={props => (
+          <button {...props} type='button' className='audit-receipt' onClick={event => {
+            event.currentTarget.focus();
+            props.onClick();
+          }}>
+            <span aria-hidden='true' className='h-2 w-2 shrink-0 bg-signal-caution' />
+            {copy('audits.source')}
+          </button>
+        )}>
+          <p>{copy('audits.source_scope')}</p>
+          <p>{copy('audits.source_limits')}</p>
+          <p>{summary?.withheld_findings != null && Number.isSafeInteger(summary.withheld_findings) && summary.withheld_findings >= 0
+            ? copy('audits.withheld').replace('{count}', summary.withheld_findings.toLocaleString(lang === 'sw' ? 'sw-KE' : 'en-KE'))
+            : copy('audits.withheld_unknown')}</p>
+          <Link href='/sources' className='flex min-h-11 items-center underline underline-offset-4'>{copy('audits.view_sources')}</Link>
+        </InfoSheet>
+        <a href='#audit-findings-heading' className='flex min-h-11 items-center text-sm underline underline-offset-4'>{copy('audits.view_findings')}</a>
+      </section>
+
       <div>
-        <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-          <StatCard
-            label='Total Findings'
-            value={
-              summary?.total_findings != null
-                ? summary.total_findings.toLocaleString()
-                : '—'
-            }
-            icon={<Search className='w-5 h-5' />}
-            color='blue'
-            subtitle='Published in the Auditor-General&rsquo;s report'
-          />
+        <div className='max-w-xl'>
           <StatCard
             label='Adverse / Disclaimer Opinions'
             value={adverseCount != null ? adverseCount.toLocaleString() : '—'}
@@ -251,7 +255,7 @@ export default function AuditFindingsPage() {
         <div className='rounded-xl border border-neutral-border/60 bg-surface-sunken/40 px-4 py-3.5'>
           <div className='flex items-start gap-2.5'>
             <FileWarning className='w-4 h-4 mt-0.5 flex-shrink-0 text-gov-forest/70 dark:text-emerald-100/70' />
-            <p className='text-[12.5px] leading-relaxed text-neutral-muted'>
+            <p className='text-sm leading-relaxed text-neutral-muted'>
               <span className='font-semibold text-gov-dark dark:text-white'>
                 No total money figure is shown.
               </span>{' '}
@@ -271,18 +275,6 @@ export default function AuditFindingsPage() {
         </div>
       </div>
 
-      {/* Standing civic-risk disclaimer — questioned ≠ proven loss (audit §2.6/§6) */}
-      <div>
-        <div className='flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50/70 dark:border-amber-500/30 dark:bg-amber-500/10 px-4 py-3'>
-          <AlertTriangle className='w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0' />
-          <p className='text-[12.5px] leading-relaxed text-amber-900 dark:text-amber-200'>
-            <strong>Questioned ≠ confirmed loss.</strong> These are amounts the
-            Auditor-General could not confirm were properly spent or supported — queries to
-            be resolved, not proven theft or loss.
-          </p>
-        </div>
-      </div>
-
       {/* The "Top 10 Worst Offenders" ranking was withdrawn (credibility audit
           F1/F34). It ordered named State Departments and the Executive Office of
           the President by a "Flagged Amount" built from the same
@@ -292,9 +284,9 @@ export default function AuditFindingsPage() {
           defensible and is what the homepage "Top Ministries Flagged" card
           shows; a ranking by an amount the report never stated is not. */}
 
-      {/* ═══ C. FINDINGS BY TYPE + D. TRENDS — side by side ═══ */}
+      {/* ═══ C. FINDINGS BY TYPE + D. FINDINGS BY AUDIT YEAR ═══ */}
       <div>
-        <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+        <div className='space-y-6'>
           {/* C. Findings by Type */}
           <div className='space-y-3'>
             <h2 className='font-display text-xl text-gov-dark dark:text-white'>Findings by Type</h2>
@@ -351,58 +343,19 @@ export default function AuditFindingsPage() {
             )}
           </div>
 
-          {/* D. Year-on-Year Trends */}
-          <div className='space-y-3'>
-            <h2 className='font-display text-xl text-gov-dark dark:text-white'>Year-on-Year Trends</h2>
+          <section aria-labelledby='audit-years-heading' className='min-w-0 space-y-3'>
+            <h2 id='audit-years-heading' className='font-display text-xl text-neutral-text'>{copy('audits.years_title')}</h2>
             {trendsLoading ? (
-              <div className='h-[320px] flex items-center justify-center'>
-                <Loader2 className='w-6 h-6 animate-spin text-gov-sage' />
+              <p role='status' className='py-8 text-sm text-neutral-muted'>{copy('audits.years_loading')}</p>
+            ) : trendsError ? (
+              <div className='space-y-2 text-sm'>
+                <p role='alert'>{copy('audits.years_error')}</p>
+                <button type='button' onClick={() => void retryTrends()} className='audit-control underline'>{copy('audits.retry')}</button>
               </div>
-            ) : trendsChartData.length > 0 ? (
-              <div className='h-[320px] overflow-hidden'>
-                <ResponsiveContainer width='100%' height='100%'>
-                  <LineChart data={trendsChartData} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
-                    <CartesianGrid strokeDasharray='3 3' stroke='#e5e7eb' />
-                    <XAxis dataKey='year' tick={{ fontSize: 11 }} />
-                    <YAxis
-                      yAxisId='left'
-                      tick={{ fontSize: 11 }}
-                      label={{
-                        value: 'Findings',
-                        angle: -90,
-                        position: 'insideLeft',
-                        style: { fontSize: 11, fill: '#6b7280' },
-                      }}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#fff',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: 8,
-                        fontSize: 12,
-                      }}
-                      formatter={(val: number) => [val.toLocaleString(), 'Findings Count']}
-                    />
-                    <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Line
-                      yAxisId='left'
-                      type='monotone'
-                      dataKey='findings'
-                      name='Findings Count'
-                      stroke='#3b82f6'
-                      strokeWidth={2}
-                      dot={{ r: 4 }}
-                      activeDot={{ r: 6 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <div className='h-[320px] flex items-center justify-center text-gov-dark/40 dark:text-white/40'>
-                No trend data available
-              </div>
+            ) : trends ? <AuditYearBars trends={trends} /> : (
+              <p className='text-sm text-neutral-muted'>{copy('audits.years_empty')}</p>
             )}
-          </div>
+          </section>
         </div>
       </div>
 
@@ -485,7 +438,7 @@ export default function AuditFindingsPage() {
       <div>
         <div className='space-y-3'>
           <div className='flex items-center justify-between gap-2'>
-            <h2 className='font-display text-xl text-gov-dark dark:text-white'>{copy('audits.all_findings')}</h2>
+            <h2 id='audit-findings-heading' className='scroll-mt-24 font-display text-xl text-gov-dark dark:text-white'>{copy('audits.all_findings')}</h2>
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
