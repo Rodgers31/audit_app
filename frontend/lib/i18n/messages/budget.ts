@@ -1,6 +1,23 @@
 import type { Translation } from '../messages';
 
 export const budgetMessages = {
+  'budget.context.title': { en: 'Economic context', sw: 'Hali ya uchumi', plain: 'The wider economy' },
+  'budget.context.gdp': { en: 'GDP', sw: 'Pato la taifa (GDP)', plain: 'Size of Kenya’s economy (GDP)' },
+  'budget.context.gdp_period': { en: 'At current prices in calendar year {year}.', sw: 'Kwa bei za mwaka wa kalenda {year}.', plain: 'Value at prices for calendar year {year}.' },
+  'budget.context.gdp_exact': { en: 'GDP at current prices was {value} in calendar year {year}.', sw: 'Pato la taifa kwa bei za mwaka wa kalenda {year} lilikuwa {value}.', plain: 'Kenya’s economy produced {value} worth of goods and services in calendar year {year}.' },
+  'budget.context.growth': { en: 'Real GDP growth in {year}: {value}.', sw: 'Ukuaji halisi wa pato la taifa mwaka {year}: {value}.', plain: 'Growth in {year} after adjusting for price changes: {value}.' },
+  'budget.context.ratio': { en: 'Budget / GDP', sw: 'Bajeti ikilinganishwa na pato la taifa', plain: 'Budget compared with the economy' },
+  'budget.context.ratio_reason': { en: 'A comparable GDP figure for the same fiscal year is unavailable.', sw: 'Takwimu linganishi ya pato la taifa kwa mwaka huo wa fedha haipatikani.', plain: 'This comparison needs a figure for the size of the economy in the same budget year.' },
+  'budget.context.inflation': { en: 'Inflation', sw: 'Mfumuko wa bei', plain: 'Price increases' },
+  'budget.context.monthly_cpi': { en: '12-month CPI inflation', sw: 'Mfumuko wa bei wa miezi 12 kwa faharasa ya bei za mlaji', plain: 'Change in consumer prices over 12 months' },
+  'budget.context.annual_cpi': { en: 'Annual average CPI inflation', sw: 'Wastani wa mfumuko wa bei kwa mwaka', plain: 'Average change in consumer prices for the year' },
+  'budget.context.inflation_basis_missing': { en: 'Measurement basis unavailable.', sw: 'Msingi wa kipimo haupatikani.', plain: 'How this rate was measured is unavailable.' },
+  'budget.context.above_target': { en: 'Above target', sw: 'Juu ya kiwango lengwa', plain: 'Above the target' },
+  'budget.context.below_target': { en: 'Below target', sw: 'Chini ya kiwango lengwa', plain: 'Below the target' },
+  'budget.context.target': { en: 'CBK target range: {lower}–{upper}%.', sw: 'Viwango vinavyolengwa na CBK: {lower}–{upper}%.', plain: 'The central bank’s target range is {lower}–{upper}%.' },
+  'budget.context.cbk_citation': { en: 'CBK {publication}, p. {page}', sw: '{publication} ya CBK, uk. {page}', plain: 'CBK {publication}, page {page}' },
+  'budget.context.cbk_statement': { en: 'Monetary Policy Statement (June 2026)', sw: 'Taarifa ya Sera ya Fedha (Juni 2026)', plain: 'Monetary Policy Statement (June 2026)' },
+  'budget.context.cbk_report': { en: 'Monetary Policy Committee Report (April 2026)', sw: 'Ripoti ya Kamati ya Sera ya Fedha (Aprili 2026)', plain: 'Monetary Policy Committee Report (April 2026)' },
   'budget.history.five_years': { en: 'The past five budgets', sw: 'Bajeti tano zilizopita', plain: 'The past five budgets' },
   'budget.history.title': { en: 'Budget history', sw: 'Historia ya bajeti', plain: 'Past budgets' },
   'budget.history.appropriated_budget': { en: 'Appropriated budget', sw: 'Bajeti iliyoidhinishwa', plain: 'Approved budget' },

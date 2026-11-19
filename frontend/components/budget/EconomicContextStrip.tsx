@@ -1,177 +1,141 @@
 'use client';
 
-/**
- * EconomicContextStrip
- *
- * Minimal row of macro-economic ratios that contextualise the budget
- * against the wider economy: GDP, budget-to-GDP, revenue-to-GDP, inflation,
- * per-capita budget.
- *
- * Stays compact — three cards + a one-sentence interpretive footnote —
- * because this is supporting context, not the main story.
- */
-
 import FigureEvidence from '@/components/evidence/FigureEvidence';
-import { motion } from 'framer-motion';
-import { Activity, Building2, Gauge, TrendingUp, Users } from 'lucide-react';
+import StatCard from '@/components/ui/StatCard';
+import { evidenceUrl, qualificationMessageKey, type FigureQualification, type Qualifications } from '@/lib/evidence/qualification';
+import { useLang } from '@/lib/i18n/LangProvider';
+import { ArrowUpRight } from 'lucide-react';
+import { useId } from 'react';
 
-import type { Qualifications } from '@/lib/evidence/qualification';
-
-export interface EconomicContext {
-  qualifications?: Record<string, Qualifications>;
-  fiscal_year?: string;
-  gdp_billion_kes?: number;
+interface EconomicContext {
+  qualifications?: {
+    gdp?: Qualifications;
+    gdp_growth?: Qualifications;
+    inflation?: Qualifications;
+  };
+  gdp_billion_kes?: number | null;
   gdp_as_of?: string | null;
-  gdp_source?: string | null;
   gdp_growth_pct?: number | null;
   gdp_growth_as_of?: string | null;
-  gdp_growth_source?: string | null;
-  budget_to_gdp_pct?: number;
-  revenue_to_gdp_pct?: number;
   inflation_pct?: number | null;
   inflation_as_of?: string | null;
-  inflation_source?: string | null;
   inflation_measure?: string | null;
-  unemployment_pct?: number | null;
-  per_capita_budget_kes?: number;
-  per_capita_revenue_kes?: number;
-  total_population?: number;
+  // Older deployments can supply this without a compatible fiscal-year denominator.
+  budget_to_gdp_pct?: number | null;
+  revenue_to_gdp_pct?: number | null;
 }
 
-interface Props {
-  ctx: EconomicContext | null | undefined;
+const CBK_INFLATION = 'https://www.centralbank.go.ke/inflation-rates/';
+const CBK_TARGETS = [
+  {
+    start: '2024-07', end: '2026-06', lower: 2.5, upper: 7.5,
+    publication: 'budget.context.cbk_report', page: '13',
+    url: 'https://www.centralbank.go.ke/uploads/monetary_policy_reports/131378250_36th%20Monetary%20Policy%20Committee%20Report%2C%20April%202026.pdf#page=20',
+  },
+  {
+    start: '2026-07', end: '2027-06', lower: 2.5, upper: 7.5,
+    publication: 'budget.context.cbk_statement', page: '18',
+    url: 'https://www.centralbank.go.ke/uploads/monetary_policy_statements/366885193_58th%20Monetary%20Policy%20Statement%2C%20June%202026.pdf#page=25',
+  },
+] as const;
+
+function finite(value?: number | null): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
 }
 
-function fmtT(billionKES?: number): string {
-  if (billionKES == null || !Number.isFinite(billionKES)) return '—';
-  if (billionKES >= 1000) return `${(billionKES / 1000).toFixed(2)}T`;
-  return `${billionKES.toFixed(0)}B`;
+/** Keep the reporting date in UTC even when the API sends a timezone-less midnight. */
+function observationDate(value?: string | null): Date | null {
+  if (!value || !/^\d{4}-\d{2}-\d{2}(?:T.+)?$/.test(value) || !Number.isFinite(Date.parse(value))) return null;
+  const day = value.slice(0, 10);
+  const date = new Date(`${day}T00:00:00Z`);
+  return Number.isFinite(date.getTime()) && date.toISOString().startsWith(day) ? date : null;
 }
 
-function pct(v?: number | null): string {
-  if (v == null) return '—';
-  return `${v.toFixed(1)}%`;
+function nationalObservation(q: FigureQualification | undefined, measure: string, period: string, unit: string) {
+  const identity = q?.identity;
+  return identity?.entity_id === null && identity.geography === 'KEN' && identity.measure === measure &&
+    identity.period === period && identity.unit === unit && identity.basis === 'actual';
 }
 
-function asOf(iso: string | null | undefined, opts: Intl.DateTimeFormatOptions): string | null {
-  if (!iso || Number.isNaN(Date.parse(iso))) return null;
-  return new Date(iso).toLocaleDateString('en-GB', { timeZone: 'UTC', ...opts });
+function sourcedAnnualValue(q: FigureQualification | undefined, measure: string, year: string, unit: string) {
+  const status = qualificationMessageKey(q);
+  return !!year && nationalObservation(q, measure, year, unit) && !!evidenceUrl(q?.source_url) &&
+    (status === 'evidence.status.verified' || status === 'evidence.status.qualified');
 }
 
-/** Caption parts that exist, joined. An absent source is left out, never guessed. */
-function caption(...parts: (string | null | undefined)[]): string {
-  return parts.filter(Boolean).join(' · ');
+function applicableBand(q: FigureQualification | undefined, month: string, measure?: string | null) {
+  if (measure !== '12-month CPI inflation' || !nationalObservation(q, 'inflation_rate_12m', month, 'percent') ||
+      qualificationMessageKey(q) !== 'evidence.status.verified' || q?.source_kind !== 'web' ||
+      q.publisher !== 'Central Bank of Kenya' || evidenceUrl(q.source_url) !== CBK_INFLATION) return undefined;
+  return CBK_TARGETS.find(band => month >= band.start && month <= band.end);
 }
 
-export default function EconomicContextStrip({ ctx }: Props) {
+export default function EconomicContextStrip({ ctx }: { ctx: EconomicContext | null | undefined }) {
+  const { lang, t } = useLang();
+  const headingId = useId();
   if (!ctx) return null;
 
-  // Every caption is the row's own declared provenance (issue #232). The
-  // inflation caption used to fall back to the literal "KNBS Consumer Price
-  // Index", which is how a World Bank annual average came to be credited to
-  // KNBS. No source from the API now means no source on the page.
-  const inflationSub = caption(
-    ctx.inflation_measure,
-    asOf(ctx.inflation_as_of, { month: 'short', year: 'numeric' }),
-  );
-  const growthYear = asOf(ctx.gdp_growth_as_of, { year: 'numeric' });
-  const gdpSub = caption(
-    `Growth ${pct(ctx.gdp_growth_pct)}${growthYear && ctx.gdp_growth_pct != null ? ` (${growthYear})` : ''}`,
-    ctx.gdp_growth_source !== ctx.gdp_source ? ctx.gdp_growth_source : null,
-  );
-  const gdpNote = caption(asOf(ctx.gdp_as_of, { year: 'numeric' }), ctx.gdp_source);
+  const locale = lang === 'sw' ? 'sw-KE' : 'en-KE';
+  const pct = (value: number) =>
+    `${value.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}%`;
+  const gdpYear = observationDate(ctx.gdp_as_of)?.toISOString().slice(0, 4) ?? '';
+  const growthYear = observationDate(ctx.gdp_growth_as_of)?.toISOString().slice(0, 4) ?? '';
+  const gdp = finite(ctx.gdp_billion_kes) && ctx.gdp_billion_kes >= 0 &&
+    sourcedAnnualValue(ctx.qualifications?.gdp?.total_national_gdp, 'total_national_gdp', gdpYear, 'KES_millions')
+    ? ctx.gdp_billion_kes : null;
+  const growth = finite(ctx.gdp_growth_pct) &&
+    sourcedAnnualValue(ctx.qualifications?.gdp_growth?.gdp_growth_rate, 'gdp_growth_rate', growthYear, 'percent')
+    ? t('budget.context.growth').replace('{year}', growthYear).replace('{value}', pct(ctx.gdp_growth_pct)) : null;
+  const gdpValue = gdp == null ? null : `KES ${gdp >= 1000 ? `${(gdp / 1000).toFixed(2)}T` : `${gdp.toFixed(0)}B`}`;
+  const nominalPeriod = gdp == null ? null : t('budget.context.gdp_period').replace('{year}', gdpYear);
+  const exactGdp = gdp == null ? null : t('budget.context.gdp_exact')
+    .replace('{value}', `KES ${Math.round(gdp * 1e9).toLocaleString(locale)}`).replace('{year}', gdpYear);
 
-  const cards = [
-    {
-      icon: TrendingUp,
-      label: 'GDP',
-      labelKey: 'evidence.label.gdp' as const,
-      qualifications: { ...ctx.qualifications?.gdp, ...ctx.qualifications?.gdp_growth },
-      value: `KES ${fmtT(ctx.gdp_billion_kes)}`,
-      sub: gdpSub,
-      note: gdpNote,
-      accent: '#1B3A2A',
-    },
-    {
-      icon: Gauge,
-      label: 'Budget / GDP',
-      labelKey: 'evidence.label.budget_gdp' as const,
-      qualifications: undefined,
-      value: pct(ctx.budget_to_gdp_pct),
-      sub: `Revenue / GDP ${pct(ctx.revenue_to_gdp_pct)}`,
-      note: '',
-      accent: '#3E6B84',
-    },
-    {
-      icon: Activity,
-      label: 'Inflation',
-      labelKey: 'evidence.label.inflation' as const,
-      qualifications: ctx.qualifications?.inflation,
-      value: pct(ctx.inflation_pct),
-      sub: inflationSub,
-      note: ctx.inflation_source ?? '',
-      accent:
-        // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- colour band threshold only — the figure itself renders from ctx.inflation_pct and shows an em dash when absent
-        (ctx.inflation_pct ?? 0) > 7
-          ? '#9E3030'
-          // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- colour band threshold only
-          : (ctx.inflation_pct ?? 0) > 5
-            ? '#A6781F'
-            : '#2F6343',
-    },
-  ];
+  const inflation = finite(ctx.inflation_pct) ? ctx.inflation_pct : null;
+  const inflationDate = observationDate(ctx.inflation_as_of);
+  const month = inflationDate?.toISOString().slice(0, 7) ?? '';
+  const measure = ctx.inflation_measure === '12-month CPI inflation' ? t('budget.context.monthly_cpi')
+    : ctx.inflation_measure === 'CPI inflation, annual average' ? t('budget.context.annual_cpi') : ctx.inflation_measure;
+  const inflationPeriod = inflationDate?.toLocaleDateString(locale, {
+    year: 'numeric', ...(ctx.inflation_measure === 'CPI inflation, annual average' ? {} : { month: 'long' }), timeZone: 'UTC',
+  });
+  const inflationBasis = [measure, inflationPeriod].filter(Boolean).join(' · ');
+  const band = inflation == null ? undefined : applicableBand(ctx.qualifications?.inflation?.inflation_rate_12m, month, ctx.inflation_measure);
+  const caution = band && inflation != null && (inflation < band.lower || inflation > band.upper)
+    ? t(inflation < band.lower ? 'budget.context.below_target' : 'budget.context.above_target') : null;
+  const target = band && t('budget.context.target').replace('{lower}', String(band.lower)).replace('{upper}', String(band.upper));
+  const citation = band && t('budget.context.cbk_citation').replace('{publication}', t(band.publication)).replace('{page}', band.page);
+  const ratioReason = t('budget.context.ratio_reason');
 
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 14 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-60px' }}
-      transition={{ duration: 0.5 }}
-      className='rounded-2xl bg-white dark:bg-surface-base border border-neutral-border/40 shadow-surface p-5 sm:p-6'>
-      <div className='flex items-baseline justify-between gap-3 mb-4'>
-        <div>
-          <div className='text-[11px] font-semibold uppercase tracking-[0.18em] text-gov-forest/80 dark:text-emerald-100/80'>
-            Economic context
-          </div>
-          <h3 className='font-display text-lg sm:text-[20px] text-gov-dark dark:text-white leading-tight mt-0.5'>
-            How the budget sits against the wider economy
-          </h3>
-        </div>
-        <div className='text-[11px] text-neutral-muted'>
-          {ctx.fiscal_year ?? ''}
-        </div>
+    <section aria-labelledby={headingId} className='space-y-3' onClickCapture={event => {
+      // Safari may open a dialog by touch without focusing its trigger (#1013).
+      if (event.target instanceof Element) {
+        event.target.closest<HTMLButtonElement>('button[aria-haspopup="dialog"]')?.focus({ preventScroll: true });
+      }
+    }}>
+      <h2 id={headingId} className='font-display text-audit-heading font-semibold text-neutral-text'>{t('budget.context.title')}</h2>
+      <div className='grid gap-3 md:grid-cols-3'>
+        <StatCard label={t('budget.context.gdp')} value={gdpValue}
+          comparison={nominalPeriod || growth ? <>{nominalPeriod && <span className='block'>{nominalPeriod}</span>}{growth && <span className='block'>{growth}</span>}</> : undefined}
+          source={<FigureEvidence label='GDP' labelKey='evidence.label.gdp'
+            qualifications={{ ...ctx.qualifications?.gdp, ...ctx.qualifications?.gdp_growth }} explanation={exactGdp ?? undefined} />}
+        />
+        <StatCard label={t('budget.context.ratio')} value={null} comparison={ratioReason}
+          source={<FigureEvidence label='Budget / GDP' labelKey='evidence.label.budget_gdp' explanation={ratioReason} />}
+        />
+        <StatCard label={t('budget.context.inflation')} value={inflation == null ? null : pct(inflation)}
+          comparison={inflation == null ? undefined : inflationBasis || t('budget.context.inflation_basis_missing')}
+          verdict={caution && target ? { signal: 'caution', word: caution, rule: target, details: null } : undefined}
+          source={<>
+            <FigureEvidence label='Inflation' labelKey='evidence.label.inflation' qualifications={ctx.qualifications?.inflation} />
+            {band && <a href={band.url} target='_blank' rel='noopener noreferrer' className='audit-receipt text-left'>
+              <span className='min-w-0 break-words'>{!caution && <span className='block'>{target}</span>}{citation}</span>
+              <ArrowUpRight size={15} aria-hidden='true' className='shrink-0' />
+            </a>}
+          </>}
+        />
       </div>
-
-      <div className='grid grid-cols-1 sm:grid-cols-3 gap-2.5'>
-        {cards.map(({ icon: Icon, label, value, sub, note, accent, qualifications, labelKey }) => (
-          <div
-            key={label}
-            className='rounded-xl border border-neutral-border/30 bg-white dark:bg-surface-base p-4 flex items-start gap-3'>
-            <div
-              className='w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0'
-              style={{ backgroundColor: `${accent}14` }}>
-              <Icon size={18} style={{ color: accent }} />
-            </div>
-            <div className='min-w-0'>
-              <div className='text-[11px] uppercase tracking-wider font-semibold text-neutral-muted'>
-                {label}
-              </div>
-              <div className='font-display text-xl text-gov-dark dark:text-white tabular-nums leading-tight mt-0.5'>
-                {value}
-              </div>
-              <div className='text-[11px] text-neutral-muted leading-tight mt-0.5'>
-                {sub}
-              </div>
-              <FigureEvidence label={label} labelKey={labelKey} qualifications={qualifications} />
-              {note ? (
-                <div className='text-[10px] text-neutral-muted/80 leading-tight mt-1'>
-                  {note}
-                </div>
-              ) : null}
-            </div>
-          </div>
-        ))}
-      </div>
-    </motion.section>
+    </section>
   );
 }

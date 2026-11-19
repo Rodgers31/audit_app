@@ -4,6 +4,7 @@ import { LangProvider, useLang } from '@/lib/i18n/LangProvider';
 import FigureEvidence from '@/components/evidence/FigureEvidence';
 import OverviewTab from '@/app/counties/[id]/tabs/OverviewTab';
 import EconomicContextStrip from '@/components/budget/EconomicContextStrip';
+import { nominalGdpReceipt } from '../../test/fixtures/budgetEconomicContext';
 import ExecutionAuditLens from '@/components/budget/ExecutionAuditLens';
 import { SummaryStrip } from '@/components/dashboard/HeroSection';
 import profile from '../fixtures/figure-profile.json';
@@ -58,7 +59,7 @@ it.each([
   ['sw', 'Ushahidi wa mfumuko wa bei', 'Ushahidi wa bajeti / GDP'],
   ['plain', 'Evidence for price increases', 'Evidence for budget / GDP'],
 ])('localizes actual economic disclosure labels in %s while preserving numbers and original selectors', (lang, inflation, ratio) => {
-  subject(<EconomicContextStrip ctx={{ gdp_billion_kes: 0, inflation_pct: 0, budget_to_gdp_pct: 0 }} />);
+  subject(<EconomicContextStrip ctx={{ gdp_billion_kes: 0, gdp_as_of: '2025-12-31', qualifications: { gdp: { total_national_gdp: nominalGdpReceipt } }, inflation_pct: 0, budget_to_gdp_pct: 0 }} />);
   fireEvent.click(screen.getByRole('button', { name: lang }));
   expect(evidence('Inflation').getByRole('button', { name: name => name.endsWith(inflation) })).toBeInTheDocument();
   expect(evidence('Budget / GDP').getByRole('button', { name: name => name.endsWith(ratio) })).toBeInTheDocument();
