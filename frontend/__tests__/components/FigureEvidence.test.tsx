@@ -4,6 +4,7 @@ import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
 import FigureEvidence from '@/components/evidence/FigureEvidence';
 import FigureEvidencePage from '@/app/sources/figures/[table]/[id]/FigureEvidencePage';
 import EconomicContextStrip from '@/components/budget/EconomicContextStrip';
+import { nominalGdpReceipt } from '../../test/fixtures/budgetEconomicContext';
 import fixture from '../fixtures/figure-qualifications.json';
 import type {Qualifications,FigureQualification} from '@/lib/evidence/qualification';
 import api from '@/lib/api/axios';
@@ -29,7 +30,7 @@ it('refuses incomplete verified promotion and excludes hostile URL',()=>{
  expect(screen.getByRole('link',{name:'Observation evidence details',hidden:true})).toHaveAttribute('href','/sources/figures/budget_lines/1');
 });
 it('retains zero GDP and inflation and shows absent context evidence',()=>{
- render(<EconomicContextStrip ctx={{gdp_billion_kes:0,inflation_pct:0,gdp_growth_pct:null}}/>);
+ render(<EconomicContextStrip ctx={{gdp_billion_kes:0,gdp_as_of:'2025-12-31',qualifications:{gdp:{total_national_gdp:nominalGdpReceipt}},inflation_pct:0,gdp_growth_pct:null}}/>);
  expect(screen.getByText('KES 0B')).toBeInTheDocument();expect(screen.getByText('0.0%')).toBeInTheDocument();
  expect(screen.getAllByText('No source document yet').length).toBeGreaterThan(0);
 });
