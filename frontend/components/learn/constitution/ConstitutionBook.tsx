@@ -270,7 +270,7 @@ export default function ConstitutionBook({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.defaultPrevented || e.altKey || e.metaKey || e.ctrlKey ||
-        (e.target as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable="true"], [data-reader-search]')) return;
+        (e.target as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable="true"], [data-reader-search], dialog[open]')) return;
       if (e.key === 'ArrowRight') goNext();
       else if (e.key === 'ArrowLeft') goPrev();
     };
