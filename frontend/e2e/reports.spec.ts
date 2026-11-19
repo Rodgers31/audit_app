@@ -269,3 +269,78 @@ test('a longer audit year series stays inside its keyboard-scrollable region', a
   await page.locator('[data-audit-year-chart]').getByText('Read chart data', { exact: true }).click();
   await expect(page.locator('[data-audit-year-chart]').getByRole('row')).toHaveCount(21);
 });
+
+test('recurring findings group exact institution names and distinguish recorded years', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.clock.setFixedTime(new Date(Date.now() + 2 * 60 * 60 * 1000));
+  const entry = {
+    county_name: 'County Assembly of Nairobi',
+    query_type: 'Report on the Financial Statements',
+    years_appeared: [2025, 2023, 2023],
+    total_amount: 8_765_432,
+    finding_ids: [101, 102],
+  };
+  const recurring_findings = [
+    entry,
+    { ...entry, query_type: 'Report on Lawfulness and Effectiveness in the Use of Public Resources', years_appeared: [2022, 2023] },
+    { ...entry, county_name: 'County Executive of Nairobi' },
+    { ...entry, county_name: 'National Research Institute', years_appeared: [2022, 2022] },
+    { ...entry, county_name: 'Public Reading Commission', years_appeared: [] },
+    ...Array.from({ length: 18 }, (_, i) => ({
+      ...entry,
+      county_name: `Synthetic entity ${String(i + 1).padStart(2, '0')}`,
+      query_type: `UnusuallyLongPublishedHeading${'x'.repeat(90)}`,
+    })),
+  ];
+  await page.route('**/api/v1/audit/recurring', route => route.fulfill({
+    json: { recurring_findings, total: recurring_findings.length },
+  }));
+  await page.goto('/audits');
+
+  const region = page.getByRole('region', { name: 'Problems reported in more than one year' });
+  const assembly = region.getByText('County Assembly of Nairobi', { exact: true }).locator('..');
+  await expect(assembly).toHaveCount(1);
+  const statements = assembly.getByText('Financial statements', { exact: true }).locator('..');
+  await expect(statements.getByText('2022 No record in this group', { exact: true })).toBeVisible();
+  await expect(statements.getByText('2023 Finding recorded', { exact: true })).toBeVisible();
+  await expect(statements.getByText('2025 Finding recorded', { exact: true })).toBeVisible();
+  await expect(statements.getByText(/2024/)).toHaveCount(0);
+  await expect(assembly.getByText('Use of public resources', { exact: true })).toBeVisible();
+  await expect(region.getByText('County Executive of Nairobi', { exact: true })).toBeVisible();
+  await expect(region.getByText('Showing 20 of 21', { exact: true })).toBeVisible();
+
+  const showMore = region.getByRole('button', { name: 'Show 1 more' });
+  expect((await showMore.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+  await showMore.press('Enter');
+  await expect(region.getByText('Showing 21 of 21', { exact: true })).toBeVisible();
+  await expect(region.getByText('Synthetic entity 18').locator('..').locator('li[tabindex="-1"]')).toBeFocused();
+
+  const limited = region.getByRole('heading', { name: 'Recurring findings with fewer recorded years' }).locator('..');
+  await expect(limited.getByText('National Research Institute', { exact: true })).toBeVisible();
+  await expect(limited.getByText('Public Reading Commission', { exact: true })).toBeVisible();
+  await expect(limited.getByText('No audit year recorded')).toBeVisible();
+  await expect(region.getByText(/KES|8,765,432/)).toHaveCount(0);
+  await expect(region.getByRole('link')).toHaveCount(1);
+  await region.getByRole('link', { name: 'Browse all findings' }).click();
+  await expect(page).toHaveURL(/#audit-findings-heading$/);
+  await expect(page.getByRole('heading', { name: 'All findings', exact: true })).toBeInViewport();
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBe(360);
+});
+
+test('recurring findings offer retry and preserve the server’s scope for an empty list', async ({ page }) => {
+  await page.clock.setFixedTime(new Date(Date.now() + 2 * 60 * 60 * 1000));
+  let failing = true;
+  const reason = 'Published records have only one recorded audit year.';
+  await page.route('**/api/v1/audit/recurring', route => failing
+    ? route.fulfill({ status: 503, json: { detail: 'Synthetic temporary error' } })
+    : route.fulfill({ json: { recurring_findings: [], total: 0, absent_reason: reason } }));
+  await page.goto('/audits');
+  const region = page.getByRole('region', { name: 'Problems reported in more than one year' });
+  await expect(region.getByRole('alert')).toContainText(/could not be loaded|update failed/i, { timeout: 20_000 });
+  await expect(region.getByText(reason)).toHaveCount(0);
+
+  failing = false;
+  await region.getByRole('button', { name: 'Try again' }).click();
+  await expect(region.getByText(reason, { exact: true })).toBeVisible();
+  await expect(region.getByRole('alert')).toHaveCount(0);
+});

@@ -2,6 +2,7 @@
 
 import DataFreshnessBadge from '@/components/DataFreshnessBadge';
 import InfoSheet from '@/components/ui/InfoSheet';
+import AuditRecurringFindings from './AuditRecurringFindings';
 import AuditYearBars from './AuditYearBars';
 import PageShell from '@/components/layout/PageShell';
 import type { FindingDetailItem, FindingsFilters } from '@/lib/api/audits';
@@ -13,7 +14,6 @@ import {
   useAuditDashboardSummary,
   useAuditFindings,
   useAuditTrends,
-  useRecurringFindings,
 } from '@/lib/react-query';
 import {
   ChevronDown,
@@ -99,7 +99,6 @@ export default function AuditFindingsPage() {
   // --- Data hooks ---
   const { data: summary, isLoading: summaryLoading } = useAuditDashboardSummary();
   const { data: trends, isLoading: trendsLoading, isError: trendsError, refetch: retryTrends } = useAuditTrends();
-  const { data: recurring, isLoading: recurringLoading } = useRecurringFindings();
   const { data: findings, isLoading: findingsLoading } = useAuditFindings(filters);
 
   // --- Derived data ---
@@ -359,80 +358,7 @@ export default function AuditFindingsPage() {
         </div>
       </div>
 
-      {/* ═══ E. RECURRING FINDINGS ═══ */}
-      <div>
-        <div className='space-y-3'>
-          <div className='flex items-center gap-3'>
-            <h2 className='font-display text-xl text-gov-dark dark:text-white'>{copy('audits.recurring_findings')}</h2>
-            {recurring && (
-              <span className='text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium'>
-                {recurring.total} patterns
-              </span>
-            )}
-          </div>
-          {recurringLoading ? (
-            <div className='flex items-center justify-center py-12'>
-              <Loader2 className='w-6 h-6 animate-spin text-gov-sage' />
-            </div>
-          ) : recurring && recurring.recurring_findings.length > 0 ? (
-            <ResponsiveTable>
-              <table className='w-full text-sm'>
-                <thead>
-                  <tr className='border-b border-gov-dark/10 text-left'>
-                    <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>Entity audited</th>
-                    <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>Finding Type</th>
-                    <th className='py-2 font-semibold text-gov-dark/70 dark:text-white/70'>Years</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recurring.recurring_findings.slice(0, 20).map((r, i) => (
-                    <tr
-                      key={`${r.county_name}-${r.query_type}-${i}`}
-                      className={`border-b border-gov-dark/5 transition-colors ${
-                        r.years_appeared.length >= 3
-                          ? 'bg-red-50/50 hover:bg-red-50'
-                          : 'hover:bg-gov-forest/[0.03]'
-                      }`}>
-                      <td className='py-2.5 pr-3 font-medium text-gov-dark dark:text-white'>{r.county_name}</td>
-                      <td className='py-2.5 pr-3'>
-                        <span
-                          className='inline-block px-2 py-0.5 rounded text-xs font-medium text-white'
-                          style={{ backgroundColor: getTypeColor(r.query_type) }}>
-                          {r.query_type}
-                        </span>
-                      </td>
-                      <td className='py-2.5'>
-                        <div className='flex flex-wrap gap-1'>
-                          {r.years_appeared.map((y) => (
-                            <span
-                              key={y}
-                              className='text-xs px-1.5 py-0.5 rounded bg-gov-dark/5 text-gov-dark/70 dark:text-white/70 font-mono'>
-                              {y}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </ResponsiveTable>
-          ) : (
-            /* An empty list is a claim, so it says which claim. "No recurring
-               findings detected" alone reads as "nothing recurs"; the backend
-               can only assert that nothing recurs ACROSS THE AUDIT YEARS
-               PUBLISHED, which is a different and much narrower statement. */
-            <div className='text-center py-8 space-y-2'>
-              <div className='text-gov-dark/40 dark:text-white/40'>No recurring findings detected</div>
-              {recurring?.absent_reason && (
-                <p className='mx-auto max-w-2xl text-xs leading-relaxed text-gov-dark/60 dark:text-white/60'>
-                  {recurring.absent_reason}
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+      <AuditRecurringFindings />
 
       {/* ═══ F. FILTER BAR ═══ */}
       <div>
