@@ -449,7 +449,9 @@
 .rankings {
   margin-top: 36px;
 }
-.mobileSort {
+.mobileSort,
+.mobileRanking,
+.mobileViewAll {
   display: none;
 }
 .rankingsTable th:focus-visible {
@@ -473,6 +475,7 @@
 }
 .rankingsTable td a {
   min-height: 44px;
+  min-width: 44px;
   align-content: center;
 }
 .rankings > div:last-child {
@@ -482,7 +485,7 @@
   background: transparent;
 }
 .rankings > div:last-child button {
-  min-width: 40px;
+  min-width: 44px;
   min-height: 44px;
 }
 .sourceFooter {
@@ -953,49 +956,84 @@
     gap: 12px;
     margin-block: 12px 24px;
   }
-  .rankingsTable table,
-  .rankingsTable tbody {
-    display: block;
-    width: 100%;
-  }
-  .rankingsTable thead {
+  .rankingsTable,
+  .desktopPagination {
     display: none;
   }
-  .rankingsTable tbody tr {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 4px 16px;
-    padding: 20px 0;
-  }
-  .rankingsTable td {
+  .mobileRanking,
+  .mobileViewAll {
     display: block;
-    padding: 6px 0;
+  }
+  .rankings > div:first-of-type > div {
+    flex-wrap: wrap;
+  }
+  .rankings h3.rankingsTitle {
+    font-family: var(--font-audit-display, 'Barlow Condensed'), 'Arial Narrow', sans-serif;
+    font-weight: 600;
+    font-size: 20px;
+  }
+  .rankingRow {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 12px;
+    padding-block: 2px;
+  }
+  .rankingRow + .rankingRow {
+    border-top: 1px solid var(--county-line);
+  }
+  .rankingCounty {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 2ch minmax(0, 1fr) auto;
+    min-height: 44px;
+    align-items: center;
+    gap: 8px;
     font-size: 14px;
   }
-  .rankingsTable td::before {
-    content: attr(data-label);
-    display: block;
-    font-size: 11px;
+  .rankingCounty:hover > span:nth-child(2) {
+    text-decoration: underline;
+  }
+  .rankingMeasure {
+    min-width: 0;
+    padding-inline-start: calc(2ch + 8px);
+    font-size: 14px;
+    display: grid;
+    gap: 2px;
+  }
+  .rankingCompare {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    min-width: 44px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .rankingCompare:has(input:disabled) {
+    cursor: default;
     color: var(--county-muted);
-    margin-bottom: 4px;
   }
-  .rankingsTable td:first-child {
-    display: none;
+  .rankingCompare:focus-within {
+    outline: 2px solid var(--county-accent);
+    outline-offset: 2px;
   }
-  .rankingsTable td:nth-child(2) {
-    grid-column: 1/-1;
+  .rankingTray {
+    position: sticky;
+    z-index: 2;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 12px;
+    padding: 8px 12px;
+    border: 1px solid var(--county-line);
+    border-radius: 4px;
+    background: var(--county-paper);
   }
-  .rankingsTable td:nth-child(2)::before {
-    display: none;
-  }
-  .rankingsTable td:nth-child(2) a::after {
-    content: '↗';
-    margin-left: auto;
-    color: var(--county-accent);
-  }
-  .rankingsTable td:nth-child(2) a span {
-    font-size: 18px;
-    font-weight: 500;
+  .rankingViewAll {
+    width: 100%;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1004,9 +1042,6 @@
     scroll-behavior: auto;
     transition: none;
   }
-}
-.mobileRank {
-  display: none;
 }
 .accountGrade {
   display: flex;
@@ -1090,15 +1125,6 @@
 }
 :global(.dark) .moneyReport :global(.text-amber-700) {
   color: #d4b57d;
-}
-@media (max-width: 959px) {
-  .rankingsTable td:nth-child(2) a .mobileRank {
-    display: inline;
-    font-size: 12px;
-    font-weight: 400;
-    color: var(--county-muted);
-    margin-right: 4px;
-  }
 }
 .recordMetric > div:nth-child(2) {
   color: var(--county-ink);
