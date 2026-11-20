@@ -36,7 +36,8 @@ _SOURCE_LITERALS = {
     'domains/population/census_counties.py': {'CENSUS_VOLUME_I_URL':str},
     'domains/national_gdp/fetcher.py': {'_WB_GDP_URL':str, '_WB_POVERTY_URL':str, '_POVERTY_INDICATORS':dict},
     'domains/debt_timeline/fetcher.py': {'_WB_GDP_URL':str},
-    'domains/imf_weo/fetcher.py': {'_BASE_URL':str, 'INDICATORS':tuple, 'COUNTRIES':tuple},
+    'domains/imf_weo/fetcher.py': {'_BASE_URL':str, 'INDICATORS':tuple, 'COUNTRIES':tuple,
+                                   'WEO_CATALOGUE_URL':str, 'WEO_WORKBOOK_URL':str},
     'domains/revenue_by_source/kra_discovery.py': {'KRA_BASE':str, 'ANNUAL_SLUG':str},
     'domains/revenue_by_source/fetcher.py': {'_WB_BASE':str, '_WB_REVENUE_INDICATORS':dict},
     'kra_report_catalogue.py': {'CATALOGUE_URL':str},
@@ -397,6 +398,8 @@ def health_source_lines(plan, settings=None):
         mapping['national_debt'] += [('bond register',tables['BONDS_URL'],False),('Tbill key rates',tables['KEY_RATES_URL'],False)]
     imf = literals('domains/imf_weo/fetcher.py')
     mapping['imf_weo'] = [(code,imf['_BASE_URL']+'/'+code+'/'+';'.join(imf['COUNTRIES'])) for code in imf['INDICATORS']]
+    mapping['imf_weo'] += [('WEO workbook catalogue', imf['WEO_CATALOGUE_URL'], False),
+                           ('reviewed WEO workbook', imf['WEO_WORKBOOK_URL'], False)]
     if 'cra' in plan.domains:
         mapping['cra'] = [('reviewed edition',literals('domains/cra/source.py')['URL'])]
     if 'opendata' in plan.domains:
