@@ -40,7 +40,8 @@ PROBED_WITHOUT_A_CONFIG_DEFAULT = {
     "www.imf.org": "debt cross-check, consulted opportunistically",
     "cog.go.ke": "seeding.extractors.cog_governors SOURCE_URL / DEPUTIES_SOURCE_URL",
     "www.kra.go.ke": "revenue_by_source.kra_discovery LISTING_URL / slug_candidates",
-    "www.knbs.or.ke": "population.census_counties CENSUS_VOLUME_I_URL",
+    "repository.knbs.or.ke": "population.census_counties CENSUS_VOLUME_I_URL",
+    "data.imf.org": "imf_weo.fetcher reviewed WEO catalogue and workbook",
 }
 
 
