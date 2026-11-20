@@ -1,4 +1,5 @@
 import type { BorrowingCoverage } from '@/lib/countyBorrowingCoverage';
+import type { CountyFinancialSummary } from '@/lib/api/types';
 export interface AuditIssue {
   id: string;
   type: 'financial' | 'compliance' | 'performance' | 'governance';
@@ -353,6 +354,8 @@ export interface CountyComprehensive {
 export type BudgetSource = 'cob_cbirr' | 'cra_model' | 'mixed' | null;
 
 export interface County {
+  financialSummary?: Pick<CountyFinancialSummary, 'total_allocation'> &
+    Partial<Pick<CountyFinancialSummary, 'accounting_basis' | 'currency' | 'fiscal_period' | 'sources'>>;
   figureQualifications?: { budget_lines?: QualificationRows; gdp_data?: QualificationRows };
   id: string;
   name: string;

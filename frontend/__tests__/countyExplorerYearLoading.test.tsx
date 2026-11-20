@@ -1,6 +1,14 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import '@testing-library/jest-dom';
 import { fireEvent, render, screen } from '@testing-library/react';
 import CountiesPageClient from '@/app/counties/CountiesPageClient';
+
+function renderExplorer() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(<CountiesPageClient />, {
+    wrapper: ({ children }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>,
+  });
+}
 import type { CountyFiscalYears } from '@/lib/utils';
 
 let mockYears: CountyFiscalYears | undefined;
@@ -22,7 +30,7 @@ const years: CountyFiscalYears = {
 beforeEach(() => { mockYears = undefined; mockUseCounties.mockClear(); });
 
 it('reserves the same year field before metadata arrives without exposing an empty picker', () => {
-  const view = render(<CountiesPageClient />);
+  const view = renderExplorer();
   expect(screen.queryByRole('combobox', { name: 'Year' })).not.toBeInTheDocument();
   const reservedSelect = view.container.querySelector('header select');
   expect(reservedSelect).toBeInTheDocument();
@@ -44,7 +52,7 @@ it('reserves the same year field before metadata arrives without exposing an emp
 
 it('keeps absent and empty metadata inert without inventing a year', () => {
   mockYears = { years: [], default: null };
-  const view = render(<CountiesPageClient />);
+  const view = renderExplorer();
   expect(screen.queryByRole('combobox', { name: 'Year' })).not.toBeInTheDocument();
   expect(view.container.querySelector('header select')).toBeDisabled();
   expect(view.container.querySelector('header select')).toHaveTextContent('');
