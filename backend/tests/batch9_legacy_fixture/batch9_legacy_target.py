@@ -1,6 +1,8 @@
 """Exact, inert target required before destructive review process controls."""
 import os
-from contextlib import contextmanager
+import re
+import time
+from contextlib import closing, contextmanager
 
 from sqlalchemy.engine import make_url
 
@@ -35,6 +37,21 @@ DEFAULT_URL = f"postgresql+psycopg2://{OWNED_USER}:{OWNED_PASSWORD}@{OWNED_HOST}
 APPROVED_IMAGE = "public.ecr.aws/docker/library/postgres@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3"
 
 
+def _wait_for_authenticated_postgres():
+    import psycopg2
+
+    # The image's temporary initialization server accepts Unix socket requests
+    # before the published TCP endpoint used by Alembic is ready.
+    deadline = time.monotonic() + 40
+    while time.monotonic() < deadline:
+        try:
+            with closing(psycopg2.connect(**connect_args(), connect_timeout=2)):
+                return
+        except psycopg2.OperationalError:
+            time.sleep(.2)
+    raise RuntimeError("Owned PostgreSQL authenticated TCP readiness timed out")
+
+
 @contextmanager
 def owned_postgres_fixture(override, root, receipt_dir):
     """Prepare one migrated process fixture unless its owner provided the exact target."""
@@ -43,7 +60,6 @@ def owned_postgres_fixture(override, root, receipt_dir):
     import socket
     import subprocess
     import sys
-    import time
     from pathlib import Path
     from uuid import uuid4
     from alembic.config import Config
@@ -88,14 +104,7 @@ def owned_postgres_fixture(override, root, receipt_dir):
                 or inspection["NetworkSettings"]["Ports"]["5432/tcp"] != [{"HostIp": OWNED_HOST, "HostPort": str(OWNED_PORT)}]):
             raise RuntimeError("Owned PostgreSQL identity/binding mismatch")
         receipt["image_id"] = inspection["Image"]
-        deadline = time.monotonic() + 40
-        while True:
-            ready = subprocess.run(["docker", "exec", container, "pg_isready", "-U", OWNED_USER, "-d", OWNED_DATABASE], capture_output=True)
-            if ready.returncode == 0:
-                break
-            if time.monotonic() >= deadline:
-                raise RuntimeError("Owned PostgreSQL readiness timed out")
-            time.sleep(.2)
+        _wait_for_authenticated_postgres()
         environment = {"PATH": str(Path(sys.executable).parent) + os.pathsep + os.environ.get("PATH", "/usr/bin:/bin"),
                        "PYTHONDONTWRITEBYTECODE": "1", "PYTHON_DOTENV_DISABLED": "1",
                        "DATABASE_URL": url, "PYTHONPATH": str(root / "backend")}
@@ -111,6 +120,20 @@ def owned_postgres_fixture(override, root, receipt_dir):
         receipt["migration_exit"] = migrated.returncode
         receipt["migration_output"] = migrated.stdout
         if migrated.returncode:
+            # Retain safe diagnostics in the CI log without printing raw
+            # connection strings, SQL, or traceback values.
+            output = migrated.stdout.lower()
+            category = next((label for message, label in (
+                ("connection refused", "connection_refused"),
+                ("timeout expired", "connection_timeout"),
+                ("password authentication failed", "authentication_failed"),
+                ("no space left on device", "disk_full"),
+            ) if message in output), "other")
+            error_types = re.findall(r"^(?:psycopg2(?:\.errors)?|sqlalchemy\.exc|alembic\.util\.exc)\.([A-Za-z][A-Za-z0-9]*):",
+                                     migrated.stdout, flags=re.MULTILINE)
+            error_type = error_types[-1] if error_types else "unclassified"
+            print(f"BATCH9_OWNED_POSTGRES_MIGRATION_FAILURE exit={migrated.returncode} "
+                  f"category={category} error_type={error_type}", flush=True)
             raise RuntimeError("Owned PostgreSQL migration failed")
         import psycopg2
         with psycopg2.connect(**connect_args()) as db:
