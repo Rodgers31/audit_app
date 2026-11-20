@@ -4,16 +4,26 @@ import { nav } from './utils/selectors';
 test('audit reports page filters and search', async ({ page }) => {
   await page.goto('/audits');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Audit Findings');
-  await expect(page.locator('table').last().locator('tbody tr')).toHaveCount(20);
-  await expect(page.locator('table').last().locator('tbody')).toContainText('KES 1.0M');
+  const table = page.getByRole('table', { name: 'All findings' });
+  await expect(table.locator('tbody tr')).toHaveCount(20);
+  await table.locator('tbody').getByRole('button').first().click();
+  await expect(page.locator('[data-audit-finding-pane]')).toContainText('KES 1,000,000');
   const severity = page.getByRole('combobox', { name: 'Severity', exact: true });
-  const response = page.waitForResponse(r => new URL(r.url()).pathname === '/api/v1/audit/findings' && new URL(r.url()).searchParams.get('severity') === 'Critical');
-  await severity.selectOption('Critical');
-  expect((await response).ok()).toBe(true);
+  const matches = page.waitForResponse(r => new URL(r.url()).pathname === '/api/v1/audit/findings' && new URL(r.url()).searchParams.get('severity') === 'WARNING');
+  await severity.selectOption({ label: 'Warning' });
+  const response = await matches;
+  expect(response.ok()).toBe(true);
+  const warningFindings = await response.json();
+  expect(warningFindings.total).toBeGreaterThan(20);
+  expect(warningFindings.items.every((finding: { severity: string }) => finding.severity === 'warning')).toBe(true);
+  await expect(table.locator('tbody tr')).toHaveCount(20);
+  await expect(page.locator('[data-audit-finding-pane]')).toHaveCount(0);
+  await severity.selectOption({ label: 'Critical' });
   await expect(page.getByText('No findings match your filters.', { exact: true })).toBeVisible();
+  await expect(page.locator('[data-audit-finding-pane]')).toHaveCount(0);
   await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
-  await expect(page.locator('table').last().locator('tbody tr')).toHaveCount(20);
-  await expect(page.locator('table').last().locator('tbody')).toContainText('KES 1.0M');
+  await expect(page.getByRole('heading', { name: 'All findings', exact: true })).toBeFocused();
+  await expect(table.locator('tbody tr')).toHaveCount(20);
 });
 
 test('long audit section values fit narrow viewports and keep their accessible filter names', async ({ page }) => {
@@ -41,6 +51,9 @@ test('long audit section values fit narrow viewports and keep their accessible f
   await expect(page.getByRole('combobox', { name: 'Audit opinion', exact: true })).toBeVisible();
   await expect(page.getByRole('combobox', { name: 'Severity', exact: true })).toBeVisible();
   await expect(page.getByRole('combobox', { name: 'Status', exact: true })).toBeVisible();
+  const targets = await page.getByRole('region', { name: 'All findings', exact: true })
+    .getByRole('combobox').evaluateAll(controls => controls.map(control => control.getBoundingClientRect().height));
+  expect(Math.min(...targets)).toBeGreaterThanOrEqual(44);
 
   const filtered = page.waitForResponse((response) => {
     const url = new URL(response.url());
@@ -104,15 +117,85 @@ test('phone finding cards show the cited title or published text and keep the re
   await expect(untitled.getByText('Amount: not stated', { exact: true })).toBeVisible();
   await expect(untitled.getByRole('link')).toHaveCount(0);
 
-  await page.setViewportSize({ width: 767, height: 900 });
+  await page.setViewportSize({ width: 1023, height: 900 });
   await expect(cards).toBeVisible();
-  await page.setViewportSize({ width: 768, height: 900 });
+  await page.setViewportSize({ width: 1024, height: 900 });
   await expect(cards).toHaveCount(0);
-  const table = page.getByRole('table').filter({
-    has: page.getByRole('columnheader', { name: 'Severity', exact: true }),
+  const table = page.getByRole('table', { name: 'All findings' });
+  const open = table.getByRole('button', { name: title });
+  const report = table.getByRole('link', { name: 'Source report · p.31' });
+  await expect(report).toHaveAttribute('href', source);
+  await page.context().route('https://example.test/reports/audit.pdf', route =>
+    route.fulfill({ contentType: 'text/html', body: '<title>Synthetic source report</title>' }));
+  const reportOpened = page.waitForEvent('popup');
+  await report.click();
+  const sourceTab = await reportOpened;
+  await expect(sourceTab).toHaveURL(source);
+  await sourceTab.close();
+  await expect(page.locator('[data-audit-finding-pane]')).toHaveCount(0);
+  await open.focus();
+  await open.press('Enter');
+  const pane = page.getByRole('complementary', { name: title });
+  await expect(pane.getByRole('heading', { name: title })).toBeFocused();
+  await expect(pane.getByText(paragraph)).toBeVisible();
+  await expect(pane.getByText('KES 0', { exact: true })).toBeVisible();
+  await expect(pane.getByRole('link', { name: 'Source report · p.31' })).toHaveAttribute('href', source);
+  await page.keyboard.press('Escape');
+  await expect(pane).toHaveCount(0);
+  await expect(open).toBeFocused();
+
+  // Clicking a noninteractive cell opens the same pane.
+  const sparse = table.getByRole('row').filter({ hasText: fallback });
+  await sparse.getByRole('cell', { name: '2024', exact: true }).click();
+  const sparsePane = page.getByRole('complementary', { name: 'Finding details' });
+  await expect(sparsePane.getByText(fallback)).toBeVisible();
+  await expect(sparsePane.getByText('Amount mentioned').locator('+ dd')).toHaveText('Not stated');
+  await expect(sparsePane.getByText('Source report unavailable')).toBeVisible();
+  await expect(sparsePane.getByRole('link')).toHaveCount(0);
+  await sparsePane.getByRole('button', { name: 'Close finding details' }).click();
+  await expect(sparse.getByRole('button')).toBeFocused();
+});
+
+test('desktop sorting stays on the current server page and paging closes the pane', async ({ page }) => {
+  const later = { id: 401, finding_title: 'Zebra example', finding_text: 'Later finding.', audit_year: 2024, severity: 'warning' };
+  const earlier = { id: 402, finding_title: 'Aardvark example', finding_text: 'Earlier finding.', audit_year: 2023, severity: 'critical' };
+  const unknownYear = { id: 403, finding_title: 'Missing year example', finding_text: 'No year recorded.', audit_year: null, severity: 'info' };
+  await page.clock.setFixedTime(new Date(Date.now() + 2 * 60 * 60 * 1000));
+  const requestedPages: string[] = [];
+  await page.route('**/api/v1/audit/findings?**', route => {
+    const responsePage = new URL(route.request().url()).searchParams.get('page') ?? '1';
+    requestedPages.push(responsePage);
+    return route.fulfill({ json: {
+      total: 21, page: Number(responsePage), limit: 20,
+      items: responsePage === '1' ? [later, earlier, unknownYear] : [{ ...later, id: 404, finding_title: 'Second page finding' }],
+    } });
   });
-  await expect(table.getByRole('row').nth(1)).toHaveAttribute('title', paragraph);
-  await expect(table.getByRole('link', { name: 'View OAG source report, p.31' })).toHaveAttribute('href', source);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/audits');
+  const table = page.getByRole('table', { name: 'All findings' });
+  const rowTitles = table.locator('tbody').getByRole('button');
+  await expect(rowTitles).toHaveText([later.finding_title, earlier.finding_title, unknownYear.finding_title]);
+  await expect(table.locator('[aria-sort]')).toHaveCount(0);
+  const year = table.getByRole('button', { name: 'Sort Year on this page' });
+  await year.press('Enter');
+  await expect(year.locator('..')).toHaveAttribute('aria-sort', 'ascending');
+  await expect(rowTitles).toHaveText([earlier.finding_title, later.finding_title, unknownYear.finding_title]);
+  await year.press('Enter');
+  await expect(year.locator('..')).toHaveAttribute('aria-sort', 'descending');
+  await expect(rowTitles).toHaveText([later.finding_title, earlier.finding_title, unknownYear.finding_title]);
+  await table.getByRole('button', { name: 'Sort Finding on this page' }).click();
+  await expect(rowTitles).toHaveText([earlier.finding_title, unknownYear.finding_title, later.finding_title]);
+  expect(requestedPages).toEqual(['1']);
+  await table.getByRole('button', { name: earlier.finding_title }).click();
+  const pane = page.getByRole('complementary', { name: earlier.finding_title });
+  await expect(pane).toBeVisible();
+  const findings = page.getByRole('region', { name: 'All findings', exact: true });
+  await findings.getByRole('button', { name: 'Next', exact: true }).click();
+  await expect(findings.getByRole('heading', { name: 'All findings' })).toBeFocused();
+  await expect(pane).toHaveCount(0);
+  await expect(rowTitles).toHaveText(['Second page finding']);
+  await expect(table.locator('[aria-sort]')).toHaveCount(0);
+  expect(requestedPages).toEqual(['1', '2']);
 });
 
 test('audit collection headline and annual bars preserve exact scoped counts with accessible readouts', async ({ page }) => {

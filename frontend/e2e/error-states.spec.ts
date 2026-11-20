@@ -50,9 +50,9 @@ test.describe('Error States - Empty Data', () => {
   });
   test('shows empty state when no reports available', async ({ page }) => {
     await page.goto('/audits');
-    await page.getByText('Severity', { exact: true }).locator('..').getByRole('combobox').selectOption('Critical');
+    await page.getByRole('combobox', { name: 'Severity', exact: true }).selectOption({ label: 'Critical' });
     await expect(page.getByText('No findings match your filters.', { exact: true })).toBeVisible();
-    await expect(page.locator('table tbody tr').filter({ hasText: 'KES 1.0M' })).toHaveCount(0);
+    await expect(page.getByRole('table', { name: 'All findings', exact: true })).toHaveCount(0);
   });
 });
 
