@@ -15,7 +15,6 @@ UNITS = {
     'NGDPD': ('Billions', 'US dollar'),
     'NGDP_RPCH': ('Units', 'Percent'),
 }
-FIRST_OBSERVATION = {'GGXWDG_NGDP': 1998, 'GGXCNL_NGDP': 1982, 'NGDPD': 1980, 'NGDP_RPCH': 1980}
 
 
 def parse_workbook(payload):
@@ -63,7 +62,10 @@ def parse_workbook(payload):
                     if kind != 'n' or formula:
                         raise ValueError('IMF WEO workbook observation is not a literal number')
                     values[str(year)] = raw
-                if list(values) != [str(year) for year in range(FIRST_OBSERVATION[indicator], 2032)]:
+                first_year = next(iter(values), None)
+                if first_year is None or list(values) != [
+                    str(year) for year in range(int(first_year), max(years.values()) + 1)
+                ]:
                     raise ValueError('IMF WEO workbook cohort coverage differs')
                 result[indicator] = {'values': {indicator: {'KEN': values}}}
     if result.keys() != UNITS.keys():
