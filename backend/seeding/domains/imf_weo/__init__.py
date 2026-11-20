@@ -1,7 +1,8 @@
 """IMF World Economic Outlook seeding domain.
 
 Fetches a small bundle of Kenya-focused macro indicators from the IMF
-DataMapper API and retains changed cohorts in ``imf_weo_observations``.
+DataMapper API or its reviewed WEO workbook and retains changed cohorts in
+``imf_weo_observations``.
 
 Powers ``/api/v1/debt/broader`` — the dashboard card that shows IMF's
 general-government gross debt alongside CBK's central-government figure.
@@ -18,9 +19,11 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timezone
 
+import httpx
 from sqlalchemy.orm import Session
 
 from ...config import SeedingSettings
+from ...freshness import mark_fixture, mark_live
 from ...http_client import create_http_client
 from ...registries import register_domain
 from ...types import DomainRunContext, DomainRunResult
@@ -35,14 +38,24 @@ def run(
 ) -> DomainRunResult:
     started_at = datetime.now(timezone.utc)
     errors: list[str] = []
+    source = "imf_datamapper"
 
     with create_http_client(settings) as client:
         try:
-            payload = fetcher.fetch_imf_weo(client, settings)
+            try:
+                payload = fetcher.fetch_imf_weo(client, settings)
+            except httpx.HTTPStatusError as exc:
+                if exc.response.status_code not in (404, 410, 429):
+                    raise
+                payload = fetcher.fetch_reviewed_workbook(client)
+                source = "imf_weo_workbook"
+                mark_live("imf_weo", detail="IMF October 2026 WEO workbook, four reviewed Kenya series")
         except Exception as exc:
             # Swallow — IMF being down is not a reason to fail the
             # whole seeding run. Other indicators are independent.
             logger.warning("IMF WEO fetch failed: %s", exc)
+            mark_fixture("imf_weo", reason=f"imf_api_unreachable({type(exc).__name__})",
+                         detail="No publisher cohort was acquired. Previously stored rows were retained.")
             return (
                 DomainRunResult.empty(
                     domain="imf_weo", dry_run=context.dry_run, started_at=started_at
@@ -56,7 +69,7 @@ def run(
     # which would otherwise flood us with ~200 countries and aggregate
     # codes (some of which exceed VARCHAR(3)).
     records = parser.parse_imf_weo(
-        payload, vintage=started_at, only_countries=fetcher.COUNTRIES
+        payload, vintage=started_at, only_countries=fetcher.COUNTRIES, source=source
     )
     stats = writer.persist_imf_weo(session, records, context)
     errors.extend(stats.errors)
@@ -77,6 +90,7 @@ def run(
             "snapshot_time_kind": "changed_acquisition_not_publisher_release",
             "indicators": list(fetcher.INDICATORS),
             "countries": list(fetcher.COUNTRIES),
+            "publisher_workbook_url": fetcher.WEO_WORKBOOK_URL if source == "imf_weo_workbook" else None,
         },
     )
 
