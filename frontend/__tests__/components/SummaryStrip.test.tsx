@@ -35,6 +35,8 @@ describe('SummaryStrip missing-data state', () => {
     // An unassessable ratio is not a breach of the anchor, and must not be
     // dressed as one — nor as quiet compliance.
     expect(screen.queryByText(/above the .* anchor/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/debt distress/i)).not.toBeInTheDocument();
+    expect(screen.getByText('Debt total unavailable')).toBeInTheDocument();
+    expect(screen.getByText('Debt-to-GDP unavailable')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Evidence for/ })).not.toBeInTheDocument();
   });
 });

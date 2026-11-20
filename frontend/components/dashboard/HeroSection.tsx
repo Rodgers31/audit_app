@@ -1,20 +1,14 @@
 'use client';
 
-import FigureEvidence from '@/components/evidence/FigureEvidence';
 import { KenyaFlag } from '@/components/ui/KenyaFlag';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { useDebtTimeline, useNationalDebtOverview } from '@/lib/react-query/useDebt';
 import { useFiscalSummary } from '@/lib/react-query/useFiscal';
 import { useLang } from '@/lib/i18n/LangProvider';
 import { HOME_TOPICS_MESSAGES } from '@/lib/i18n/messages/homeTopics';
-import { registerSourceLabel, summedRegisterRows } from '@/lib/debt/registerScope';
-import { publishedHeadlineRatio, headlineRatioDisclosure, publishedTimelineRatio, debtRatioDisclosure } from '@/lib/debt/qualification';
 import { frameworkOf, frameworkUses } from '@/lib/fiscal/framework';
-import { dsaCitation, dsaHref, dsaIsAlarm, dsaSourceLabel, dsaVintageLabel, readDsaRating } from '@/lib/debt/dsaRating';
 import { fmtBillionKES, toRawKES } from '@/lib/utils';
 import {
-  AlertTriangle,
   Banknote,
   BarChart3,
   Loader2,
@@ -22,7 +16,6 @@ import {
   Scale,
   TrendingDown,
 } from 'lucide-react';
-import DebtExplainerModal from './DebtExplainerModal';
 import HomeCountySearch from './HomeCountySearch';
 
 /* ── Formatting helpers ── */
@@ -75,210 +68,7 @@ export default function HeroSection() {
   );
 }
 
-/** Summary strip — headline figures from the authoritative /debt/national endpoint.
- *
- *  The backend exposes two debt data sources and explicitly flags which is
- *  authoritative via a reconciliation block:
- *    • loans_table        (loan-level register, ~11.85T) ← authoritative
- *    • debt_timeline_table (aggregate annual snapshot, ~12.5T)
- *
- *  The two disagree by ~5.5% — the timeline row for the current year can
- *  lag or include items not represented in the loan register (e.g. forex
- *  revaluation). We surface the register value here so this strip agrees
- *  with the /debt detail page and with the tiles in NationalDebtCard below.
- */
-export function SummaryStrip() {
-  const { t } = useLang();
-  const { data: timelineResp } = useDebtTimeline();
-  const { data: overviewResp } = useNationalDebtOverview();
-  // Same query KenyanGovCard below already runs, so React Query serves this
-  // from cache rather than issuing a second request. Needed here for the
-  // statutory debt anchor the headline is judged against.
-  const { data: fiscal } = useFiscalSummary();
-
-  const apiData = overviewResp?.data ?? overviewResp;
-  const latest = timelineResp?.timeline?.length
-    ? timelineResp.timeline[timelineResp.timeline.length - 1]
-    : null;
-
-  // Headline total (KES) — prefer the authoritative loans-register sum.
-  //
-  // The timeline fallback normalises on the row's DECLARED unit. Since the
-  // stage1 3a migration /debt/timeline serves raw KES and says so with
-  // `unit: "KES"`; this previously multiplied by 1e9 unconditionally, making
-  // the headline 10⁹× too large after the migration. Reported as F1 on #136,
-  // and the reason that migration was rolled back in production on
-  // 2026-08-30. `latest` is the RAW api row here — unlike NationalDebtCard's
-  // `lastYear`, which has already been normalised for the chart — so the
-  // conversion belongs here.
-  const totalKES =
-    apiData?.total_outstanding ??
-    apiData?.total_debt ??
-    (latest ? toRawKES(latest.total, latest.unit) : null);
-  const totalT = totalKES != null ? (totalKES / 1_000_000_000_000).toFixed(2) : null;
-
-  // Debt-to-GDP — prefer overview's canonical ratio (uses fresher GDP base
-  // than the timeline row, which can carry stale nominal-GDP figures).
-  const headlineRatio = publishedHeadlineRatio(apiData);
-  const timelineRatio = publishedTimelineRatio(latest);
-  const gdpPct = headlineRatio ?? timelineRatio;
-  const ratioObservation = headlineRatio != null ? apiData?.debt_to_gdp_observation : latest;
-  const imfRatio = headlineRatio != null && apiData?.debt_to_gdp_source === 'IMF World Economic Outlook';
-
-  // The debt-to-GDP ratio and the debt total beside it are on DIFFERENT
-  // bases and are not two views of one number: `debt_to_gdp_ratio` is IMF
-  // General-Government gross debt over GDP (69.3%), while `total_outstanding`
-  // is our central-government loans table (11.86T as of 2026-09-06 — it was
-  // 13.55T until the external book was replaced with per-creditor World Bank
-  // IDS data). Dividing the two figures on screen gives 77%, not 69.3%. Name
-  // the basis rather than letting a reader assume they divide (credibility
-  // audit F4/F8).
-  const gdpBasis: string | null = headlineRatio != null ? headlineRatioDisclosure(apiData) : debtRatioDisclosure(ratioObservation);
-  const gdpSource: string | null = imfRatio ? apiData.debt_to_gdp_source : gdpPct != null ? 'CBK / World Bank' : null;
-
-  // What the headline total actually is. `total_outstanding` is the sum of the
-  // debt rows in our loans table; `reconciliation.secondary_value_kes` is
-  // the aggregate the publisher states for the same period. They disagree by
-  // ~9%, so the card names both rather than attributing our sum to CBK, which
-  // publishes a different number (credibility audit F3).
-  //
-  // The row count is NOT `loan_count`. That field is `len(loans)` — every
-  // national row, pending bills included — while the total above them is
-  // summed with `_is_debt_loan`, which drops the 13 pending-bill rows. The
-  // label said "60 rows" over a 47-row sum. `summedRegisterRows` recovers the
-  // real count from the per-category counts and only returns one when those
-  // categories add back up to the figure it is labelling.
-  const summedRows = summedRegisterRows(apiData?.categories, totalKES);
-  const publishedTotalKES: number | null =
-    apiData?.reconciliation?.secondary_value_kes ?? null;
-  const publishedTotalT =
-    publishedTotalKES != null
-      ? (publishedTotalKES / 1_000_000_000_000).toFixed(2)
-      : null;
-
-  // The risk rating is the joint IMF–World Bank DSA's, quoted with its date
-  // and page, or it is absent (issue #269). It used to be `risk_level`, which
-  // the backend set to "High" whenever debt-to-GDP was above an unsourced
-  // 65%. When that was missing, the ratio was banded here at an uncited
-  // 40/60. Neither was the IMF's, and the site banding the ratio itself is
-  // not a substitute for the IMF's rating.
-  const dsa = readDsaRating(apiData?.debt_sustainability);
-  const riskLevel: string | null = dsa?.overall_risk_of_debt_distress ?? null;
-  const isHigh = dsaIsAlarm(dsa);
-
-  const alarm = isHigh;
-  // `.text-gov-copper` is re-pointed at the lighter accent token under
-  // `:root.dark` (globals.css), so this needs no dark: variant to stay legible.
-  const figureTone = alarm ? 'text-gov-copper' : '';
-
-  return (
-    <section
-      aria-label='Headline public finance figures'
-      className='ledger-panel overflow-hidden'>
-      {/* Alert rule — a pre-attentive cue that the figures below are outside
-          their statutory bounds. Never decorative: it is bound to the same
-          `alarm` condition the copper figures and the chips are. */}
-      {alarm && <div aria-hidden='true' className='h-1 w-full bg-gov-copper' />}
-      <div className='grid md:grid-cols-3'>
-        <div className='figure-cell border-b border-neutral-border p-5 md:border-b-0 md:border-r md:p-6'>
-          <div className='flex items-center justify-between gap-3'>
-            {/* The year here used to be `gdp_year` — the GDP observation year,
-                not the debt vintage — so the card dated the debt figure by
-                something else entirely (credibility audit F4). The basis now
-                sits in the source line below, where it can be stated exactly. */}
-            <span className='figure-label'>{t('home.hero.total_debt')}</span>
-            <KenyaFlag className='h-5 w-5 shrink-0' />
-          </div>
-          <p className={`figure-value figure-fluid mt-4 leading-none ${figureTone}`} data-figure>
-            <span className='mr-2 text-sm tracking-[0.08em] text-neutral-muted'>KES</span>
-            {totalT == null ? '—' : `${totalT}T`}
-          </p>
-          {/* The alarm is the DSA's rating row, printed as the DSA prints it:
-              label and value verbatim. It is not an adjective of ours. The
-              citation link sits in the Risk Level cell beside this one. There
-              is a text cue as well as the colour, so the warning does not
-              depend on seeing red (WCAG 1.4.1). */}
-          {dsa && isHigh && (
-            <p className='mt-2 inline-flex items-start gap-1.5 font-mono text-[11px] font-semibold uppercase leading-snug tracking-[0.06em] text-gov-copper'>
-              <AlertTriangle aria-hidden='true' className='mt-px h-3 w-3 shrink-0' />
-              <span>
-                Overall risk of debt distress: {dsa.overall_risk_of_debt_distress} · {dsaSourceLabel(dsa)}
-              </span>
-            </p>
-          )}
-          <FigureEvidence label='debt register operands' labelKey='evidence.label.debt_register' rows={apiData?.figure_qualifications?.loans} table='loans' />
-          <div className='mt-3 text-xs leading-snug text-neutral-muted'>
-            <span>{registerSourceLabel(summedRows)}</span>
-            {publishedTotalT && (
-              <span className='block mt-0.5'>
-                CBK publishes KES {publishedTotalT}T for the same period —{' '}
-                <Link href='/debt' className='underline hover:no-underline'>
-                  the gap is unreconciled
-                </Link>
-                .
-              </span>
-            )}
-            <span className='mt-0.5 inline-flex items-center gap-1'>
-              <DebtExplainerModal context='hero' />
-            </span>
-          </div>
-        </div>
-
-        <div className='figure-cell border-b border-neutral-border p-5 md:border-b-0 md:border-r md:p-6'>
-          <p className='figure-label'>Debt-to-GDP</p>
-          <FigureEvidence label='GDP observations' labelKey='evidence.label.gdp_observations' rows={apiData?.figure_qualifications?.gdp_data} table='gdp_data' />
-          <FigureEvidence label='debt-to-GDP observation' labelKey='evidence.label.debt_to_gdp' note={imfRatio ? apiData?.figure_qualifications?.derived_ratio : undefined} qualifications={!imfRatio && ratioObservation?.qualifications?.gdp_ratio ? { gdp_ratio: ratioObservation.qualifications.gdp_ratio } : undefined} />
-          <p className={`figure-value figure-fluid mt-4 leading-none ${figureTone}`} data-figure>
-            {typeof gdpPct === 'number' ? `${gdpPct.toFixed(1)}%` : '—'}
-          </p>
-          <p className='mt-3 text-xs leading-snug text-neutral-muted'>
-            {gdpBasis ?? 'Basis not declared by the source'}
-            {gdpSource && <span className='block mt-0.5'>Source: {gdpSource}</span>}
-            <span className='block mt-0.5'>
-              {imfRatio ? 'General-government debt and the loan-register total use separate scopes.' : 'Monthly stock and annual GDP are distinct observations; the register total has a separate source.'}
-            </span>
-          </p>
-        </div>
-
-        <div className='figure-cell p-5 md:p-6'>
-          <p className='figure-label'>{t('home.hero.risk_level')}</p>
-          <p className={`mt-4 font-mono text-3xl font-semibold uppercase leading-none tracking-[0.04em] ${isHigh ? 'text-gov-copper' : riskLevel ? 'text-gov-gold' : 'text-neutral-muted'}`}>
-            {riskLevel
-              ? /^in debt distress$/i.test(riskLevel)
-                ? riskLevel
-                : `${riskLevel} ${t('home.hero.risk_suffix')}`
-              : t('home.hero.risk_unassessed_value')}
-          </p>
-          {/* The four ratings of the IMF–World Bank LIC Debt Sustainability
-              Framework, which is the scale the value above is on. */}
-          <div className='mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] uppercase tracking-[0.08em] text-neutral-muted'>
-            <span className='inline-flex items-center gap-1'><span className='h-2 w-2 bg-emerald-600' />Low</span>
-            <span className='inline-flex items-center gap-1'><span className='h-2 w-2 bg-gov-gold' />Moderate</span>
-            <span className='inline-flex items-center gap-1'><span className='h-2 w-2 bg-gov-copper' />High</span>
-            <span className='inline-flex items-center gap-1'><span className='h-2 w-2 bg-gov-copper' />In distress</span>
-          </div>
-          <p className='mt-3 text-xs leading-snug text-neutral-muted'>
-            {dsa ? (
-              <>
-              <a
-                href={dsaHref(dsa)}
-                title={dsaCitation(dsa)}
-                target='_blank'
-                rel='noopener noreferrer'
-                className='underline hover:no-underline'>
-                {dsaSourceLabel(dsa)}
-              </a>
-              <span className="block mt-1">{dsaVintageLabel(dsa)}</span>
-              </>
-            ) : (
-              t('home.hero.risk_unassessed_reason')
-            )}
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-}
+export { default as SummaryStrip } from './HomeDebtSummary';
 
 /* ═══════════════════════════════════════════════════════════
    CONTAINER C — Kenyan Government fiscal snapshot card
