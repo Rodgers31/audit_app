@@ -949,15 +949,20 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
     </ul>
     <h6>Proposal</h6>
     <ul>
-      <li>On phones, lead with the <b>sorted bar list</b> (label, value and bar on one row) and drop the donut, or keep it as a small 96px thumbnail. Lloyds and Copilot do this for “spending by category” (see references).</li>
+      <li>On phones, lead with the <b>sorted bar list</b> (label, value and bar on one row) where that form is specified. For <b>Who Kenya owes</b>, keep the two-ring composition chart and the stacked instrument breakdown on desktop and phones. See the owner revision below.</li>
       <li>Split dual-axis charts into two small stacked charts with a shared x-axis (amount, then % of revenue), or show the % as labelled points.</li>
       <li>Format with one helper: KES 44.2B, whole percentages under 100 unless precision changes the reading. Show exact values in the source sheet.</li>
       <li>Wrap legend labels to two lines instead of truncating.</li>
       <li>Every chart gets a one-sentence takeaway above it (“Domestic lenders hold more than half of Kenya’s debt”) written from the data, and <code>aria-hidden</code> on the SVG plus a visually hidden table or the existing list as its alternative.</li>
     </ul>
   </div>
+  <div class="spec-b">
+    <h6>Owner revision · 19 November 2026</h6>
+    <p>Keep the familiar <b>Who Kenya owes</b> graph. Retain both concentric rings and the centre total and category count. Keep <b>Breakdown by instrument</b> with a proportional stacked share bar below the rings. The chart scales to the available width on phones and keeps the total readable.</p>
+    <p>Use a stable visual key across the instrument slices, stacked bar and readable breakdown. Give each category a distinct colour and an identifier that works without colour. Put shares in the keyed breakdown when the bar cannot fit the label. Keep exact figures and lender details reachable by touch and keyboard, and use the same published data throughout.</p>
+  </div>
   <div class="ba">
-    <figure><div class="shot"><img src="img/debt_donut.jpg" alt="Current debt nested donut followed by stacked bar and list of the same data"></div><figcaption><b>Before</b> · donut + bar + list, same data</figcaption></figure>
+    <figure><div class="shot"><img src="img/debt_donut.jpg" alt="Two-ring debt composition chart showing the total in the centre, followed by the stacked instrument breakdown"></div><figcaption><b>Approved form</b> · two rings and instrument breakdown</figcaption></figure>
     <figure><div class="phone"><div class="m-body">
       <div style="font-family:var(--font-display);font-weight:700;font-size:22px;line-height:1.1">Who Kenya owes</div>
       <p class="m-sub" style="margin:4px 0 8px">Kenyan banks and pension funds hold more than half of the debt.</p>
@@ -969,7 +974,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
         <div class="r"><span class="n">Other governments (bilateral)</span><span class="v">1.01T</span><span class="bar"><b style="width:17%;background:var(--c2)"></b></span><span class="s">8% · external</span></div>
       </div>
       <div class="legend" style="color:var(--m-muted);font-size:12px"><span>■ <span style="color:var(--c1)">Domestic</span></span><span>■ <span style="color:var(--c2)">External</span></span><span>+2 smaller lines</span></div>
-    </div></div><figcaption><i>After</i> · one sorted list, takeaway first</figcaption></figure>
+    </div></div><figcaption>Archived proposal for this section · ranked text is still available below the chart</figcaption></figure>
     <figure><div class="shot"><img src="img/debt_aging.jpg" alt="Current aging table with full-precision shilling amounts"></div><figcaption><b>Before</b> · 11-digit amounts</figcaption></figure><figure><div class="phone"><div class="m-body"><p class="m-cmp"><b>KES 70.2B has gone unpaid for over three years</b>, the largest group.</p><svg viewBox="0 0 300 128" width="100%" role="img" aria-label="County unpaid bills by age: 70.2 billion has been unpaid for more than three years" class="mchart"><text x="84.0" y="21.0" class="lab" text-anchor="end" font-weight="500">Under 1 year</text><rect x="92" y="10" width="98.2" height="16" rx="3" fill="var(--m-mute-bar)"/><text x="195.2" y="22.0" class="lab" fill="var(--m-ink)" font-weight="500">44.2B</text><text x="84.0" y="51.0" class="lab" text-anchor="end" font-weight="500">1–2 years</text><rect x="92" y="40" width="64.0" height="16" rx="3" fill="var(--m-cautionf)"/><text x="161.0" y="52.0" class="lab" fill="var(--m-ink)" font-weight="500">28.8B</text><text x="84.0" y="81.0" class="lab" text-anchor="end" font-weight="500">2–3 years</text><rect x="92" y="70" width="49.3" height="16" rx="3" fill="var(--m-cautionf)"/><text x="146.3" y="82.0" class="lab" fill="var(--m-ink)" font-weight="500">22.2B</text><text x="84.0" y="111.0" class="lab" text-anchor="end" font-weight="700">Over 3 years</text><rect x="92" y="100" width="156.0" height="16" rx="3" fill="var(--m-alarm)"/><text x="253.0" y="112.0" class="lab" fill="var(--m-ink)" font-weight="700">70.2B</text></svg><div style="font-size:12px;color:var(--m-muted)">County executives, 46 of 47 counties, at 30 June 2026 · COB</div></div></div><figcaption><i>After</i> · amounts in billions, oldest in red</figcaption></figure>
   </div>
 </article>
@@ -1261,7 +1266,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
       <thead><tr><th>Section</th><th>Today</th><th>Blueprint</th></tr></thead>
       <tbody>
         <tr><td><b>1. Headline</b></td><td>“Live national debt counter”, KES 13.00T in red, per-citizen figure, +6.5% YoY, a 10-year sparkline, debt-to-GDP with an IMF series code, and the DSA risk rating. Four “Evidence for…” lines follow before section 2.</td><td>Keep 13.00T in red: it is the page’s alarm, and the colour is earned (Part 4). Under it, one comparison sentence (“about KES 225,897 for every Kenyan, up 6.5% in a year”) and one source chip. Show the IMF/World Bank rating “High risk of debt distress” as a labelled status mark. Show debt-to-GDP as a plain figure with its own small chart in section 5, not packed into the hero.</td></tr>
-        <tr><td><b>2. Who we owe</b></td><td>Nested double donut, then a stacked bar of the same split, then a list of the same split, then a card per category. “Hover to compare.”</td><td>One ranked bar list (round one, E13), coloured by <i>domestic vs external</i> in the two chart colours, not red and green. External debt isn’t “bad” and domestic isn’t “good”. Takeaway sentence first. Tap a row to open that group’s lenders.</td></tr>
+        <tr><td><b>2. Who we owe</b></td><td>Nested double donut, then a stacked bar of the same split, then a list of the same split, then a card per category. “Hover to compare.”</td><td>Keep the responsive two-ring chart with its centre total and category count, then the proportional instrument breakdown. Use a consistent, distinguishable category key on both. Takeaway sentence first. Keep the readable category list and lender disclosure for touch and keyboard. See the <a href="#e13">E13 owner revision</a>.</td></tr>
         <tr><td><b>3. When it’s due</b></td><td>A good bar ladder of 54 bonds by year, 2027–2047, with tiny mono numbers.</td><td>Lead with Afterpay-style horizon buckets: “Due by 2031: KES 1.17T” and “2032 alone: KES 415B”. Keep the ladder, with the next five years in caution colour and the 2032 peak marked. Keep the plain-language note (“These bars are not Kenya’s total debt…”) as a one-line caveat with a link.</td></tr>
         <tr><td><b>4. Per KES 100</b></td><td>“78 KES out of every KES 100” and a row of ten coins, then a 160.3 stacked bar with a truncated legend.</td><td>Keep the coin row: it is distinctive and very clear. Replace the 160.3 bar with the “collected vs spent” chart below (Part 3, chart C3). It shows outright that the government spends 160 for every 100 it collects, and that new debt fills most of the gap.</td></tr>
         <tr><td><b>5. Cost over time</b></td><td>A dual-axis chart: KES on the left, % of revenue on the right.</td><td>Two small charts with a shared year axis: repayments in KES (bars), then “shillings of every 100 in revenue” (line) with a labelled “half of revenue” reference. Then the debt-to-GDP chart. See Part 3, C1–C2.</td></tr>
@@ -1702,7 +1707,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
           <li>One ratio against a limit: a meter with the limit marked.</li>
           <li>A single number: a StatCard, not a chart.</li>
         </ul>
-        No donuts for comparing parts. No rings or gauges for one percentage.</li>
+        Use the two-ring composition chart for <a href="#e13">Who Kenya owes</a> as specified in E13. Use the other forms above for the remaining comparisons and avoid rings or gauges for one percentage.</li>
       <li><b>Show the reference line whenever one exists</b>, labelled with its value and source: the 70% spending target, the 30% legal development minimum, “half of revenue”, the national average.</li>
       <li><b>Direct-label selectively:</b> the latest value, the extreme, and the one series that matters. A legend is present whenever there are two or more series, and never as the only way to tell series apart.</li>
       <li><b>Every value is reachable without hover.</b> Tap or keyboard shows the same readout as hover, and there is always a table or list view. Tooltips add to the chart. They never gate a value.</li>
@@ -1803,7 +1808,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
       <tbody>
         <tr><td>National debt composed chart</td><td>Home</td><td>Two y-axes (KES and %), hover-only tooltip, raw hex, no text alternative</td><td><span class="v r">Replace</span></td><td>C2: debt line + separate % of GDP line</td></tr>
         <tr><td>Debt-cost composed chart</td><td>/debt</td><td>Two y-axes; fixed 260px height</td><td><span class="v r">Replace</span></td><td>C1: repayments bars + per-100 line with a “half of revenue” reference</td></tr>
-        <tr><td>LenderTreemap (two donuts + bars)</td><td>/debt</td><td>Nested donuts, hover only, 0 aria attributes, repeats the bar list</td><td><span class="v r">Replace</span></td><td>One ranked bar list, domestic teal and external gold</td></tr>
+        <tr><td>Debt composition and instrument breakdown</td><td>/debt</td><td>Labels crowd narrow segments, and similar colours blur the category boundaries</td><td><span class="v f">Fix</span></td><td>Responsive two-ring chart and proportional stacked bar with a distinct, consistent category key and keyboard and touch access (<a href="#e13">E13 owner revision</a>)</td></tr>
         <tr><td>Spend donut</td><td>/budget</td><td>Repeats the stacked bar above it; centre value only on hover</td><td><span class="v x">Remove</span></td><td>Keep the tall segmented bar</td></tr>
         <tr><td>BudgetFlowHero flow bar</td><td>/budget</td><td>Segment highlight on hover only</td><td><span class="v f">Fix</span></td><td>Tap and focus; values printed in segments that fit</td></tr>
         <tr><td>FiscalTrendStrip sparkbars</td><td>/budget</td><td>Five fixed columns clip at 360px; 10px labels</td><td><span class="v r">Replace</span></td><td>Small-multiple bar charts with words for the change</td></tr>

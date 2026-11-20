@@ -90,3 +90,14 @@ export function toLenderCategories(
 export function lenderCategoryTotal(categories: ReadonlyArray<{ outstanding: number }>): number {
   return categories.reduce((sum, category) => sum + category.outstanding, 0);
 }
+
+export function formatLenderShare(share: number): string {
+  if (share > 0 && share < 0.1) return '<0.1';
+  const whole = Math.round(share);
+  if (whole === 0 || (whole === 100 && share < 100) || (whole === 50 && share !== 50)) {
+    const precise = share.toFixed(2).replace(/\.?0+$/, '');
+    if (precise === '100' || precise === '50') return `${share < whole ? '<' : '>'}${whole}`;
+    return precise;
+  }
+  return String(whole);
+}
