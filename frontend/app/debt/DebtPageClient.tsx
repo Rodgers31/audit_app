@@ -1,5 +1,5 @@
 'use client';
-import { publishedHeadlineRatio, headlineRatioDisclosure } from '@/lib/debt/qualification';
+import DebtGdpContext from './DebtGdpContext';
 import PendingBillsAgingPanel from './PendingBillsAgingPanel';
 import FigureEvidence from '@/components/evidence/FigureEvidence';
 import { readDsaRating, dsaIsAlarm, dsaSourceLabel, dsaVintageLabel, dsaHref, dsaCitation } from '@/lib/debt/dsaRating';
@@ -45,7 +45,6 @@ import {
   CircleDollarSign,
   FileWarning,
   Gauge,
-  Scale,
   ShieldAlert,
   TrendingUp,
   Users,
@@ -87,11 +86,6 @@ function fmtT(val: number | null | undefined, locale?: string): string {
 function fmtKES(val: number | null | undefined): string {
   if (val == null || Number.isNaN(val)) return '—';
   return `KES ${fmtT(val)}`;
-}
-
-function pct(val: number | null | undefined): string {
-  if (val == null || Number.isNaN(val)) return '—';
-  return `${val.toFixed(1)}%`;
 }
 
 function sourceText(value: unknown): string | null {
@@ -344,10 +338,6 @@ export default function NationalDebtPage() {
     const reported = api.total_outstanding === undefined ? api.total_debt : api.total_outstanding;
     const totalDebt = typeof reported === 'number' && Number.isFinite(reported) && reported >= 0
       ? reported : null;
-    const gdp = api.gdp ?? null;
-    // The API declares the ratio's measure and observation year. The register
-    // total and GDP can be from different periods; they cannot fill its absence.
-    const gdpRatio = publishedHeadlineRatio(api);
     const summary = api.summary || {};
     const categories = api.categories || {};
     const population = fetchedPopulation || api.population || null;
@@ -358,14 +348,6 @@ export default function NationalDebtPage() {
     return {
       hasData,
       totalDebt,
-      gdp,
-      gdpRatio,
-      gdpRatioYear:
-        gdpRatio != null && typeof api.debt_to_gdp_year === 'number' && Number.isInteger(api.debt_to_gdp_year) &&
-        api.debt_to_gdp_year >= 1000 && api.debt_to_gdp_year <= 9999
-          ? api.debt_to_gdp_year : null,
-      gdpRatioBasis: gdpRatio == null ? null : headlineRatioDisclosure(api),
-      gdpRatioSource: gdpRatio == null ? null : sourceText(api.debt_to_gdp_source),
       summary,
       categories,
       loanCount: api.loan_count ?? null,
@@ -578,7 +560,7 @@ export default function NationalDebtPage() {
             )}
           </div>
 
-          <div className='grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-3'>
+          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3'>
             <div className='rounded border border-neutral-border p-4'>
               <div className='mb-1.5 flex items-center gap-2 text-audit-label font-semibold text-neutral-muted'>
                 <Users size={12} />
@@ -590,27 +572,6 @@ export default function NationalDebtPage() {
               <p className='mt-1 text-sm text-neutral-muted'>
                 If every Kenyan paid an equal share
               </p>
-            </div>
-            <div className='rounded border border-neutral-border p-4'>
-              <div className='mb-1.5 flex flex-wrap items-center gap-2 text-audit-label font-semibold text-neutral-muted'>
-                <Scale size={12} />
-                Debt-to-GDP
-                <InfoTip term='debt-to-gdp' size={11} />
-              </div>
-              <div className='text-2xl sm:text-3xl font-bold tabular-nums'>
-                {d.gdpRatio != null ? pct(d.gdpRatio) : 'Unavailable'}
-              </div>
-              {d.gdpRatio != null ? (
-                <p className='mt-1 text-sm text-neutral-muted'>
-                  <span className='block'>Nominal debt · {d.gdpRatioBasis || 'Basis unavailable'}</span>
-                  <span className='block mt-1'>
-                    {d.gdpRatioSource || 'Source unavailable'} ·{' '}
-                    {d.gdpRatioYear != null ? `Observation: ${d.gdpRatioYear}` : 'Observation year unavailable'}
-                  </span>
-                </p>
-              ) : (
-                <p className='mt-1 text-sm text-neutral-muted'>No debt-to-GDP observation received.</p>
-              )}
             </div>
             <div className='rounded border border-neutral-border p-4'>
               <div className='mb-1.5 flex items-center gap-2 text-audit-label font-semibold text-neutral-muted'>
@@ -686,7 +647,6 @@ export default function NationalDebtPage() {
         )}
 
       <FigureEvidence label='debt register operands' labelKey='evidence.label.debt_register' rows={(overview?.data ?? overview)?.figure_qualifications?.loans} table='loans' />
-      <FigureEvidence label='published debt-to-GDP ratio' labelKey='evidence.label.published_debt_ratio' note={(overview?.data ?? overview)?.figure_qualifications?.derived_ratio} />
       <FigureEvidence label='GDP observations' labelKey='evidence.label.gdp_observations' rows={(overview?.data ?? overview)?.figure_qualifications?.gdp_data} table='gdp_data' />
       <FigureEvidence label='debt timeline observations' labelKey='evidence.label.timeline_observations' rows={Object.fromEntries(timeline.map(row => [String(row.year), row.qualifications ?? {}]))} />
       {/* ═══════════ SECTION 2 — WHO KENYA OWES ═══════════ */}
@@ -1306,6 +1266,8 @@ export default function NationalDebtPage() {
           </div>
         </motion.figure>
       )}
+
+      <DebtGdpContext data={overview?.data || overview} />
 
       {/* ═══════════ SECTION 9 — FULL LOAN REGISTER ═══════════ */}
       {loans.length > 0 && (
