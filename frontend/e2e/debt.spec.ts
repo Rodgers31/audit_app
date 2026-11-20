@@ -72,7 +72,7 @@ test('national debt page shows key stats and charts', async ({ page }) => {
   await expect(ratio).toContainText('Observation: 2025');
   await expect(page.getByText('Not assessed', { exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'The cost of debt over time' })).toBeVisible();
-  await expect(page.locator('.recharts-wrapper').first()).toBeVisible();
+  await expect(page.getByRole('img', { name: 'Debt repayments in KES by fiscal year' })).toBeVisible();
 });
 
 test('"Where every KES 100" card uses the synthetic fiscal-summary ratio (50, tax + non-tax revenue)', async ({ page }) => {

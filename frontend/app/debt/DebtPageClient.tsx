@@ -14,7 +14,7 @@ import PDFExportButton from '@/components/PDFExportButton';
 import { useLang } from '@/lib/i18n/LangProvider';
 import RankedLenders from '@/components/debt/RankedLenders';
 import MaturityLadder from '@/components/debt/MaturityLadder';
-import DebtServiceObservations from '@/components/debt/DebtServiceObservations';
+import DebtCostOverTime from './DebtCostOverTime';
 import {
   useDebtTimeline,
   useNationalDebtOverview,
@@ -22,7 +22,7 @@ import {
   usePendingBills,
   usePendingBillsSummary,
 } from '@/lib/react-query/useDebt';
-import { buildDebtServiceSeries, yearMissingRevenue } from '@/lib/debt/debtServiceSeries';
+import { buildDebtServiceSeries } from '@/lib/debt/debtServiceSeries';
 import { useFiscalSummary } from '@/lib/react-query/useFiscal';
 import { apiClient } from '@/lib/api/axios';
 import type { NationalLoan, PendingBillsSource } from '@/lib/api/debt';
@@ -47,7 +47,6 @@ import {
   Gauge,
   Scale,
   ShieldAlert,
-  TrendingUp,
   Users,
 } from 'lucide-react';
 import {
@@ -60,16 +59,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Area,
   AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  ComposedChart,
-  Line,
   ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
 } from 'recharts';
 
 /* ═══════════════════════════════════════════════════════
@@ -1210,102 +1200,7 @@ export default function NationalDebtPage() {
       })()}
 
       {/* ═══════════ SECTION 8 — DEBT SERVICE TREND ═══════════ */}
-      {fiscal?.years && fiscal.years.length > 1 && (
-        <motion.figure
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-80px' }}
-          transition={{ duration: 0.5 }}
-          className='space-y-4'
-          aria-labelledby='debt-cost-title'
-          aria-describedby={`debt-cost-description${yearMissingRevenue(fiscal.years) ? ' debt-cost-revenue-caveat' : ''}`}>
-          <figcaption>
-            <h2 id='debt-cost-title' className='font-display text-2xl sm:text-3xl text-gov-dark dark:text-white flex items-center gap-2'>
-              <TrendingUp aria-hidden='true' className='text-gov-forest dark:text-emerald-100' size={24} />
-              The cost of debt over time
-            </h2>
-            <p id='debt-cost-description' className='text-sm text-neutral-muted mt-1'>
-              Annual debt service (interest + principal repayments) and what share of revenue it
-              consumes. Debt service is shown in KES and service / revenue as a percentage.
-              Read chart data for each fiscal year’s values and any withheld share.
-            </p>
-            {yearMissingRevenue(fiscal.years) && (
-              <p id='debt-cost-revenue-caveat' className='text-xs text-neutral-muted mt-1.5'>
-                The share stops at {yearMissingRevenue(fiscal.years)}: that year has an enacted
-                debt-service figure but no revenue figure in our data yet, and a share cannot be
-                computed from one of the two.
-              </p>
-            )}
-          </figcaption>
-          <div className='rounded-xl bg-white/70 dark:bg-surface-elevated border border-white/70 shadow-surface p-5'>
-            <div role='img' aria-label='Debt service and service / revenue by fiscal year'>
-              <div aria-hidden='true'>
-                <ResponsiveContainer width='100%' height={260}>
-                  <ComposedChart
-                    data={debtServiceSeries}
-                    margin={{ top: 8, right: 40, left: 0, bottom: 8 }}>
-                    <defs>
-                      <linearGradient id='serviceFill' x1='0' y1='0' x2='0' y2='1'>
-                        <stop offset='0%' stopColor='#C94A4A' stopOpacity={0.5} />
-                        <stop offset='100%' stopColor='#C94A4A' stopOpacity={0.02} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray='3 3' stroke='#E2DDD5' vertical={false} />
-                    <XAxis dataKey='year' tick={{ fill: '#6B7280', fontSize: 11 }} tickLine={false} />
-                    <YAxis
-                      yAxisId='left'
-                      tickFormatter={(v) => fmtT(v)}
-                      tick={{ fill: '#6B7280', fontSize: 11 }}
-                      tickLine={false}
-                      width={60}
-                    />
-                    <YAxis
-                      yAxisId='right'
-                      orientation='right'
-                      tickFormatter={(v) => `${v}%`}
-                      tick={{ fill: '#D9A441', fontSize: 11 }}
-                      tickLine={false}
-                      width={40}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        background: 'rgba(255,255,255,0.95)',
-                        border: '1px solid rgba(226,221,213,0.4)',
-                        borderRadius: 12,
-                        fontSize: 12,
-                      }}
-                      formatter={(v: any, name: any) => {
-                        if (v == null) return ['Not published', name === 'ratio' ? 'Service / Revenue' : 'Debt service'];
-                        if (name === 'ratio') return [`${Number(v).toFixed(1)}%`, 'Service / Revenue'];
-                        return [fmtKES(Number(v)), 'Debt service'];
-                      }}
-                    />
-                    <Area
-                      yAxisId='left'
-                      type='monotone'
-                      dataKey='service'
-                      stroke='#C94A4A'
-                      strokeWidth={2.5}
-                      fill='url(#serviceFill)'
-                      name='service'
-                    />
-                    <Line
-                      yAxisId='right'
-                      type='monotone'
-                      dataKey='ratio'
-                      stroke='#D9A441'
-                      strokeWidth={2}
-                      dot={{ r: 3, fill: '#D9A441' }}
-                      name='ratio'
-                    />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-            <DebtServiceObservations points={debtServiceSeries} />
-          </div>
-        </motion.figure>
-      )}
+      {!!debtServiceSeries.length && <DebtCostOverTime points={debtServiceSeries} />}
 
       {/* ═══════════ SECTION 9 — FULL LOAN REGISTER ═══════════ */}
       {loans.length > 0 && (
