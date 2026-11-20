@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import NationalDebtPage from '@/app/debt/DebtPageClient';
 
@@ -77,41 +77,54 @@ async function mount(patch: Record<string, unknown> = {}) {
   return view;
 }
 
-// Locate the existing tile so the red run fails on the financial claim,
-// rather than on a new test ID or a new accessibility label.
-function ratioTile() {
-  return screen.getByText('Debt-to-GDP', { exact: true }).parentElement!;
+function ratioSection() {
+  return screen.getByRole('region', { name: 'Debt-to-GDP' });
 }
 
 describe('debt page financial claims (#289)', () => {
   it('shows the reported nominal ratio with its own basis, year and source', async () => {
     await mount();
-    expect(ratioTile()).toHaveTextContent('69.3%');
-    expect(ratioTile()).not.toHaveTextContent('vs PFM Act 55%');
-    expect(ratioTile()).toHaveTextContent('Nominal debt');
-    expect(ratioTile()).toHaveTextContent('IMF general-government debt / GDP, 2025');
-    expect(ratioTile()).toHaveTextContent('source vintage unconfirmed');
-    expect(ratioTile()).toHaveTextContent('Observation: 2025');
-    expect(ratioTile()).toHaveTextContent('IMF World Economic Outlook');
+    expect(ratioSection()).toHaveTextContent('69.3%');
+    expect(ratioSection()).not.toHaveTextContent('vs PFM Act 55%');
+    expect(ratioSection()).toHaveTextContent('Nominal debt');
+    expect(ratioSection()).toHaveTextContent('IMF WEO series for general government gross debt as a share of GDP');
+    expect(ratioSection()).toHaveTextContent('Data snapshot date unconfirmed');
+    expect(ratioSection()).toHaveTextContent('Reference year: 2025');
+    expect(ratioSection()).toHaveTextContent('IMF World Economic Outlook');
+    expect(within(ratioSection()).getByRole('link', { name: 'IMF World Economic Outlook · GGXWDG_NGDP' }))
+      .toHaveAttribute('href', 'https://www.imf.org/external/datamapper/GGXWDG_NGDP@WEO/KEN');
+    expect(ratioSection()).toHaveTextContent('Comparable annual observations are unavailable here.');
+    expect(within(ratioSection()).queryByRole('img')).toBeNull();
+  });
+
+  it('shows the acquisition date separately from the series reference year', async () => {
+    await mount({ debt_to_gdp_vintage: '2026-10-27T04:38:48.017247+00:00' });
+    expect(ratioSection()).toHaveTextContent('Reference year: 2025 · Data snapshot: 27 October 2026');
+  });
+
+  it('keeps a malformed snapshot timestamp unconfirmed', async () => {
+    await mount({ debt_to_gdp_vintage: '2026-10-27Tinvalid', as_of: '2026-11-19' });
+    expect(ratioSection()).toHaveTextContent('Data snapshot date unconfirmed');
+    expect(ratioSection()).not.toHaveTextContent('19 November 2026');
   });
 
   it.each([35, 50, 69.3])('does not classify a nominal ratio of %s with a colored gauge', async (ratio) => {
     await mount({ debt_to_gdp_ratio: ratio });
-    expect(ratioTile()).toHaveTextContent(`${ratio.toFixed(1)}%`);
-    expect(ratioTile().querySelector('[style*="background"]')).toBeNull();
+    expect(ratioSection()).toHaveTextContent(`${ratio.toFixed(1)}%`);
+    expect(ratioSection().querySelector('[style*="background"]')).toBeNull();
   });
 
   it.each([null, undefined, NaN, Infinity, -Infinity, -1, true, '69.3', {}, []])('keeps missing or invalid %s ratios absent even with register/GDP inputs', async (ratio) => {
     await mount({ debt_to_gdp_ratio: ratio });
-    expect(ratioTile()).toHaveTextContent('Unavailable');
-    expect(ratioTile()).not.toHaveTextContent(/\d+(\.\d+)?%/);
+    expect(ratioSection()).toHaveTextContent('Debt-to-GDP unavailable');
+    expect(ratioSection()).not.toHaveTextContent(/\d+(\.\d+)?%/);
     expect(screen.getByText('High', { exact: true })).toBeInTheDocument();
   });
 
   it('preserves a reported zero without manufacturing a risk classification', async () => {
     await mount({ debt_to_gdp_ratio: 0 });
-    expect(ratioTile()).toHaveTextContent('0.0%');
-    expect(ratioTile()).not.toHaveTextContent('Low');
+    expect(ratioSection()).toHaveTextContent('0.0%');
+    expect(ratioSection()).not.toHaveTextContent('Low');
   });
 
   it('does not turn a withheld timeline endpoint into a minus-100-percent annual change', async () => {
@@ -128,9 +141,9 @@ describe('debt page financial claims (#289)', () => {
   it('does not borrow the total-debt date/source when ratio metadata is missing', async () => {
     await mount({ debt_to_gdp_year: null, debt_to_gdp_source: null, debt_to_gdp_basis: null,
       as_of: '2026-09-27', source: 'Unrelated register source' });
-    expect(ratioTile()).toHaveTextContent('Unavailable');
-    expect(ratioTile()).not.toHaveTextContent(/\d+(\.\d+)?%/);
-    expect(ratioTile()).not.toHaveTextContent('Unrelated register source');
+    expect(ratioSection()).toHaveTextContent('Debt-to-GDP unavailable');
+    expect(ratioSection()).not.toHaveTextContent(/\d+(\.\d+)?%/);
+    expect(ratioSection()).not.toHaveTextContent('Unrelated register source');
   });
 
   it('retains the dated, linked assessment independently of the ratio', async () => {
@@ -144,14 +157,14 @@ describe('debt page financial claims (#289)', () => {
 
   it.each([{}, [], true, 12, '   '])('withholds malformed source and basis %p', async (value) => {
     await mount({ debt_to_gdp_source: value, debt_to_gdp_basis: value });
-    expect(ratioTile()).toHaveTextContent('Unavailable');
-    expect(ratioTile()).not.toHaveTextContent(/\d+(\.\d+)?%/);
+    expect(ratioSection()).toHaveTextContent('Debt-to-GDP unavailable');
+    expect(ratioSection()).not.toHaveTextContent(/\d+(\.\d+)?%/);
   });
 
   it.each([{}, [], false, 0, -1, 2025.5, '2025', NaN, Infinity, ''])('withholds malformed observation year %p', async (year) => {
     await mount({ debt_to_gdp_year: year });
-    expect(ratioTile()).toHaveTextContent('Unavailable');
-    expect(ratioTile()).not.toHaveTextContent('Observation:');
+    expect(ratioSection()).toHaveTextContent('Debt-to-GDP unavailable');
+    expect(ratioSection()).not.toHaveTextContent('Reference year:');
   });
 
   it.each([{}, { risk_level: 'High' }, { imf_dsa: { ...IMF_DSA, source: {} } }])(
@@ -176,7 +189,7 @@ describe.each([
   it('keeps the existing sourced headline and does not consume or render peers', async () => {
     client.setQueryData(['debt', 'debt-sustainability'], payload);
     await mount();
-    expect(ratioTile()).toHaveTextContent('69.3%');
+    expect(ratioSection()).toHaveTextContent('69.3%');
     expect(screen.queryByText(/EAC peer average|Service \/ Revenue|Ethiopia|Rwanda/)).not.toBeInTheDocument();
     expect(mockGet.mock.calls.some(([url]) => String(url).includes('/debt/sustainability'))).toBe(false);
   });
