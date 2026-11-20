@@ -191,10 +191,16 @@
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
-  align-items: end;
+  align-items: start;
+}
+.filterToolbar > .filterToggle {
+  margin-block-start: 26px;
+}
+.searchAndPin {
+  flex: 1 1 300px;
 }
 .searchField {
-  flex: 1 1 300px;
+  display: block;
 }
 .searchField > span,
 .selectField > span,

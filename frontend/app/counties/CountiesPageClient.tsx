@@ -42,6 +42,8 @@ import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
 import ResponsiveTable from '@/components/ui/ResponsiveTable';
 import styles from './CountyExperience.module.css';
 import { AuditStatusSignal } from './CountySignals';
+import YourCountyPin from './YourCountyPin';
+import { yourCountySpendingRate } from './yourCountySpendingRate';
 import { FINANCIAL_HEALTH_BANDS, financialHealthBand } from '@/lib/counties/financialHealth';
 import { getCountyRegion, normalizeCountyName } from '@/lib/counties/regions';
 
@@ -390,6 +392,8 @@ const defaultFilters: FilterState = {
 };
 
 function FiltersSidebar({
+  counties,
+  fiscalYear,
   filters,
   setFilters,
   collapsed,
@@ -397,6 +401,8 @@ function FiltersSidebar({
   onApply,
   onReset,
 }: {
+  counties: County[];
+  fiscalYear?: string;
   filters: FilterState;
   setFilters: React.Dispatch<React.SetStateAction<FilterState>>;
   collapsed: boolean;
@@ -425,18 +431,21 @@ function FiltersSidebar({
   return (
     <section className={styles.filters} aria-label={t('counties.filters.title')}>
       <div className={styles.filterToolbar}>
-        <label className={styles.searchField}>
-          <span>{t('counties.filters.search_county')}</span>
-          <div>
-            <Search size={17} aria-hidden='true' />
-            <input
-              type='search'
-              value={filters.search}
-              onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
-              placeholder={t('counties.filters.type_to_search')}
-            />
-          </div>
-        </label>
+        <div className={styles.searchAndPin}>
+          <label className={styles.searchField}>
+            <span>{t('counties.filters.search_county')}</span>
+            <div>
+              <Search size={17} aria-hidden='true' />
+              <input
+                type='search'
+                value={filters.search}
+                onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
+                placeholder={t('counties.filters.type_to_search')}
+              />
+            </div>
+          </label>
+          <YourCountyPin counties={counties} fiscalYear={fiscalYear} spendingRate={yourCountySpendingRate} />
+        </div>
         <label className={styles.selectField}>
           <span>{t('counties.filter.region')}</span>
           <select
@@ -1764,6 +1773,8 @@ export default function CountyExplorerPage() {
         />
         <KPICards counties={counties} />
         <FiltersSidebar
+          counties={counties}
+          fiscalYear={selectedYear}
           filters={filters}
           setFilters={setFilters}
           collapsed={sidebarCollapsed}
