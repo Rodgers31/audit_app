@@ -56,7 +56,7 @@ it('uses the same health bands for regional averages and the sidebar filter', ()
   const gradeChoices = screen.getByRole('group', { name: 'Grade' });
   fireEvent.click(within(gradeChoices).getByRole('button', { name: 'B+' }));
   expect(screen.getByText('B+ (76.0)')).toBeInTheDocument();
-  expect(within(screen.getByRole('table')).getByRole('link', { name: /Lamu/, exact: false })).toBeInTheDocument();
+  expect(within(screen.getByRole('table')).getByRole('link', { name: /Lamu/ })).toBeInTheDocument();
   expect(within(screen.getByRole('table')).queryByRole('link', { name: /Taita Taveta/ })).not.toBeInTheDocument();
 });
 
@@ -68,7 +68,7 @@ it('offers B+ and B- and applies the sidebar filter to the spending map', () => 
   expect(within(gradeChoices).getByRole('button', { name: 'B+' })).toBeInTheDocument();
   fireEvent.click(within(gradeChoices).getByRole('button', { name: 'B-' }));
   expect(screen.getByText('1 County')).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: 'Map', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: 'Map' }));
   const map = screen.getByRole('region', { name: 'County spending map' });
   expect(within(map).getByRole('link', { name: /^Taita Taveta, Spending rate/ })).toBeInTheDocument();
   expect(within(map).queryByRole('link', { name: /^Lamu, Spending rate/ })).not.toBeInTheDocument();
@@ -147,10 +147,10 @@ it('places all 47 API county names in exactly one intended region and includes v
       }
     }
     if (slug === 'coast') {
-      fireEvent.click(screen.getByRole('button', { name: 'Map', exact: true }));
+      fireEvent.click(screen.getByRole('button', { name: 'Map' }));
       expect(within(screen.getByRole('region', { name: 'County spending map' }))
         .getByRole('link', { name: /^Taita Taveta, Spending rate/ })).toBeInTheDocument();
-      fireEvent.click(screen.getByRole('button', { name: 'List', exact: true }));
+      fireEvent.click(screen.getByRole('button', { name: 'List' }));
     }
   }
 });

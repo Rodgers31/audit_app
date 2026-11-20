@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import React from 'react';
+import type { FigureQualification } from '@/lib/evidence/qualification';
 import type { County } from '@/types';
 
 const mockPush = jest.fn();
@@ -25,13 +26,18 @@ const currentYear = 'FY2025/26';
 const partialYear = 'FY2025/26 9M';
 
 function sourcedCounty(county: County, period: string): County {
-  const amount = (measure: string) => ({
-    status: 'qualified' as const,
+  const amount = (measure: string): FigureQualification => ({
+    status: 'qualified',
     reason: 'historical_source_not_value_checked',
     source_kind: 'pdf',
     source_document_id: 20,
     publisher: 'Controller of Budget',
     source_url: 'https://cob.go.ke/fixture.pdf',
+    receipt_id: null,
+    digest: null,
+    locator: null,
+    document_bytes_checked: false,
+    value_checked: false,
     identity: {
       measure,
       entity_id: Number(county.id),
@@ -47,7 +53,7 @@ function sourcedCounty(county: County, period: string): County {
     budgetSource: 'cob_cbirr',
     figureQualifications: {
       budget_lines: { '20': { allocated_amount: amount('allocated_amount'), actual_spent: amount('actual_spent') } },
-    } as County['figureQualifications'],
+    },
   };
 }
 
@@ -94,7 +100,7 @@ const lamuPolygon = () => screen.getByRole('link', { name: /^Lamu, Spending rate
 
 function openMap() {
   render(<CountiesPageClient />);
-  fireEvent.click(screen.getByRole('button', { name: 'Map', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: 'Map' }));
 }
 
 beforeEach(() => {
@@ -106,7 +112,7 @@ beforeEach(() => {
 describe('County map persistent readout', () => {
   it('opens on a spending-ranked list and carries the same qualified rates to the map', () => {
     render(<CountiesPageClient />);
-    expect(screen.getByRole('button', { name: 'List', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'List' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.queryByRole('region', { name: 'County spending map' })).not.toBeInTheDocument();
     const table = screen.getByRole('table', { name: 'County Rankings' });
     const rows = () => Array.from(table.querySelectorAll('tbody tr'));
@@ -117,7 +123,7 @@ describe('County map persistent readout', () => {
     fireEvent.click(screen.getByRole('columnheader', { name: /Spending rate/ }));
     expect(rows().map((row) => row.children[1].textContent)).toEqual(['1Mombasa', '2Lamu', '—Kwale']);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Map', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'Map' }));
     const map = screen.getByRole('region', { name: 'County spending map' });
     expect(within(map).getByRole('link', { name: 'Lamu, Spending rate, 76.0%, On target' }))
       .toHaveAttribute('data-spending-band', 'on');
@@ -126,7 +132,7 @@ describe('County map persistent readout', () => {
     expect(within(map).getByRole('link', { name: 'Kwale, Spending rate, No published rate' }))
       .toHaveAttribute('data-spending-band', 'unavailable');
     expect(screen.queryByRole('table', { name: 'County Rankings' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'List', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'List' }));
     expect(rows().map((row) => row.children[1].textContent)).toEqual(['1Mombasa', '2Lamu', '—Kwale']);
   });
 
