@@ -43,38 +43,24 @@ beforeEach(() => {
   window.history.replaceState(null, '', '/counties');
 });
 
-it('uses the ranking letter for map fills, legend filters, and the regional average', () => {
+it('uses the same health bands for regional averages and the sidebar filter', () => {
   mockCounties = [
     county('Lamu', 76, '005'),
     county('Taita Taveta', 45, '006'),
     county('Mombasa', null, '047'),
   ];
   render(<CountiesPageClient />);
-  const map = screen.getByRole('region', { name: 'County Performance Map' });
-  const lamu = within(map).getByRole('link', { name: 'Lamu, Grade: B+' });
-  const taita = within(map).getByRole('link', { name: 'Taita Taveta, Grade: B-' });
-  const bPlus = within(map).getByRole('button', { name: 'B+' });
-  const bMinus = within(map).getByRole('button', { name: 'B-' });
-  expect(lamu).toHaveAttribute('fill', bPlus.style.getPropertyValue('--grade-color'));
-  expect(taita).toHaveAttribute('fill', bMinus.style.getPropertyValue('--grade-color'));
   expect(screen.getByText('B (60.5)')).toBeInTheDocument();
 
-  fireEvent.click(bPlus);
-  expect(within(map).getByRole('link', { name: 'Lamu, Grade: B+' })).toBeInTheDocument();
-  expect(taita).not.toHaveAttribute('role', 'link');
+  fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
+  const gradeChoices = screen.getByRole('group', { name: 'Grade' });
+  fireEvent.click(within(gradeChoices).getByRole('button', { name: 'B+' }));
   expect(screen.getByText('B+ (76.0)')).toBeInTheDocument();
+  expect(within(screen.getByRole('table')).getByRole('link', { name: /Lamu/, exact: false })).toBeInTheDocument();
+  expect(within(screen.getByRole('table')).queryByRole('link', { name: /Taita Taveta/ })).not.toBeInTheDocument();
 });
 
-it('keeps missing and non-finite health scores ungraded on the map and ranking', () => {
-  mockCounties = [county('Lamu', null, '005'), county('Mombasa', Number.NaN, '047')];
-  render(<CountiesPageClient />);
-  const map = screen.getByRole('region', { name: 'County Performance Map' });
-  expect(within(map).getByRole('link', { name: 'Lamu, Grade: —' })).toHaveAttribute('fill', '#b8bcb2');
-  expect(within(map).getByRole('link', { name: 'Mombasa, Grade: —' })).toHaveAttribute('fill', '#b8bcb2');
-  expect(screen.queryByText(/Unknown \(/)).not.toBeInTheDocument();
-});
-
-it('offers B+ and B- in the sidebar and filters by the same health band as the map', () => {
+it('offers B+ and B- and applies the sidebar filter to the spending map', () => {
   mockCounties = [county('Lamu', 76, '005'), county('Taita Taveta', 45, '006')];
   render(<CountiesPageClient />);
   fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
@@ -82,8 +68,10 @@ it('offers B+ and B- in the sidebar and filters by the same health band as the m
   expect(within(gradeChoices).getByRole('button', { name: 'B+' })).toBeInTheDocument();
   fireEvent.click(within(gradeChoices).getByRole('button', { name: 'B-' }));
   expect(screen.getByText('1 County')).toBeInTheDocument();
-  expect(within(screen.getByRole('region', { name: 'County Performance Map' }))
-    .getByRole('link', { name: 'Taita Taveta, Grade: B-' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Map', exact: true }));
+  const map = screen.getByRole('region', { name: 'County spending map' });
+  expect(within(map).getByRole('link', { name: /^Taita Taveta, Spending rate/ })).toBeInTheDocument();
+  expect(within(map).queryByRole('link', { name: /^Lamu, Spending rate/ })).not.toBeInTheDocument();
 });
 
 it('ranks a reported health score before unavailable scores in both directions', () => {
@@ -159,8 +147,10 @@ it('places all 47 API county names in exactly one intended region and includes v
       }
     }
     if (slug === 'coast') {
-      expect(within(screen.getByRole('region', { name: 'County Performance Map' }))
-        .getByRole('link', { name: 'Taita Taveta, Grade: B' })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Map', exact: true }));
+      expect(within(screen.getByRole('region', { name: 'County spending map' }))
+        .getByRole('link', { name: /^Taita Taveta, Spending rate/ })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'List', exact: true }));
     }
   }
 });

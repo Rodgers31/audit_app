@@ -14,6 +14,15 @@ import {
   countyPopulation,
   sumPublished,
 } from '@/lib/countyFigures';
+import { COUNTY_SPENDING_TARGET } from '@/components/transparency/moneyFlowPresentation';
+import {
+  ANNUAL_SPENDING_BANDS,
+  formatSpendingRate,
+  hasAnnualSpendingTarget,
+  publishedSpendingRate,
+  spendingBand,
+  type SpendingBand,
+} from '@/lib/counties/spendingRate';
 import { countyDebtRatio } from '@/components/map/MapUtilities';
 import { useCounties, useCountyFiscalYears } from '@/lib/react-query';
 import { resolveExplorerYear } from '@/lib/utils';
@@ -26,6 +35,7 @@ import {
   Filter,
   Search,
   TrendingUp,
+  X,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -134,8 +144,7 @@ type SortDir = 'asc' | 'desc';
  */
 type SortState = { field: SortField; dir: SortDir };
 
-/** Opening sort. Kept in step with `defaultFilters.sortBy` ('budget-desc'). */
-const defaultSort: SortState = { field: 'budget', dir: 'desc' };
+const defaultSort: SortState = { field: 'utilization', dir: 'desc' };
 
 /** Which way a column opens when it first takes over the sort. */
 function initialDir(field: SortField): SortDir {
@@ -386,7 +395,7 @@ const defaultFilters: FilterState = {
   grades: [],
   auditStatuses: [],
   spendingRange: [0, 150],
-  sortBy: 'budget-desc',
+  sortBy: `${defaultSort.field}-${defaultSort.dir}`,
 };
 
 function FiltersSidebar({
@@ -567,18 +576,37 @@ function FiltersSidebar({
 
 import { KENYA_COUNTY_PATHS } from '@/data/kenya-county-paths';
 
+function SpendingStatus({ band }: { band: SpendingBand }) {
+  const { t } = useLang();
+  return <span>{t(`counties.spending.${band}`)}</span>;
+}
+
+function SpendingSummary({ rate, fiscalYear }: { rate?: number; fiscalYear?: string }) {
+  const { t } = useLang();
+  const band = spendingBand(rate, fiscalYear);
+  return (
+    <dl className={styles.spendingSummary}>
+      <div>
+        <dt>{t('counties.spending.measure')}{fiscalYear && ` · ${fiscalYear}`}</dt>
+        <dd data-spending-band={band}>
+          {rate != null && <strong>{formatSpendingRate(rate)} </strong>}
+          <SpendingStatus band={band} />
+        </dd>
+      </div>
+    </dl>
+  );
+}
+
 function CountyPerformanceMap({
   counties,
   allCounties,
-  activeGrades,
-  onToggleGrade,
+  readSpendingRate,
   selectedRegion,
   fiscalYear,
 }: {
   counties: County[]; // filtered counties (for highlight)
   allCounties: County[]; // all counties (always render all polygons)
-  activeGrades: string[];
-  onToggleGrade: (grade: string) => void;
+  readSpendingRate: (county: County) => number | undefined;
   selectedRegion: string;
   fiscalYear?: string;
 }) {
@@ -589,9 +617,21 @@ function CountyPerformanceMap({
     selected: boolean;
   } | null>(null);
   const pointerType = useRef<string | null>(null);
+  const sheetRef = useRef<HTMLDialogElement>(null);
+  const [sheetCountyId, setSheetCountyId] = useState<County['id'] | null>(null);
+  const sheetCounty = counties.find((county) => county.id === sheetCountyId);
+  useEffect(() => {
+    const sheet = sheetRef.current;
+    if (sheetCounty && sheet && !sheet.open) sheet.showModal();
+    if (!sheetCounty && sheet?.open) sheet.close();
+  }, [sheetCounty]);
 
-  // Browsers can focus the path before completing a tap. A preview must
-  // never count as the selection that makes the next tap open the county.
+  const annualTarget = hasAnnualSpendingTarget(fiscalYear);
+  const legendBands: SpendingBand[] = annualTarget
+    ? [...ANNUAL_SPENDING_BANDS, 'unavailable']
+    : ['reported', 'unavailable'];
+
+  // Hover and focus preview a county. Keep the outline when a reader selects it.
   const previewCounty = (id: County['id']) =>
     setActiveCounty((current) => (current?.id === id ? current : { id, selected: false }));
   const selectCounty = (id: County['id']) => setActiveCounty({ id, selected: true });
@@ -652,16 +692,24 @@ function CountyPerformanceMap({
   const countyHref = (county: County) =>
     `/counties/${county.id}${fiscalYear ? `?fy=${encodeURIComponent(fiscalYear)}` : ''}`;
   return (
-    <section aria-labelledby='county-map-title'>
+    <section className={styles.spendingMap} aria-labelledby='county-map-title'>
       <header className={styles.sectionHeading}>
-        <h2 id='county-map-title'>{t('counties.map.title')}</h2>
+        <h2 id='county-map-title'>{t('counties.spending.map_title')}</h2>
         <span>{fiscalYear}</span>
       </header>
+      <ul className={styles.mapLegend} aria-label={t('counties.spending.legend')}>
+        {legendBands.map((band) => (
+          <li key={band} data-spending-band={band}>
+            <i aria-hidden='true' />
+            <SpendingStatus band={band} />
+          </li>
+        ))}
+      </ul>
       <div className={styles.mapCanvas}>
         <svg
           viewBox={regionViewBox}
           className={styles.mapSvg}
-          aria-label={t('counties.map.title')}
+          aria-label={t('counties.spending.map_title')}
           onPointerDown={(event) => {
             pointerType.current = event.pointerType;
           }}
@@ -670,30 +718,31 @@ function CountyPerformanceMap({
           }}>
           {KENYA_COUNTY_PATHS.map((cp) => {
             const county = allLookup.get(normalizeCountyName(cp.name));
-            const band = county ? financialHealthBand(county.financial_health_score) : null;
-            const fill = band?.fill ?? '#b8bcb2';
-            const dimmed =
-              !filteredNames.has(normalizeCountyName(cp.name)) ||
-              (activeGrades.length > 0 && (!band || !activeGrades.includes(band.grade)));
+            const rate = county ? readSpendingRate(county) : undefined;
+            const band = spendingBand(rate, fiscalYear);
+            const dimmed = !filteredNames.has(normalizeCountyName(cp.name));
             const interactive = county != null && !dimmed;
             const selected = interactive && activeCounty?.id === county.id && activeCounty.selected;
             return (
               <path
                 key={cp.name}
                 d={cp.path}
-                fill={fill}
+                fill='var(--county-spending-fill)'
                 stroke='var(--county-map-boundary)'
                 strokeWidth={0.7}
                 opacity={dimmed ? 0.2 : 1}
                 role={interactive ? 'link' : undefined}
                 tabIndex={interactive ? 0 : undefined}
-                data-grade={band?.grade}
+                data-spending-band={band}
                 aria-controls={interactive ? 'county-map-readout' : undefined}
+                aria-hidden={interactive ? undefined : true}
                 aria-current={selected ? 'true' : undefined}
                 aria-label={
-                  county
-                    ? `${county.name}, ${t('counties.map.tooltip_grade')}: ${getGrade(county.financial_health_score).letter}`
-                    : cp.name
+                  interactive
+                    ? [county.name, t('counties.spending.measure'),
+                        rate == null ? null : formatSpendingRate(rate),
+                        t(`counties.spending.${band}`)].filter(Boolean).join(', ')
+                    : undefined
                 }
                 onClick={(event) => {
                   const input = pointerType.current;
@@ -703,8 +752,13 @@ function CountyPerformanceMap({
                     event.detail > 0 &&
                     (input === 'touch' ||
                       (input !== 'mouse' && window.matchMedia('(pointer: coarse)').matches));
-                  if (touchOrCoarse && !selected) selectCounty(county.id);
-                  else router.push(countyHref(county));
+                  if (touchOrCoarse) {
+                    event.currentTarget.focus();
+                    selectCounty(county.id);
+                    setSheetCountyId(county.id);
+                  } else {
+                    router.push(countyHref(county));
+                  }
                 }}
                 onKeyDown={(event) => {
                   if (!interactive) return;
@@ -733,49 +787,33 @@ function CountyPerformanceMap({
               {COUNTY_EXPLORER_MESSAGES['counties.map.open'][lang].replace('{county}', inspected.name)}
               <span aria-hidden='true'>↗</span>
             </Link>
-            <dl>
-              <div>
-                <dt>{t('counties.map.tooltip_grade')}</dt>
-                <dd>{getGrade(inspected.financial_health_score).letter}</dd>
-              </div>
-              <div>
-                <dt>{t('counties.map.tooltip_exec')}</dt>
-                <dd>
-                  {inspected.budgetUtilization != null
-                    ? `${inspected.budgetUtilization.toFixed(0)}%`
-                    : '—'}
-                </dd>
-              </div>
-              <div>
-                <dt>{t('counties.map.tooltip_budget')}</dt>
-                <dd>
-                  {countyBudget(inspected) != null
-                    ? `KES ${fmtKES(countyBudget(inspected) as number)}`
-                    : '—'}
-                </dd>
-              </div>
-            </dl>
+            <SpendingSummary rate={readSpendingRate(inspected)} fiscalYear={fiscalYear} />
           </>
         )}
       </div>
-      <div className={styles.mapLegend}>
-        <span>{t('counties.map.performance')}:</span>
-        {FINANCIAL_HEALTH_BANDS.map(({ grade: g, fill }) => (
-          <button
-            key={g}
-            onClick={() => onToggleGrade(g)}
-            aria-pressed={activeGrades.includes(g)}
-            style={{ '--grade-color': fill } as React.CSSProperties}>
-            <i aria-hidden='true' />
-            {g}
-          </button>
-        ))}
-        {activeGrades.length > 0 && (
-          <button onClick={() => activeGrades.forEach(onToggleGrade)}>
-            {t('counties.map.clear')}
-          </button>
+      <dialog
+        ref={sheetRef}
+        className={styles.mapSheet}
+        aria-labelledby='county-map-sheet-title'
+        onClose={() => setSheetCountyId(null)}>
+        {sheetCounty && (
+          <>
+            <header>
+              <h3 id='county-map-sheet-title'>{sheetCounty.name}</h3>
+              <form method='dialog'>
+                <button type='submit' aria-label={t('foundation.close')} autoFocus>
+                  <X size={20} aria-hidden='true' />
+                </button>
+              </form>
+            </header>
+            <SpendingSummary rate={readSpendingRate(sheetCounty)} fiscalYear={fiscalYear} />
+            <Link href={countyHref(sheetCounty)}>
+              {COUNTY_EXPLORER_MESSAGES['counties.map.open'][lang].replace('{county}', sheetCounty.name)}
+              <span aria-hidden='true'>↗</span>
+            </Link>
+          </>
         )}
-      </div>
+      </dialog>
     </section>
   );
 }
@@ -1006,21 +1044,19 @@ function InsightRow({
    EXECUTION BAR
    ══════════════════════════════════════════════════════════════════════════════ */
 
-function ExecBar({ pct }: { pct: number | null | undefined }) {
-  // A county that reported no execution is not a county that executed 0%.
-  if (pct == null) {
-    return <span className='text-xs text-gray-400 dark:text-neutral-muted/80'>—</span>;
-  }
-  const clamped = Math.min(pct, 100);
-  const clr = pct >= 70 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-500';
+function ExecBar({ pct, fiscalYear }: { pct?: number; fiscalYear?: string }) {
+  const band = spendingBand(pct, fiscalYear);
   return (
-    <div className='flex items-center gap-2'>
-      <div className='w-20 h-2 bg-gray-100 dark:bg-surface-elevated rounded-full overflow-hidden'>
-        <div className={`h-full rounded-full ${clr}`} style={{ width: `${clamped}%` }} />
-      </div>
-      <span className='text-xs tabular-nums text-gray-700 dark:text-neutral-muted w-8'>
-        {pct.toFixed(0)}%
-      </span>
+    <div className={styles.spendingBar} data-spending-band={band}>
+      {pct != null && (
+        <>
+          <strong>{formatSpendingRate(pct)}</strong>
+          <div aria-hidden='true' className={styles.spendingBarTrack}>
+            <i style={{ width: `${Math.min(pct, 100)}%` }} />
+          </div>
+        </>
+      )}
+      <SpendingStatus band={band} />
     </div>
   );
 }
@@ -1140,6 +1176,7 @@ function CountyRankingsTable({
   sortDir,
   onSort,
   fiscalYear,
+  readSpendingRate,
 }: {
   counties: County[];
   sortField: SortField;
@@ -1150,6 +1187,7 @@ function CountyRankingsTable({
    *  the detail page to resolve the period itself — the same period this list
    *  is showing, since both go through the API's own rule. */
   fiscalYear: string | undefined;
+  readSpendingRate: (county: County) => number | undefined;
 }) {
   const { t } = useLang();
   // BOTH pagination (?p=N) and the "View All" toggle (?view=all) are
@@ -1299,7 +1337,7 @@ function CountyRankingsTable({
                 ['population', 'counties.rankings.col_population'],
                 ['health', 'counties.rankings.col_health'],
                 ['budget', 'counties.rankings.col_budget'],
-                ['utilization', 'counties.rankings.col_execution'],
+                ['utilization', 'counties.spending.measure'],
                 ['debt', 'counties.rankings.col_debt'],
               ] as const
             ).map(([field, label]) => (
@@ -1337,7 +1375,7 @@ function CountyRankingsTable({
                 {t('counties.rankings.col_budget')}
               </Th>
               <Th field='utilization' current={sortField} dir={sortDir} onSort={onSort}>
-                {t('counties.rankings.col_execution')} <InfoTip term='budget-execution' size={10} />
+                {t('counties.spending.measure')} <InfoTip term='budget-execution' size={10} />
               </Th>
               <Th field='debt' current={sortField} dir={sortDir} onSort={onSort}>
                 {t('counties.rankings.col_debt')}
@@ -1351,7 +1389,7 @@ function CountyRankingsTable({
             {paged.map((county, i) => {
               const budget = countyBudget(county);
               const debt = countyDebt(county);
-              const util = county.budgetUtilization;
+              const util = readSpendingRate(county);
               const grade = getGrade(county.financial_health_score);
               const issues = county.auditIssues?.length ?? 0;
               const auditCfg = AUDIT_STATUS_CFG[county.auditStatus ?? 'pending'];
@@ -1361,7 +1399,9 @@ function CountyRankingsTable({
               const base = fiscalYear
                 ? `/counties/${county.id}?fy=${encodeURIComponent(fiscalYear)}`
                 : `/counties/${county.id}`;
-              const rank = showAll ? i + 1 : (page - 1) * PAGE_SIZE + i + 1;
+              const rank = sortField === 'utilization' && util == null
+                ? '—'
+                : (showAll ? 0 : (page - 1) * PAGE_SIZE) + i + 1;
 
               return (
                 <tr
@@ -1405,11 +1445,11 @@ function CountyRankingsTable({
                     </Link>
                     <FigureEvidence label={`${county.name} budget`} labelKey='evidence.label.county_budget_named' labelValues={{ name: county.name }} rows={county.figureQualifications?.budget_lines} table="budget_lines" />
                   </td>
-                  <td data-label={t('counties.rankings.col_execution')} className='py-3 px-3'>
+                  <td data-label={t('counties.spending.measure')} className='py-3 px-3'>
                     <Link
                       href={`${base}${base.includes('?') ? '&' : '?'}tab=budget`}
                       className='block'>
-                      <ExecBar pct={util} />
+                      <ExecBar pct={util} fiscalYear={fiscalYear} />
                     </Link>
                   </td>
                   <td data-label={t('counties.rankings.col_debt')} className='py-3 px-3'>
@@ -1546,11 +1586,12 @@ export default function CountyExplorerPage() {
   // and is URL-driven via ?view=all so that back-navigation from a
   // county detail page restores the full-list view.
 
-  // Grade filter driven by the map legend
-  const [mapGrades, setMapGrades] = useState<string[]>([]);
-  const handleToggleMapGrade = useCallback((g: string) => {
-    setMapGrades((prev) => (prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]));
-  }, []);
+  const [view, setView] = useState<'list' | 'map'>('list');
+  const spendingRates = useMemo(
+    () => new Map(counties?.map((county) => [county.id, publishedSpendingRate(county, selectedYear)])),
+    [counties, selectedYear]
+  );
+  const readSpendingRate = useCallback((county: County) => spendingRates.get(county.id), [spendingRates]);
 
   // Clicking the active column flips it; clicking any other takes it over at
   // that column's opening direction. Both come out of one pure updater, so it
@@ -1610,14 +1651,6 @@ export default function CountyExplorerPage() {
       });
     }
 
-    // Map-legend grade filter (applied independently of sidebar)
-    if (mapGrades.length > 0) {
-      list = list.filter((c) => {
-        const grade = financialHealthBand(c.financial_health_score)?.grade;
-        return grade != null && mapGrades.includes(grade);
-      });
-    }
-
     if (filters.auditStatuses.length > 0) {
       list = list.filter((c) => filters.auditStatuses.includes(c.auditStatus ?? 'pending'));
     }
@@ -1641,22 +1674,14 @@ export default function CountyExplorerPage() {
         return compareByPublishedFigure(a, b, rankedHealthScore, sortDir);
       }
 
-      let cmp = 0;
-      switch (sortField) {
-        case 'name':
-          cmp = a.name.localeCompare(b.name);
-          break;
-
-        case 'utilization':
-          // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- ordering only: sorts unreported counties last, publishes nothing
-          cmp = (a.budgetUtilization ?? 0) - (b.budgetUtilization ?? 0);
-          break;
+      if (sortField === 'utilization') {
+        return compareByPublishedFigure(a, b, readSpendingRate, sortDir);
       }
-      return sortDir === 'asc' ? cmp : -cmp;
+      return sortDir === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
     });
 
     return list;
-  }, [counties, filters, mapGrades, sortField, sortDir]);
+  }, [counties, filters, readSpendingRate, sortField, sortDir]);
 
   // Export filtered data as CSV
   const handleExport = useCallback(() => {
@@ -1667,7 +1692,7 @@ export default function CountyExplorerPage() {
       'Population',
       'Health Grade',
       'Budget (KES)',
-      'Execution %',
+      'Spending rate (%)',
       'Debt (KES)',
       'Audit Status',
     ];
@@ -1677,7 +1702,7 @@ export default function CountyExplorerPage() {
       c.population ?? '',
       getGrade(c.financial_health_score).letter,
       countyBudget(c) ?? '',
-      c.budgetUtilization != null ? c.budgetUtilization.toFixed(1) : '',
+      readSpendingRate(c) ?? '',
       countyDebt(c) ?? '',
       c.auditStatus ?? 'pending',
     ]);
@@ -1689,7 +1714,7 @@ export default function CountyExplorerPage() {
     a.download = `county_data_${(selectedYear ?? 'unspecified-fy').replace('/', '-')}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [filtered, selectedYear]);
+  }, [filtered, readSpendingRate, selectedYear]);
 
   if (isLoading || error || !counties) {
     return (
@@ -1771,24 +1796,45 @@ export default function CountyExplorerPage() {
           onApply={handleApply}
           onReset={handleReset}
         />
-        <div className={styles.atlasLayout}>
+        <div className={styles.explorerViewBar}>
+          <div>
+            <p className={styles.spendingMeasure}>
+              {t('counties.spending.measure')}{selectedYear && ` · ${selectedYear}`}
+            </p>
+            {hasAnnualSpendingTarget(selectedYear) && (
+              <p className={styles.spendingPeriod}>
+                {t('counties.spending.target').replace('{target}', String(COUNTY_SPENDING_TARGET))}
+              </p>
+            )}
+          </div>
+          <div className={styles.explorerViewToggle} role='group' aria-label={t('counties.spending.view')}>
+            {(['list', 'map'] as const).map((mode) => (
+              <button key={mode} type='button' aria-pressed={view === mode} onClick={() => setView(mode)}>
+                {t(`counties.spending.${mode}`)}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div hidden={view !== 'list'}>
+          <CountyRankingsTable
+            counties={filtered}
+            sortField={sortField}
+            sortDir={sortDir}
+            onSort={handleSort}
+            fiscalYear={selectedYear}
+            readSpendingRate={readSpendingRate}
+          />
+        </div>
+        {view === 'map' && (
           <CountyPerformanceMap
             counties={filtered}
             allCounties={counties}
-            activeGrades={mapGrades}
-            onToggleGrade={handleToggleMapGrade}
+            readSpendingRate={readSpendingRate}
             selectedRegion={filters.region}
             fiscalYear={selectedYear}
           />
-          <CountyInsightsPanel counties={filtered} />
-        </div>
-        <CountyRankingsTable
-          counties={filtered}
-          sortField={sortField}
-          sortDir={sortDir}
-          onSort={handleSort}
-          fiscalYear={selectedYear}
-        />
+        )}
+        <CountyInsightsPanel counties={filtered} />
         <DataFreshnessBadge sources='COB' className={styles.sourceFooter} />
       </div>
     </div>

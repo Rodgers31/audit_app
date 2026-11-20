@@ -298,11 +298,73 @@
   text-decoration: underline;
   text-underline-offset: 5px;
 }
-.atlasLayout {
-  display: grid;
-  gap: 32px;
-  padding-block: 28px;
-  border-block: 1px solid var(--county-line);
+.explorerViewBar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 16px;
+  padding-block: 12px;
+  border-top: 1px solid var(--county-line);
+}
+.spendingMeasure {
+  font-weight: 600;
+}
+.explorerViewToggle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--county-control-line);
+  background: var(--county-nav-surface);
+  border-radius: 6px;
+}
+.explorerViewToggle button,
+.mapSheet button {
+  min-width: 44px;
+  min-height: 44px;
+  padding-inline: 14px;
+  border-radius: 4px;
+}
+.explorerViewToggle button[aria-pressed='true'] {
+  background: var(--county-accent);
+  color: var(--county-paper);
+  font-weight: 700;
+}
+.spendingMap {
+  padding-block: 16px 32px;
+}
+.spendingPeriod {
+  color: var(--county-muted);
+  font-size: 0.875rem;
+  margin-top: 2px;
+}
+.explorer [data-spending-band='above'] {
+  --county-spending-fill: #176b49;
+  --county-spending-ink: var(--county-positive-ink);
+  --county-map-outline: #fff8e8;
+}
+.explorer [data-spending-band='on'] {
+  --county-spending-fill: #619b76;
+  --county-spending-ink: var(--county-positive-ink);
+}
+.explorer [data-spending-band='below'] {
+  --county-spending-fill: #c98a2b;
+  --county-spending-ink: var(--county-watch-ink);
+}
+.explorer [data-spending-band='well-below'] {
+  --county-spending-fill: #9e2f26;
+  --county-spending-ink: var(--county-critical-ink);
+  --county-map-outline: #fff8e8;
+}
+.explorer [data-spending-band='reported'] {
+  --county-spending-fill: #7191a2;
+  --county-spending-ink: var(--county-info-ink);
+}
+.explorer [data-spending-band='unavailable'] {
+  --county-spending-fill: #a6ada6;
+  --county-spending-ink: var(--county-muted);
 }
 .sectionHeading {
   display: flex;
@@ -337,22 +399,17 @@
   touch-action: manipulation;
 }
 .mapSvg path[role='link'] {
-  --county-map-outline: #101b14;
   cursor: pointer;
-}
-/* Grade C has the darkest fill, so it needs the cream outline in either theme. */
-.mapSvg path[data-grade='C'] {
-  --county-map-outline: #f0eade;
 }
 @media (hover: hover) {
   .mapSvg path[role='link']:hover {
-    stroke: var(--county-map-outline);
+    stroke: var(--county-map-outline, #101b14);
     stroke-width: 2px;
     vector-effect: non-scaling-stroke;
   }
 }
 .mapSvg path[role='link']:is([aria-current='true'], :focus-visible) {
-  stroke: var(--county-map-outline);
+  stroke: var(--county-map-outline, #101b14);
   stroke-width: 3px;
   vector-effect: non-scaling-stroke;
   outline: none;
@@ -385,46 +442,84 @@
   text-decoration: underline;
   text-underline-offset: 5px;
 }
-.mapReadout dl {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 24px;
-}
-.mapReadout dt {
-  font-size: 12px;
+.spendingSummary dt {
   color: var(--county-muted);
+  font-size: 0.8125rem;
   margin-bottom: 4px;
 }
-.mapReadout dd {
-  font-size: 14px;
+.spendingSummary dd,
+.spendingBar {
+  color: var(--county-spending-ink);
+  font-size: 0.875rem;
+}
+.spendingBar {
+  display: grid;
+  gap: 3px;
+}
+.spendingBarTrack {
+  height: 5px;
+  border-radius: 3px;
+  background: rgb(var(--c-surface-sunken));
+}
+.spendingBarTrack i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--county-spending-fill);
 }
 .mapLegend {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 12px;
-  padding-top: 8px;
-  font-size: 12px;
+  gap: 6px 16px;
+  margin-top: 12px;
+  font-size: 0.875rem;
 }
-.mapLegend > span {
-  color: var(--county-muted);
-}
-.mapLegend button {
+.mapLegend li {
   display: flex;
   align-items: center;
   gap: 6px;
-  min-width: 44px;
-  min-height: 44px;
-  border-bottom: 2px solid transparent;
-}
-.mapLegend button[aria-pressed='true'] {
-  border-color: var(--county-accent);
 }
 .mapLegend i {
-  width: 10px;
-  height: 10px;
-  background: var(--grade-color);
+  flex: 0 0 12px;
+  height: 12px;
+  background: var(--county-spending-fill);
   border-radius: 2px;
+}
+.mapSheet {
+  position: fixed;
+  inset: auto 0 0;
+  margin: 0 auto;
+  max-width: 38rem;
+  width: 100%;
+  max-height: 85dvh;
+  overflow-y: auto;
+  padding: 16px 20px max(16px, env(safe-area-inset-bottom));
+  border: 1px solid var(--county-line);
+  border-radius: 12px 12px 0 0;
+  background: rgb(var(--c-surface-base));
+  color: var(--county-ink);
+}
+.mapSheet::backdrop {
+  background: rgb(0 0 0 / 45%);
+}
+.mapSheet > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.mapSheet h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.mapSheet > a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  color: var(--county-accent);
+  text-decoration: underline;
 }
 .insights {
   padding-block: 4px;
@@ -932,10 +1027,6 @@
   .summaryMetric + .summaryMetric {
     padding-left: 24px;
     border-left: 1px solid var(--county-line);
-  }
-  .atlasLayout {
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-    gap: 48px;
   }
   .filterOptions {
     grid-template-columns: repeat(4, minmax(0, 1fr));
