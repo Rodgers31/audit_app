@@ -16,12 +16,13 @@
  *   • ['counties', id, 'accountability']
  * Otherwise React Query treats them as cache misses and refetches.
  */
-import { Metadata } from 'next';
+import type { Metadata, ResolvingMetadata } from 'next';
 import { getCountyComprehensive } from '@/lib/api/counties';
 import { getQueryClient } from '@/lib/react-query/getQueryClient';
 import { prefetchWithTimeout } from '@/lib/react-query/prefetchWithTimeout';
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import CountyDetailClient from './CountyDetailClient';
+import { resolveCountyMetadataRoute } from './countyMetadata';
 
 // Shorter SSR budget — on a cold backend each heavy endpoint is ~3-4 s,
 // so a 5 s timeout made the whole page wait half a round-trip. 1.5 s
@@ -29,17 +30,37 @@ import CountyDetailClient from './CountyDetailClient';
 // the rest client-side (which is <5 ms once the cache is warm).
 const SSR_TIMEOUT_MS = 1500;
 
-/**
- * Generic metadata — we avoid a blocking backend fetch here because
- * `generateMetadata` runs before the page body, and any stall doubles
- * the perceived nav time. The dynamic `${name} County` title was nice
- * but the client-side `<title>` is updated once the page hydrates.
- */
-export const metadata: Metadata = {
-  title: 'County Detail — AuditGava',
-  description:
-    'Budget execution, debt, audit findings, and accountability for this county.',
-};
+export async function generateMetadata(
+  { params }: { params: Promise<{ id: string }> },
+  parent: ResolvingMetadata,
+): Promise<Metadata> {
+  const [{ id }, { openGraph, twitter }] = await Promise.all([params, parent]);
+  const county = resolveCountyMetadataRoute(id);
+  const title = county
+    ? `${county.name} County: budget, debt and audits — AuditGava`
+    : 'County detail — AuditGava';
+  const description = county
+    ? `Explore ${county.name} County’s budget execution, debt, audit findings and accountability.`
+    : 'Explore budget execution, debt, audit findings and accountability for Kenya’s counties.';
+  const site = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.auditgava.com';
+  const canonical = county ? new URL(`/counties/${county.slug}`, site).href : undefined;
+
+  return {
+    title: { absolute: title },
+    description,
+    ...(canonical && { alternates: { canonical } }),
+    openGraph: {
+      type: 'website',
+      title,
+      description,
+      url: canonical,
+      siteName: openGraph?.siteName,
+      locale: openGraph?.locale,
+      images: openGraph?.images,
+    },
+    twitter: { card: 'summary_large_image', title, description, images: twitter?.images },
+  };
+}
 
 export default async function CountyDetailPage({
   params,
