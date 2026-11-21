@@ -1,82 +1,76 @@
-import { MetadataRoute } from 'next';
+import type { MetadataRoute } from 'next';
+import { COUNTY_LINKS } from '@/lib/counties/lookup';
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.auditgava.com';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date();
-
+  // A sitemap generation date does not establish the freshness of these pages.
   return [
     {
       url: BASE_URL,
-      lastModified: now,
       changeFrequency: 'daily',
       priority: 1,
     },
     {
       url: `${BASE_URL}/debt`,
-      lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.9,
     },
     {
       url: `${BASE_URL}/budget`,
-      lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.9,
     },
     {
       url: `${BASE_URL}/counties`,
-      lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.9,
     },
     {
       url: `${BASE_URL}/transparency`,
-      lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.8,
     },
     {
       url: `${BASE_URL}/learn`,
-      lastModified: now,
       changeFrequency: 'monthly',
       priority: 0.7,
     },
     {
       url: `${BASE_URL}/learn/glossary`,
-      lastModified: now,
       changeFrequency: 'monthly',
       priority: 0.5,
     },
     {
       url: `${BASE_URL}/learn/government`,
-      lastModified: now,
       changeFrequency: 'monthly',
       priority: 0.5,
     },
     {
       url: `${BASE_URL}/learn/quiz`,
-      lastModified: now,
       changeFrequency: 'monthly',
       priority: 0.4,
     },
     {
       url: `${BASE_URL}/about`,
-      lastModified: now,
       changeFrequency: 'monthly',
       priority: 0.4,
     },
     {
       url: `${BASE_URL}/privacy`,
-      lastModified: now,
       changeFrequency: 'yearly',
       priority: 0.2,
     },
     {
       url: `${BASE_URL}/terms`,
-      lastModified: now,
       changeFrequency: 'yearly',
       priority: 0.2,
     },
+    { url: `${BASE_URL}/audits` },
+    { url: `${BASE_URL}/sources` },
+    { url: `${BASE_URL}/counties/compare` },
+    { url: `${BASE_URL}/accountability/unaccounted-funds` },
+    { url: `${BASE_URL}/learn/why-it-matters` },
+    ...COUNTY_LINKS.map(({ slug }) => ({ url: `${BASE_URL}/counties/${slug}` })),
   ];
 }
