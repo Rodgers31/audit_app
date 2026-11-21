@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { comparisonHref, MAX_COMPARE_COUNTIES } from './compare/ledgerData';
 import styles from './CountyExperience.module.css';
+import { formatPerPerson, type PerPersonMeasure } from './CountyPerPerson';
 
 export type CountySortField = 'name' | 'population' | 'health' | 'budget' | 'utilization' | 'debt';
 
@@ -37,24 +38,25 @@ export function countyRecordHref(countyId: string, fiscalYear?: string) {
   return `/counties/${countyId}${fiscalYear ? `?fy=${encodeURIComponent(fiscalYear)}` : ''}`;
 }
 
-export default function MobileCountyRanking({ counties, paged, firstRank, sort, fiscalYear, formatKes, readSpendingRate = county => publishedSpendingRate(county, fiscalYear) }: {
+export default function MobileCountyRanking({ counties, paged, firstRank, sort, fiscalYear, formatKes, perPerson, readSpendingRate = county => publishedSpendingRate(county, fiscalYear) }: {
   counties: County[];
   paged: County[];
   firstRank: number;
   sort: CountySortField;
   fiscalYear?: string;
   formatKes: (value: number) => string;
+  perPerson?: PerPersonMeasure;
   readSpendingRate?: (county: County) => number | undefined;
 }) {
   const { t, lang } = useLang();
   const copy = (key: keyof typeof COUNTY_EXPLORER_MESSAGES) => COUNTY_EXPLORER_MESSAGES[key][lang];
   const [selected, setSelected] = useState<Array<Pick<County, 'id' | 'name'>>>([]);
-  const spending = sort === 'utilization' || sort === 'name';
+  const spending = !perPerson && (sort === 'utilization' || sort === 'name');
   const values = counties.flatMap(county => {
-    const value = measuredValue(county, sort, readSpendingRate);
+    const value = perPerson ? perPerson.amounts.get(county.id)?.value : measuredValue(county, sort, readSpendingRate);
     return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? [[county.id, value] as const] : [];
   });
-  const range = spending || sort === 'health' ? 100 : Math.max(0, ...values.map(([, value]) => value));
+  const range = perPerson?.maximum ?? (spending || sort === 'health' ? 100 : Math.max(0, ...values.map(([, value]) => value)));
   const measurements = new Map(values);
 
   function toggleCounty(county: County) {
@@ -69,18 +71,23 @@ export default function MobileCountyRanking({ counties, paged, firstRank, sort, 
   return (
     <div className={styles.mobileRanking}>
       {paged.length > 0 && <>
-        {(sort === 'budget' || spending) && fiscalYear && <p className='mb-2 text-sm text-neutral-muted'>
+        {!perPerson && (sort === 'budget' || spending) && fiscalYear && <p className='mb-2 text-sm text-neutral-muted'>
           {spending ? copy('counties.rankings.spending_period').replace('{period}', fiscalYear) : fiscalYear}
         </p>}
         <ol aria-label={t('counties.rankings.title')} start={firstRank} role='list' className='border-y border-neutral-border'>
           {paged.map((county, index) => {
             const value = measurements.get(county.id);
             const available = value != null;
-            const ranked = available || sort === 'name';
+            const ranked = available || (!perPerson && sort === 'name');
             const band = spending ? spendingBand(value, fiscalYear) : undefined;
+            const label = available
+              ? (perPerson ? formatPerPerson(value) : formatMeasurement(value, sort, formatKes))
+              : t(perPerson
+                ? 'counties.per_person.unavailable'
+                : band ? 'counties.spending.unavailable' : 'counties.rankings.measure_unavailable');
             const checked = selected.some(item => item.id === county.id);
             const note = band && available ? copy(`counties.spending.${band}`)
-              : sort === 'budget' && available && county.budgetSource === 'cra_model' ? copy('counties.rankings.modelled_amount') : null;
+              : !perPerson && sort === 'budget' && available && county.budgetSource === 'cra_model' ? copy('counties.rankings.modelled_amount') : null;
             return (
               <li key={county.id} className={styles.rankingRow} data-spending-band={band}>
                 <Link href={countyRecordHref(county.id, fiscalYear)} className={styles.rankingCounty}>
@@ -89,13 +96,13 @@ export default function MobileCountyRanking({ counties, paged, firstRank, sort, 
                   </span>
                   <span className='min-w-0 font-semibold break-words'>{county.name}</span>
                   <span className={`font-semibold tabular-nums ${available ? 'font-display text-audit-heading' : 'text-sm'}`}>
-                    {available ? formatMeasurement(value, sort, formatKes) : band ? copy('counties.spending.unavailable') : copy('counties.rankings.measure_unavailable')}
+                    {label}
                   </span>
                 </Link>
                 <div className={styles.rankingMeasure}>
                   {available && <div aria-hidden='true' className='h-1.5 rounded bg-surface-sunken'>
                     <div className='h-full rounded bg-signal-context'
-                      style={{ width: `${range > 0 ? Math.min(100, value / range * 100) : 0}%`, backgroundColor: band ? 'var(--county-spending-fill)' : undefined }} />
+                      style={{ width: `${range > 0 ? Math.min(100, value / range * 100) : 0}%`, backgroundColor: perPerson ? 'var(--county-per-person-4)' : band ? 'var(--county-spending-fill)' : undefined }} />
                   </div>}
                   {note && <span className='text-xs text-neutral-muted' style={{ color: band ? 'var(--county-spending-ink)' : undefined }}>{note}</span>}
                 </div>

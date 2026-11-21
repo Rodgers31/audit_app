@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import '@testing-library/jest-dom';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import React from 'react';
@@ -95,11 +96,18 @@ jest.mock('@/components/DataFreshnessBadge', () => ({ __esModule: true, default:
 
 import CountiesPageClient from '@/app/counties/CountiesPageClient';
 
+function renderExplorer() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(<CountiesPageClient />, {
+    wrapper: ({ children }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>,
+  });
+}
+
 const readout = () => document.querySelector('[class*=mapReadout]') as HTMLElement;
 const lamuPolygon = () => screen.getByRole('link', { name: /^Lamu, Spending rate/ });
 
 function openMap() {
-  render(<CountiesPageClient />);
+  renderExplorer();
   fireEvent.click(screen.getByRole('button', { name: 'Map' }));
 }
 
@@ -111,7 +119,7 @@ beforeEach(() => {
 
 describe('County map persistent readout', () => {
   it('opens on a spending-ranked list and carries the same qualified rates to the map', () => {
-    render(<CountiesPageClient />);
+    renderExplorer();
     expect(screen.getByRole('button', { name: 'List' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.queryByRole('region', { name: 'County spending map' })).not.toBeInTheDocument();
     const table = screen.getByRole('table', { name: 'County Rankings' });

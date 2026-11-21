@@ -35,7 +35,7 @@ interface BackendCountyResponse {
   // Budget
   coordinates?: [number, number];
   total_budget?: number;
-  financial_summary?: { total_allocation: number | null; accounting_basis?: string | null };
+  financial_summary?: County['financialSummary'];
   total_spent?: number;
   budget_utilization?: number;
   development_budget?: number;
@@ -151,6 +151,7 @@ export const transformCountyData = (value: unknown): County => {
 
   return {
     figureQualifications: bc.figure_qualifications,
+    financialSummary: bc.financial_summary,
     id: bc.id,
     name: bc.name,
     code: bc.code || bc.id,
