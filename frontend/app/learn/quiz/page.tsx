@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import QuizGame from '@/components/learn/QuizGame';
+import LiveQuiz from './LiveQuiz';
 
 export const metadata: Metadata = {
   title: 'Civic Quiz — AuditGava',
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function QuizPage() {
-  return <QuizGame />;
+  return <LiveQuiz />;
 }

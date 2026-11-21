@@ -6,8 +6,11 @@ async function glossary(page: Page) {
 }
 async function quiz(page: Page) {
   await page.goto('/learn/quiz');
-  await page.getByRole('button', { name: /Public finance/i }).click();
-  await expect(page.getByRole('progressbar', { name: 'Quiz progress' })).toHaveAttribute('aria-valuetext', '1 of 6');
+  const finance = page.getByRole('button', { name: /Public finance/i });
+  // The shared browser fixture supplies qualified Approved fiscal measures.
+  await expect(finance).toContainText('7 questions');
+  await finance.click();
+  await expect(page.getByRole('progressbar', { name: 'Quiz progress' })).toHaveAttribute('aria-valuetext', '1 of 7');
 }
 
 test.describe('Learn Page', () => {
@@ -258,21 +261,21 @@ test.describe('Engagement Quiz', () => {
     await quiz(page);
     await page.getByRole('group', { name: 'Answers' }).getByRole('button').first().click();
     await page.getByRole('button', { name: /Next Question/i }).click();
-    await expect(page.getByRole('progressbar', { name: 'Quiz progress' })).toHaveAttribute('aria-valuetext', '2 of 6');
+    await expect(page.getByRole('progressbar', { name: 'Quiz progress' })).toHaveAttribute('aria-valuetext', '2 of 7');
   });
   test('quiz shows results after completion', async ({ page }) => {
     await quiz(page);
-    for (let n = 1; n <= 6; n++) {
-      await expect(page.getByRole('progressbar', { name: 'Quiz progress' })).toHaveAttribute('aria-valuetext', `${n} of 6`);
+    for (let n = 1; n <= 7; n++) {
+      await expect(page.getByRole('progressbar', { name: 'Quiz progress' })).toHaveAttribute('aria-valuetext', `${n} of 7`);
       await page.getByRole('group', { name: 'Answers' }).getByRole('button').first().click();
       await page.getByRole('button', { name: /Next Question|See Results/i }).click();
     }
     await expect(page.getByRole('heading', { name: 'Review Answers', exact: true })).toBeVisible();
-    const score = page.getByRole('heading', { name: /^\d of 6 correct$/ });
+    const score = page.getByRole('heading', { name: /^\d of 7 correct$/ });
     await expect(score).toBeFocused();
-    await expect(page.getByRole('region', { name: 'Review Answers' }).getByRole('listitem')).toHaveCount(6);
+    await expect(page.getByRole('region', { name: 'Review Answers' }).getByRole('listitem')).toHaveCount(7);
     await page.getByRole('button', { name: /Play Again/i }).click();
-    await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuetext', '1 of 6');
+    await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuetext', '1 of 7');
   });
 
   test('focus mode preserves keyboard play and restores the launcher on quit', async ({ page }) => {
@@ -305,6 +308,13 @@ test.describe('Engagement Quiz', () => {
     await page.addInitScript(() => { Math.random = () => 0.5; });
     await quiz(page);
     const active = page.getByRole('dialog');
+    await active.getByRole('button', { name: 'KES 50', exact: true }).click();
+    await expect(active.getByRole('heading', { name: 'Correct.' })).toBeFocused();
+    await expect(active.getByRole('link', { name: /See it on the debt page/ })).toHaveAttribute('href', '/debt');
+    await expect(active.getByRole('link', { name: /Source document/ })).toHaveAttribute(
+      'href', 'https://www.treasury.go.ke/synthetic-browser-fixture.pdf',
+    );
+    await active.getByRole('button', { name: 'Next question' }).click();
     await active.getByRole('group', { name: 'Answers' }).getByRole('button').first().click();
     await expect(active.getByRole('link', { name: /Article/ })).toHaveCount(0);
     await active.getByRole('button', { name: 'Next question' }).click();
@@ -318,7 +328,7 @@ test.describe('Engagement Quiz', () => {
     await expect(newTab).toHaveURL(/\/learn\?article=228$/);
     await expect(newTab.getByRole('heading', { name: 'Controller of Budget', exact: true })).toBeVisible();
     await newTab.close();
-    await expect(active.getByRole('progressbar')).toHaveAttribute('aria-valuetext', '2 of 6');
+    await expect(active.getByRole('progressbar')).toHaveAttribute('aria-valuetext', '3 of 7');
   });
 
   test('the mobile quiz keeps answers in reach and closes by touch', async ({ browser }, testInfo) => {

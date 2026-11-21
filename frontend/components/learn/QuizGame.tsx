@@ -13,6 +13,7 @@ import { useLang } from '@/lib/i18n/LangProvider';
 import { learnCopy } from '@/lib/i18n/messages/learn';
 import QuizCitation from './QuizCitation';
 import QuizRound from './QuizRound';
+import { LIVE_DEBT_QUESTION_ID, type QuizDebtQuestion } from './quizDebtQuestion';
 
 type Phase = 'categories' | 'playing' | 'feedback' | 'results';
 
@@ -39,8 +40,9 @@ const categoryPresentation = {
 const categoryByQuestion = new Map(quizCategories.flatMap(category =>
   category.questions.map(question => [question.id, category] as const),
 ));
+const financeCategory = quizCategories.find(category => category.id === 'finance');
 
-export default function QuizGame() {
+export default function QuizGame({ liveQuestion }: { liveQuestion?: QuizDebtQuestion }) {
   const { lang } = useLang();
   const [game, setGame] = useState(INITIAL_GAME);
   const launchButtons = useRef(new Map<string, HTMLButtonElement>());
@@ -72,7 +74,10 @@ export default function QuizGame() {
     previousLaunch.current = category?.id ?? 'quick';
     const questions = category
       ? [...category.questions].sort(() => Math.random() - 0.5)
-      : getRandomQuestions(QUICK_PLAY_COUNT);
+      : getRandomQuestions(liveQuestion ? QUICK_PLAY_COUNT - 1 : QUICK_PLAY_COUNT);
+    if (liveQuestion && (!category || category.id === 'finance')) {
+      questions.splice(category ? 0 : 2, 0, liveQuestion);
+    }
     setGame({ phase: 'playing', category, questions, index: 0, answers: [] });
   }
 
@@ -98,7 +103,7 @@ export default function QuizGame() {
 
   if ((game.phase === 'playing' || game.phase === 'feedback') && current) {
     return <QuizRound
-      category={categoryLabel(categoryByQuestion.get(current.id)) ?? ''}
+      category={categoryLabel(current.id === LIVE_DEBT_QUESTION_ID ? financeCategory : categoryByQuestion.get(current.id)) ?? ''}
       question={current}
       current={game.index + 1}
       total={total}
@@ -138,7 +143,11 @@ export default function QuizGame() {
                     <span className='min-w-0 space-y-1'>
                       <strong className='block text-base'>{categoryLabel(category)}</strong>
                       <span className='block break-words text-sm text-neutral-muted' lang='en'>{category.description}</span>
-                      <span className='block text-sm text-neutral-text'>{learnCopy(lang, 'quizQuestionCount', { count: category.questions.length })}</span>
+                      <span className='block text-sm text-neutral-text'>
+                        {learnCopy(lang, 'quizQuestionCount', {
+                          count: category.questions.length + Number(category.id === 'finance' && !!liveQuestion),
+                        })}
+                      </span>
                     </span>
                     <ArrowRight size={18} aria-hidden='true' />
                   </button>
@@ -146,7 +155,7 @@ export default function QuizGame() {
               );
             })}
           </ul>
-          <p className='text-sm text-neutral-muted'>{learnCopy(lang, 'quizBankCount', { count: TOTAL_QUESTIONS, categories: quizCategories.length })}</p>
+          <p className='text-sm text-neutral-muted'>{learnCopy(lang, 'quizBankCount', { count: TOTAL_QUESTIONS + Number(!!liveQuestion), categories: quizCategories.length })}</p>
         </div>
       ) : (
         <div data-quiz-results className='mx-auto max-w-2xl space-y-6'>
@@ -171,18 +180,19 @@ export default function QuizGame() {
                 const correct = choice === question.correctIndex;
                 return (
                   <li key={question.id} className='space-y-1 py-3 text-sm'>
-                    <h3 lang='en' className='font-semibold'>{question.question}</h3>
+                    <h3 lang={question.language ?? 'en'} className='font-semibold'>{question.question}</h3>
+                    {question.context && <p lang={question.language} className='text-neutral-muted'>{question.context}</p>}
                     <p className={correct ? 'font-semibold text-signal-good' : 'font-semibold text-signal-alarm'}>
                       {learnCopy(lang, correct ? 'quizCorrect' : 'quizIncorrect')}
                     </p>
                     {!correct && (
                       <dl>
-                        <div><dt className='inline font-semibold'>{learnCopy(lang, 'quizSelectedAnswer')}</dt>{' '}<dd className='inline' lang='en'>{question.options[choice]}</dd></div>
-                        <div><dt className='inline font-semibold'>{learnCopy(lang, 'quizCorrectAnswer')}</dt>{' '}<dd className='inline' lang='en'>{question.options[question.correctIndex]}</dd></div>
+                        <div><dt className='inline font-semibold'>{learnCopy(lang, 'quizSelectedAnswer')}</dt>{' '}<dd className='inline' lang={question.language ?? 'en'}>{question.options[choice]}</dd></div>
+                        <div><dt className='inline font-semibold'>{learnCopy(lang, 'quizCorrectAnswer')}</dt>{' '}<dd className='inline' lang={question.language ?? 'en'}>{question.options[question.correctIndex]}</dd></div>
                       </dl>
                     )}
-                    <p lang='en'>{question.explanation}</p>
-                    <QuizCitation questionId={question.id} />
+                    <p lang={question.language ?? 'en'}>{question.explanation}</p>
+                    <QuizCitation question={question} />
                   </li>
                 );
               })}

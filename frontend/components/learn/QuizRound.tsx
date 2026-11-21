@@ -27,6 +27,7 @@ export default function QuizRound({ category, question, current, total, selected
   const answered = selected !== null;
   const isLast = current === total;
   const position = learnCopy(lang, 'quizPosition', { current, total });
+  const questionLanguage = question.language ?? 'en';
 
   useLayoutEffect(() => {
     const round = dialog.current;
@@ -73,8 +74,11 @@ export default function QuizRound({ category, question, current, total, selected
       <section className='mx-auto grid max-w-2xl gap-4 px-4 pb-6 pt-5 sm:px-6'>
         {/* The question has room to grow. Short prompts still leave the answers within thumb reach. */}
         <div className='min-w-0 min-h-[clamp(9rem,calc(45dvh-4.75rem),21rem)]'>
-          <p className='text-sm font-semibold text-neutral-muted'>{category}</p>
-          <h1 ref={questionHeading} id={titleId} lang='en' tabIndex={-1}
+          <p className='text-sm font-semibold text-neutral-muted'>
+            {category}
+            {question.context && <span lang={questionLanguage}> · {question.context}</span>}
+          </p>
+          <h1 ref={questionHeading} id={titleId} lang={questionLanguage} tabIndex={-1}
             className='mt-2 break-words font-display text-[clamp(1.5rem,4vw,2rem)] font-bold leading-[1.1] outline-none'>
             {question.question}
           </h1>
@@ -91,7 +95,7 @@ export default function QuizRound({ category, question, current, total, selected
             return (
               <button key={index} type='button' disabled={answered} onClick={() => onAnswer(index)}
                 className={`flex min-h-12 w-full items-center justify-between gap-3 rounded-md border px-3.5 py-2 text-left text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gov-forest dark:focus-visible:outline-emerald-100 ${className}`}>
-                <span lang='en' className='min-w-0 break-words'>{option}</span>
+                <span lang={questionLanguage} className='min-w-0 break-words'>{option}</span>
                 {correct && <Check aria-hidden='true' size={20} className='shrink-0' />}
                 {incorrect && <X aria-hidden='true' size={20} className='shrink-0' />}
                 {correct && <span className='sr-only'>{learnCopy(lang, 'quizCorrectAnswer')}</span>}
@@ -106,8 +110,8 @@ export default function QuizRound({ category, question, current, total, selected
               <h2 ref={explanationHeading} tabIndex={-1} className='inline font-semibold outline-none'>
                 {learnCopy(lang, selected === question.correctIndex ? 'quizCorrect' : 'quizIncorrect')}.
               </h2>{' '}
-              <p lang='en' className='inline'>{question.explanation}</p>
-              <div className='empty:hidden'><QuizCitation questionId={question.id} /></div>
+              <p lang={questionLanguage} className='inline'>{question.explanation}</p>
+              <div className='empty:hidden'><QuizCitation question={question} /></div>
             </section>
             <button type='button' onClick={() => {
               if (isLast) dialog.current?.close();
