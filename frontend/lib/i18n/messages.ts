@@ -391,6 +391,20 @@ export const MESSAGES = {
   'home.debt.insight_risk_unassessed': { en: 'Risk: not assessed', sw: 'Hatari: haijatathminiwa', plain: 'Risk: we can\u2019t say yet' },
   'home.debt.insight_risk_unassessed_desc': { en: 'No published debt sustainability rating was received, so none is shown. This is not a finding that the debt position is safe.', sw: 'Hakuna ukadiriaji rasmi wa uendelevu wa deni uliopokelewa, hivyo hakuna unaoonyeshwa. Hii si dalili kwamba hali ya deni ni salama.', plain: 'We did not get the official rating, so we don\u2019t show one. That does not mean it is fine.' },
   'home.debt.cents_of_revenue': { en: 'KES {n} cents', sw: 'Senti {n} za KES', plain: 'KES {n} cents' },
+  'home.debt.chart_nominal': { en: 'Debt in shillings', sw: 'Deni kwa shilingi', plain: 'Debt in shillings' },
+  'home.debt.chart_gdp': { en: 'Debt as a share of GDP', sw: 'Deni kama sehemu ya Pato la Taifa', plain: 'Debt as a share of the economy' },
+  'home.debt.chart_nominal_short': { en: 'Total debt', sw: 'Jumla ya deni', plain: 'Total debt' },
+  'home.debt.chart_no_nominal': { en: 'No published debt amounts are available for these years.', sw: 'Hakuna kiasi cha deni kilichochapishwa kwa miaka hii.', plain: 'No debt amounts are available for these years.' },
+  'home.debt.chart_no_ratio': { en: 'The stock and annual GDP records could not be verified together for any year shown.', sw: 'Rekodi za salio la deni na Pato la Taifa la mwaka hazikuthibitishwa pamoja kwa mwaka wowote ulioonyeshwa.', plain: 'We could not verify a debt amount and GDP together for any year shown.' },
+  'home.debt.chart_single': { en: '{year} · {value}', sw: '{year} · {value}', plain: '{year} · {value}' },
+  'home.debt.chart_range': { en: '{first_value} in {first_year} · {last_value} in {last_year}', sw: '{first_value} mwaka {first_year} · {last_value} mwaka {last_year}', plain: '{first_value} in {first_year} · {last_value} in {last_year}' },
+  'home.debt.chart_year': { en: 'Choose a year', sw: 'Chagua mwaka', plain: 'Choose a year' },
+  'home.debt.chart_year_column': { en: 'Year', sw: 'Mwaka', plain: 'Year' },
+  'home.debt.chart_unavailable': { en: 'Unavailable', sw: 'Haipatikani', plain: 'Unavailable' },
+  'home.debt.chart_ratio_basis': { en: 'Central Bank debt stock as of {month} · World Bank GDP for {year}', sw: 'Salio la deni la Benki Kuu kufikia {month} · Pato la Taifa la Benki ya Dunia kwa {year}', plain: 'Central Bank debt at {month} · World Bank GDP for {year}' },
+  'home.debt.chart_stock_basis': { en: 'Debt stock as of {month}', sw: 'Salio la deni kufikia {month}', plain: 'Amount owed as of {month}' },
+  'home.debt.chart_table': { en: 'Debt figures by year', sw: 'Takwimu za deni kwa mwaka', plain: 'Debt figures by year' },
+  'home.debt.chart_modelled_years': { en: 'The source identifies modelled totals for {years}. See the observations’ evidence for details.', sw: 'Chanzo kinataja makadirio ya jumla kwa {years}. Angalia ushahidi wa takwimu kwa maelezo.', plain: 'Some debt totals were estimated in {years}. See the source details.' },
 
   // Audit opinion terms: retain English terms for Swahili until competent review (#307).
   // Definitions: https://www.oagkenya.go.ke/faqs/what-do-the-various-audit-opinions-mean/

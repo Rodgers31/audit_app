@@ -1,119 +1,81 @@
 import '@testing-library/jest-dom';
-import { render, screen, within } from '@testing-library/react';
-import { cloneElement } from 'react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 
 const mockOverview = jest.fn();
 const mockTimeline = jest.fn();
-const mockFiscal = jest.fn();
-const mockBroader = jest.fn();
-const chartProps: any[] = [];
-const tooltipContents: any[] = [];
 
 jest.mock('@/lib/react-query/useDebt', () => ({
   useNationalDebtOverview: () => mockOverview(),
   useDebtTimeline: () => mockTimeline(),
-  useBroaderDebt: () => mockBroader(),
 }));
-jest.mock('@/lib/react-query/useFiscal', () => ({
-  useFiscalSummary: () => mockFiscal(),
-}));
-jest.mock('framer-motion', () => ({
-  motion: new Proxy({}, {
-    get: () => ({ children }: any) => <div>{children}</div>,
-  }),
-  AnimatePresence: ({ children }: any) => <>{children}</>,
-  useInView: () => true,
-}));
-jest.mock('recharts', () => {
-  const Pass = ({ children }: any) => <div>{children}</div>;
-  return {
-    __esModule: true,
-    ResponsiveContainer: Pass,
-    ComposedChart: (props: any) => {
-      chartProps.push(props);
-      return <div>{props.children}</div>;
-    },
-    Tooltip: ({ content }: any) => {
-      tooltipContents.push(content);
-      return null;
-    },
-    CartesianGrid: () => null,
-    XAxis: () => null,
-    YAxis: () => null,
-    Area: () => null,
-    Line: () => null,
-  };
-});
+jest.mock('@/lib/react-query/useFiscal', () => ({ useFiscalSummary: () => ({ data: undefined }) }));
 
 import NationalDebtCard from '@/components/dashboard/NationalDebtCard';
 import { syntheticDebtTimeline20261105 } from '@/test/fixtures/deploymentDebt20261105';
 
-const timelineRow = {
-  year: 2025,
-  external: 5_000_000_000_000,
-  domestic: 6_000_000_000_000,
-  total: 11_000_000_000_000,
-  gdp: null,
-  gdp_ratio: null as number | null,
-  unit: 'KES',
-};
+function observation(year: number, ratio: number) {
+  const result = syntheticDebtTimeline20261105(ratio);
+  result.year = year;
+  for (const proof of Object.values(result.qualifications)) proof.identity.period = String(year);
+  result.qualifications.total.locator.cell = `${year}-12 / total`;
+  result.qualifications.gdp.locator.date = String(year);
+  result.period.stock_as_of_month = `${year}-12`;
+  result.period.gdp_calendar_year = year;
+  return result;
+}
 
-function renderHoveredRatio(ratio: number | null) {
-  mockTimeline.mockReturnValue({
-    data: { timeline: [ratio === null ? timelineRow : syntheticDebtTimeline20261105(ratio)] },
-    isLoading: false,
-  });
-  render(<NationalDebtCard />);
-
-  // Use the row transformed by the real card and the actual tooltip element
-  // passed to Recharts. A row with debt totals is hoverable even when its ratio
-  // is absent; the line series simply has no point for that year.
-  const row = chartProps[0].data[0];
-  return render(cloneElement(tooltipContents[0], {
-    active: true,
-    payload: [{ payload: row }],
-    label: row.year,
-  })).container;
+function renderTimeline(items: unknown[]) {
+  mockTimeline.mockReturnValue({ data: { timeline: items }, isLoading: false });
+  const { container } = render(<NationalDebtCard />);
+  return {
+    nominal: container.querySelector('[data-home-debt-plot="total"]')!,
+    gdp: container.querySelector<HTMLElement>('[data-home-debt-plot="gdpRatio"]')!,
+    readout: within(container.querySelector<HTMLElement>('[data-home-debt-readout]')!),
+  };
 }
 
 beforeEach(() => {
   jest.clearAllMocks();
-  chartProps.length = 0;
-  tooltipContents.length = 0;
-  mockFiscal.mockReturnValue({ data: undefined });
-  mockBroader.mockReturnValue({ data: undefined, isLoading: false });
-  mockOverview.mockReturnValue({
-    data: { data: { total_outstanding: timelineRow.total, debt_to_gdp_ratio: null, summary: {}, categories: {} } },
-    isLoading: false,
-  });
+  mockOverview.mockReturnValue({ data: undefined, isLoading: false });
 });
 
-describe('home debt chart tooltip', () => {
-  it('shows absence for a hoverable year without a ratio', () => {
-    const tooltip = renderHoveredRatio(null);
-    expect(within(tooltip).queryByText('null%')).not.toBeInTheDocument();
-    expect(within(tooltip).queryByText('%')).not.toBeInTheDocument();
-    expect(within(tooltip).getByText('—')).toBeInTheDocument();
-  });
+test('keeps a legacy ratio without an explicit matched period out of the chart and readout', () => {
+  const { period, ...legacy } = observation(2025, 65.9);
+  expect(period.stock_as_of_month).toBe('2025-12');
+  const { nominal, gdp, readout } = renderTimeline([legacy]);
+  expect(nominal.querySelector('[data-debt-point="2025"]')).toBeInTheDocument();
+  expect(gdp.querySelector('[data-debt-point]')).not.toBeInTheDocument();
+  expect(within(gdp).getByText(/could not be verified together/)).toBeInTheDocument();
+  expect(readout.queryByText('65.9%')).not.toBeInTheDocument();
+  expect(readout.getByText('Unavailable')).toBeInTheDocument();
+});
 
-  it.each([0, 65.9])('retains a reported %s%% ratio', (ratio) => {
-    const tooltip = renderHoveredRatio(ratio);
-    expect(within(tooltip).getByText(`${ratio}%`)).toBeInTheDocument();
-  });
+test.each([0, 65.9])('retains a verified %s%% observation', ratio => {
+  const { gdp, readout } = renderTimeline([observation(2025, ratio)]);
+  expect(gdp.querySelector('[data-debt-point="2025"]')).toBeInTheDocument();
+  expect(readout.getByText(`${ratio}%`)).toBeInTheDocument();
+  expect(readout.getByText(/Central Bank debt stock as of 2025-12/)).toBeInTheDocument();
+});
 
-  it.each(['KES', 'USD'])('keeps withheld %s stock amounts absent in headline, chart and tooltip', (unit) => {
-    mockOverview.mockReturnValue({ data: undefined, isLoading: false });
-    mockTimeline.mockReturnValue({ data: { timeline: [{ ...timelineRow,
-      unit, total: null, external: null, domestic: null, gdp: null }] }, isLoading: false });
-    render(<NationalDebtCard />);
-    const row = chartProps[0].data[0];
-    expect(row.total).toBeNull();
-    expect(row.external).toBeNull();
-    expect(row.domestic).toBeNull();
-    expect(screen.getByText('Total Public Debt').parentElement!.parentElement).not.toHaveTextContent('KES 0');
-    const tooltip = render(cloneElement(tooltipContents[0], {
-      active: true, payload: [{ payload: row }], label: row.year,
-    })).container;
-    expect(within(tooltip).queryByText('0B')).not.toBeInTheDocument();
-  });
+test.each(['KES', 'USD'])('keeps withheld %s stock and components absent', unit => {
+  const { nominal, readout } = renderTimeline([{ year: 2025, unit, total: null, domestic: null,
+    external: null, gdp: null, gdp_ratio: null }]);
+  expect(nominal.querySelector('[data-debt-point]')).not.toBeInTheDocument();
+  expect(readout.getAllByText('Unavailable')).toHaveLength(4);
+  expect(screen.getByText('Total Public Debt').parentElement!.parentElement).not.toHaveTextContent('KES 0');
+});
+
+test('shows ascending aligned years and keeps separate segments across an absent year', () => {
+  const { nominal, gdp, readout } = renderTimeline([observation(2025, 65.9), observation(2023, 60)]);
+  for (const plot of [nominal, gdp]) {
+    expect(plot.querySelectorAll('[data-debt-line-segment]')).toHaveLength(2);
+    expect(Array.from(plot.querySelectorAll('[data-debt-year-mark]'), mark => mark.textContent)).toEqual(['2023', '2024', '2025']);
+  }
+  fireEvent.change(screen.getByLabelText('Choose a year'), { target: { value: '2024' } });
+  expect(readout.getAllByText('Unavailable')).toHaveLength(4);
+  expect(readout.getByText('2024')).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText('Choose a year'), { target: { value: '2023' } });
+  expect(readout.getByText('60%')).toBeInTheDocument();
+  expect(readout.getByText('KES 4.80T')).toBeInTheDocument();
+  expect(readout.getByText('KES 7.20T')).toBeInTheDocument();
 });

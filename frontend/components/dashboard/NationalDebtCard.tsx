@@ -13,10 +13,9 @@ import {
 } from '@/lib/react-query/useDebt';
 import Link from 'next/link';
 import { useFiscalSummary } from '@/lib/react-query/useFiscal';
-import { motion } from 'framer-motion';
-import { Skeleton, SkeletonChart } from '@/components/ui/Skeleton';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { AlertTriangle, BarChart3, Globe2, Landmark, Loader2, MapPinned, TrendingUp } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { gdpRatioComparison } from '@/lib/debt/debtCardBasis';
 import {
   displayedSplit,
@@ -24,28 +23,7 @@ import {
   reconcileExternalDomestic,
 } from '@/lib/debt/externalDomesticSplit';
 import InfoTip from '@/components/InfoTip';
-import {
-  Area,
-  CartesianGrid,
-  ComposedChart,
-  Line,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
-
-/* ── Transform API data to chart format ── */
-interface ChartEntry {
-  year: string;
-  external: number | null;
-  domestic: number | null;
-  total: number | null;
-  gdpRatio: number | null;
-  /** Explicit model origin supplied by the backend's measure qualification. */
-  modelled: boolean;
-  qualifications?: Qualifications;
-}
+import NationalDebtChart, { type ChartEntry } from './NationalDebtChart';
 
 /** Legacy export retained for callers; numeric shape never establishes origin. */
 export function isRoundNumberEstimate(e: {
@@ -85,24 +63,12 @@ function toChartData(timeline: DebtTimelineEntry[]): ChartEntry[] {
       domestic: toBillions(e.domestic, e.unit),
       total: toBillions(e.total, e.unit),
       gdpRatio: publishedTimelineRatio(e),
+      stockMonth: e.period?.stock_as_of_month,
+      gdpYear: e.period?.gdp_calendar_year,
     };
     return { ...row, modelled: isRoundNumberEstimate(row) };
   });
 }
-
-// 2-decimal precision for trillion-scale values. Matches both
-// ``HeroSection.tsx`` (the page-top "Total Debt as of YYYY" KPI) and
-// ``DebtPageClient.tsx``'s shared formatter — pre-fix this card was
-// the lone outlier at ``toFixed(1)``, so a value of 12.66T on the
-// hero displayed as "12.7T" here, plus the External + Domestic
-// breakdown ("6.5T + 6.2T") didn't add back up to the displayed
-// "12.7T" total. 2 decimals reconciles all three.
-function fmtT(val: number | null): string {
-  if (val == null) return '—';
-  if (val >= 1000) return `${(val / 1000).toFixed(2)}T`;
-  return `${val}B`;
-}
-
 /** `val` is typed nullable on purpose: the values flowing in derive from an
  *  `any`-typed API response, so TypeScript cannot catch an unguarded call —
  *  and did not. The CI production build did, prerendering `/` with no backend:
@@ -115,59 +81,8 @@ function fmtKES(val: number | null | undefined): string {
   return `KES ${val.toLocaleString()}`;
 }
 
-function CustomTooltip({ active, payload, label }: any) {
-  const { t } = useLang();
-  if (!active || !payload?.length) return null;
-  const d = payload[0]?.payload;
-  if (!d) return null;
-  return (
-    <div className='rounded-sm bg-surface-elevated border border-neutral-border shadow-elevated px-4 py-3 text-xs'>
-      <p className='font-display text-sm text-gov-dark dark:text-white mb-2'>{label}</p>
-      <div className='space-y-1.5'>
-        <div className='flex justify-between gap-6'>
-          <span className='text-neutral-muted'>{t('home.debt.tooltip_total')}</span>
-          <span className='font-bold text-gov-dark dark:text-white tabular-nums'>{fmtT(d.total)}</span>
-        </div>
-        <div className='flex justify-between gap-6'>
-          <span className='flex items-center gap-1.5'>
-            <span className='w-2.5 h-2.5 rounded-full bg-gov-copper/80' />
-            {t('home.debt.external')}
-          </span>
-          <span className='font-semibold text-gov-dark dark:text-white tabular-nums'>{fmtT(d.external)}</span>
-        </div>
-        <div className='flex justify-between gap-6'>
-          <span className='flex items-center gap-1.5'>
-            <span className='w-2.5 h-2.5 rounded-full' style={{ background: '#0D7377' }} />
-            {t('home.debt.domestic')}
-          </span>
-          <span className='font-semibold text-gov-dark dark:text-white tabular-nums'>{fmtT(d.domestic)}</span>
-        </div>
-        <div className='flex justify-between gap-6 pt-1 border-t border-neutral-border/30'>
-          <span className='text-neutral-muted'>{t('home.debt.tooltip_gdp')}</span>
-          <span className='font-bold text-gov-gold tabular-nums'>
-            {d.gdpRatio != null ? `${d.gdpRatio}%` : '—'}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function useIsMobile(breakpoint = 640) {
-  const [mobile, setMobile] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia(`(max-width: ${breakpoint}px)`);
-    setMobile(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setMobile(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, [breakpoint]);
-  return mobile;
-}
-
 export default function NationalDebtCard() {
   const { t } = useLang();
-  const isMobile = useIsMobile();
   const { data: resp, isLoading } = useNationalDebtOverview();
   const { data: timelineResp, isLoading: isTimelineLoading } = useDebtTimeline();
   const { data: fiscal } = useFiscalSummary();
@@ -275,18 +190,13 @@ export default function NationalDebtCard() {
   const hasTimeline = debtTimeline.length > 0;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-60px' }}
-      transition={{ duration: 0.6, delay: 0.1 }}
-      className='glass-card overflow-hidden h-full flex flex-col'>
+    <section aria-labelledby='home-national-debt-heading' className='audit-panel flex h-full min-w-0 flex-col'>
       <div className='px-6 sm:px-8'><FigureEvidence label='debt timeline observations' labelKey='evidence.label.timeline_observations' rows={Object.fromEntries(debtTimeline.map(row => [row.year, row.qualifications ?? {}]))} /></div>
       {/* Header */}
       <div className='bg-surface-sunken/45 px-6 sm:px-8 pt-5 pb-4 border-b border-neutral-border'>
         <div className='flex items-start justify-between'>
           <div>
-            <h2 className='font-display text-xl sm:text-2xl text-gov-dark dark:text-white mb-1'>
+            <h2 id='home-national-debt-heading' className='font-display text-xl sm:text-2xl text-gov-dark dark:text-white mb-1'>
               {t('home.debt.title')}
             </h2>
             <p className='text-xs text-neutral-muted'>
@@ -296,9 +206,8 @@ export default function NationalDebtCard() {
                 data, so the sentence shrinks and then disappears as years get
                 re-sourced. */}
             {modelledYears.length > 0 && (
-              <p className='mt-1 text-[11px] leading-snug text-neutral-muted/80'>
-                {modelledYears[0].year}–{modelledYears[modelledYears.length - 1].year}{' '}
-                have an explicitly recorded model origin. Read each observation’s evidence for its source and period.
+              <p className='mt-1 text-sm text-neutral-muted'>
+                {t('home.debt.chart_modelled_years').replace('{years}', modelledYears.map(row => row.year).join(', '))}
               </p>
             )}
           </div>
@@ -444,97 +353,7 @@ export default function NationalDebtCard() {
             {t('home.debt.no_timeline')}
           </div>
         ) : (
-          <>
-            <div className='h-64 sm:h-72'>
-              <ResponsiveContainer width='100%' height='100%'>
-                <ComposedChart
-                  data={debtTimeline}
-                  margin={{ top: 8, right: 8, bottom: 0, left: -8 }}>
-                  <CartesianGrid strokeDasharray='3 3' stroke='#E2DDD5' vertical={false} />
-                  <XAxis
-                    dataKey='year'
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 11, fill: '#6B7280' }}
-                    interval={isMobile ? 1 : 0}
-                  />
-                  <YAxis
-                    yAxisId='debt'
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 11, fill: '#9CA3AF' }}
-                    tickFormatter={(v: number) =>
-                      v >= 1000 ? `${(v / 1000).toFixed(0)}T` : `${v}B`
-                    }
-                    width={40}
-                  />
-                  <YAxis
-                    yAxisId='ratio'
-                    orientation='right'
-                    domain={[30, 85]}
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 11, fill: '#D9A441' }}
-                    tickFormatter={(v: number) => `${v}%`}
-                    width={36}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  {/* Stacked areas: domestic on bottom, external on top */}
-                  <Area
-                    yAxisId='debt'
-                    type='monotone'
-                    dataKey='domestic'
-                    stackId='stack'
-                    stroke='#0D7377'
-                    strokeWidth={1.5}
-                    fill='#176B49'
-                    fillOpacity={0.14}
-                    name='Domestic'
-                  />
-                  <Area
-                    yAxisId='debt'
-                    type='monotone'
-                    dataKey='external'
-                    stackId='stack'
-                    stroke='#C94A4A'
-                    strokeWidth={1.5}
-                    fill='#C9473D'
-                    fillOpacity={0.12}
-                    name='External'
-                  />
-                  {/* GDP ratio dashed line on right axis */}
-                  <Line
-                    yAxisId='ratio'
-                    type='monotone'
-                    dataKey='gdpRatio'
-                    stroke='#D9A441'
-                    strokeWidth={2.5}
-                    strokeDasharray='6 3'
-                    dot={{ r: 3.5, fill: '#D9A441', stroke: '#fff', strokeWidth: 2 }}
-                    activeDot={{ r: 5, fill: '#D9A441', stroke: '#fff', strokeWidth: 2 }}
-                    name='Debt-to-GDP'
-                  />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Legend */}
-            <div className='flex items-center justify-center gap-5 mt-2'>
-              <span className='flex items-center gap-1.5 text-[11px] text-neutral-muted'>
-                <span
-                  className='w-3 h-2 rounded-sm'
-                  style={{ background: '#0D7377', opacity: 0.5 }}
-                />{' '}
-                {t('home.debt.legend_domestic')}
-              </span>
-              <span className='flex items-center gap-1.5 text-[11px] text-neutral-muted'>
-                <span className='w-3 h-2 rounded-sm bg-gov-copper/50' /> {t('home.debt.legend_external')}
-              </span>
-              <span className='flex items-center gap-1.5 text-[11px] text-neutral-muted'>
-                <span className='w-5 h-0 border-t-2 border-dashed border-gov-gold' /> {t('home.debt.legend_gdp')}
-              </span>
-            </div>
-          </>
+          <NationalDebtChart data={debtTimeline} />
         )}
       </div>
 
@@ -593,7 +412,7 @@ export default function NationalDebtCard() {
           />
         </div>
       </div>
-    </motion.div>
+    </section>
   );
 }
 
