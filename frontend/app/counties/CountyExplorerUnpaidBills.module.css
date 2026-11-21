@@ -1,0 +1,121 @@
+.explorer .measureSwitch {
+  display: grid;
+  align-items: stretch;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 768px) {
+  .explorer .measureSwitch {
+    display: flex;
+    align-items: center;
+  }
+}
+
+.explorer [data-unpaid-bills-tone='1'] {
+  --unpaid-bills-fill: #c3e1e7;
+}
+
+.explorer [data-unpaid-bills-tone='2'] {
+  --unpaid-bills-fill: #87beca;
+}
+
+.explorer [data-unpaid-bills-tone='3'] {
+  --unpaid-bills-fill: #3a93a8;
+}
+
+.explorer [data-unpaid-bills-tone='4'] {
+  --unpaid-bills-fill: #006074;
+  --county-map-outline: #fff8e8;
+}
+
+.explorer [data-unpaid-bills-tone='unavailable'] {
+  --unpaid-bills-fill: #a6ada6;
+}
+
+:global(.dark) .explorer [data-unpaid-bills-tone='1'] {
+  --unpaid-bills-fill: #174658;
+  --county-map-outline: #fff8e8;
+}
+
+:global(.dark) .explorer [data-unpaid-bills-tone='2'] {
+  --unpaid-bills-fill: #216e81;
+  --county-map-outline: #fff8e8;
+}
+
+:global(.dark) .explorer [data-unpaid-bills-tone='3'] {
+  --unpaid-bills-fill: #3b9db1;
+}
+
+:global(.dark) .explorer [data-unpaid-bills-tone='4'] {
+  --unpaid-bills-fill: #78cad7;
+  --county-map-outline: #101b14;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  gap: 8px 16px;
+  margin-top: 12px;
+  font-size: 0.875rem;
+}
+
+.swatches,
+.range,
+.missing {
+  display: flex;
+  align-items: center;
+}
+
+.swatches > span,
+.missing > i {
+  display: block;
+  background: var(--unpaid-bills-fill);
+  border: 1px solid var(--county-control-line);
+  height: 12px;
+}
+
+.swatches > span {
+  flex: 1;
+  min-width: 26px;
+}
+
+.range,
+.missing {
+  gap: 6px;
+}
+
+.range {
+  justify-content: space-between;
+}
+
+.missing > i {
+  width: 12px;
+  border-radius: 2px;
+}
+
+.summary dd {
+  color: inherit;
+}
+
+.source {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 0.875rem;
+  color: var(--county-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.qualification {
+  max-width: 55ch;
+  color: var(--county-muted);
+  font-size: 0.8125rem;
+}
+
+.tableHeader {
+  position: sticky;
+  top: 0;
+  background: var(--county-paper);
+}

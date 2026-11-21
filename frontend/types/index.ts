@@ -389,6 +389,10 @@ export interface County {
   revenueCollection?: number; // Measure described by revenue.local_revenue_basis
   revenue?: CountyRevenue;
   pendingBills?: number; // Outstanding payments
+  pendingBillsAsAt?: CountyComprehensive['debt']['pending_bills_as_at'];
+  pendingBillsReportingDate?: string | null;
+  pendingBillsSource?: CountyComprehensive['debt']['pending_bills_source'];
+  pendingBillsNotes?: CountyComprehensive['debt']['pending_bills_notes'];
   developmentBudget?: number; // Capital/development budget
   recurrentBudget?: number; // Operational budget
   // Provenance of `budget` above — the list and compare pages carry the same

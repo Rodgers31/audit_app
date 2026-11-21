@@ -49,6 +49,14 @@ async function routeMeasures(page: Page) {
       if (!row) return county;
       return {
         ...county,
+        pending_bills: county.name === 'Nairobi' ? 0 : 4.5e9,
+        pending_bills_selection: { as_at: '2026-06-30' },
+        pending_bills_as_at: '2026-06-30',
+        pending_bills_source: {
+          ...budgetSource,
+          url: 'https://cob.go.ke/synthetic-county-payables.pdf',
+          table: 'Table 2.10',
+        },
         financial_summary: {
           total_allocation: row.allocation * (year === recentYear ? 0.5 : 1),
           fiscal_period: { label: year },
@@ -105,6 +113,18 @@ test('the compact list and map share sourced per-person values, coverage and rep
 
   await year.selectOption(recentYear);
   await expect(map.getByRole('link', { name: 'Nairobi, Budget per person, KES 10,000' })).toBeVisible();
+
+  const measures = page.getByRole('group', { name: 'County measure' });
+  await measures.getByRole('button', { name: 'Unpaid bills', exact: true }).press('Enter');
+  const unpaidMap = page.getByRole('region', { name: 'County unpaid bills map' });
+  await expect(unpaidMap.getByRole('link', { name: 'Nairobi, Unpaid bills, KES 0', exact: true })).toBeVisible();
+  await expect(unpaidMap.locator('header time').first()).toHaveAttribute('datetime', '2026-06-30');
+  await expect(page.getByRole('combobox', { name: 'Budget year' })).toHaveValue(recentYear);
+  await expect(map).toBeHidden();
+  await measures.getByRole('button', { name: 'Budget per person', exact: true }).press('Enter');
+  await expect(map.getByRole('link', { name: 'Nairobi, Budget per person, KES 10,000' })).toBeVisible();
+  await expect(unpaidMap).toBeHidden();
+
   await page.getByRole('button', { name: 'List', exact: true }).click();
   await expect(list.getByRole('listitem').first()).toContainText('GarissaKES 3,000');
   expect(calls()).toEqual({ censusCalls: 1, sourceCalls: 1 });

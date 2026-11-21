@@ -37,4 +37,13 @@ export const COUNTY_EXPLORER_MESSAGES = {
   'counties.per_person.loading': { en: 'Loading census figures…', sw: 'Inapakia takwimu za sensa…', plain: 'Loading census figures…' },
   'counties.per_person.load_error': { en: 'Census figures could not be loaded.', sw: 'Takwimu za sensa hazikuweza kupakiwa.', plain: 'We could not load the census figures.' },
   'counties.per_person.unavailable': { en: 'No sourced amount', sw: 'Hakuna kiasi chenye chanzo', plain: 'No sourced amount' },
+  'counties.unpaid_bills.measure': { en: 'Unpaid bills', sw: 'Ankara zilizokwama', plain: 'Unpaid bills' },
+  'counties.unpaid_bills.budget_year': { en: 'Budget year', sw: 'Mwaka wa bajeti', plain: 'Budget year' },
+  'counties.unpaid_bills.date': { en: 'As at {date}', sw: 'Kufikia {date}', plain: 'As at {date}' },
+  'counties.unpaid_bills.no_date': { en: 'No common reporting date available', sw: 'Hakuna tarehe ya pamoja ya taarifa', plain: 'No shared reporting date available' },
+  'counties.unpaid_bills.reported': { en: 'Reported', sw: 'Imeripotiwa', plain: 'Reported' },
+  'counties.unpaid_bills.unavailable': { en: 'No published figure', sw: 'Hakuna kiasi kilichochapishwa', plain: 'No published figure' },
+  'counties.unpaid_bills.map_title': { en: 'County unpaid bills map', sw: 'Ramani ya ankara zilizokwama za kaunti', plain: 'County unpaid bills map' },
+  'counties.unpaid_bills.legend': { en: 'Unpaid bills key', sw: 'Ufafanuzi wa ramani ya ankara zilizokwama', plain: 'Unpaid bills key' },
+  'counties.unpaid_bills.source': { en: 'Controller of Budget report', sw: 'Ripoti ya Mdhibiti wa Bajeti', plain: 'Controller of Budget report' },
 } as const satisfies Record<string, Translation>;
