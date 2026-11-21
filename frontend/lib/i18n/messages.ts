@@ -1359,6 +1359,17 @@ export const MESSAGES = {
   'county.budget.execution_suffix': { en: 'execution', sw: 'utekelezaji', plain: 'spent' },
   'county.budget.unavailable': { en: 'Unavailable', sw: 'Haipatikani', plain: 'Not available' },
   'county.budget.not_classified': { en: 'Not classified in source data', sw: 'Haijaainishwa katika data ya chanzo', plain: 'Not split in the source' },
+  'county.budget.development_split': { en: 'Budget split', sw: 'Mgawanyo wa bajeti', plain: 'Budget split' },
+  'county.budget.development_meter_label': { en: 'Development share of budget allocations', sw: 'Sehemu ya mgao wa bajeti kwa maendeleo', plain: 'Share of the budget allocated to development' },
+  'county.budget.development_share': { en: '{value} for development', sw: '{value} kwa maendeleo', plain: '{value} for development' },
+  'county.budget.development_reference': { en: '{value}% medium-term benchmark', sw: 'Kiwango cha {value}% cha muda wa kati', plain: '{value}% benchmark over several years' },
+  'county.budget.development_period': { en: 'Budget allocations in {period} · report period {start} to {end}.', sw: 'Mgao wa bajeti wa {period} · kipindi cha ripoti kuanzia {start} hadi {end}.', plain: 'Budget amounts for {period} · the report covers {start} to {end}.' },
+  'county.budget.development_legal_scope': { en: 'The Public Finance Management Act sets a minimum development allocation of {value}% over three to five years.', sw: 'Sheria ya Usimamizi wa Fedha za Umma inaweka mgao wa chini wa {value}% kwa maendeleo katika kipindi cha miaka mitatu hadi mitano.', plain: 'The law requires counties to set aside at least {value}% of their budgets for development over three to five years.' },
+  'county.budget.development_receipt': { en: 'Development allocation source and rule', sw: 'Chanzo cha mgao wa maendeleo na sharti la kisheria', plain: 'Source and law for development allocations' },
+  'county.budget.development_values': { en: 'Development {projects} and recurrent {operations} make up the total allocation of {total}.', sw: 'Maendeleo {projects} na matumizi ya kawaida {operations} yanaunda jumla ya mgao wa {total}.', plain: 'The total budget of {total} contains {projects} for development and {operations} for day-to-day costs.' },
+  'county.budget.development_source_limits': { en: 'The figures are linked to the report. They await independent verification against the original.', sw: 'Takwimu zimeunganishwa na ripoti. Zinasubiri uthibitisho huru dhidi ya hati asili.', plain: 'The figures link to the report. Their exact values still need to be checked against it.' },
+  'county.budget.development_act': { en: 'Public Finance Management Act, section 107(2)(b)', sw: 'Sheria ya Usimamizi wa Fedha za Umma, kifungu cha 107(2)(b)', plain: 'Public Finance Management Act, section 107(2)(b)' },
+  'county.budget.development_missing': { en: 'Development share unavailable for this budget.', sw: 'Sehemu ya bajeti hii kwa maendeleo haipatikani.', plain: 'The development share of this budget is unavailable.' },
 
   // Sector spending section
   'county.budget.sector_spending': { en: 'Sector Spending', sw: 'Matumizi kwa Sekta', plain: 'Spending by Area' },
