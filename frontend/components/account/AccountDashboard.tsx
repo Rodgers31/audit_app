@@ -17,7 +17,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import AccountDataActions from './AccountDataActions';
 
 const fieldClass = 'mt-1 min-h-11 w-full rounded border border-neutral-text bg-surface-elevated px-3 text-base';
-const sectionClass = 'audit-panel space-y-3 p-4 sm:p-5';
+const sectionClass = 'space-y-2 py-4 sm:space-y-3 sm:py-5';
 const headingClass = 'font-display text-audit-heading font-semibold';
 
 type Message = { type: 'success' | 'error'; text: string };
@@ -157,8 +157,8 @@ export default function AccountDashboard({ accountId }: { accountId: string }) {
   }
 
   return (
-    <div className='max-w-3xl space-y-4 text-neutral-text'>
-      <section className={sectionClass} aria-labelledby='account-details'>
+    <div className='max-w-3xl divide-y divide-neutral-border text-neutral-text'>
+      <section className={`${sectionClass} pt-0 sm:pt-0`} aria-labelledby='account-details'>
         <h2 id='account-details' className={headingClass}>{copy.details[lang]}</h2>
         <form className='space-y-3' onSubmit={event => {
           event.preventDefault();
@@ -222,7 +222,7 @@ export default function AccountDashboard({ accountId }: { accountId: string }) {
               </div>
             </>
           ) : (
-            <ul className='divide-y divide-neutral-border border-y border-neutral-border'>
+            <ul className='divide-y divide-neutral-border'>
               {watchlist.map(item => (
                 <li key={item.id} className='flex flex-wrap items-center justify-between gap-x-4 py-2'>
                   <Link href={item.item_type === 'county' ? `/counties/${item.item_id}` : '/budget'}
@@ -260,7 +260,7 @@ export default function AccountDashboard({ accountId }: { accountId: string }) {
           </div>
         ) : alerts === null ? <p role='status' className='text-sm'>{copy.loading[lang]}</p> : (
           alerts.length === 0 ? <p className='text-sm text-neutral-muted'>{copy.emptyAlerts[lang]}</p> : (
-            <ul className='divide-y divide-neutral-border border-y border-neutral-border'>
+            <ul className='divide-y divide-neutral-border'>
               {alerts.map(alert => (
                 <li key={alert.id} className='space-y-1 py-3'>
                   <p className='break-words font-semibold'>{alert.title}</p>

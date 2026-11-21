@@ -56,7 +56,7 @@ export default function AccountDataActions({ accountId }: { accountId: string })
   }
 
   return (
-    <section aria-labelledby='account-data' className='audit-panel space-y-3 p-4 sm:p-5'>
+    <section aria-labelledby='account-data' className='space-y-2 py-4 sm:space-y-3 sm:py-5'>
       <h2 id='account-data' className='font-display text-audit-heading font-semibold'>{copy.data[lang]}</h2>
       <div className='flex flex-col gap-2 sm:flex-row sm:flex-wrap'>
         <button type='button' className='audit-control border-neutral-text bg-surface-elevated' onClick={handleDownload}
