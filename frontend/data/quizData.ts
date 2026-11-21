@@ -539,9 +539,9 @@ export function getAllQuestions(): QuizQuestion[] {
   return quizCategories.flatMap((c) => c.questions);
 }
 
-export function getRandomQuestions(count: number): QuizQuestion[] {
-  const all = getAllQuestions();
-  const shuffled = [...all].sort(() => Math.random() - 0.5);
+export function getRandomQuestions(count: number, difficulty?: QuizQuestion['difficulty']): QuizQuestion[] {
+  const all = getAllQuestions().filter(question => !difficulty || question.difficulty === difficulty);
+  const shuffled = all.sort(() => Math.random() - 0.5);
   return shuffled.slice(0, count);
 }
 

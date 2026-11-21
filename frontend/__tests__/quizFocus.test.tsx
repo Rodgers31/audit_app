@@ -1,13 +1,16 @@
 import '@testing-library/jest-dom';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import QuizGame from '@/components/learn/QuizGame';
+import { DAILY_QUIZ_STORAGE_KEY, dailyQuizDay, dailyQuizQuestions } from '@/components/learn/quizDaily';
 import type { QuizDebtQuestion } from '@/components/learn/quizDebtQuestion';
+import { getAllQuestions } from '@/data/quizData';
 import { LangProvider } from '@/lib/i18n/LangProvider';
 
 jest.mock('next/navigation', () => ({
   usePathname: () => '/learn/quiz',
   useRouter: () => ({ back: jest.fn() }),
 }));
+jest.mock('@/components/learn/QuizDailyShare', () => ({ __esModule: true, default: () => null }));
 
 beforeEach(() => {
   jest.spyOn(Math, 'random').mockReturnValue(0.5);
@@ -90,4 +93,46 @@ it('keeps the live question and citations stable from answer through review', ()
   expect(review.getByText('FY 2026/27 approved budget')).toBeInTheDocument();
   expect(review.getByText('KES 78')).toBeInTheDocument();
   expect(review.getByRole('link', { name: /Source document/ })).toHaveAttribute('href', liveQuestion.sourceUrl);
+});
+
+it('limits Quick Play to the chosen difficulty without changing the daily round', () => {
+  render(<QuizGame />);
+  fireEvent.change(screen.getByRole('combobox', { name: 'Difficulty' }), { target: { value: 'hard' } });
+  const hard = getAllQuestions().filter(question => question.difficulty === 'hard');
+  fireEvent.click(screen.getByRole('button', { name: new RegExp(`Quick Play.*${hard.length} questions`) }));
+  const round = within(screen.getByRole('dialog'));
+  hard.forEach((question, index) => {
+    expect(round.getByRole('heading', { level: 1 })).toHaveTextContent(question.question);
+    fireEvent.click(round.getByRole('button', { name: question.options[question.correctIndex] }));
+    fireEvent.click(round.getByRole('button', { name: index === hard.length - 1 ? 'See results' : 'Next question' }));
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'All categories' }));
+  fireEvent.click(screen.getByRole('button', { name: /Daily 3/ }));
+  expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuetext', '1 of 3');
+});
+
+it('saves a completed Daily 3 score, restores it after reload, and replays the same set', () => {
+  const day = dailyQuizDay();
+  const questions = dailyQuizQuestions(day);
+  const view = render(<QuizGame />);
+  fireEvent.click(screen.getByRole('button', { name: /Daily 3/ }));
+  const round = within(screen.getByRole('dialog'));
+  questions.forEach((question, index) => {
+    expect(round.getByRole('heading', { level: 1 })).toHaveTextContent(question.question);
+    fireEvent.click(round.getByRole('button', { name: question.options[question.correctIndex] }));
+    expect(round.getByRole('link', { name: /Article/ })).toBeInTheDocument();
+    fireEvent.click(round.getByRole('button', { name: index === 2 ? 'See results' : 'Next question' }));
+  });
+  expect(screen.getByRole('heading', { name: '3 of 3 correct' })).toHaveFocus();
+  expect(screen.getByRole('region', { name: 'Review Answers' })).toBeInTheDocument();
+  expect(JSON.parse(localStorage.getItem(DAILY_QUIZ_STORAGE_KEY)!)).toEqual({ day, score: 3 });
+  view.unmount();
+
+  render(<QuizGame />);
+  fireEvent.click(screen.getByRole('button', { name: /Daily 3.*Today’s score is 3 of 3/ }));
+  expect(screen.getByRole('heading', { name: '3 of 3 correct' })).toHaveFocus();
+  fireEvent.click(screen.getByRole('button', { name: 'Play Again' }));
+  expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(questions[0].question);
+  fireEvent.click(screen.getByRole('button', { name: 'Quit quiz' }));
+  expect(screen.getByRole('button', { name: /Daily 3/ })).toHaveFocus();
 });

@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { expect, test, type Page } from '@playwright/test';
 
 async function glossary(page: Page) {
@@ -357,6 +358,44 @@ test.describe('Engagement Quiz', () => {
     } finally {
       await phone.close();
     }
+  });
+
+  test('Daily 3 keeps the result on this browser and exports only a score image', async ({ page }) => {
+    await page.goto('/learn/quiz');
+    await expect(page.getByRole('button', { name: /Public finance/ })).toContainText('7 questions');
+    const difficulty = page.getByRole('combobox', { name: 'Difficulty' });
+    await difficulty.selectOption('hard');
+    await expect(page.getByRole('button', { name: /Quick Play/ })).not.toContainText('10 questions');
+    const daily = page.getByRole('button', { name: /Daily 3/ });
+    await daily.press('Enter');
+
+    const round = page.getByRole('dialog');
+    const first = await round.getByRole('heading', { level: 1 }).textContent();
+    for (let number = 1; number <= 3; number++) {
+      await expect(round.getByRole('progressbar')).toHaveAttribute('aria-valuetext', `${number} of 3`);
+      await round.getByRole('group', { name: 'Answers' }).getByRole('button').first().press('Enter');
+      await expect(round.getByRole('link', { name: /Article/ })).toBeVisible();
+      await round.getByRole('button', { name: number === 3 ? 'See results' : 'Next question' }).press('Enter');
+    }
+    const score = page.getByRole('heading', { name: /^[0-3] of 3 correct$/ });
+    await expect(score).toBeFocused();
+    const result = await score.textContent();
+    const downloadPromise = page.waitForEvent('download');
+    await page.getByRole('link', { name: 'Download result image' }).press('Enter');
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toBe('auditgava-daily-3.png');
+    const png = await readFile(await download.path());
+    expect(png.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
+    expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([1200, 630]);
+
+    await page.reload();
+    await expect(daily).toContainText('View result');
+    await daily.press('Enter');
+    await expect(score).toHaveText(result ?? '');
+    await page.getByRole('button', { name: 'Play Again' }).press('Enter');
+    await expect(round.getByRole('heading', { level: 1 })).toHaveText(first ?? '');
+    await page.keyboard.press('Escape');
+    await expect(daily).toBeFocused();
   });
 });
 
