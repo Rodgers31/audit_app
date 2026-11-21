@@ -56,8 +56,8 @@ it('shows a supported below-target word and a period without grading other measu
   const { rerender } = render(<MobileCountyRanking counties={counties} paged={counties} firstRank={1} sort='utilization' fiscalYear={period} formatKes={formatKes} />);
   const list = screen.getByRole('list', { name: 'County Rankings' });
   expect(within(list).getByRole('link', { name: /Rank 1 Test 69.9%/ })).toHaveAttribute('href', '/counties/001?fy=FY2025%2F26');
-  expect(within(list).getByText('Below the 70% target')).toBeInTheDocument();
+  expect(within(list).getByText('Below target')).toBeInTheDocument();
   rerender(<MobileCountyRanking counties={counties} paged={counties} firstRank={1} sort='budget' fiscalYear={period} formatKes={formatKes} />);
   expect(within(list).getByText('KES 6.2B')).toBeInTheDocument();
-  expect(within(list).queryByText('Below the 70% target')).not.toBeInTheDocument();
+  expect(within(list).queryByText('Below target')).not.toBeInTheDocument();
 });
