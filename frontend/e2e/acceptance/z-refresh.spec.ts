@@ -15,6 +15,7 @@ test('accepted fixture change reaches rendered county page through the signed wo
   expect(before.status()).toBe(200);
   expect((await before.json()).find((c: any) => c.code === '047').total_budget).toBe(100000000000);
   await page.goto('/counties');
+  await page.getByRole('button', { name: 'Table view', exact: true }).click();
   await expect(page.getByRole('row').filter({ hasText: 'Nairobi' })).toContainText('100.0B');
 
   expect((await request.post(`${api}/__fixture/budget/125000000000`)).ok()).toBeTruthy();

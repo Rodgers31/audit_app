@@ -38,16 +38,8 @@ test.describe('A11y smoke', () => {
     test(`${path} — every link has an accessible name`, async ({ page }) => {
       await page.goto(path);
       await waitForAppReady(page);
-      const links = await page.getByRole('link').all();
-      const unnamed: string[] = [];
-      for (const link of links) {
-        const name = (await link.getAttribute('aria-label')) || (await link.textContent());
-        if (!name || !name.trim()) {
-          const href = (await link.getAttribute('href')) || '(no href)';
-          unnamed.push(href);
-        }
-      }
-      expect(unnamed, `unnamed links: ${unnamed.join(', ')}`).toEqual([]);
+      await expect(page.getByRole('link').first()).toBeVisible();
+      await expect(page.getByRole('link', { name: /^\s*$/ }), 'links must have accessible names').toHaveCount(0);
     });
 
     test(`${path} — every <img> has alt text (or aria-hidden)`, async ({ page }) => {

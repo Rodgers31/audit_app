@@ -17,13 +17,21 @@
 import { expect, test, type Page } from '@playwright/test';
 import { waitForAppReady } from './utils/selectors';
 
-async function gotoPageNOfCountiesList(page: Page, n: number) {
+function countyRows(page: Page) {
+  return page.getByRole('table', { name: 'County Rankings' }).locator('tbody tr');
+}
+
+async function openCountyTable(page: Page) {
   await page.goto('/counties');
   await waitForAppReady(page);
+  await page.getByRole('button', { name: 'Table view', exact: true }).click();
+  await expect(countyRows(page).first()).toBeVisible({ timeout: 20_000 });
+}
 
-  // Wait for the rankings table + "Prev" button (only rendered once
-  // pagination appears at the bottom of the table).
-  await expect(page.locator('table tbody tr').first()).toBeVisible({ timeout: 20_000 });
+async function gotoPageNOfCountiesList(page: Page, n: number) {
+  await openCountyTable(page);
+
+  // Wait for the pagination controls below the rankings table.
   await expect(page.getByRole('button', { name: /^<\s*Prev$/ })).toBeVisible({
     timeout: 15_000,
   });
@@ -50,8 +58,7 @@ test.describe('Smart back link — counties list ↔ detail', () => {
     await gotoPage2OfCountiesList(page);
 
     // Click the first county on this page (any tile, order doesn't matter)
-    const firstLink = page
-      .locator('table tbody tr')
+    const firstLink = countyRows(page)
       .first()
       .getByRole('link')
       .first();
@@ -67,6 +74,7 @@ test.describe('Smart back link — counties list ↔ detail', () => {
     // Should be back on /counties?p=2 (URL preserved), content on page 2
     await expect(page).toHaveURL(/\/counties\?.*p=2/, { timeout: 10_000 });
     await expect(page.getByText(/Showing\s+11[–\-]20\s+of/)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('button', { name: 'Table view', exact: true })).toHaveAttribute('aria-pressed', 'true');
   });
 
   test('scroll position is roughly preserved after smart-back', async ({ page }) => {
@@ -78,8 +86,7 @@ test.describe('Smart back link — counties list ↔ detail', () => {
     const beforeY = await page.evaluate(() => window.scrollY);
     expect(beforeY).toBeGreaterThan(400);
 
-    const firstLink = page
-      .locator('table tbody tr')
+    const firstLink = countyRows(page)
       .first()
       .getByRole('link')
       .first();
@@ -100,10 +107,7 @@ test.describe('Smart back link — counties list ↔ detail', () => {
     expect(afterY).toBeGreaterThan(100);
   });
 
-  test('deep-landing on county detail → back link falls through to forward nav', async ({
-    page,
-    context,
-  }) => {
+  test('deep-landing on county detail → back link falls through to forward nav', async ({ page }) => {
     // No prior history — open the county detail as a fresh page.
     await page.goto('/counties/043?fy=2024%2F25');
     await waitForAppReady(page);
@@ -116,7 +120,9 @@ test.describe('Smart back link — counties list ↔ detail', () => {
     // Should land on /counties (no ?p=N because there was no state to
     // restore). Must not land somewhere unrelated.
     await expect(page).toHaveURL(/\/counties(\/|\?|$)/, { timeout: 10_000 });
-    await expect(page.locator('table tbody tr').first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('list', { name: 'County Rankings' }).getByRole('listitem').first())
+      .toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('button', { name: 'Table view', exact: true })).toHaveAttribute('aria-pressed', 'false');
   });
 
   test('page 3 (user-reported scenario) → detail → All counties → restores page 3', async ({ page }) => {
@@ -125,7 +131,7 @@ test.describe('Smart back link — counties list ↔ detail', () => {
     // *general*, not scoped to a single page number.
     await gotoPageNOfCountiesList(page, 3);
 
-    const firstLink = page.locator('table tbody tr').first().getByRole('link').first();
+    const firstLink = countyRows(page).first().getByRole('link').first();
     await firstLink.click();
     await page.waitForURL(/\/counties\/[\w-]+/, { timeout: 15_000 });
 
@@ -144,9 +150,7 @@ test.describe('Smart back link — counties list ↔ detail', () => {
     // 47-row list, I clicked a county, then clicked 'All counties' to go
     // back — but it took me to the paginated view, not the full list."
     // Fix: showAll is URL-driven (?view=all) so router.back() restores it.
-    await page.goto('/counties');
-    await waitForAppReady(page);
-    await expect(page.locator('table tbody tr').first()).toBeVisible({ timeout: 20_000 });
+    await openCountyTable(page);
 
     // Click "View All Counties"
     await page.getByRole('button', { name: /View All Counties|Kaunti Zote/i }).click();
@@ -154,14 +158,14 @@ test.describe('Smart back link — counties list ↔ detail', () => {
     // Pagination controls should be hidden now
     await expect(page.getByRole('button', { name: /^<\s*Prev$/ })).toHaveCount(0);
     // The full list (47 rows) should be rendered
-    await expect(page.locator('table tbody tr')).toHaveCount(47, { timeout: 10_000 });
+    await expect(countyRows(page)).toHaveCount(47, { timeout: 10_000 });
 
     // Scroll partway down so the back round-trip has something to restore
     await page.evaluate(() => window.scrollTo(0, 1500));
     await page.waitForTimeout(200);
 
     // Click into a county (pick one mid-list so scroll matters)
-    const midLink = page.locator('table tbody tr').nth(15).getByRole('link').first();
+    const midLink = countyRows(page).nth(15).getByRole('link').first();
     await midLink.scrollIntoViewIfNeeded();
     await midLink.click();
     await page.waitForURL(/\/counties\/[\w-]+/, { timeout: 15_000 });
@@ -172,24 +176,23 @@ test.describe('Smart back link — counties list ↔ detail', () => {
 
     // Must land back on /counties?view=all (full list), NOT /counties (paginated p=1)
     await expect(page).toHaveURL(/\/counties\?.*view=all/, { timeout: 10_000 });
-    await expect(page.locator('table tbody tr')).toHaveCount(47, { timeout: 10_000 });
+    await expect(countyRows(page)).toHaveCount(47, { timeout: 10_000 });
     // Pagination should still be hidden
     await expect(page.getByRole('button', { name: /^<\s*Prev$/ })).toHaveCount(0);
   });
 
-  test('returning from a county to a FILTERED list restores filters via history', async ({ page }) => {
+  test('returning from a fiscal-year-filtered table restores the page and table layout', async ({ page }) => {
     await gotoPage2OfCountiesList(page);
 
-    // Also tweak the fiscal-year state if possible — demonstrates that
-    // non-URL state still rides home via browser history restoration.
-    // (If this locator isn't present we skip — not all layouts show it.)
-    const yearDropdown = page.getByRole('combobox').first();
-    if ((await yearDropdown.count()) > 0) {
-      await yearDropdown.scrollIntoViewIfNeeded();
-    }
+    const yearDropdown = page.getByRole('combobox', { name: 'Year', exact: true });
+    const changedPeriod = page.waitForResponse(response =>
+      response.ok() && new URL(response.url()).pathname === '/api/v1/counties' &&
+      new URL(response.url()).searchParams.get('fiscal_year') === 'FY2024/25');
+    await yearDropdown.selectOption('FY2024/25');
+    await changedPeriod;
+    await expect(countyRows(page).first()).toContainText('8.0B');
 
-    const firstLink = page
-      .locator('table tbody tr')
+    const firstLink = countyRows(page)
       .first()
       .getByRole('link')
       .first();
@@ -201,8 +204,9 @@ test.describe('Smart back link — counties list ↔ detail', () => {
       .first();
     await back.click();
 
-    // Must return to the page-2 URL, not the bare /counties.
     await expect(page).toHaveURL(/\/counties\?.*p=2/, { timeout: 10_000 });
+    await expect(page.getByRole('button', { name: 'Table view', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(countyRows(page).first()).toBeVisible();
   });
 });
 
