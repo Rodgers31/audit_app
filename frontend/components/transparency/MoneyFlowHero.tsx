@@ -6,9 +6,11 @@ import { ChevronDown } from 'lucide-react';
 import { useLang } from '@/lib/i18n/LangProvider';
 import { nationalSpendingMessages as messages } from '@/lib/i18n/messages/transparency';
 import {
+  auditAmountCoverageNote,
   formatEfficiency,
   formatFlowKES,
   isProjectedMoneyFlow,
+  sameMoneyFlowPeriod,
 } from './moneyFlowPresentation';
 import styles from './MoneyFlowPresentation.module.css';
 
@@ -22,6 +24,21 @@ function nationalAmount(data: MoneyFlowData | null | undefined, stageName: strin
   return amount != null && Number.isFinite(amount) && !stage?.data_unavailable ? amount : null;
 }
 
+export function nationalSpendingSummary(data: MoneyFlowData | null | undefined, year: string) {
+  const samePeriod = sameMoneyFlowPeriod(data, year);
+  const allocated = nationalAmount(samePeriod, 'Allocated');
+  const spent = nationalAmount(samePeriod, 'Spent');
+
+  // The API links one report only when it supports both national totals.
+  const reportURL =
+    samePeriod?.budget_source === 'cob_cbirr' ? evidenceUrl(samePeriod.source_document_url) : null;
+  const share =
+    reportURL && allocated != null && allocated > 0 && spent != null && spent >= 0
+      ? (spent / allocated) * 100
+      : null;
+  return { samePeriod, allocated, spent, reportURL, share };
+}
+
 function headlineShare(share: number) {
   const rounded = Math.round(share);
   if (rounded === 0 && share > 0) return '<1%';
@@ -32,30 +49,24 @@ function headlineShare(share: number) {
 export default function MoneyFlowHero({
   data,
   selectedYear = data?.fiscal_year ?? '',
+  auditCoverageInSource = false,
 }: {
   data: MoneyFlowData | null | undefined;
   selectedYear?: string;
+  auditCoverageInSource?: boolean;
 }) {
-  const { lang } = useLang();
+  const { lang, t } = useLang();
   const copy = (key: keyof typeof messages, values: Record<string, string | number> = {}) =>
     messages[key][lang].replace(/\{(\w+)\}/g, (match, name) => String(values[name] ?? match));
   const year = barePeriod(selectedYear);
   if (!year) return null;
 
-  const samePeriod = data && barePeriod(data.fiscal_year) === year ? data : null;
-  const allocated = nationalAmount(samePeriod, 'Allocated');
-  const spent = nationalAmount(samePeriod, 'Spent');
+  const { samePeriod, allocated, spent, reportURL, share } = nationalSpendingSummary(data, year);
   const budgetSource = samePeriod?.budget_source;
   const projected = isProjectedMoneyFlow(samePeriod);
-
-  // The national API supplies this URL only for a single source across the county
-  // totals. Each county's allocation and spending use the same reported rows.
-  const reportURL =
-    budgetSource === 'cob_cbirr' ? evidenceUrl(samePeriod?.source_document_url) : null;
-  const share =
-    reportURL && allocated != null && allocated > 0 && spent != null && spent >= 0
-      ? (spent / allocated) * 100
-      : null;
+  const auditNote = auditCoverageInSource
+    ? auditAmountCoverageNote(samePeriod?.audit_amount_coverage, lang)
+    : null;
   const remaining = share != null && allocated != null && spent != null ? allocated - spent : null;
   const hasAmount = allocated != null || spent != null;
   const allocationLabel =
@@ -146,6 +157,12 @@ export default function MoneyFlowHero({
             <a href={reportURL} target='_blank' rel='noopener noreferrer'>
               {samePeriod?.source_document_title || copy('reportLink')}
             </a>
+          )}
+          {auditNote && (
+            <div className='mt-3'>
+              <h3 className='font-semibold'>{t('transparency.overview.national_questioned')}</h3>
+              <p>{auditNote}</p>
+            </div>
           )}
         </details>
       )}

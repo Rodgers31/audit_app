@@ -44,78 +44,93 @@ export default function MoneyFlowOverview({
   insights,
   fiscalYear,
   projected,
+  auditOnly = false,
+  auditAbsenceExplained = false,
 }: {
   insights: MoneyFlowInsights;
   fiscalYear: string;
   projected: boolean;
+  auditOnly?: boolean;
+  auditAbsenceExplained?: boolean;
 }) {
   const { t, lang } = useLang();
   const flagged = !projected && insights.flagged != null && insights.flagged > 0;
   const AuditIcon = flagged ? TriangleAlert : FileText;
+  const AuditHeading = auditOnly ? 'h2' : 'h3';
+  const coverageNote = auditAmountCoverageNote(insights.audit_amount_coverage, lang);
+  if (auditOnly && insights.flagged == null && auditAbsenceExplained) return null;
   return (
     <section
-      className={`${styles.presentation} ${styles.overview}`}
-      aria-labelledby='money-flow-overview'>
-      <header className={styles.overviewHead}>
-        <h2 id='money-flow-overview'>{t('transparency.overview.title')}</h2>
-        <p>FY {fiscalYear}</p>
-      </header>
-      <div className={styles.metrics}>
-        <Metric
-          label={t('transparency.overview.allocated')}
-          value={formatFlowKES(insights.allocated)}
-          note={`${t('transparency.overview.counties')} · FY ${fiscalYear}`}
-          tone='allocation'
-        />
-        <Metric
-          label={t(projected ? 'transparency.overview.spent' : 'transparency.overview.gap')}
-          value={projected ? t('transparency.overview.pending') : formatFlowKES(insights.gap)}
-          note={
-            projected
-              ? t('transparency.overview.execution_pending')
-              : insights.unspentPct != null
-                ? t('transparency.overview.unspent').replace(
-                    '{percent}',
-                    insights.unspentPct.toFixed(1)
-                  )
-                : t('transparency.overview.execution_unavailable')
-          }
-          tone={
-            projected || insights.gap == null
-              ? 'neutral'
-              : insights.gap > 0
-                ? 'fair'
-                : insights.gap === 0
-                  ? 'good'
-                  : 'low'
-          }
-        />
-        <Metric
-          label={t('transparency.overview.efficiency')}
-          efficiency
-          value={
-            projected || insights.efficiency == null
-              ? t('transparency.overview.not_published')
-              : `${formatEfficiency(insights.efficiency)}%`
-          }
-          note={
-            projected
-              ? t('transparency.overview.efficiency_pending')
-              : insights.efficiency == null
-                ? t('transparency.overview.execution_unavailable')
-                : insights.efficiency >= 70
-                  ? t('transparency.overview.good')
-                  : insights.efficiency >= 50
-                    ? t('transparency.overview.fair')
-                    : t('transparency.overview.low')
-          }
-          tone={efficiencyTone(projected ? null : insights.efficiency)}
-        />
-      </div>
+      className={auditOnly ? styles.presentation : `${styles.presentation} ${styles.overview}`}
+      aria-labelledby={auditOnly ? 'national-audit-amount' : 'money-flow-overview'}>
+      {!auditOnly && (
+        <>
+          <header className={styles.overviewHead}>
+            <h2 id='money-flow-overview'>{t('transparency.overview.title')}</h2>
+            <p>FY {fiscalYear}</p>
+          </header>
+          <div className={styles.metrics}>
+            <Metric
+              label={t('transparency.overview.allocated')}
+              value={formatFlowKES(insights.allocated)}
+              note={`${t('transparency.overview.counties')} · FY ${fiscalYear}`}
+              tone='allocation'
+            />
+            <Metric
+              label={t(projected ? 'transparency.overview.spent' : 'transparency.overview.gap')}
+              value={projected ? t('transparency.overview.pending') : formatFlowKES(insights.gap)}
+              note={
+                projected
+                  ? t('transparency.overview.execution_pending')
+                  : insights.unspentPct != null
+                    ? t('transparency.overview.unspent').replace(
+                        '{percent}',
+                        insights.unspentPct.toFixed(1)
+                      )
+                    : t('transparency.overview.execution_unavailable')
+              }
+              tone={
+                projected || insights.gap == null
+                  ? 'neutral'
+                  : insights.gap > 0
+                    ? 'fair'
+                    : insights.gap === 0
+                      ? 'good'
+                      : 'low'
+              }
+            />
+            <Metric
+              label={t('transparency.overview.efficiency')}
+              efficiency
+              value={
+                projected || insights.efficiency == null
+                  ? t('transparency.overview.not_published')
+                  : `${formatEfficiency(insights.efficiency)}%`
+              }
+              note={
+                projected
+                  ? t('transparency.overview.efficiency_pending')
+                  : insights.efficiency == null
+                    ? t('transparency.overview.execution_unavailable')
+                    : insights.efficiency >= 70
+                      ? t('transparency.overview.good')
+                      : insights.efficiency >= 50
+                        ? t('transparency.overview.fair')
+                        : t('transparency.overview.low')
+              }
+              tone={efficiencyTone(projected ? null : insights.efficiency)}
+            />
+          </div>
+        </>
+      )}
       <div className={styles.auditStatus} data-tone={flagged ? 'low' : 'neutral'}>
         <AuditIcon size={23} aria-hidden='true' />
         <div>
-          <h3 className={styles.auditLabel}>{t('transparency.overview.questioned')}</h3>
+          <AuditHeading
+            id={auditOnly ? 'national-audit-amount' : undefined}
+            className={styles.auditLabel}>
+            {t(auditOnly ? 'transparency.overview.national_questioned' : 'transparency.overview.questioned')}
+          </AuditHeading>
           <p className={styles.auditValue}>
             {projected
               ? t('transparency.overview.not_audited')
@@ -124,17 +139,18 @@ export default function MoneyFlowOverview({
                 : formatFlowKES(insights.flagged)}
           </p>
         </div>
-        <p className={styles.auditCopy}>
-          {auditAmountCoverageNote(insights.audit_amount_coverage, lang) ?? (
-            projected
-              ? t('transparency.overview.audit_pending')
+        <div className={styles.auditCopy}>
+          {coverageNote && <p>{coverageNote}</p>}
+          {flagged ? (
+            <p>{t('transparency.overview.audit_positive')}</p>
+          ) : !coverageNote && (
+            <p>{t(projected
+              ? 'transparency.overview.audit_pending'
               : insights.flagged == null
-                ? t('transparency.overview.audit_unavailable')
-                : flagged
-                  ? t('transparency.overview.audit_positive')
-                  : t('transparency.overview.audit_zero')
+                ? 'transparency.overview.audit_unavailable'
+                : 'transparency.overview.audit_zero')}</p>
           )}
-        </p>
+        </div>
       </div>
     </section>
   );

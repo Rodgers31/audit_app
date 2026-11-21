@@ -183,6 +183,7 @@ describe('/transparency — what the prerendered document contains', () => {
     // served HTML contained no occurrence of "KES" at all.
     expect(html).toContain('KES');
     expect(html).toContain('633.30B');
+    expect(html).not.toContain('At a glance');
   });
 
   it('server-renders the county table rather than its spinner', async () => {
@@ -200,7 +201,8 @@ describe('/transparency — what the prerendered document contains', () => {
     expect(html).toContain('1 of 47 counties');
   });
 
-  it('server-renders the KPI cards, which the page hides until data arrives', async () => {
+  it('server-renders the fallback KPI cards when the report does not support a verdict', async () => {
+    getNationalMoneyFlow.mockResolvedValue({ ...NATIONAL, source_document_url: null });
     const state = await serverState();
     const Wrapper = hydratedWrapper(state);
 
@@ -210,9 +212,7 @@ describe('/transparency — what the prerendered document contains', () => {
       </Wrapper>
     );
 
-    // `{insights && insights.allocated != null && ...}` — an entire section
-    // that appears out of nothing once the fetch lands, shoving everything
-    // below it down. That insertion is the shift.
+    // An entire section deferred until hydration would shift the content below.
     expect(html).toContain('Total allocated');
     expect(html).toContain('National efficiency');
   });
