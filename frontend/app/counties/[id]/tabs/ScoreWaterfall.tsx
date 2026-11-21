@@ -136,66 +136,67 @@ export default function ScoreWaterfall({
   } as CSSProperties);
 
   return (
-    <ChartReadout
-      takeaway={caption}
-      columns={[copy.deduction[lang], copy.rule[lang]]}
-      data={data}
-      activeId={readout.activeId}>
-      <div
-        ref={plot}
-        className={styles.plot}
-        data-layout={compact ? 'rows' : 'columns'}
-        data-no-deductions={deductionCount === 0}
-        style={{
-          '--axis-width': `${AXIS_WIDTH}px`,
-          '--endpoint-width': `${ENDPOINT_WIDTH}px`,
-          '--min-target': `${MIN_TARGET}px`,
-          '--deduction-count': deductionCount,
-        } as CSSProperties}>
-        <div className={styles.axis} aria-hidden='true'>
-          {[0, 50, START_POINTS].map(tick => <span key={tick} style={{ '--tick': `${tick}%` } as CSSProperties}>{tick}</span>)}
-        </div>
-        <div className={styles.steps}>
-          <div className={styles.step} aria-hidden='true'>
-            <span className={styles.mark} style={position(START_POINTS, 0)} data-impact='start'>
-              <span className={styles.number}>{START_POINTS}</span>
-              <span className={styles.bar} />
-            </span>
-            <span className={styles.label} data-short>{startLabel}</span>
+    <div className={styles.chart}>
+      <ChartReadout
+        takeaway={caption}
+        columns={[copy.deduction[lang], copy.rule[lang]]}
+        data={data}
+        activeId={readout.activeId}>
+        <div
+          ref={plot}
+          className={styles.plot}
+          data-layout={compact ? 'rows' : 'columns'}
+          data-no-deductions={deductionCount === 0}
+          style={{
+            '--axis-width': `${AXIS_WIDTH}px`,
+            '--endpoint-width': `${ENDPOINT_WIDTH}px`,
+            '--min-target': `${MIN_TARGET}px`,
+            '--deduction-count': deductionCount,
+          } as CSSProperties}>
+          <div className={styles.axis} aria-hidden='true'>
+            {[0, 50, START_POINTS].map(tick => <span key={tick} style={{ '--tick': `${tick}%` } as CSSProperties}>{tick}</span>)}
           </div>
-          {steps.map((step, index) => {
-            const datum = factors[index];
-            const signedPoints = `−${-step.points}`;
-            const captionLabel = compact ? { name: step.label } : chartLabel(step.label, lang);
-            return (
-              <button
-                key={datum.id}
-                className={styles.step}
-                {...readout.trigger(datum, t('foundation.no_chart_value'))}
-                aria-label={undefined}
-                aria-description={`${step.label} · ${datum.value}`}>
-                <span className={styles.mark} style={position(step.before, step.after)} data-impact={step.impact}>
-                  <span className={styles.number}>{signedPoints}</span>
-                  <span className={styles.bar} />
-                </span>
-                {' '}
-                <span className={styles.label} data-short={captionLabel.name !== step.label || undefined}>
-                  {captionLabel.name}
-                  {captionLabel.measurement && <span className={styles.measurement}> {captionLabel.measurement}</span>}
-                </span>
-              </button>
-            );
-          })}
-          <div className={styles.step} aria-hidden='true'>
-            <span className={styles.mark} style={position(score, 0)} data-impact='score'>
-              <span className={styles.number}>{final}</span>
-              <span className={styles.bar} />
-            </span>
-            <span className={styles.label} data-short>{scoreLabel}</span>
+          <div className={styles.steps}>
+            <div className={styles.step} aria-hidden='true'>
+              <span className={styles.mark} style={position(START_POINTS, 0)} data-impact='start'>
+                <span className={styles.number}>{START_POINTS}</span>
+                <span className={styles.bar} />
+              </span>
+              <span className={styles.label} data-short>{startLabel}</span>
+            </div>
+            {steps.map((step, index) => {
+              const datum = factors[index];
+              const signedPoints = `−${-step.points}`;
+              const captionLabel = compact ? { name: step.label } : chartLabel(step.label, lang);
+              return (
+                <button
+                  key={datum.id}
+                  className={styles.step}
+                  {...readout.trigger(datum, t('foundation.no_chart_value'))}
+                  aria-label={undefined}>
+                  <span className={styles.mark} style={position(step.before, step.after)} data-impact={step.impact}>
+                    <span className={styles.number}>{signedPoints}</span>
+                    <span className={styles.bar} />
+                  </span>
+                  {' '}
+                  <span className={styles.label} data-short={captionLabel.name !== step.label || undefined}>
+                    {captionLabel.name}
+                    {captionLabel.measurement && <span className={styles.measurement}> {captionLabel.measurement}</span>}
+                  </span>
+                </button>
+              );
+            })}
+            <div className={styles.step} aria-hidden='true'>
+              <span className={styles.mark} style={position(score, 0)} data-impact='score'>
+                <span className={styles.number}>{final}</span>
+                <span className={styles.bar} />
+              </span>
+              <span className={styles.label} data-short>{scoreLabel}</span>
+            </div>
           </div>
         </div>
-      </div>
-      {deductionCount > 0 && <p className='text-sm text-neutral-muted'>{copy.hint[lang]}</p>}
-    </ChartReadout>
+        {deductionCount > 0 && <p className='text-sm text-neutral-muted'>{copy.hint[lang]}</p>}
+      </ChartReadout>
+    </div>
   );
 }
