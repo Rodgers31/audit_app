@@ -67,16 +67,25 @@ test.describe('mobile Explorer rankings', () => {
       }) });
     });
     const list = page.getByRole('list', { name: 'County Rankings' });
-    await page.getByRole('combobox', { name: /County Rankings.*Sort by/ }).selectOption('utilization');
+    await expect(page.getByRole('combobox', { name: /County Rankings.*Sort by/ })).toHaveValue('utilization');
     await expect(list.getByRole('listitem').nth(0)).toContainText('Mombasa72.0%');
     await expect(list.getByRole('listitem').nth(1)).toContainText('Nairobi60.0%');
     await expect(list.getByRole('listitem').nth(2)).toContainText('Kisumu0.0%');
-    await expect(list.getByRole('listitem').nth(3)).toContainText('Not published');
-    await expect(list.getByText('Below the 70% target', { exact: true })).toHaveCount(2);
+    await expect(list.getByRole('listitem').nth(3)).toContainText('No published rate');
+    await expect(list.getByText('Well below target', { exact: true })).toHaveCount(2);
     await page.getByRole('button', { name: /reverse sort direction/i }).click();
     await expect(list.getByRole('listitem').nth(0)).toContainText('Kisumu0.0%');
     await expect(list.getByRole('listitem').nth(2)).toContainText('Mombasa72.0%');
-    await expect(list.getByRole('listitem').nth(3)).toContainText('Not published');
+    await expect(list.getByRole('listitem').nth(3)).toContainText('No published rate');
+
+    await page.getByRole('button', { name: 'Map', exact: true }).tap();
+    const map = page.getByRole('region', { name: 'County spending map' });
+    await expect(map.getByRole('link', { name: 'Kisumu, Spending rate, 0.0%, Well below target' }))
+      .toHaveAttribute('data-spending-band', 'well-below');
+    await expect(map.getByRole('link', { name: 'Baringo, Spending rate, No published rate' }))
+      .toHaveAttribute('data-spending-band', 'unavailable');
+    await page.getByRole('button', { name: 'List', exact: true }).tap();
+    await expect(list.getByRole('listitem').nth(0)).toContainText('Kisumu0.0%');
   });
 });
 

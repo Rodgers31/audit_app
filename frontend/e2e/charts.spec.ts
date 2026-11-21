@@ -9,7 +9,7 @@ test.describe('Chart Data Validation - Counties Page', () => {
     await page.getByPlaceholder('Type to search…').fill('Nairobi');
     await expect(page.locator('table tbody tr')).toHaveCount(1);
     await expect(page.locator('table tbody tr')).toContainText('10.0B');
-    await expect(page.locator('table tbody tr')).toContainText('60%');
+    await expect(page.getByRole('cell', { name: 'No published rate' })).toBeVisible();
   });
   test('budget values match API response', async ({ page, request }) => {
     const response = await request.get('/api/v1/counties/001');
