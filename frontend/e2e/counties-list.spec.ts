@@ -6,7 +6,7 @@ import { pageShell, waitForAppReady } from './utils/selectors';
 
 test.describe('/counties', () => {
   test('loads with header, subtitle, and populated list', async ({ page }) => {
-    await page.goto('/counties');
+    await page.goto('/counties?layout=table');
     await waitForAppReady(page);
 
     await expect(pageShell.h1(page)).toContainText(/County Explorer|Kivinjari cha Kaunti/i);
@@ -21,7 +21,7 @@ test.describe('/counties', () => {
   });
 
   test('search input filters the list', async ({ page }) => {
-    await page.goto('/counties');
+    await page.goto('/counties?layout=table');
     await waitForAppReady(page);
 
     const search = page.getByRole('searchbox').first();
@@ -38,7 +38,7 @@ test.describe('/counties', () => {
   });
 
   test('clicking a county tile navigates to its detail page', async ({ page }) => {
-    await page.goto('/counties');
+    await page.goto('/counties?layout=table');
     await waitForAppReady(page);
 
     await page.getByRole('searchbox').first().fill('Nairobi');

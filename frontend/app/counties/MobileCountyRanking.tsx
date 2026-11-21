@@ -10,6 +10,8 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { comparisonHref, MAX_COMPARE_COUNTIES } from './compare/ledgerData';
 import styles from './CountyExperience.module.css';
+import desktopStyles from './CountyExplorerDesktop.module.css';
+import type { CountyExplorerSelection } from './CountyExplorerDesktop';
 
 export type CountySortField = 'name' | 'population' | 'health' | 'budget' | 'utilization' | 'debt';
 
@@ -37,13 +39,14 @@ export function countyRecordHref(countyId: string, fiscalYear?: string) {
   return `/counties/${countyId}${fiscalYear ? `?fy=${encodeURIComponent(fiscalYear)}` : ''}`;
 }
 
-export default function MobileCountyRanking({ counties, paged, firstRank, sort, fiscalYear, formatKes, readSpendingRate = county => publishedSpendingRate(county, fiscalYear) }: {
+export default function MobileCountyRanking({ counties, paged, firstRank, sort, fiscalYear, formatKes, desktopSelection, readSpendingRate = county => publishedSpendingRate(county, fiscalYear) }: {
   counties: County[];
   paged: County[];
   firstRank: number;
   sort: CountySortField;
   fiscalYear?: string;
   formatKes: (value: number) => string;
+  desktopSelection?: CountyExplorerSelection;
   readSpendingRate?: (county: County) => number | undefined;
 }) {
   const { t, lang } = useLang();
@@ -81,25 +84,41 @@ export default function MobileCountyRanking({ counties, paged, firstRank, sort, 
             const checked = selected.some(item => item.id === county.id);
             const note = band && available ? copy(`counties.spending.${band}`)
               : sort === 'budget' && available && county.budgetSource === 'cra_model' ? copy('counties.rankings.modelled_amount') : null;
+            const rowContent = (
+              <>
+                <span className='text-xs font-normal text-neutral-muted tabular-nums'>
+                  {ranked ? <><span className='sr-only'>{copy('counties.rankings.rank')} </span>{firstRank + index}</> : '—'}
+                </span>
+                <span className='min-w-0 font-semibold break-words'>{county.name}</span>
+                <span className={`font-semibold tabular-nums ${available ? 'font-display text-audit-heading' : 'text-sm'}`}>
+                  {available ? formatMeasurement(value, sort, formatKes) : band ? copy('counties.spending.unavailable') : copy('counties.rankings.measure_unavailable')}
+                </span>
+              </>
+            );
             return (
               <li key={county.id} className={styles.rankingRow} data-spending-band={band}>
-                <Link href={countyRecordHref(county.id, fiscalYear)} className={styles.rankingCounty}>
-                  <span className='text-xs font-normal text-neutral-muted tabular-nums'>
-                    {ranked ? <><span className='sr-only'>{copy('counties.rankings.rank')} </span>{firstRank + index}</> : '—'}
-                  </span>
-                  <span className='min-w-0 font-semibold break-words'>{county.name}</span>
-                  <span className={`font-semibold tabular-nums ${available ? 'font-display text-audit-heading' : 'text-sm'}`}>
-                    {available ? formatMeasurement(value, sort, formatKes) : band ? copy('counties.spending.unavailable') : copy('counties.rankings.measure_unavailable')}
-                  </span>
-                </Link>
-                <div className={styles.rankingMeasure}>
+                {desktopSelection ? (
+                  <button
+                    type='button'
+                    className={`${styles.rankingCounty} ${desktopStyles.rowButton}`}
+                    aria-controls='county-map-readout'
+                    aria-pressed={desktopSelection.selectedId === county.id}
+                    onClick={() => desktopSelection.onSelect(county.id)}>
+                    {rowContent}
+                  </button>
+                ) : (
+                  <Link href={countyRecordHref(county.id, fiscalYear)} className={styles.rankingCounty}>
+                    {rowContent}
+                  </Link>
+                )}
+                <div className={desktopSelection ? `${styles.rankingMeasure} ${desktopStyles.rowMeasure}` : styles.rankingMeasure}>
                   {available && <div aria-hidden='true' className='h-1.5 rounded bg-surface-sunken'>
                     <div className='h-full rounded bg-signal-context'
                       style={{ width: `${range > 0 ? Math.min(100, value / range * 100) : 0}%`, backgroundColor: band ? 'var(--county-spending-fill)' : undefined }} />
                   </div>}
                   {note && <span className='text-xs text-neutral-muted' style={{ color: band ? 'var(--county-spending-ink)' : undefined }}>{note}</span>}
                 </div>
-                <label className={styles.rankingCompare}>
+                <label className={desktopSelection ? `${styles.rankingCompare} ${desktopStyles.rowCompare}` : styles.rankingCompare}>
                   <input type='checkbox' className='h-4 w-4 accent-gov-sage' checked={checked}
                     disabled={!checked && selected.length >= MAX_COMPARE_COUNTIES}
                     onChange={() => toggleCounty(county)} aria-label={copy('counties.rankings.compare_county').replace('{county}', county.name)} />

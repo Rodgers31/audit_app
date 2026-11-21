@@ -49,10 +49,11 @@ import React, {
   useSyncExternalStore,
 } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
-import ResponsiveTable from '@/components/ui/ResponsiveTable';
 import InfoSheet from '@/components/ui/InfoSheet';
 import MobileCountyRanking, { countyRecordHref, type CountySortField } from './MobileCountyRanking';
 import styles from './CountyExperience.module.css';
+import desktopStyles from './CountyExplorerDesktop.module.css';
+import { useCountyExplorerDesktop, type CountyExplorerSelection } from './CountyExplorerDesktop';
 import { AuditStatusSignal } from './CountySignals';
 import { FINANCIAL_HEALTH_BANDS, financialHealthBand } from '@/lib/counties/financialHealth';
 import { getCountyRegion, normalizeCountyName } from '@/lib/counties/regions';
@@ -605,12 +606,14 @@ function CountyPerformanceMap({
   readSpendingRate,
   selectedRegion,
   fiscalYear,
+  desktopSelection,
 }: {
   counties: County[]; // filtered counties (for highlight)
   allCounties: County[]; // all counties (always render all polygons)
   readSpendingRate: (county: County) => number | undefined;
   selectedRegion: string;
   fiscalYear?: string;
+  desktopSelection?: CountyExplorerSelection;
 }) {
   const { lang, t } = useLang();
   const router = useRouter();
@@ -690,13 +693,27 @@ function CountyPerformanceMap({
   }, [selectedRegion, allLookup]);
 
   // Resolve from the current period and filters; never retain a previous year's figures.
-  const inspected = counties.find((county) => county.id === activeCounty?.id) ?? counties[0] ?? null;
+  const inspectedId = desktopSelection?.selectedId ?? activeCounty?.id;
+  const inspected = counties.find((county) => county.id === inspectedId) ?? counties[0] ?? null;
   const countyHref = (county: County) =>
     `/counties/${county.id}${fiscalYear ? `?fy=${encodeURIComponent(fiscalYear)}` : ''}`;
+  const measure = inspected
+    ? <SpendingSummary rate={readSpendingRate(inspected)} fiscalYear={fiscalYear} />
+    : null;
   return (
-    <section className={styles.spendingMap} aria-labelledby='county-map-title'>
+    <section
+      className={desktopSelection ? desktopStyles.detailPane : styles.spendingMap}
+      aria-labelledby='county-map-title'>
+      {desktopSelection && inspected && (
+        <header className={desktopStyles.detailHeader}>
+          <p>{t('counties.desktop.selected')}</p>
+          <h2>{t('counties.desktop.county_name').replace('{county}', inspected.name.replace(/\s+County$/i, ''))}</h2>
+        </header>
+      )}
       <header className={styles.sectionHeading}>
-        <h2 id='county-map-title'>{t('counties.spending.map_title')}</h2>
+        {desktopSelection
+          ? <h3 id='county-map-title' className={desktopStyles.mapTitle}>{t('counties.spending.map_title')}</h3>
+          : <h2 id='county-map-title'>{t('counties.spending.map_title')}</h2>}
         <span>{fiscalYear}</span>
       </header>
       <ul className={styles.mapLegend} aria-label={t('counties.spending.legend')}>
@@ -707,7 +724,7 @@ function CountyPerformanceMap({
           </li>
         ))}
       </ul>
-      <div className={styles.mapCanvas}>
+      <div className={desktopSelection ? `${styles.mapCanvas} ${desktopStyles.mapCanvas}` : styles.mapCanvas}>
         <svg
           viewBox={regionViewBox}
           className={styles.mapSvg}
@@ -724,7 +741,9 @@ function CountyPerformanceMap({
             const band = spendingBand(rate, fiscalYear);
             const dimmed = !filteredNames.has(normalizeCountyName(cp.name));
             const interactive = county != null && !dimmed;
-            const selected = interactive && activeCounty?.id === county.id && activeCounty.selected;
+            const selected = interactive && (desktopSelection
+              ? inspected?.id === county.id
+              : activeCounty?.id === county.id && activeCounty.selected);
             return (
               <path
                 key={cp.name}
@@ -733,12 +752,13 @@ function CountyPerformanceMap({
                 stroke='var(--county-map-boundary)'
                 strokeWidth={0.7}
                 opacity={dimmed ? 0.2 : 1}
-                role={interactive ? 'link' : undefined}
+                role={interactive ? (desktopSelection ? 'button' : 'link') : undefined}
                 tabIndex={interactive ? 0 : undefined}
                 data-spending-band={band}
                 aria-controls={interactive ? 'county-map-readout' : undefined}
                 aria-hidden={interactive ? undefined : true}
-                aria-current={selected ? 'true' : undefined}
+                aria-current={!desktopSelection && selected ? 'true' : undefined}
+                aria-pressed={interactive && desktopSelection ? Boolean(selected) : undefined}
                 aria-label={
                   interactive
                     ? [county.name, t('counties.spending.measure'),
@@ -750,6 +770,10 @@ function CountyPerformanceMap({
                   const input = pointerType.current;
                   pointerType.current = null;
                   if (!interactive) return;
+                  if (desktopSelection) {
+                    desktopSelection.onSelect(county.id);
+                    return;
+                  }
                   const touchOrCoarse =
                     event.detail > 0 &&
                     (input === 'touch' ||
@@ -763,18 +787,17 @@ function CountyPerformanceMap({
                   }
                 }}
                 onKeyDown={(event) => {
-                  if (!interactive) return;
-                  if (event.key === 'Enter') router.push(countyHref(county));
-                  if (event.key === ' ') {
-                    event.preventDefault();
-                    selectCounty(county.id);
-                  }
+                  if (!interactive || (event.key !== 'Enter' && event.key !== ' ')) return;
+                  event.preventDefault();
+                  if (desktopSelection) desktopSelection.onSelect(county.id);
+                  else if (event.key === 'Enter') router.push(countyHref(county));
+                  else selectCounty(county.id);
                 }}
                 onFocus={() => {
-                  if (interactive) previewCounty(county.id);
+                  if (interactive && !desktopSelection) previewCounty(county.id);
                 }}
                 onPointerEnter={(event) => {
-                  if (interactive && event.pointerType === 'mouse') previewCounty(county.id);
+                  if (interactive && !desktopSelection && event.pointerType === 'mouse') previewCounty(county.id);
                 }}>
                 <title>{county?.name ?? cp.name}</title>
               </path>
@@ -782,17 +805,31 @@ function CountyPerformanceMap({
           })}
         </svg>
       </div>
-      <div id='county-map-readout' className={styles.mapReadout} aria-live='polite' aria-atomic='true'>
+      <div
+        id='county-map-readout'
+        className={desktopSelection ? `${styles.mapReadout} ${desktopStyles.detailReadout}` : styles.mapReadout}
+        aria-live='polite'
+        aria-atomic='true'>
         {inspected && (
           <>
+            {desktopSelection && measure}
             <Link href={countyHref(inspected)}>
               {COUNTY_EXPLORER_MESSAGES['counties.map.open'][lang].replace('{county}', inspected.name)}
               <span aria-hidden='true'>↗</span>
             </Link>
-            <SpendingSummary rate={readSpendingRate(inspected)} fiscalYear={fiscalYear} />
+            {!desktopSelection && measure}
           </>
         )}
       </div>
+      {desktopSelection && inspected && (
+        <FigureEvidence
+          label={`${inspected.name} budget`}
+          labelKey='evidence.label.county_budget_named'
+          labelValues={{ name: inspected.name }}
+          rows={inspected.figureQualifications?.budget_lines}
+          table='budget_lines'
+        />
+      )}
       <dialog
         ref={sheetRef}
         className={styles.mapSheet}
@@ -1179,6 +1216,7 @@ function CountyRankingsTable({
   onSort,
   fiscalYear,
   readSpendingRate,
+  desktopMap,
 }: {
   counties: County[];
   sortField: SortField;
@@ -1190,6 +1228,7 @@ function CountyRankingsTable({
    *  is showing, since both go through the API's own rule. */
   fiscalYear: string | undefined;
   readSpendingRate: (county: County) => number | undefined;
+  desktopMap?: (selection: CountyExplorerSelection) => React.ReactNode;
 }) {
   const { t, lang } = useLang();
   // BOTH pagination (?p=N) and the "View All" toggle (?view=all) are
@@ -1222,6 +1261,11 @@ function CountyRankingsTable({
     return new URLSearchParams(window.location.search).get('view') === 'all';
   }, []);
 
+  const readTableViewFromUrl = useCallback((): boolean => {
+    if (typeof window === 'undefined') return false;
+    return new URLSearchParams(window.location.search).get('layout') === 'table';
+  }, []);
+
   // The prerendered document is built once, with no query string, and served
   // for /counties?p=3 too. While hydrating it, the first render must produce
   // what the server did — page 1, paginated — or React discards the server
@@ -1236,10 +1280,24 @@ function CountyRankingsTable({
     hydrating ? false : readShowAllFromUrl()
   );
 
+  const [tableView, setTableView] = useState(() => !hydrating && readTableViewFromUrl());
+  const [selectedCountyId, setSelectedCountyId] = useState<string>();
+  const showTable = Boolean(desktopMap && tableView);
+  const split = Boolean(desktopMap && !tableView);
+
+  function toggleTableView() {
+    const query = new URLSearchParams(window.location.search);
+    if (tableView) query.delete('layout');
+    else query.set('layout', 'table');
+    replaceListQuery(query);
+    setTableView(!tableView);
+  }
+
   const syncFromUrl = useCallback(() => {
     setPageFromUrl(readPageFromUrl());
     setShowAllLocal(readShowAllFromUrl());
-  }, [readPageFromUrl, readShowAllFromUrl]);
+    setTableView(readTableViewFromUrl());
+  }, [readPageFromUrl, readShowAllFromUrl, readTableViewFromUrl]);
 
   // Keep local mirrors in sync with browser history (back/forward, manual edits).
   useEffect(() => {
@@ -1263,6 +1321,19 @@ function CountyRankingsTable({
     },
     [page, totalPages]
   );
+
+  const desktopSelection: CountyExplorerSelection = {
+    selectedId: paged.find(county => county.id === selectedCountyId)?.id ?? paged[0]?.id,
+    onSelect: (id) => {
+      const index = counties.findIndex(county => county.id === id);
+      if (index < 0) return;
+      setSelectedCountyId(id);
+      if (!showAll) {
+        const selectedPage = Math.floor(index / PAGE_SIZE) + 1;
+        if (selectedPage !== page) setPage(selectedPage);
+      }
+    },
+  };
 
   const setShowAll = useCallback(
     (next: boolean | ((prev: boolean) => boolean)) => {
@@ -1303,8 +1374,8 @@ function CountyRankingsTable({
   }, [page, totalPages]);
   const sortDirection = t(sortDir === 'asc' ? 'counties.sort.ascending' : 'counties.sort.descending');
 
-  return (
-    <div className={styles.rankings}>
+  const rankings = (
+    <div className={split ? `${styles.rankings} ${desktopStyles.rankedPane}` : styles.rankings}>
       {/* Resyncs on mount and whenever a Next.js navigation changes the query.
           Its own boundary keeps the client-only render to this empty leaf. */}
       <Suspense fallback={null}>
@@ -1324,9 +1395,14 @@ function CountyRankingsTable({
                   .replace('{total}', String(counties.length))})`}
           </span>}
         </div>
+        {desktopMap && (
+          <button type='button' className='audit-control' aria-pressed={showTable} onClick={toggleTableView}>
+            {t('counties.desktop.table_view')}
+          </button>
+        )}
       </div>
 
-      <div className={styles.mobileSort}>
+      <div className={split ? `${styles.mobileSort} ${desktopStyles.rankControls}` : styles.mobileSort}>
         <label className={styles.selectField}>
           <span>{t('counties.filter.sort')}</span>
           <select
@@ -1357,9 +1433,17 @@ function CountyRankingsTable({
           {sortDirection}
         </button>
       </div>
-      <MobileCountyRanking counties={counties} paged={paged} firstRank={showAll ? 1 : (page - 1) * PAGE_SIZE + 1}
-        sort={sortField} fiscalYear={fiscalYear} formatKes={fmtKES} readSpendingRate={readSpendingRate} />
-      <ResponsiveTable className={styles.rankingsTable}>
+      <div hidden={showTable}>
+        <MobileCountyRanking counties={counties} paged={paged} firstRank={showAll ? 1 : (page - 1) * PAGE_SIZE + 1}
+          sort={sortField} fiscalYear={fiscalYear} formatKes={fmtKES} readSpendingRate={readSpendingRate}
+          desktopSelection={split ? desktopSelection : undefined} />
+      </div>
+      <div
+        hidden={split}
+        role='region'
+        tabIndex={0}
+        aria-label={t('counties.desktop.table_area')}
+        className={`${desktopStyles.tableSlot} ${showTable ? desktopStyles.showTable : ''} ${desktopStyles.tableScroll} ${styles.rankingsTable}`}>
         <table className='w-full border-collapse' aria-label={t('counties.rankings.title')}>
           <thead>
             <tr className='border-b border-gray-100 dark:border-neutral-border bg-gray-50/60 dark:bg-surface-elevated/70'>
@@ -1452,7 +1536,9 @@ function CountyRankingsTable({
                       className='block text-sm text-gray-700 dark:text-neutral-muted tabular-nums font-medium hover:text-gov-forest dark:text-emerald-100 transition-colors'>
                       {fmtKESorDash(budget)}
                     </Link>
-                    <FigureEvidence label={`${county.name} budget`} labelKey='evidence.label.county_budget_named' labelValues={{ name: county.name }} rows={county.figureQualifications?.budget_lines} table="budget_lines" />
+                    <div className={desktopStyles.sourceIcon}>
+                      <FigureEvidence label={`${county.name} budget`} labelKey='evidence.label.county_budget_named' labelValues={{ name: county.name }} rows={county.figureQualifications?.budget_lines} table='budget_lines' />
+                    </div>
                   </td>
                   <td data-label={t('counties.spending.measure')} className='py-3 px-3'>
                     <Link
@@ -1496,7 +1582,7 @@ function CountyRankingsTable({
             })}
           </tbody>
         </table>
-      </ResponsiveTable>
+      </div>
 
       {counties.length === 0 && (
         <div className='text-center py-12 px-4'>
@@ -1555,6 +1641,13 @@ function CountyRankingsTable({
       )}
     </div>
   );
+
+  return (
+    <div className={split ? desktopStyles.split : undefined}>
+      {rankings}
+      {split && desktopMap?.(desktopSelection)}
+    </div>
+  );
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -1563,6 +1656,7 @@ function CountyRankingsTable({
 
 export default function CountyExplorerPage() {
   const { t } = useLang();
+  const desktop = useCountyExplorerDesktop();
   // Year dropdown state (must be declared before useCounties which depends on it).
   //
   // This used to seed from generateFiscalYears(4) / getLatestReportedFiscalYear(),
@@ -1755,6 +1849,17 @@ export default function CountyExplorerPage() {
     );
   }
 
+  const renderCountyMap = (selection?: CountyExplorerSelection) => (
+    <CountyPerformanceMap
+      counties={filtered}
+      allCounties={counties}
+      readSpendingRate={readSpendingRate}
+      selectedRegion={filters.region}
+      fiscalYear={selectedYear}
+      desktopSelection={selection}
+    />
+  );
+
   return (
     <div className={styles.explorer}>
       <div className={styles.container}>
@@ -1817,7 +1922,7 @@ export default function CountyExplorerPage() {
               </p>
             )}
           </div>
-          <div className={styles.explorerViewToggle} role='group' aria-label={t('counties.spending.view')}>
+          <div className={`${styles.explorerViewToggle} ${desktopStyles.mobileViewToggle}`} role='group' aria-label={t('counties.spending.view')}>
             {(['list', 'map'] as const).map((mode) => (
               <button key={mode} type='button' aria-pressed={view === mode} onClick={() => setView(mode)}>
                 {t(`counties.spending.${mode}`)}
@@ -1825,7 +1930,7 @@ export default function CountyExplorerPage() {
             ))}
           </div>
         </div>
-        <div hidden={view !== 'list'}>
+        <div hidden={!desktop && view !== 'list'}>
           <CountyRankingsTable
             counties={filtered}
             sortField={sortField}
@@ -1833,17 +1938,10 @@ export default function CountyExplorerPage() {
             onSort={handleSort}
             fiscalYear={selectedYear}
             readSpendingRate={readSpendingRate}
+            desktopMap={desktop ? renderCountyMap : undefined}
           />
         </div>
-        {view === 'map' && (
-          <CountyPerformanceMap
-            counties={filtered}
-            allCounties={counties}
-            readSpendingRate={readSpendingRate}
-            selectedRegion={filters.region}
-            fiscalYear={selectedYear}
-          />
-        )}
+        {!desktop && view === 'map' && renderCountyMap()}
         <CountyInsightsPanel counties={filtered} />
         <DataFreshnessBadge sources='COB' className={styles.sourceFooter} />
       </div>

@@ -398,24 +398,24 @@
   height: 330px;
   touch-action: manipulation;
 }
-.mapSvg path[role='link'] {
+.mapSvg path[tabindex] {
   cursor: pointer;
 }
 @media (hover: hover) {
-  .mapSvg path[role='link']:hover {
+  .mapSvg path[tabindex]:hover {
     stroke: var(--county-map-outline, #101b14);
     stroke-width: 2px;
     vector-effect: non-scaling-stroke;
   }
 }
-.mapSvg path[role='link']:is([aria-current='true'], :focus-visible) {
+.mapSvg path[tabindex]:is([aria-current='true'], [aria-pressed='true'], :focus-visible) {
   stroke: var(--county-map-outline, #101b14);
   stroke-width: 3px;
   vector-effect: non-scaling-stroke;
   outline: none;
 }
 @media (forced-colors: active) {
-  .mapSvg path[role='link']:focus-visible {
+  .mapSvg path[tabindex]:focus-visible {
     outline: 2px solid Highlight;
   }
 }
@@ -545,7 +545,6 @@
   margin-top: 36px;
 }
 .mobileSort,
-.mobileRanking,
 .mobileViewAll {
   display: none;
 }
@@ -1051,7 +1050,6 @@
   .desktopPagination {
     display: none;
   }
-  .mobileRanking,
   .mobileViewAll {
     display: block;
   }
@@ -1063,69 +1061,69 @@
     font-weight: 600;
     font-size: 20px;
   }
-  .rankingRow {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    column-gap: 12px;
-    padding-block: 2px;
-  }
-  .rankingRow + .rankingRow {
-    border-top: 1px solid var(--county-line);
-  }
-  .rankingCounty {
-    grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: 2ch minmax(0, 1fr) auto;
-    min-height: 44px;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-  }
-  .rankingCounty:hover > span:nth-child(2) {
-    text-decoration: underline;
-  }
-  .rankingMeasure {
-    min-width: 0;
-    padding-inline-start: calc(2ch + 8px);
-    font-size: 14px;
-    display: grid;
-    gap: 2px;
-  }
-  .rankingCompare {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 44px;
-    min-width: 44px;
-    font-size: 14px;
-    cursor: pointer;
-  }
-  .rankingCompare:has(input:disabled) {
-    cursor: default;
-    color: var(--county-muted);
-  }
-  .rankingCompare:focus-within {
-    outline: 2px solid var(--county-accent);
-    outline-offset: 2px;
-  }
-  .rankingTray {
-    position: sticky;
-    z-index: 2;
-    bottom: max(8px, env(safe-area-inset-bottom));
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-top: 12px;
-    padding: 8px 12px;
-    border: 1px solid var(--county-line);
-    border-radius: 4px;
-    background: var(--county-paper);
-  }
   .rankingViewAll {
     width: 100%;
   }
+}
+.rankingRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 12px;
+  padding-block: 2px;
+}
+.rankingRow + .rankingRow {
+  border-top: 1px solid var(--county-line);
+}
+.rankingCounty {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 2ch minmax(0, 1fr) auto;
+  min-height: 44px;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+.rankingCounty:hover > span:nth-child(2) {
+  text-decoration: underline;
+}
+.rankingMeasure {
+  min-width: 0;
+  padding-inline-start: calc(2ch + 8px);
+  font-size: 14px;
+  display: grid;
+  gap: 2px;
+}
+.rankingCompare {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  min-width: 44px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.rankingCompare:has(input:disabled) {
+  cursor: default;
+  color: var(--county-muted);
+}
+.rankingCompare:focus-within {
+  outline: 2px solid var(--county-accent);
+  outline-offset: 2px;
+}
+.rankingTray {
+  position: sticky;
+  z-index: 2;
+  bottom: max(8px, env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--county-line);
+  border-radius: 4px;
+  background: var(--county-paper);
 }
 @media (prefers-reduced-motion: reduce) {
   .explorer *,

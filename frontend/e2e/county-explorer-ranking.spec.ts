@@ -90,7 +90,7 @@ test.describe('mobile Explorer rankings', () => {
 });
 
 test('desktop View all header and the Health explanation keep the existing Explorer route', async ({ page }) => {
-  await page.goto('/counties?view=all');
+  await page.goto('/counties?layout=table&view=all');
   const table = page.getByRole('table', { name: 'County Rankings' });
   await expect(table.locator('tbody tr')).toHaveCount(47);
   await expect(page.getByText('Showing all 47 Counties', { exact: true })).toBeVisible();
@@ -100,7 +100,7 @@ test('desktop View all header and the Health explanation keep the existing Explo
   await health.press('Enter');
   const sheet = page.getByRole('dialog', { name: 'Financial Health Score' });
   await expect(sheet.getByText(/site-made composite score.*separate from the accountability score/)).toBeVisible();
-  await expect(page).toHaveURL('/counties?view=all');
+  await expect(page).toHaveURL('/counties?layout=table&view=all');
   await page.keyboard.press('Escape');
   await expect(sheet).toBeHidden();
   await expect(health).toBeFocused();

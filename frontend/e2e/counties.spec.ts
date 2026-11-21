@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test('counties explorer renders and interactions', async ({ page }) => {
-  await page.goto('/counties');
+  await page.goto('/counties?layout=table');
   await page.getByPlaceholder('Type to search…').fill('Nairobi');
   const rows = page.locator('table tbody tr');
   await expect(rows).toHaveCount(1);
@@ -68,6 +68,7 @@ test.describe('county map with a touchscreen', () => {
 });
 
 test('county map Space selects and Enter opens a county', async ({ page }) => {
+  await page.setViewportSize({ width: 768, height: 900 });
   await page.goto('/counties');
   await page.getByRole('button', { name: 'Map', exact: true }).click();
   const map = page.getByRole('region', { name: 'County spending map' });
@@ -87,6 +88,7 @@ test('county map Space selects and Enter opens a county', async ({ page }) => {
 });
 
 test('county map mouse hover previews and the first click opens', async ({ page }) => {
+  await page.setViewportSize({ width: 768, height: 900 });
   await page.goto('/counties');
   await page.getByRole('button', { name: 'Map', exact: true }).click();
   const map = page.getByRole('region', { name: 'County spending map' });

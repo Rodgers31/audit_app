@@ -3,7 +3,7 @@ import { waitForAppReady } from './utils/selectors';
 import { withCountyPaginationScrollObserver } from './utils/pagination-scroll-observer';
 
 test('pagination and view-all retain duplicate query values, hash and history depth', async ({ page }) => {
-  await page.goto('/counties?p=2&retained=one&retained=two&from=probe#county-list-anchor');
+  await page.goto('/counties?layout=table&p=2&retained=one&retained=two&from=probe#county-list-anchor');
   await waitForAppReady(page);
   await expect(page.getByText(/Showing\s+11[–\-]20\s+of/)).toBeVisible();
   const historyLength = await page.evaluate(() => history.length);
@@ -32,7 +32,7 @@ test('pagination and view-all retain duplicate query values, hash and history de
 });
 
 test('deep-link clamping and shrinking or empty filters keep URL and rows consistent', async ({ page }) => {
-  await page.goto('/counties?p=999&retained=one');
+  await page.goto('/counties?layout=table&p=999&retained=one');
   await waitForAppReady(page);
   await expect(page.getByText(/Showing\s+41[–\-]47\s+of/)).toBeVisible();
   await expect(page).toHaveURL(/[?&]p=5/);
@@ -51,7 +51,7 @@ test('deep-link clamping and shrinking or empty filters keep URL and rows consis
 });
 
 test('browser back and forward retain the page-2 URL and a legitimate saved list position', withCountyPaginationScrollObserver(async ({ page }) => {
-  await page.goto('/counties?p=2&retained=one');
+  await page.goto('/counties?layout=table&p=2&retained=one');
   await waitForAppReady(page);
   await expect(page.getByText(/Showing\s+11[–\-]20\s+of/)).toBeVisible();
   const firstCounty = page.locator('table tbody tr').first().getByRole('link').first();

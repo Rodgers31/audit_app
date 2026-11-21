@@ -5,7 +5,7 @@ test.use({ viewport: { width: 1128, height: 906 } });
 // Separate from the original browser inventory. Exercise the browser's history
 // restoration, including a forward transition interrupted by another Back.
 test('rapid county history returns retain the saved list position', async ({ page }) => {
-  await page.goto('/counties?p=2');
+  await page.goto('/counties?layout=table&p=2');
   await expect(page.getByText(/Showing\s+11[–\-]20\s+of/)).toBeVisible();
   const firstCounty = page.locator('table tbody tr').first().getByRole('link').first();
   // Position the link before measuring; a click's implicit auto-scroll is not
