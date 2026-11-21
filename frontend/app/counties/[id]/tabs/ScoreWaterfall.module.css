@@ -18,6 +18,13 @@
   color: rgb(var(--c-neutral-text));
 }
 
+/* The plot can use the section’s phone gutters while the caption stays inset. */
+@media (max-width: 639px) {
+  .plot {
+    margin-inline: -0.75rem;
+  }
+}
+
 .axis {
   position: absolute;
   top: var(--number-space);
@@ -49,6 +56,7 @@
 .steps {
   grid-column: 2;
   display: grid;
+  column-gap: var(--column-gap);
   grid-template-columns: minmax(var(--endpoint-width), 1fr) repeat(var(--deduction-count), minmax(var(--min-target), 1fr)) minmax(var(--endpoint-width), 1fr);
   min-width: 0;
 }

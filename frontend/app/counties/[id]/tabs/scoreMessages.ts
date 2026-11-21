@@ -12,6 +12,7 @@ export const SCORE_MESSAGES = {
     plain: '{county}’s audit score: {start} minus {deductions} = {score}, grade {grade}.',
   },
   start: { en: 'Start', sw: 'Mwanzo', plain: 'Start' },
+  start_chart: { en: 'Start', sw: 'Anza', plain: 'Start' },
   found: { en: 'Found', sw: 'Matokeo', plain: 'Found' },
   serious: { en: 'Serious', sw: 'Mazito', plain: 'Serious' },
   repeat: { en: 'Repeat', sw: 'Rudia', plain: 'Repeat' },

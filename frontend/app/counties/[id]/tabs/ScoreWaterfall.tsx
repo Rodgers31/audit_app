@@ -13,6 +13,7 @@ const START_POINTS = 100;
 const AXIS_WIDTH = 25;
 const MIN_TARGET = 44;
 const ENDPOINT_WIDTH = 31;
+const COLUMN_GAP = 5;
 
 type ScoreStep = {
   label: string;
@@ -100,7 +101,8 @@ export default function ScoreWaterfall({
   useEffect(() => {
     const element = plot.current;
     if (!element) return;
-    const minimumWidth = AXIS_WIDTH + 2 * ENDPOINT_WIDTH + MIN_TARGET * deductionCount;
+    const minimumWidth =
+      AXIS_WIDTH + 2 * ENDPOINT_WIDTH + MIN_TARGET * deductionCount + COLUMN_GAP * (deductionCount + 1);
     const measure = () => setCompact(element.clientWidth < minimumWidth);
     measure();
     const observer = new ResizeObserver(measure);
@@ -151,6 +153,7 @@ export default function ScoreWaterfall({
             '--axis-width': `${AXIS_WIDTH}px`,
             '--endpoint-width': `${ENDPOINT_WIDTH}px`,
             '--min-target': `${MIN_TARGET}px`,
+            '--column-gap': `${COLUMN_GAP}px`,
             '--deduction-count': deductionCount,
           } as CSSProperties}>
           <div className={styles.axis} aria-hidden='true'>
@@ -162,7 +165,7 @@ export default function ScoreWaterfall({
                 <span className={styles.number}>{START_POINTS}</span>
                 <span className={styles.bar} />
               </span>
-              <span className={styles.label} data-short>{startLabel}</span>
+              <span className={styles.label} data-short>{compact ? startLabel : copy.start_chart[lang]}</span>
             </div>
             {steps.map((step, index) => {
               const datum = factors[index];
