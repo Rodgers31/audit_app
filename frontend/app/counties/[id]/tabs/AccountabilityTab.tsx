@@ -28,6 +28,8 @@ import {
 } from 'lucide-react';
 import { fmtKES } from '../shared';
 import ResponsiveTable from '@/components/ui/ResponsiveTable';
+import ScoreWaterfall, { getScoreSteps } from './ScoreWaterfall';
+import { SCORE_MESSAGES } from './scoreMessages';
 
 // Neutral styling for a county with no grade. Deliberately grey and
 // deliberately NOT a member of ACCT_GRADE_STYLE, so it can never be reached by
@@ -118,7 +120,7 @@ const OPINION_KEY: Record<string, TranslationKey> = {
 };
 
 export default function AccountabilityTab({ data: countyData }: { data: CountyComprehensive }) {
-  const { t } = useLang();
+  const { lang, t } = useLang();
   const { data, isLoading, error } = useCountyAccountability(countyData.id);
 
   if (isLoading) {
@@ -163,6 +165,7 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
       : null;
   const score = typeof data.accountability_score === 'number' ? data.accountability_score : null;
   const factors = data.grade_factors || [];
+  const steps = getScoreSteps(data);
 
   // Keep the score bar within its displayed 0–100 scale.
   const scorePct = score !== null ? Math.max(0, Math.min(100, score)) : 0;
@@ -215,12 +218,16 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
           <div className='px-5 pt-5 pb-3 flex items-center gap-2'>
             <div className='h-5 w-1 rounded-full bg-gov-forest' />
             <h3 className='text-base font-semibold text-gray-900 dark:text-neutral-text'>
-              {t('county.acct.how_calculated')}
+              {steps
+                ? SCORE_MESSAGES.heading[lang].replace('{county}', data.county_name)
+                : t('county.acct.how_calculated')}
             </h3>
           </div>
-          <div className='px-5 pb-3 text-[12px] text-gray-500 dark:text-neutral-muted/80'>
-            {t('county.acct.how_calc_intro')}
-          </div>
+          {!steps && (
+            <div className='px-5 pb-3 text-[12px] text-gray-500 dark:text-neutral-muted/80'>
+              {t('county.acct.how_calc_intro')}
+            </div>
+          )}
           <div className='divide-y divide-gray-50'>
             {/* Score bar summary */}
             <div className='px-5 py-3'>
@@ -259,7 +266,17 @@ export default function AccountabilityTab({ data: countyData }: { data: CountyCo
               </div>
             </div>
 
-            {factors.map((f, idx) => {
+            {steps && score !== null && data.accountability_grade ? (
+              <div className='px-3 py-3 sm:px-5'>
+                <ScoreWaterfall
+                  key={data.county_id}
+                  county={data.county_name}
+                  steps={steps}
+                  score={score}
+                  grade={data.accountability_grade}
+                />
+              </div>
+            ) : factors.map((f, idx) => {
               const style = IMPACT_STYLE[f.impact] || IMPACT_STYLE.minor;
               const pts = typeof f.points === 'number' ? f.points : 0;
               return (
