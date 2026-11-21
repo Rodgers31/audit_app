@@ -76,7 +76,7 @@ s3transfer==0.19.3
 sentry-sdk==2.73.0
 six==1.17.0
 slowapi==0.1.10
-soupsieve==3.0.4
+soupsieve==4.0
 SQLAlchemy==2.1.6
 starlette==1.10.0
 tabula-py==2.10.0
