@@ -26,18 +26,23 @@ interface PageShellProps {
   sections?: readonly PageSection[];
   actions?: ReactNode;
   breadcrumbs?: boolean;
+  titleStyle?: 'band' | 'inline';
 }
 
-export default function PageShell({ title, subtitle, children, className = '', back, sections, actions, breadcrumbs = true }: PageShellProps) {
+export default function PageShell({
+  title, subtitle, children, className = '', back, sections, actions, breadcrumbs = true, titleStyle = 'band',
+}: PageShellProps) {
   const pathname = usePathname() ?? '';
   const { t } = useLang();
   const parent = Object.entries(PARENTS).find(([path]) => pathname.startsWith(path))?.[1];
   const content = <div className={`page-shell-content min-w-0 space-y-6 ${className}`}>{children}</div>;
+  const inlineTitle = titleStyle === 'inline';
 
   return (
     <div className='relative min-h-screen bg-gov-sand dark:bg-surface-sunken'>
-      <header className='border-b border-neutral-border bg-gov-dark pt-[var(--public-header-height)] text-white'>
-        <div className='mx-auto max-w-screen-xl px-4 py-4 sm:px-6 md:py-6'>
+      <header className={`pt-[var(--public-header-height)] ${inlineTitle
+        ? 'text-neutral-text' : 'border-b border-neutral-border bg-gov-dark text-white'}`}>
+        <div className={`mx-auto max-w-screen-xl px-4 sm:px-6 ${inlineTitle ? 'pt-5 md:pt-8' : 'py-4 md:py-6'}`}>
           {back && (
             <SmartBackLink href={back.href} className='inline-flex min-h-11 items-center gap-2 text-sm text-gov-cream underline-offset-4 hover:underline'>
               <ArrowLeft size={16} aria-hidden='true' /> {back.label}
@@ -53,13 +58,14 @@ export default function PageShell({ title, subtitle, children, className = '', b
             </nav>
           )}
           <div className='flex min-w-0 items-start justify-between gap-2'>
-            <h1 className='audit-figure min-w-0 break-words text-audit-title uppercase text-white'>{title}</h1>
+            <h1 className={`audit-figure min-w-0 break-words ${inlineTitle
+              ? 'text-[26px] leading-tight sm:text-audit-title' : 'text-audit-title uppercase text-white'}`}>{title}</h1>
             {actions}
           </div>
-          {subtitle && <p className='mt-2 max-w-[70ch] text-base text-gov-cream'>{subtitle}</p>}
+          {subtitle && <p className={`mt-2 max-w-[70ch] text-base ${inlineTitle ? '' : 'text-gov-cream'}`}>{subtitle}</p>}
         </div>
       </header>
-      <div className='mx-auto max-w-screen-xl px-4 py-5 sm:px-6 md:py-8'>
+      <div className={`mx-auto max-w-screen-xl px-4 sm:px-6 ${inlineTitle ? 'py-4' : 'py-5 md:py-8'}`}>
         {sections?.length ? <SectionNavigation sections={sections}>{content}</SectionNavigation> : content}
       </div>
     </div>

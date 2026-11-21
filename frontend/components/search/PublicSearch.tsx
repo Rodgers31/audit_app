@@ -16,12 +16,13 @@ interface ResultGroup {
 
 interface PublicSearchProps {
   autoFocus?: boolean;
+  compact?: boolean;
   onNavigate?: () => void;
 }
 
 const focusClass = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-signal-good';
 
-export default function PublicSearch({ autoFocus = false, onNavigate }: PublicSearchProps) {
+export default function PublicSearch({ autoFocus = false, compact = false, onNavigate }: PublicSearchProps) {
   const { lang } = useLang();
   const inputId = useId();
   const input = useRef<HTMLInputElement>(null);
@@ -53,7 +54,7 @@ export default function PublicSearch({ autoFocus = false, onNavigate }: PublicSe
   }, [canSearch, query]);
 
   const current = state?.query === query ? state : null;
-  const local = canSearch ? findLocalPublicResults(query) : { counties: [], glossary: [] };
+  const local = findLocalPublicResults(query);
   const groups: ResultGroup[] = [
     { id: 'counties', results: local.counties },
     { id: 'articles', results: current?.articles.map(result => ({
@@ -64,16 +65,15 @@ export default function PublicSearch({ autoFocus = false, onNavigate }: PublicSe
   ];
   const visibleCount = groups.reduce((total, group) => total + group.results.length, 0);
 
+  const resultCount = visibleCount === 0 ? '' : visibleCount === 1 ? copy.one[lang]
+    : copy.many[lang].replace('{count}', String(visibleCount));
   let message = '';
-  if (query && !canSearch) message = copy.short[lang];
+  if (query && !canSearch) message = [resultCount, copy.short[lang]].filter(Boolean).join(' ');
   if (canSearch) {
     if (!current) message = copy.loading[lang];
     else {
-      const count = visibleCount === 0 ? ''
-        : visibleCount === 1 ? copy.one[lang]
-        : copy.many[lang].replace('{count}', String(visibleCount));
-      if (current.coverage === 'complete') message = count || copy.empty[lang];
-      else message = [count, copy[current.coverage][lang]].filter(Boolean).join(' ');
+      if (current.coverage === 'complete') message = resultCount || copy.empty[lang];
+      else message = [resultCount, copy[current.coverage][lang]].filter(Boolean).join(' ');
     }
   }
 
@@ -89,9 +89,9 @@ export default function PublicSearch({ autoFocus = false, onNavigate }: PublicSe
   }
 
   return (
-    <search aria-label={copy.label[lang]} className='block min-w-0 space-y-2 rounded bg-surface-base p-3'>
-      <label htmlFor={inputId} className='block text-base font-semibold text-neutral-text'>{copy.label[lang]}</label>
-      <p id={`${inputId}-help`} className='text-sm text-neutral-muted'>{copy.help[lang]}</p>
+    <search aria-label={copy.label[lang]} className={`block min-w-0 space-y-2 ${compact ? '' : 'rounded bg-surface-base p-3'}`}>
+      <label htmlFor={inputId} className={compact ? 'sr-only' : 'block text-base font-semibold text-neutral-text'}>{copy.label[lang]}</label>
+      <p id={`${inputId}-help`} className={compact ? 'sr-only' : 'text-sm text-neutral-muted'}>{copy.help[lang]}</p>
       <div className='relative'>
         <Search aria-hidden='true' className='pointer-events-none absolute left-3 top-1/2 size-[18px] -translate-y-1/2 text-neutral-muted' />
         <input
@@ -101,9 +101,10 @@ export default function PublicSearch({ autoFocus = false, onNavigate }: PublicSe
           value={value}
           autoComplete='off'
           spellCheck={false}
+          placeholder={compact ? copy.placeholder[lang] : undefined}
           onChange={(event) => updateValue(event.target.value)}
           aria-describedby={`${inputId}-help`}
-          className={`min-h-12 w-full rounded border border-neutral-text bg-surface-elevated pl-10 pr-12 text-base text-neutral-text [&::-webkit-search-cancel-button]:hidden ${focusClass}`}
+          className={`min-h-12 w-full rounded border border-neutral-text bg-surface-elevated pl-10 pr-12 text-base text-neutral-text placeholder:text-neutral-muted [&::-webkit-search-cancel-button]:hidden ${focusClass}`}
         />
         {value && (
           <button

@@ -1,5 +1,7 @@
 export const PUBLIC_SEARCH_MESSAGES = {
   label: { en: 'Search AuditGava', sw: 'Tafuta kwenye AuditGava', plain: 'Search AuditGava' },
+  close: { en: 'Close search', sw: 'Funga utafutaji', plain: 'Close search' },
+  placeholder: { en: 'Search counties, articles, terms', sw: 'Tafuta kaunti, ibara na istilahi', plain: 'Search counties, articles, terms' },
   help: {
     en: 'Search counties, Constitution articles and glossary terms.',
     sw: 'Tafuta kaunti, ibara za Katiba na istilahi.',
@@ -11,9 +13,9 @@ export const PUBLIC_SEARCH_MESSAGES = {
   glossary: { en: 'Glossary terms', sw: 'Istilahi', plain: 'Glossary terms' },
   article: { en: 'Article {number}', sw: 'Ibara ya {number}', plain: 'Article {number}' },
   short: {
-    en: 'Enter at least three characters or an article number.',
-    sw: 'Andika angalau herufi tatu au nambari ya ibara.',
-    plain: 'Type three or more characters or an article number.',
+    en: 'To search the Constitution, enter three or more characters or an article number.',
+    sw: 'Ili kutafuta kwenye Katiba, andika angalau herufi tatu au nambari ya ibara.',
+    plain: 'Type three or more characters or an article number to search the Constitution.',
   },
   loading: {
     en: 'Searching Constitution articles…',
