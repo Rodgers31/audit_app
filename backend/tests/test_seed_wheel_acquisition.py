@@ -1,8 +1,11 @@
 """Exercise exact wheel acquisition through a transient TLS handshake timeout."""
 import hashlib
+import importlib.util
 import io
 import json
+from pathlib import Path
 import ssl
+import sys
 import time
 import urllib.error
 import urllib.request
@@ -11,11 +14,21 @@ from unittest.mock import Mock
 
 import pytest
 
-import runtime
+
+@pytest.fixture
+def runtime(monkeypatch):
+    module_path = Path(__file__).resolve().parents[2] / 'tools/nightly_acceptance_20261105/runtime.py'
+    spec = importlib.util.spec_from_file_location('nightly_wheel_runtime', module_path)
+    module = importlib.util.module_from_spec(spec)
+    with monkeypatch.context() as imports:
+        imports.setattr(sys, 'dont_write_bytecode', True)
+        imports.syspath_prepend(str(module_path.parent))
+        spec.loader.exec_module(module)
+    return module
 
 
 @pytest.fixture
-def wheel(tmp_path, monkeypatch):
+def wheel(tmp_path, monkeypatch, runtime):
     contents = io.BytesIO()
     with zipfile.ZipFile(contents, 'w') as archive:
         archive.writestr('pip-1.dist-info/METADATA', 'Name: pip\nVersion: 1\n')
@@ -36,7 +49,7 @@ def wheel(tmp_path, monkeypatch):
     return lock_path, url, opener, response
 
 
-def test_acquisition_recovers_from_handshake_timeout(tmp_path, wheel):
+def test_acquisition_recovers_from_handshake_timeout(tmp_path, wheel, runtime):
     lock, url, opener, response = wheel
     opener.open.side_effect = [urllib.error.URLError(TimeoutError('TLS handshake timed out')), response]
     wheelhouse = tmp_path / 'wheels'
@@ -45,7 +58,7 @@ def test_acquisition_recovers_from_handshake_timeout(tmp_path, wheel):
     assert [call.args for call in opener.open.call_args_list] == [(url,), (url,)]
 
 
-def test_acquisition_bounds_repeated_handshake_timeouts(tmp_path, wheel):
+def test_acquisition_bounds_repeated_handshake_timeouts(tmp_path, wheel, runtime):
     lock, _, opener, _ = wheel
     opener.open.side_effect = urllib.error.URLError(TimeoutError('TLS handshake timed out'))
     wheelhouse = tmp_path / 'wheels'
@@ -56,7 +69,7 @@ def test_acquisition_bounds_repeated_handshake_timeouts(tmp_path, wheel):
     assert not list(wheelhouse.iterdir())
 
 
-def test_acquisition_keeps_the_shared_deadline(tmp_path, monkeypatch, wheel):
+def test_acquisition_keeps_the_shared_deadline(tmp_path, monkeypatch, wheel, runtime):
     lock, url, opener, _ = wheel
     monkeypatch.setattr(runtime.time, 'monotonic', Mock(side_effect=[0, 299.5, 299.5]))
     opener.open.side_effect = urllib.error.URLError(TimeoutError('TLS handshake timed out'))
@@ -67,7 +80,7 @@ def test_acquisition_keeps_the_shared_deadline(tmp_path, monkeypatch, wheel):
     runtime.time.sleep.assert_not_called()
 
 
-def test_acquisition_refuses_certificate_failure_without_retrying(tmp_path, wheel):
+def test_acquisition_refuses_certificate_failure_without_retrying(tmp_path, wheel, runtime):
     lock, _, opener, _ = wheel
     opener.open.side_effect = urllib.error.URLError(ssl.SSLCertVerificationError('certificate rejected'))
 
@@ -76,7 +89,7 @@ def test_acquisition_refuses_certificate_failure_without_retrying(tmp_path, whee
     opener.open.assert_called_once()
 
 
-def test_acquisition_refuses_altered_bytes_after_retry(tmp_path, wheel):
+def test_acquisition_refuses_altered_bytes_after_retry(tmp_path, wheel, runtime):
     lock, _, opener, response = wheel
     response.write(b'altered')
     response.seek(0)
