@@ -244,8 +244,11 @@ describe('debt page pending-bills disclosure (#321)', () => {
   it('does not claim an absent combined total is unaffected by missing aging data', async () => {
     await mount();
     const section = stalledPayments();
+    const panel = within(section).getByRole('region', { name: 'How long bills have gone unpaid' });
     expect(section).not.toHaveTextContent('The total above is unaffected.');
-    expect(section).toHaveTextContent(/no age breakdown is shown/i);
+    expect(within(panel).getByRole('status')).toHaveTextContent('Age of these bills not published');
+    expect(within(panel).queryByRole('table')).not.toBeInTheDocument();
+    expect(within(panel).queryByRole('group', { name: /bills by age/i })).not.toBeInTheDocument();
   });
 
   it('does not turn an unsafe source value into a link', async () => {
@@ -312,10 +315,13 @@ it('wires the real summary query loading and error states into the aging panel',
   let failRequest!: (error: Error) => void;
   const request = new Promise((_resolve, reject) => { failRequest = reject; });
   await mount(pending, null, () => request);
-  const panel = screen.getByRole('heading', { name: 'Aging — how long bills have gone unpaid' }).closest('section')!;
+  const panel = screen.getByRole('region', { name: 'How long bills have gone unpaid' });
+  const scope = within(panel).getByRole('combobox', { name: 'Whose bills' });
   expect(within(panel).getByRole('status')).toHaveTextContent(/loading/i);
-  expect(panel).not.toHaveTextContent(/no source-bound aging observation/i);
+  expect(scope).toBeDisabled();
+  expect(panel).not.toHaveTextContent('Age of these bills not published');
   await act(async () => { failRequest(new Error('synthetic summary failure')); });
   await waitFor(() => expect(within(panel).getByRole('alert')).toHaveTextContent(/could not be loaded/i));
-  expect(panel).not.toHaveTextContent(/no source-bound aging observation/i);
+  expect(scope).toBeDisabled();
+  expect(panel).not.toHaveTextContent('Age of these bills not published');
 });

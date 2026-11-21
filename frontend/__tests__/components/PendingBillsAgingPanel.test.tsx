@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import PendingBillsAgingPanel from '@/app/debt/PendingBillsAgingPanel';
 import { readScopedAging } from '@/lib/debt/scopedPendingBillsAging';
 
@@ -19,18 +19,42 @@ test.each(['2025-06-30', '2027-06-30', '0000-06-30'])('executive refuses an unsu
   expect(readScopedAging({ ...measured, as_at }, 'county_executive')).toBeNull();
 });
 
-test('preserves source bands and missing coverage; selector cannot lend executive ages to national bills', () => {
-  render(<PendingBillsAgingPanel observations={{ county_executive: measured } as any} />);
-  expect(screen.getByRole('table')).toHaveTextContent('Under one year');
+test('shows the four source bands, prints the oldest alarm, and preserves exact figures and coverage', () => {
+  const { container } = render(<PendingBillsAgingPanel observations={{ county_executive: measured } as any} />);
+  const chart = screen.getByRole('group', { name: 'County executive bills by age' });
+  expect(within(chart).getAllByRole('button')).toHaveLength(4);
+  expect(within(chart).getByRole('button', { name: 'Over 3 years 4M' })).toHaveAccessibleDescription('KES 4,000,000');
+  expect(container.querySelectorAll('[data-signal=alarm]')).toHaveLength(1);
+  expect(container.querySelector('[data-signal=alarm]')).toHaveAttribute('data-age-bar', 'Over 3 years');
+  expect(screen.getByText(/46 of 47 counties/)).toBeInTheDocument();
+  expect(screen.getByText('A complete total is unavailable.')).toBeInTheDocument();
+  container.querySelector('details')!.open = true;
+  expect(screen.getByRole('table')).toHaveTextContent('Under 1 year');
   expect(screen.getByRole('table')).toHaveTextContent('KES 4,000,000');
-  expect(screen.getByText(/46 of 47 counties/)).toHaveTextContent('Missing: Nandi');
-  expect(screen.getByText(/complete total is withheld/)).toBeInTheDocument();
-  expect(screen.getByRole('img', { name: /executive aging chart/ })).toBeInTheDocument();
-  fireEvent.change(screen.getByLabelText('Aging population'), { target: { value: 'national' } });
-  expect(screen.queryByRole('table')).not.toBeInTheDocument();
-  expect(screen.getByText(/No source-bound aging observation/)).toHaveTextContent('national government');
-  fireEvent.change(screen.getByLabelText('Aging population'), { target: { value: 'county_assembly' } });
-  expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  container.querySelector('dialog')!.setAttribute('open', '');
+  expect(screen.getByText('Missing: Nandi.')).toBeInTheDocument();
+  expect(screen.getByText(/source qualifications or missing bands: Bomet/)).toBeInTheDocument();
+});
+
+test('has no tabular or plotted values for national or combined bills', () => {
+  render(<PendingBillsAgingPanel observations={{ county_executive: measured } as any} />);
+  const populations = screen.getByLabelText('Whose bills');
+  for (const value of ['national', 'combined', 'county_assembly']) {
+    fireEvent.change(populations, { target: { value } });
+    expect(screen.getByText('Age of these bills not published')).toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: /bills by age/ })).not.toBeInTheDocument();
+  }
+});
+
+test('an explicitly reported zero stays visible in the oldest band without an alarm', () => {
+  const zero = copy();
+  zero.buckets[3].amount = 0;
+  zero.buckets[3].raw_value = '0';
+  zero.reported_total = 6_000_000;
+  const { container } = render(<PendingBillsAgingPanel observations={{ county_executive: zero } as any} />);
+  expect(screen.getByRole('button', { name: 'Over 3 years 0' })).toHaveAccessibleDescription('KES 0');
+  expect(container.querySelector('[data-signal=alarm]')).toBeNull();
 });
 
 test('a missing source cell is text, never a zero bar', () => {
@@ -39,7 +63,7 @@ test('a missing source cell is text, never a zero bar', () => {
   missing.buckets[2].absent_reason = 'source_cell_not_reported';
   render(<PendingBillsAgingPanel observations={{ county_executive: missing } as any} />);
   expect(screen.getByRole('table')).toHaveTextContent('Not reported');
-  expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  expect(screen.queryByRole('group', { name: /bills by age/ })).not.toBeInTheDocument();
 });
 
 test.each([true, -1, NaN, Infinity, '123', {}, []])('refuses hostile money %p', (amount) => {
@@ -69,11 +93,11 @@ test.each(['NaN', 'Infinity', '-Infinity', '-1', true, false, {}, []])('refuses 
 test('loading and request errors never claim source observations are absent', () => {
   const { rerender } = render(<PendingBillsAgingPanel isLoading />);
   expect(screen.getByRole('status')).toHaveTextContent(/Loading/);
-  expect(screen.queryByText(/No source-bound aging observation/)).not.toBeInTheDocument();
+  expect(screen.queryByText(/Age of these bills not published/)).not.toBeInTheDocument();
   rerender(<PendingBillsAgingPanel observations={{ county_executive: measured } as any} isError />);
   expect(screen.getByRole('alert')).toHaveTextContent(/could not be loaded/);
   expect(screen.queryByRole('table')).not.toBeInTheDocument();
-  expect(screen.queryByText(/No source-bound aging observation/)).not.toBeInTheDocument();
+  expect(screen.queryByText(/Age of these bills not published/)).not.toBeInTheDocument();
 });
 
 
