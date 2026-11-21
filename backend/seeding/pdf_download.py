@@ -266,6 +266,7 @@ def get_or_download_pdf(
     ttl_seconds: int,
     max_seconds: float,
     max_bytes: Optional[int] = None,
+    connect_timeout_seconds: Optional[float] = None,
     headers: Optional[Dict[str, str]] = None,
     fingerprint: Optional[str] = None,
 ) -> Path:
@@ -289,6 +290,11 @@ def get_or_download_pdf(
     _positive_bound(max_seconds, "max_seconds")
     if max_bytes is not None:
         _positive_bound(max_bytes, "max_bytes", integer=True)
+    transport_options = {}
+    if connect_timeout_seconds is not None:
+        transport_options["connect_timeout_seconds"] = _positive_bound(
+            connect_timeout_seconds, "connect_timeout_seconds"
+        )
     cache_dir = Path(cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
     pdf_path, meta_path = _cache_paths(cache_dir, url)
@@ -392,6 +398,7 @@ def get_or_download_pdf(
             # cap can never be fetched at all.
             resume_part=part_path,
             completion_check=_looks_like_whole_pdf,
+            **transport_options,
         )
         # Header AND trailer: these servers send no Content-Length, so a
         # truncated body is otherwise indistinguishable from a whole one.
