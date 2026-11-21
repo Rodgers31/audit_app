@@ -116,12 +116,12 @@ describe('County map persistent readout', () => {
     expect(screen.queryByRole('region', { name: 'County spending map' })).not.toBeInTheDocument();
     const table = screen.getByRole('table', { name: 'County Rankings' });
     const rows = () => Array.from(table.querySelectorAll('tbody tr'));
-    expect(rows().map((row) => row.children[1].textContent)).toEqual(['1Lamu', '2Mombasa', '—Kwale']);
+    expect(rows().map((row) => (row.children[0].textContent ?? '') + row.children[1].textContent)).toEqual(['1Lamu', '2Mombasa', '—Kwale']);
     expect(rows()[0]).toHaveTextContent('76.0%On target');
     expect(rows()[1]).toHaveTextContent('0.0%Well below target');
     expect(rows()[2]).toHaveTextContent('No published rate');
     fireEvent.click(screen.getByRole('columnheader', { name: /Spending rate/ }));
-    expect(rows().map((row) => row.children[1].textContent)).toEqual(['1Mombasa', '2Lamu', '—Kwale']);
+    expect(rows().map((row) => (row.children[0].textContent ?? '') + row.children[1].textContent)).toEqual(['1Mombasa', '2Lamu', '—Kwale']);
 
     fireEvent.click(screen.getByRole('button', { name: 'Map' }));
     const map = screen.getByRole('region', { name: 'County spending map' });
@@ -133,7 +133,7 @@ describe('County map persistent readout', () => {
       .toHaveAttribute('data-spending-band', 'unavailable');
     expect(screen.queryByRole('table', { name: 'County Rankings' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'List' }));
-    expect(rows().map((row) => row.children[1].textContent)).toEqual(['1Mombasa', '2Lamu', '—Kwale']);
+    expect(rows().map((row) => (row.children[0].textContent ?? '') + row.children[1].textContent)).toEqual(['1Mombasa', '2Lamu', '—Kwale']);
   });
 
   it('reads the inspected county from the current cached reporting period', () => {

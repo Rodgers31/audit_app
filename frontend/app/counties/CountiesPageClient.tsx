@@ -50,6 +50,8 @@ import React, {
 } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
 import ResponsiveTable from '@/components/ui/ResponsiveTable';
+import InfoSheet from '@/components/ui/InfoSheet';
+import MobileCountyRanking, { countyRecordHref, type CountySortField } from './MobileCountyRanking';
 import styles from './CountyExperience.module.css';
 import { AuditStatusSignal } from './CountySignals';
 import { FINANCIAL_HEALTH_BANDS, financialHealthBand } from '@/lib/counties/financialHealth';
@@ -129,7 +131,7 @@ const AUDIT_STATUS_CFG: Record<
   },
 };
 
-type SortField = 'name' | 'population' | 'health' | 'budget' | 'utilization' | 'debt';
+type SortField = CountySortField;
 type SortDir = 'asc' | 'desc';
 
 /**
@@ -1094,12 +1096,12 @@ function Th({
           onSort(field);
         }
       }}
-      className={`text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 py-3 px-3 cursor-pointer select-none hover:text-gray-800 dark:text-neutral-text transition-colors whitespace-nowrap ${className}`}
+      className={`text-left text-xs font-semibold text-neutral-muted py-3 px-3 cursor-pointer select-none hover:text-neutral-text transition-colors whitespace-nowrap ${className}`}
       onClick={() => onSort(field)}>
       <span className='inline-flex items-center gap-1'>
         {children}
         {suffix && (
-          <span className='text-[11px] text-gray-400 dark:text-neutral-muted/80 font-normal normal-case tracking-normal'>
+          <span className='text-xs text-neutral-muted font-normal'>
             {suffix}
           </span>
         )}
@@ -1112,7 +1114,7 @@ function Th({
           }
         />
         {active && (
-          <span className='text-[11px] text-gov-forest dark:text-emerald-100 font-normal'>
+          <span className='text-xs text-gov-forest dark:text-emerald-100 font-normal'>
             {dir === 'asc' ? '↑' : '↓'}
           </span>
         )}
@@ -1189,7 +1191,7 @@ function CountyRankingsTable({
   fiscalYear: string | undefined;
   readSpendingRate: (county: County) => number | undefined;
 }) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   // BOTH pagination (?p=N) and the "View All" toggle (?view=all) are
   // URL-driven so that browser back from a county detail page restores
   // whichever list mode the user was in. Local `useState` would reset
@@ -1249,7 +1251,6 @@ function CountyRankingsTable({
   // Clamp to valid range — an out-of-range `p` just clamps to last page.
   const page = Math.min(Math.max(1, pageFromUrl), Math.max(1, totalPages));
   const paged = showAll ? counties : counties.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
   const setPage = useCallback(
     (next: number | ((prev: number) => number)) => {
       const resolved = typeof next === 'function' ? next(page) : next;
@@ -1300,6 +1301,7 @@ function CountyRankingsTable({
     for (let i = start; i <= end; i++) nums.push(i);
     return nums;
   }, [page, totalPages]);
+  const sortDirection = t(sortDir === 'asc' ? 'counties.sort.ascending' : 'counties.sort.descending');
 
   return (
     <div className={styles.rankings}>
@@ -1310,17 +1312,17 @@ function CountyRankingsTable({
       </Suspense>
       <div className='flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-neutral-border'>
         <div className='flex items-center gap-2'>
-          <h3 className='text-sm font-bold text-gray-900 dark:text-neutral-text'>
+          <h3 className={`${styles.rankingsTitle} text-sm font-bold text-gray-900 dark:text-neutral-text`}>
             {t('counties.rankings.title')}
           </h3>
-          <span className='text-xs text-gray-400 dark:text-neutral-muted/80'>
-            (
-            {t('counties.rankings.range_of')
-              .replace('{from}', String((page - 1) * PAGE_SIZE + 1))
-              .replace('{to}', String(Math.min(page * PAGE_SIZE, counties.length)))
-              .replace('{total}', String(counties.length))}
-            )
-          </span>
+          {counties.length > 0 && <span className='text-sm text-neutral-muted' aria-live='polite'>
+            {showAll
+              ? t('counties.rankings.showing_all').replace('{n}', String(counties.length))
+              : `(${t('counties.rankings.range_of')
+                  .replace('{from}', String((page - 1) * PAGE_SIZE + 1))
+                  .replace('{to}', String(Math.min(page * PAGE_SIZE, counties.length)))
+                  .replace('{total}', String(counties.length))})`}
+          </span>}
         </div>
       </div>
 
@@ -1350,16 +1352,18 @@ function CountyRankingsTable({
         <button
           className={styles.exportButton}
           onClick={() => onSort(sortField)}
-          aria-label={t('counties.sort.reverse_direction')}>
+          aria-label={`${sortDirection} · ${t('counties.sort.reverse_direction')}`}>
           <span aria-hidden='true'>{sortDir === 'asc' ? '↑' : '↓'}</span>
-          {t(sortDir === 'asc' ? 'counties.sort.ascending' : 'counties.sort.descending')}
+          {sortDirection}
         </button>
       </div>
+      <MobileCountyRanking counties={counties} paged={paged} firstRank={showAll ? 1 : (page - 1) * PAGE_SIZE + 1}
+        sort={sortField} fiscalYear={fiscalYear} formatKes={fmtKES} readSpendingRate={readSpendingRate} />
       <ResponsiveTable className={styles.rankingsTable}>
         <table className='w-full border-collapse' aria-label={t('counties.rankings.title')}>
           <thead>
             <tr className='border-b border-gray-100 dark:border-neutral-border bg-gray-50/60 dark:bg-surface-elevated/70'>
-              <th className='text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-neutral-muted/80 py-3 px-4 w-8'>
+              <th className='text-left text-xs font-semibold text-neutral-muted py-3 px-4 w-8'>
                 #
               </th>
               <Th field='name' current={sortField} dir={sortDir} onSort={onSort}>
@@ -1380,7 +1384,7 @@ function CountyRankingsTable({
               <Th field='debt' current={sortField} dir={sortDir} onSort={onSort}>
                 {t('counties.rankings.col_debt')}
               </Th>
-              <th className='text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-neutral-muted/80 py-3 px-3'>
+              <th className='text-left text-xs font-semibold text-neutral-muted py-3 px-3'>
                 {t('counties.rankings.col_audit')} <InfoTip term='audit-clean' size={10} />
               </th>
             </tr>
@@ -1396,9 +1400,7 @@ function CountyRankingsTable({
               // No ?fy= when the year is not yet known: pinning a period we
               // cannot name would be a guess, and the detail page resolves the
               // same one on its own.
-              const base = fiscalYear
-                ? `/counties/${county.id}?fy=${encodeURIComponent(fiscalYear)}`
-                : `/counties/${county.id}`;
+              const base = countyRecordHref(county.id, fiscalYear);
               const rank = sortField === 'utilization' && util == null
                 ? '—'
                 : (showAll ? 0 : (page - 1) * PAGE_SIZE) + i + 1;
@@ -1414,7 +1416,6 @@ function CountyRankingsTable({
                   </td>
                   <td data-label={t('counties.rankings.col_county')} className='py-3 px-3'>
                     <Link href={base} className='flex items-center gap-2'>
-                      <span className={styles.mobileRank}>{rank}</span>
                       <span className='font-semibold text-sm text-gray-900 dark:text-neutral-text group-hover:text-gov-forest dark:text-emerald-100 transition-colors'>
                         {county.name}
                       </span>
@@ -1428,14 +1429,22 @@ function CountyRankingsTable({
                     </Link>
                   </td>
                   <td data-label={t('counties.rankings.col_health')} className='py-3 px-3'>
-                    <Link
-                      href={`${base}${base.includes('?') ? '&' : '?'}tab=budget`}
-                      className='block'>
-                      <span
-                        className={`inline-flex items-center justify-center w-8 h-6 text-[11px] font-bold rounded-md ${grade.cls}`}>
-                        {grade.letter}
-                      </span>
-                    </Link>
+                    {grade.letter === '—' ? <span className='text-neutral-muted'>{grade.letter}</span> : (
+                      <InfoSheet title={t('county.healthmodal.title')} trigger={props => (
+                        <button {...props} type='button' className='inline-flex min-h-11 min-w-11 items-center justify-center'
+                          aria-label={COUNTY_EXPLORER_MESSAGES['counties.rankings.health_explanation'][lang].replace('{county}', county.name).replace('{grade}', grade.letter)}
+                          onClick={event => {
+                            event.currentTarget.focus({ preventScroll: true });
+                            props.onClick();
+                          }}>
+                          <span className={`inline-flex h-6 w-8 items-center justify-center rounded-md text-xs font-bold ${grade.cls}`}>
+                            {grade.letter}
+                          </span>
+                        </button>
+                      )}>
+                        <p>{t('glossary.financial_health.body')}</p>
+                      </InfoSheet>
+                    )}
                   </td>
                   <td data-label={t('counties.rankings.col_budget')} className='py-3 px-3'>
                     <Link
@@ -1500,16 +1509,14 @@ function CountyRankingsTable({
 
       {counties.length > 0 && (
         <div className='flex items-center justify-between px-5 py-3 border-t border-gray-100 dark:border-neutral-border bg-gray-50/40 dark:bg-surface-elevated/70'>
-          <span className='text-xs text-gray-500 dark:text-neutral-muted/80'>
-            {showAll
-              ? t('counties.rankings.showing_all').replace('{n}', String(counties.length))
-              : t('counties.rankings.showing_range')
-                  .replace('{from}', String((page - 1) * PAGE_SIZE + 1))
-                  .replace('{to}', String(Math.min(page * PAGE_SIZE, counties.length)))
-                  .replace('{total}', String(counties.length))}
-          </span>
+          {!showAll && <span className={`${styles.desktopPagination} text-xs text-neutral-muted`}>
+            {t('counties.rankings.showing_range')
+              .replace('{from}', String((page - 1) * PAGE_SIZE + 1))
+              .replace('{to}', String(Math.min(page * PAGE_SIZE, counties.length)))
+              .replace('{total}', String(counties.length))}
+          </span>}
           {!showAll && (
-            <div className='flex flex-wrap items-center justify-center gap-1'>
+            <div className={`${styles.desktopPagination} flex flex-wrap items-center justify-center gap-1`}>
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
@@ -1538,8 +1545,11 @@ function CountyRankingsTable({
           )}
           <button
             onClick={() => setShowAll((v) => !v)}
-            className='text-xs text-gov-forest dark:text-emerald-100 font-medium hover:underline'>
-            {showAll ? t('counties.rankings.show_paginated') : t('counties.rankings.view_all')}
+            className={`${styles.rankingViewAll} audit-control`}>
+            {showAll ? t('counties.rankings.show_paginated') : <>
+              <span className={styles.desktopPagination}>{t('counties.rankings.view_all')}</span>
+              <span className={styles.mobileViewAll}>{COUNTY_EXPLORER_MESSAGES['counties.rankings.show_all_count'][lang].replace('{count}', String(counties.length))}</span>
+            </>}
           </button>
         </div>
       )}
