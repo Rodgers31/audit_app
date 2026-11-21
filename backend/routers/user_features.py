@@ -4,6 +4,7 @@ Endpoints:
   GET/POST/DELETE  /api/v1/user/watchlist     — Manage pinned items
   GET              /api/v1/user/alerts        — Get data alerts
   PATCH            /api/v1/user/alerts/:id    — Mark alert as read
+  GET              /api/v1/user/export        — Download personal data
   POST             /api/v1/newsletter/subscribe   — Subscribe (no auth)
   POST              /api/v1/newsletter/unsubscribe-verify — Verify token & unsubscribe
 """
@@ -13,10 +14,13 @@ from __future__ import annotations
 from typing import List, Optional
 
 from database import get_db
+from supabase_admin import SupabaseAdminError
+from supabase_auth import AdminUser, get_current_user as get_auth_user
 from supabase_auth import get_current_db_user as get_current_user
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Response, status
 from models import DataAlert, NewsletterSubscriber, User, WatchlistItem
-from pydantic import ConfigDict, BaseModel, EmailStr, Field
+from pydantic import ConfigDict, BaseModel, EmailStr, Field, ValidationError
+from services.account_export import AccountExport, export_account
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
@@ -66,6 +70,26 @@ class NewsletterRequest(BaseModel):
 class NewsletterResponse(BaseModel):
     status: str
     message: str
+
+
+@router.get("/api/v1/user/export", response_model=AccountExport)
+def get_account_export(
+    response: Response,
+    current_user: AdminUser = Depends(get_auth_user),
+    db: Session = Depends(get_db),
+):
+    """Export only the authenticated caller's saved account data."""
+    headers = {"Cache-Control": "private, no-store"}
+    try:
+        account = export_account(current_user.id, db)
+    except SupabaseAdminError as exc:
+        if exc.status_code == 404:
+            raise HTTPException(401, "Account is unavailable.", headers=headers) from None
+        raise HTTPException(502, "Account data is unavailable.", headers=headers) from None
+    except ValidationError:
+        raise HTTPException(502, "Account data is unavailable.", headers=headers) from None
+    response.headers.update(headers)
+    return account
 
 
 # ── Watchlist ───────────────────────────────────────────────────────

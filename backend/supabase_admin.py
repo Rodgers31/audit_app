@@ -236,6 +236,60 @@ def _read_profiles(identities: set[str], id_filter: str) -> List[dict]:
     return rows
 
 
+def get_account_records(user_id: str) -> tuple[dict, Optional[dict], List[dict], List[dict]]:
+    """Read personal data from the same UUID-keyed tables the account page uses."""
+    identity = _profile_identity(user_id, status_code=400)
+    user = get_user(identity)
+    _verify_account_record(user, "id", identity)
+    profile = get_profile(identity)
+    watchlist = _read_account_rows(
+        identity, "/watchlist_items",
+        "id,user_id,item_type,item_id,label,notify,created_at",
+    )
+    alerts = _read_account_rows(
+        identity, "/data_alerts",
+        "id,user_id,alert_type,title,body,item_type,item_id,read,created_at",
+    )
+    return user, profile, watchlist, alerts
+
+
+def _verify_account_record(row: object, owner_field: str, identity: str) -> None:
+    if (
+        not isinstance(row, dict)
+        or _profile_identity(row.get(owner_field), status_code=502) != identity
+        or any(key in row for key in ("error", "errors", "error_code"))
+        or any(key in row and row[key] is not True for key in ("ok", "success"))
+    ):
+        raise SupabaseAdminError(502, None)
+
+
+def _read_account_rows(identity: str, table: str, fields: str) -> List[dict]:
+    records = []
+    last_id = 0
+    while True:
+        page = _raw_request(
+            "GET", _rest_url(table),
+            params={
+                "select": fields,
+                "user_id": f"eq.{identity}",
+                "id": f"gt.{last_id}",
+                "order": "id.asc",
+                "limit": 500,
+            },
+        )
+        if not isinstance(page, list) or len(page) > 500:
+            raise SupabaseAdminError(502, None)
+        if not page:
+            return records
+        for row in page:
+            _verify_account_record(row, "user_id", identity)
+            row_id = row.get("id")
+            if type(row_id) is not int or not last_id < row_id <= 2**63 - 1:
+                raise SupabaseAdminError(502, None)
+            last_id = row_id
+            records.append(row)
+
+
 def update_profile_roles(user_id: str, roles: List[str]) -> dict:
     """Set roles and return one provider row matching the requested id/roles.
 
