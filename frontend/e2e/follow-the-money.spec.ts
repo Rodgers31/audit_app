@@ -195,6 +195,7 @@ test.describe('Follow the Money — national page (/transparency)', () => {
   test('selecting another period refreshes the national spending verdict and county cards', async ({
     page,
     request,
+    browserName,
   }) => {
     const { years, defaultYear } = await reportedYears(request);
     // A non-default period is not part of the SSR-prefetched cache. Route its
@@ -276,7 +277,8 @@ test.describe('Follow the Money — national page (/transparency)', () => {
     await source.focus();
     await page.keyboard.press('Enter');
     await expect(verdict.getByRole('link')).toHaveAttribute('href', national.source_document_url);
-    await page.keyboard.press('Tab');
+    // WebKit's default keyboard mode uses Option-Tab to include links.
+    await page.keyboard.press(browserName === 'webkit' ? 'Alt+Tab' : 'Tab');
     await expect(verdict.getByRole('link')).toBeFocused();
     await expect(summary).toContainText(`FY ${year}`);
     await expect(summary).toContainText('KES 40.00B');
@@ -602,3 +604,125 @@ for (const width of [375, 1280]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   });
 }
+
+test('desktop county headings share the ranked 24 and 23 columns and preserve keyboard focus', async ({ page, request }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const { defaultYear, years } = await reportedYears(request);
+  const year = years.find(candidate => candidate !== defaultYear)!;
+  const rows: MoneyFlowData[] = Array.from({ length: 47 }, (_, index) => {
+    const allocated = 10e9;
+    const efficiency = 50 + index;
+    const spent = allocated * efficiency / 100;
+    return {
+      county_id: index + 1, county_name: `Test county ${String(index + 1).padStart(2, '0')}`,
+      fiscal_year: year, budget_source: 'cob_cbirr', efficiency_score: efficiency,
+      total_waste_estimate: index * 1e7,
+      stages: [
+        { stage: 'Allocated', label: 'Allocation', amount: allocated },
+        { stage: 'Spent', label: 'Expenditure', amount: spent, gap_from_prev: allocated - spent },
+        { stage: 'Flagged', label: 'Questioned', amount: index * 1e7 },
+      ],
+    };
+  });
+  await page.route(url => url.pathname === '/api/v1/money-flow/all-counties' && url.searchParams.get('year') === year,
+    route => route.fulfill({ json: rows }));
+  await page.goto('/transparency');
+  await waitForAppReady(page);
+  await page.getByRole('combobox', { name: 'Fiscal year & reporting period' }).selectOption(year);
+
+  const spending = page.getByRole('region', { name: 'County spending' });
+  const leftSort = spending.getByRole('group', { name: 'County sort headings, left column' });
+  const rightSort = spending.getByRole('group', { name: 'County sort headings, right column' });
+  const items = spending.getByRole('list', { name: /Counties ordered by/ }).getByRole('listitem');
+  const leftSpent = leftSort.getByRole('button', { name: /^% spent, left column/ });
+  const rightSpent = rightSort.getByRole('button', { name: /^% spent, right column/ });
+  await expect(leftSpent).toHaveAccessibleName('% spent, left column, ascending');
+  await expect(rightSpent).toHaveAccessibleName('% spent, right column, ascending');
+  await expect(rightSpent).toHaveAttribute('aria-pressed', 'true');
+  await expect(spending.getByRole('button', { name: 'Least spent first', exact: true })).toHaveCount(0);
+  await expect(items).toHaveCount(10);
+  await expect(items.first()).toContainText(/^01Test county 01/);
+
+  await spending.getByRole('button', { name: 'Show all 47 counties' }).press('Enter');
+  await expect(items).toHaveCount(47);
+  await expect(items.nth(10).getByRole('link')).toBeFocused();
+  const layout = await items.evaluateAll(cards => {
+    const [first, firstEnd, second, last] = [0, 23, 24, 46].map(index => cards[index].getBoundingClientRect());
+    return [first.x === firstEnd.x, second.x === last.x, second.x > first.x, first.y === second.y];
+  });
+  expect(layout).toEqual([true, true, true, true]);
+  await expect(items.nth(23)).toContainText(/^24Test county 24/);
+  await expect(items.nth(24)).toContainText(/^25Test county 25/);
+
+  await rightSpent.press('Enter');
+  await expect(rightSpent).toBeFocused();
+  await expect(rightSpent).toHaveAccessibleName('% spent, right column, descending');
+  await expect(leftSpent).toHaveAccessibleName('% spent, left column, descending');
+  await expect(items.first()).toContainText(/^01Test county 47/);
+  await expect(items.nth(24)).toContainText(/^25Test county 23/);
+
+  await leftSort.getByRole('button', { name: 'County, left column', exact: true }).press('Enter');
+  await expect(leftSort.getByRole('button', { name: 'County, left column, ascending', exact: true })).toBeFocused();
+  await expect(items.first()).toContainText(/^01Test county 01/);
+  await expect(items.first()).toContainText('QuestionedKES 0');
+  await expect(items.first().getByRole('link')).toHaveAttribute('href', '/counties/1?tab=money&from=transparency');
+  await rightSort.getByRole('button', { name: 'Questioned, right column', exact: true }).click();
+  await expect(rightSort.getByRole('button', { name: 'Questioned, right column, descending', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(items.first()).toContainText(/^01Test county 47/);
+  await leftSort.getByRole('button', { name: 'Gap, left column', exact: true }).click();
+  await expect(items.first()).toContainText(/^01Test county 01/);
+  await expect(items.first()).toContainText('Well below target');
+  await expect(items.first()).toContainText('KES 10.00B allocated');
+  await expect(items.first().getByRole('img', { name: /Target: 70%/ })).toBeVisible();
+
+  await spending.getByRole('searchbox', { name: 'Find your county' }).fill('Test county 47');
+  await expect(items).toHaveCount(1);
+  await expect(items.first()).toContainText(/^47Test county 47/);
+  await expect(rightSort).toHaveCount(0);
+});
+
+test('desktop county headings use the measures available for the selected period', async ({ page, request }) => {
+  await page.setViewportSize({ width: 1024, height: 900 });
+  const { defaultYear, years } = await reportedYears(request);
+  const year = years.find(candidate => candidate !== defaultYear)!;
+  let projected = false;
+  const flow = (id: number | null, county_name: string, amount: number): MoneyFlowData => ({
+    county_id: id, county_name, fiscal_year: year, budget_source: projected ? 'cra_model' : 'cob_cbirr',
+    efficiency_score: projected ? null : 60, total_waste_estimate: null,
+    stages: [
+      { stage: 'Allocated', label: 'Allocation', amount },
+      { stage: 'Spent', label: 'Expenditure', amount: projected ? null : amount * 0.6 },
+      { stage: 'Flagged', label: 'Questioned', amount: null },
+    ],
+  });
+  await page.route(url => url.pathname === '/api/v1/money-flow/all-counties' && url.searchParams.get('year') === year,
+    route => route.fulfill({ json: [flow(1, 'Example A', 20e9), flow(2, 'Example B', 10e9)] }));
+  await page.route(url => url.pathname === '/api/v1/audit/money-flow/national' && url.searchParams.get('year') === year,
+    route => route.fulfill({ json: flow(null, 'All counties', 30e9) }));
+  await page.goto('/transparency');
+  await waitForAppReady(page);
+  const picker = page.getByRole('combobox', { name: 'Fiscal year & reporting period' });
+  await picker.selectOption(year);
+
+  const spending = page.getByRole('region', { name: 'County spending' });
+  const leftSort = spending.getByRole('group', { name: 'County sort headings, left column' });
+  const rightSort = spending.getByRole('group', { name: 'County sort headings, right column' });
+  await expect(leftSort.getByRole('button')).toHaveCount(3);
+  await expect(rightSort.getByRole('button', { name: /^% spent/ })).toBeVisible();
+  await expect(spending.getByRole('button', { name: /^Questioned/ })).toHaveCount(0);
+
+  projected = true;
+  await page.reload();
+  await waitForAppReady(page);
+  await picker.selectOption(year);
+  const rightAllocated = rightSort.getByRole('button', { name: /^Allocated, right column/ });
+  await expect(rightAllocated).toHaveAccessibleName('Allocated, right column, descending');
+  await expect(leftSort.getByRole('button')).toHaveCount(2);
+  await expect(rightSort.getByRole('button', { name: /^% spent/ })).toHaveCount(0);
+  await expect(rightSort.getByRole('button', { name: /^Gap/ })).toHaveCount(0);
+  const items = spending.getByRole('list', { name: /Counties ordered by/ }).getByRole('listitem');
+  await expect(items.first()).toContainText('Example A');
+  await rightAllocated.press('Enter');
+  await expect(rightAllocated).toHaveAccessibleName('Allocated, right column, ascending');
+  await expect(items.first()).toContainText('Example B');
+});

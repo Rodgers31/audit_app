@@ -7,9 +7,8 @@ test('county table distinguishes a sourced amount, publisher zero and absence', 
   const nairobi = page.getByRole('row').filter({ hasText: 'Nairobi' });
   const mombasa = page.getByRole('row').filter({ hasText: 'Mombasa' });
   await expect(nairobi).toContainText('100.0B');
-  await expect(nairobi).toContainText('0%');
-  await expect(mombasa).toContainText('—');
-  await expect(mombasa).not.toContainText('0%');
+  await expect(nairobi.getByRole('cell', { name: '0.0% Reported for this period' })).toBeVisible();
+  await expect(mombasa.getByRole('cell', { name: 'No published rate' })).toBeVisible();
 });
 
 test('county fiscal-period selection fetches and renders that period', async ({ page }) => {

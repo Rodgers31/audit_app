@@ -3,6 +3,7 @@
 import DataFreshnessBadge from '@/components/DataFreshnessBadge';
 import InfoSheet from '@/components/ui/InfoSheet';
 import AuditRecurringFindings from './AuditRecurringFindings';
+import AuditSeverity from './AuditSeverity';
 import AuditYearBars from './AuditYearBars';
 import PageShell from '@/components/layout/PageShell';
 import type { FindingDetailItem, FindingsFilters } from '@/lib/api/audits';
@@ -29,17 +30,6 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useId, useMemo, useState } from 'react';
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  ResponsiveContainer,
-  Text,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
 import ResponsiveTable from '@/components/ui/ResponsiveTable';
 
 /* ═══════════════════════════════════════════════════════
@@ -55,33 +45,12 @@ function fmtKES(val: number): string {
   return `KES ${val.toLocaleString()}`;
 }
 
-const TYPE_COLORS: Record<string, string> = {
-  'Financial Irregularity': '#ef4444',
-  'Compliance Issue': '#f59e0b',
-  'Asset Management': '#8b5cf6',
-  'Revenue Collection': '#3b82f6',
-  'Procurement': '#ec4899',
-  'Internal Controls': '#14b8a6',
-  'Pending Bills': '#f97316',
-  'Human Resource': '#6366f1',
-  // The three OAG report sections the backend now folds headings onto.
-  // Without these every bar fell through to the same grey.
-  'Report on the Financial Statements': '#3b82f6',
-  'Report on Lawfulness and Effectiveness in the Use of Public Resources': '#f59e0b',
-  'Report on Effectiveness of Internal Controls, Risk Management and Governance':
-    '#14b8a6',
-};
-
 const OPINION_COLORS: Record<string, string> = {
   Adverse: '#ef4444',
   Disclaimer: '#f59e0b',
   Qualified: '#f97316',
   Unqualified: '#22c55e',
 };
-
-function getTypeColor(type: string): string {
-  return TYPE_COLORS[type] || '#94a3b8';
-}
 
 /* ═══════════════════════════════════════════════════════
    Page Component
@@ -97,18 +66,11 @@ export default function AuditFindingsPage() {
   const [filters, setFilters] = useState<FindingsFilters>(AUDIT_FINDINGS_INITIAL_FILTERS);
 
   // --- Data hooks ---
-  const { data: summary, isLoading: summaryLoading } = useAuditDashboardSummary();
+  const { data: summary, isLoading: summaryLoading, refetch: retrySummary } = useAuditDashboardSummary();
   const { data: trends, isLoading: trendsLoading, isError: trendsError, refetch: retryTrends } = useAuditTrends();
   const { data: findings, isLoading: findingsLoading } = useAuditFindings(filters);
 
   // --- Derived data ---
-  const typeChartData = useMemo(() => {
-    if (!summary?.findings_by_type) return [];
-    return Object.entries(summary.findings_by_type)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value);
-  }, [summary]);
-
   // `0` here would mean "the Auditor-General issued no adverse or disclaimer
   // opinion", which is a strong claim. Absent key -> null (renders "—");
   // present key with value 0 -> a real zero we can stand behind. Credibility
@@ -219,6 +181,8 @@ export default function AuditFindingsPage() {
         <a href='#audit-findings-heading' className='flex min-h-11 items-center text-sm underline underline-offset-4'>{copy('audits.view_findings')}</a>
       </section>
 
+      <AuditSeverity collectionTotal={summary?.total_findings} retryCollection={() => void retrySummary()} />
+
       <div>
         <div className='max-w-xl'>
           <StatCard
@@ -283,80 +247,19 @@ export default function AuditFindingsPage() {
           defensible and is what the homepage "Top Ministries Flagged" card
           shows; a ranking by an amount the report never stated is not. */}
 
-      {/* ═══ C. FINDINGS BY TYPE + D. FINDINGS BY AUDIT YEAR ═══ */}
-      <div>
-        <div className='space-y-6'>
-          {/* C. Findings by Type */}
-          <div className='space-y-3'>
-            <h2 className='font-display text-xl text-gov-dark dark:text-white'>Findings by Type</h2>
-            {typeChartData.length > 0 ? (
-              <div className='h-[320px] overflow-hidden'>
-                <ResponsiveContainer width='100%' height='100%'>
-                  <BarChart data={typeChartData} layout='vertical' margin={{ left: 0, right: 16 }}>
-                    <CartesianGrid strokeDasharray='3 3' stroke='#e5e7eb' horizontal={false} />
-                    <XAxis type='number' tick={{ fontSize: 12, fill: 'rgb(var(--c-neutral-muted))' }} />
-                    <YAxis
-                      type='category'
-                      dataKey='name'
-                      width={130}
-                      tick={({ x, y, payload }: { x: number; y: number; payload: { value: string } }) => (
-                        <Text
-                          x={x}
-                          y={y}
-                          width={108}
-                          maxLines={2}
-                          textAnchor='end'
-                          verticalAnchor='middle'
-                          fill='rgb(var(--c-neutral-muted))'
-                          style={{ fontSize: 12 }}>
-                          {auditSectionLabel(payload.value, lang)}
-                        </Text>
-                      )}
-                    />
-                    <Tooltip
-                      wrapperStyle={{ maxWidth: '70%' }}
-                      contentStyle={{
-                        backgroundColor: 'rgb(var(--c-surface-base))',
-                        border: '1px solid rgb(var(--c-neutral-border))',
-                        borderRadius: 4,
-                        color: 'rgb(var(--c-neutral-text))',
-                        fontSize: 12,
-                        whiteSpace: 'normal',
-                        overflowWrap: 'anywhere',
-                      }}
-                      itemStyle={{ color: 'rgb(var(--c-neutral-text))' }}
-                      formatter={(val: number) => [val.toLocaleString(), 'Findings']}
-                    />
-                    <Bar dataKey='value' radius={[0, 4, 4, 0]}>
-                      {typeChartData.map((entry) => (
-                        <Cell key={entry.name} fill={getTypeColor(entry.name)} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <div className='h-[320px] flex items-center justify-center text-gov-dark/40 dark:text-white/40'>
-                No data available
-              </div>
-            )}
+      <section aria-labelledby='audit-years-heading' className='min-w-0 space-y-3'>
+        <h2 id='audit-years-heading' className='font-display text-xl text-neutral-text'>{copy('audits.years_title')}</h2>
+        {trendsLoading ? (
+          <p role='status' className='py-8 text-sm text-neutral-muted'>{copy('audits.years_loading')}</p>
+        ) : trendsError ? (
+          <div className='space-y-2 text-sm'>
+            <p role='alert'>{copy('audits.years_error')}</p>
+            <button type='button' onClick={() => void retryTrends()} className='audit-control underline'>{copy('audits.retry')}</button>
           </div>
-
-          <section aria-labelledby='audit-years-heading' className='min-w-0 space-y-3'>
-            <h2 id='audit-years-heading' className='font-display text-xl text-neutral-text'>{copy('audits.years_title')}</h2>
-            {trendsLoading ? (
-              <p role='status' className='py-8 text-sm text-neutral-muted'>{copy('audits.years_loading')}</p>
-            ) : trendsError ? (
-              <div className='space-y-2 text-sm'>
-                <p role='alert'>{copy('audits.years_error')}</p>
-                <button type='button' onClick={() => void retryTrends()} className='audit-control underline'>{copy('audits.retry')}</button>
-              </div>
-            ) : trends ? <AuditYearBars trends={trends} /> : (
-              <p className='text-sm text-neutral-muted'>{copy('audits.years_empty')}</p>
-            )}
-          </section>
-        </div>
-      </div>
+        ) : trends ? <AuditYearBars trends={trends} /> : (
+          <p className='text-sm text-neutral-muted'>{copy('audits.years_empty')}</p>
+        )}
+      </section>
 
       <AuditRecurringFindings />
 
