@@ -213,6 +213,48 @@ def test_domain_run_inserts_rows(sqlite_session, http_mock, tmp_path):
     assert float(debt_2024.value) == pytest.approx(67.3)
 
 
+def test_retired_datamapper_routes_use_one_official_workbook_cohort(sqlite_session, tmp_path, monkeypatch):
+    from seeding import freshness
+
+    def gone(client, settings):
+        request = httpx.Request('GET', 'https://www.imf.org/external/datamapper/api/v1/NGDPD/KEN')
+        response = httpx.Response(404, request=request)
+        response.raise_for_status()
+
+    monkeypatch.setattr(imf_fetcher, 'fetch_imf_weo', gone)
+    monkeypatch.setattr(imf_fetcher, 'fetch_reviewed_workbook', lambda client: {
+        indicator: _sample_imf_response(indicator) for indicator in imf_fetcher.INDICATORS
+    }, raising=False)
+    result = run_imf_weo_domain(sqlite_session, _build_settings(tmp_path), DomainRunContext(since=None, dry_run=False))
+    assert result.errors == []
+    assert freshness.get('imf_weo')['mode'] == 'live'
+    rows = sqlite_session.scalars(select(ImfWeoObservation)).all()
+    assert {row.indicator for row in rows} == set(imf_fetcher.INDICATORS)
+    assert {row.source for row in rows} == {'imf_weo_workbook'}
+
+
+def test_workbook_resolver_refuses_a_newer_catalogue_link():
+    requests = []
+
+    class Client:
+        def get(self, url, **kwargs):
+            requests.append(url)
+            return httpx.Response(200, text='<a href="/releases/WEOApr2027all.xlsx">New WEO</a>')
+
+    with pytest.raises(ValueError, match='no longer identifies'):
+        imf_fetcher.fetch_reviewed_workbook(Client())
+    assert requests == [imf_fetcher.WEO_CATALOGUE_URL]
+
+
+def test_reviewed_workbook_refuses_changed_bytes(monkeypatch):
+    from seeding.domains.imf_weo import workbook
+
+    candidate = b'not the reviewed workbook'
+    monkeypatch.setattr(workbook, 'WORKBOOK_BYTES', len(candidate))
+    with pytest.raises(ValueError, match='bytes differ'):
+        workbook.parse_workbook(candidate)
+
+
 def test_rerun_within_same_vintage_is_idempotent(
     sqlite_session, http_mock, tmp_path
 ):

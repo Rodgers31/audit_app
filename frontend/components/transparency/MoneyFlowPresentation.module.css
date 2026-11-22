@@ -346,6 +346,21 @@
   border-radius: 2px;
   background: var(--county-execution);
 }
+.desktopSorts {
+  display: none;
+}
+.desktopSortButton {
+  min-width: 44px;
+  padding-inline: 7px;
+  border-color: transparent;
+}
+.desktopSortButton[aria-pressed="true"] {
+  border-bottom-color: var(--signal-good);
+  color: var(--signal-good);
+}
+.desktopSortButton svg {
+  flex-shrink: 0;
+}
 .counties {
   display: grid;
   list-style: none;
@@ -476,6 +491,22 @@
   font-size: 14px;
 }
 @container money-flow (min-width: 55rem) {
+  .sortWrap[data-desktop-headings] {
+    display: none;
+  }
+  .desktopSorts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 20px;
+    padding: 0 11px;
+    margin: 8px 0 4px;
+  }
+  .desktopSorts > div {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+  }
   .counties {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-rows: repeat(var(--county-rows), auto);

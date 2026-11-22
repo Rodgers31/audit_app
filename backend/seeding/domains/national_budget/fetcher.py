@@ -275,6 +275,9 @@ def _fetch_annual_sector_expenditure(
         ttl_seconds=settings.pdf_cache_ttl_seconds,
         max_seconds=settings.pdf_download_timeout_seconds,
         max_bytes=settings.pdf_download_max_bytes,
+        # CoB's FY 2025/26 annual download completed TLS in 28.4 seconds.
+        # The transfer still shares the overall PDF download deadline.
+        connect_timeout_seconds=40.0,
     )
     cache_identity = None
     if os.environ.get("SEED_PARSER_ROOT"):

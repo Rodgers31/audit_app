@@ -51,9 +51,8 @@ test('long audit section values fit narrow viewports and keep their accessible f
   expect((await filtered).ok()).toBe(true);
   await section.selectOption({ label: unmappedSection });
 
-  const typeChart = page.getByRole('heading', { name: 'Findings by Type', exact: true }).locator('..');
-  await typeChart.locator('.recharts-bar-rectangle').first().hover();
-  await expect(typeChart.locator('.recharts-tooltip-label')).toHaveText(controlsSection);
+  await expect(page.getByRole('heading', { name: 'Findings by Type', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Findings by severity' })).toBeVisible();
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBe(360);
 
   for (const width of [320, 360, 390, 768, 1024, 1280, 1440]) {
@@ -343,4 +342,66 @@ test('recurring findings offer retry and preserve the server’s scope for an em
   await region.getByRole('button', { name: 'Try again' }).click();
   await expect(region.getByText(reason, { exact: true })).toBeVisible();
   await expect(region.getByRole('alert')).toHaveCount(0);
+});
+
+test('severity splits the published collection proportionally with accessible counts and selection', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 840 });
+  await page.clock.setFixedTime(new Date(Date.now() + 2 * 60 * 60 * 1000));
+  await page.route('**/api/v1/audit/summary', route => route.fulfill({ json: { total_findings: 103 } }));
+  await page.route('**/api/v1/audits/statistics', route => route.fulfill({ json: {
+    total_findings: 103, by_severity: { critical: 3, warning: 100 }, fiscal_years_covered: ['FY2024/25'],
+  } }));
+  await page.goto('/audits');
+  const severity = page.getByRole('region', { name: 'Findings by severity' });
+  await expect(severity.getByText('Of 103 published findings, 100 are marked Warning.')).toBeVisible();
+  await expect(severity.getByText('Recorded fiscal periods FY2024/25')).toBeVisible();
+  await expect(severity.getByRole('button', { name: 'Note 0' })).toBeVisible();
+  await expect(severity.locator('[data-severity="info"]')).toHaveCount(0);
+  const ratio = await severity.locator('[data-severity-plot]').evaluate(element => {
+    const [serious, warnings] = Array.from(element.children, child => child.getBoundingClientRect().width);
+    return serious / (serious + warnings);
+  });
+  expect(ratio).toBeCloseTo(3 / 103, 3);
+
+  const serious = severity.getByRole('button', { name: 'Serious 3' });
+  await serious.press('Enter');
+  await expect(serious).toHaveAttribute('aria-pressed', 'true');
+  const readout = severity.getByText('Serious · 3 of 103 published findings');
+  await expect(readout).toBeVisible();
+  await serious.press('Escape');
+  await expect(readout).toHaveCount(0);
+  await serious.click();
+  await serious.click();
+  await expect(serious).toHaveAttribute('aria-pressed', 'false');
+  await serious.click();
+  await page.getByRole('heading', { name: 'Auditor-General findings in AuditGava', exact: true }).click();
+  await expect(serious).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.getByRole('heading', { name: 'All findings', exact: true })).toBeVisible();
+});
+
+test('severity retries unavailable and unreconciled counts and gives a distinct partial result', async ({ page }) => {
+  await page.clock.setFixedTime(new Date(Date.now() + 2 * 60 * 60 * 1000));
+  let stage = 0;
+  await page.route('**/api/v1/audit/summary', route => route.fulfill({ json: { total_findings: 6 } }));
+  await page.route('**/api/v1/audits/statistics', route => {
+    if (stage === 0) return route.fulfill({ status: 503, json: { status: 'unavailable' } });
+    if (stage === 1) return route.fulfill({ json: { total_findings: 7, by_severity: { warning: 7 } } });
+    return route.fulfill({ json: { total_findings: 6, by_severity: { critical: 1, unknown: 5 } } });
+  });
+  await page.goto('/audits');
+  const severity = page.getByRole('region', { name: 'Findings by severity' });
+  await expect(severity.getByRole('alert')).toHaveText('Severity counts could not be loaded.');
+  const retry = severity.getByRole('button', { name: 'Try again' });
+
+  stage = 1;
+  await retry.click();
+  await expect(severity.getByText('The severity counts could not be matched to the published findings total above.')).toBeVisible();
+  await expect(severity.locator('[data-severity-plot]')).toHaveCount(0);
+
+  stage = 2;
+  await retry.click();
+  await expect(severity.getByText('Severity counts are available for 1 of 6 published findings in this collection.')).toBeVisible();
+  await expect(severity.getByRole('listitem')).toHaveText('Serious 1');
+  await expect(severity.locator('[data-severity-plot]')).toHaveCount(0);
+  await expect(severity.getByText('Warning 0')).toHaveCount(0);
 });
