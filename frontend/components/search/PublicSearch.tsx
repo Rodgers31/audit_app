@@ -2,6 +2,9 @@
 
 import { useLang } from '@/lib/i18n/LangProvider';
 import { PUBLIC_SEARCH_MESSAGES as copy } from '@/lib/i18n/messages/publicSearch';
+import { useAuditFindings } from '@/lib/react-query/useAudits';
+import { useNationalLoans } from '@/lib/react-query/useDebt';
+import { AUDIT_SEARCH_LIMIT, findPublishedAuditResults, findPublishedLenderResults } from '@/lib/search/publishedSearch';
 import { findLocalPublicResults, findPublicArticles, hasPublicSearchQuery, type ArticleSearch } from '@/lib/search/publicSearch';
 import { Search, X } from 'lucide-react';
 import Link from 'next/link';
@@ -10,8 +13,9 @@ import { useEffect, useId, useRef, useState, type MouseEvent } from 'react';
 type SearchState = ArticleSearch & { query: string };
 
 interface ResultGroup {
-  id: 'counties' | 'articles' | 'glossary';
-  results: Array<{ href: string; title: string; context?: string }>;
+  id: 'counties' | 'articles' | 'glossary' | 'findings' | 'lenders';
+  results: Array<{ href: string; title: string; context?: string; key?: number }>;
+  action?: string;
 }
 
 interface PublicSearchProps {
@@ -21,6 +25,7 @@ interface PublicSearchProps {
 }
 
 const focusClass = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-signal-good';
+const SEARCHABLE_CHARACTER = new RegExp('[\\p{L}\\p{N}]', 'u');
 
 export default function PublicSearch({ autoFocus = false, compact = false, onNavigate }: PublicSearchProps) {
   const { lang } = useLang();
@@ -30,6 +35,13 @@ export default function PublicSearch({ autoFocus = false, compact = false, onNav
   const [state, setState] = useState<SearchState | null>(null);
   const query = value.trim();
   const canSearch = hasPublicSearchQuery(query);
+  const searchRecords = query.length >= 3 && SEARCHABLE_CHARACTER.test(query);
+  // These endpoints return public collections, so every query filters the same
+  // cached response locally. A late response can only match the current input.
+  const audits = useAuditFindings({ page: 1, limit: AUDIT_SEARCH_LIMIT }, { enabled: searchRecords });
+  const loans = useNationalLoans({ enabled: searchRecords });
+  const auditData = searchRecords && !audits.isError && Array.isArray(audits.data?.items) ? audits.data : null;
+  const loanData = searchRecords && !loans.isError && Array.isArray(loans.data?.loans) ? loans.data : null;
 
   useEffect(() => {
     if (autoFocus) input.current?.focus({ preventScroll: true });
@@ -57,11 +69,21 @@ export default function PublicSearch({ autoFocus = false, compact = false, onNav
   const local = findLocalPublicResults(query);
   const groups: ResultGroup[] = [
     { id: 'counties', results: local.counties },
+    {
+      id: 'findings',
+      results: auditData ? findPublishedAuditResults(auditData, query) : [],
+      action: copy.openReportPage[lang],
+    },
     { id: 'articles', results: current?.articles.map(result => ({
       ...result,
       context: copy.article[lang].replace('{number}', String(result.number)),
     })) ?? [] },
     { id: 'glossary', results: local.glossary },
+    {
+      id: 'lenders',
+      results: loanData ? findPublishedLenderResults(loanData, query) : [],
+      action: copy.openLoanRegister[lang],
+    },
   ];
   const visibleCount = groups.reduce((total, group) => total + group.results.length, 0);
 
@@ -70,11 +92,15 @@ export default function PublicSearch({ autoFocus = false, compact = false, onNav
   let message = '';
   if (query && !canSearch) message = [resultCount, copy.short[lang]].filter(Boolean).join(' ');
   if (canSearch) {
-    if (!current) message = copy.loading[lang];
-    else {
-      if (current.coverage === 'complete') message = resultCount || copy.empty[lang];
-      else message = [resultCount, copy[current.coverage][lang]].filter(Boolean).join(' ');
-    }
+    const loading = !current || (searchRecords && (audits.isPending || loans.isPending));
+    const notices = [
+      current && current.coverage !== 'complete' ? copy[current.coverage][lang] : '',
+      searchRecords && !audits.isPending && !auditData ? copy.findingsUnavailable[lang] : '',
+      searchRecords && !loans.isPending && !loanData ? copy.lendersUnavailable[lang] : '',
+    ].filter(Boolean);
+    const empty = !loading && notices.length === 0 && !resultCount;
+    message = [empty ? copy.empty[lang] : resultCount, loading ? copy.loading[lang] : '', ...notices]
+      .filter(Boolean).join(' ');
   }
 
   function handleNavigate(event: MouseEvent<HTMLAnchorElement>) {
@@ -120,23 +146,30 @@ export default function PublicSearch({ autoFocus = false, compact = false, onNav
         )}
       </div>
       <p role='status' className={message ? 'text-sm text-neutral-muted' : 'sr-only'}>{message}</p>
+      {auditData && (
+        <p className='text-sm text-neutral-muted'>{copy.findingsCoverage[lang].replace('{limit}', String(AUDIT_SEARCH_LIMIT))}</p>
+      )}
       {visibleCount > 0 && (
         <div className='overflow-hidden rounded border border-neutral-border bg-surface-base'>
-          {groups.map(({ id, results }) => results.length > 0 && (
+          {groups.map(({ id, results, action }) => results.length > 0 && (
             <section key={id} aria-labelledby={`${inputId}-${id}`} className='border-b border-neutral-border last:border-b-0'>
               <h2 id={`${inputId}-${id}`} className='border-b border-neutral-border bg-surface-sunken px-3 py-2 font-display text-lg font-semibold text-neutral-text'>
                 {copy[id][lang]}
               </h2>
               <ul className='divide-y divide-neutral-border' role='list'>
                 {results.map(result => (
-                  <li key={result.href}>
+                  <li key={result.key ?? result.href}>
                     <Link
                       href={result.href}
                       prefetch={false}
                       onClick={handleNavigate}
-                      className={`flex min-h-11 flex-wrap items-center gap-x-2 px-3 py-2 text-sm text-neutral-text hover:bg-surface-elevated hover:underline focus-visible:-outline-offset-2 ${focusClass}`}>
-                      {result.context && <span className='font-mono text-neutral-muted'>{result.context}</span>}
-                      <span lang={id === 'counties' ? undefined : 'en'} className='min-w-0 break-words font-semibold'>{result.title}</span>
+                      className={`flex min-h-11 flex-wrap items-center gap-x-2 px-3 py-2 text-sm text-neutral-text [overflow-wrap:anywhere] hover:bg-surface-elevated hover:underline focus-visible:-outline-offset-2 ${focusClass}`}>
+                      {id === 'articles' && <span className='font-mono text-neutral-muted'>{result.context}</span>}
+                      <span lang={id === 'counties' ? undefined : 'en'} className='min-w-0 font-semibold'>{result.title}</span>
+                      {id === 'findings' && result.context && (
+                        <span lang='en' className='w-full text-neutral-muted'>{result.context}</span>
+                      )}
+                      {action && <span className='w-full text-neutral-muted'>{action}</span>}
                     </Link>
                   </li>
                 ))}

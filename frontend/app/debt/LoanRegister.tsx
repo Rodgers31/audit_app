@@ -7,8 +7,10 @@ import { annualCostCell, sortLoans, type LoanSortKey } from '@/lib/debt/loanInte
 import { evidenceUrl, qualificationMessageKey } from '@/lib/evidence/qualification';
 import { useLang } from '@/lib/i18n/LangProvider';
 import type { TranslationKey } from '@/lib/i18n/messages';
+import { readLenderQuery } from '@/lib/search/publishedSearch';
 import { fmtKES } from '@/lib/utils';
-import { useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 
 const INITIAL_ROWS = 10;
 const GROUPS = ['all', 'domestic', 'multilateral', 'bilateral', 'commercial'] as const;
@@ -100,6 +102,13 @@ interface LoanRegisterProps {
   retry: () => void;
 }
 
+function LenderSearchPrefill({ setQuery }: { setQuery: (value: string) => void }) {
+  const params = useSearchParams();
+  const lender = readLenderQuery(params?.getAll('lender') ?? []);
+  useEffect(() => setQuery(lender), [lender, setQuery]);
+  return null;
+}
+
 export default function LoanRegister({ data, isLoading, isError, isFetching, retry }: LoanRegisterProps) {
   const { t, lang } = useLang();
   const [query, setQuery] = useState('');
@@ -124,6 +133,7 @@ export default function LoanRegister({ data, isLoading, isError, isFetching, ret
 
   return (
     <section id='loan-register' aria-labelledby='loan-register-heading' className='min-w-0 scroll-mt-24 space-y-3' data-loan-register>
+      <Suspense fallback={null}><LenderSearchPrefill setQuery={setQuery} /></Suspense>
       <h2 id='loan-register-heading' className='font-display text-2xl text-neutral-text sm:text-3xl'>
         {t('debt.register.title')}
       </h2>
