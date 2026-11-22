@@ -37,6 +37,8 @@ def parse_imf_weo(
     payload: Dict[str, Dict[str, Any]],
     vintage: datetime,
     only_countries: Optional[Iterable[str]] = None,
+    *,
+    source: str = "imf_datamapper",
 ) -> List[Dict[str, Any]]:
     """Flatten IMF responses into per-(country, indicator, year) rows.
 
@@ -79,7 +81,7 @@ def parse_imf_weo(
                         "value": value,
                         "is_projection": year >= projection_cutoff,
                         "vintage": vintage,
-                        "source": "imf_datamapper",
+                        "source": source,
                     }
                 )
     return rows

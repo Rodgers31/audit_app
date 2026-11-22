@@ -55,12 +55,11 @@ from ...isolated_parser import isolated
 logger = logging.getLogger("seeding.population.census_counties")
 
 #: 2019 Kenya Population and Housing Census, Volume I: Population by County
-#: and Sub-County (KNBS, November 2019). Linked from the census landing page
-#: at knbs.or.ke/reports/kenya-census-2019/.
+#: and Sub-County (KNBS, November 2019). The publisher repository serves
+#: the same PDF bytes as the original upload at www.knbs.or.ke.
 CENSUS_VOLUME_I_URL = (
-    "https://www.knbs.or.ke/wp-content/uploads/2023/09/"
-    "2019-Kenya-population-and-Housing-Census-Volume-1-"
-    "Population-By-County-And-Sub-County.pdf"
+    "https://repository.knbs.or.ke/server/api/core/bitstreams/"
+    "4ec8e85f-c86c-45b0-bb62-6b926e6b5c45/content"
 )
 CENSUS_TITLE = (
     "2019 Kenya Population and Housing Census Volume I: "

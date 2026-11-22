@@ -34,8 +34,12 @@ test.describe('Mobile — 390×844', () => {
     await page.goto('/counties');
     await waitForAppReady(page);
 
-    // At least one county tile visible
-    await expect(page.locator('table tbody tr').first()).toBeVisible({ timeout: 15_000 });
+    const rankings = page.getByRole('list', { name: 'County Rankings', exact: true });
+    await expect(rankings).toBeVisible({ timeout: 15_000 });
+    const county = rankings.getByRole('listitem').first().getByRole('link');
+    await expect(county).toBeVisible();
+    await expect(county).toHaveAttribute('href', /^\/counties\/[\w-]+(?:\?fy=[^&#]+)?$/);
+    await expect(page.getByRole('table', { name: 'County Rankings', exact: true })).toHaveCount(0);
 
     // No horizontal overflow
     const overflow = await page.evaluate(
