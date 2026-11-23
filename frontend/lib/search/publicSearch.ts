@@ -1,6 +1,5 @@
 import { glossaryTerms } from '@/data/glossaryTerms';
-import { COUNTY_LINKS } from '@/lib/counties/lookup';
-import { normalizeCountyName } from '@/lib/counties/regions';
+import { findCountyLinks } from '@/lib/counties/lookup';
 
 const RESULTS_PER_GROUP = 5;
 
@@ -12,12 +11,6 @@ interface PublicSearchResult {
 interface SearchEntry extends PublicSearchResult {
   keys: string[];
 }
-
-const counties: SearchEntry[] = COUNTY_LINKS.map(({ name, slug }) => ({
-  href: `/counties/${slug}`,
-  title: name,
-  keys: [normalizeCountyName(name)],
-}));
 
 const glossary: SearchEntry[] = glossaryTerms.map(({ id, term, abbreviation, aliases }) => ({
   href: `/learn/glossary#term-${id}`,
@@ -58,7 +51,10 @@ export function hasPublicSearchQuery(query: string) {
 
 export function findLocalPublicResults(query: string) {
   return {
-    counties: findMatches(counties, normalizeCountyName(query)),
+    counties: findCountyLinks(query).slice(0, RESULTS_PER_GROUP).map(({ name, href }) => ({
+      title: name,
+      href,
+    })),
     glossary: findMatches(glossary, normalizeTerm(query)),
   };
 }

@@ -57,6 +57,7 @@ for (const [lang, choice] of Object.entries(choices)) {
       const theme = header.getByRole('button', { name: /Switch to .* theme/ });
       await expectOwnedHitTarget(theme);
       await expectOwnedHitTarget(header.getByRole('button', { name: /^(Sign in|Ingia)$/ }));
+      await expectOwnedHitTarget(header.getByRole('button', { name: /^(Search AuditGava|Tafuta kwenye AuditGava)$/ }));
       const links = navigation.getByRole('link');
       await expect(links).toHaveCount(6);
       const navBox = (await navigation.boundingBox())!;
@@ -171,4 +172,37 @@ test('wrapped desktop navigation retains keyboard order and control actions', as
   await expect(page.getByRole('heading', { name: 'Welcome back', exact: true })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('heading', { name: 'Welcome back', exact: true })).not.toBeVisible();
+});
+
+test('public search works from the desktop header and inside the mobile drawer', async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 800 });
+  await page.goto('/learn');
+  const header = page.locator('header').first();
+  const searchButton = header.getByRole('button', { name: 'Search AuditGava', exact: true });
+  await expect(searchButton).toBeEnabled();
+  await searchButton.focus();
+  await page.keyboard.press('Enter');
+  const desktop = page.getByRole('dialog', { name: 'Search AuditGava', exact: true });
+  const input = desktop.getByRole('searchbox');
+  await expect(input).toBeFocused();
+  await input.fill('Baringo');
+  await expect(desktop.getByRole('link', { name: 'Baringo', exact: true })).toHaveAttribute('href', '/counties/baringo');
+  await page.keyboard.press('Escape');
+  await expect(desktop).toBeHidden();
+  await expect(searchButton).toBeFocused();
+
+  await page.setViewportSize({ width: 360, height: 780 });
+  await expect(searchButton).toBeHidden();
+  const menuButton = header.getByRole('button', { name: 'Open navigation menu' });
+  await menuButton.click();
+  const drawer = page.getByRole('dialog', { name: 'Mobile navigation' });
+  await page.keyboard.press('Tab');
+  const drawerSearch = drawer.getByRole('searchbox');
+  await expect(drawerSearch).toBeFocused();
+  await drawerSearch.fill('214');
+  const result = drawer.getByRole('link', { name: 'Article 214 Public debt' });
+  await expect(result).toHaveAttribute('href', '/learn?article=214');
+  await result.click();
+  await expect(drawer).toBeHidden();
+  await expect(page).toHaveURL(/\/learn\?article=214$/);
 });

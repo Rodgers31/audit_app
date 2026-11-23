@@ -1,28 +1,12 @@
 'use client';
 
-import { COUNTY_LINKS } from '@/lib/counties/lookup';
-import { normalizeCountyName } from '@/lib/counties/regions';
+import { findCountyLinks } from '@/lib/counties/lookup';
 import { useLang } from '@/lib/i18n/LangProvider';
 import { HOME_TOPICS_MESSAGES } from '@/lib/i18n/messages/homeTopics';
 import { Search, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
-
-const COUNTIES = COUNTY_LINKS.map(({ name, slug }) => ({
-  name,
-  href: `/counties/${slug}`,
-  key: normalizeCountyName(name),
-})).sort((a, b) => a.name.localeCompare(b.name, 'en-KE'));
-
-function findCounties(query: string) {
-  const term = normalizeCountyName(query);
-  if (!term) return [];
-  const matches = COUNTIES.filter((county) => county.key.includes(term));
-  return matches.sort(
-    (a, b) => Number(b.key.startsWith(term)) - Number(a.key.startsWith(term))
-  );
-}
 
 export default function HomeCountySearch() {
   const { lang, ready } = useLang();
@@ -36,7 +20,7 @@ export default function HomeCountySearch() {
   const [activeIndex, setActiveIndex] = useState(-1);
 
   const label = HOME_TOPICS_MESSAGES['home.county_search.label'][lang];
-  const matches = findCounties(query);
+  const matches = findCountyLinks(query);
   const expanded = open && matches.length > 0;
   const active = expanded ? matches[activeIndex] : undefined;
   const activeId = active ? `${listId}-${active.key}` : undefined;

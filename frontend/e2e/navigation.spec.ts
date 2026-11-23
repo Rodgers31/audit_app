@@ -146,9 +146,12 @@ test('a missing page offers working county search and primary routes', async ({ 
   const response = await page.goto('/missing-foundation-test-page');
   expect(response?.status()).toBe(404);
   await expect(page).toHaveTitle(/We can’t find that page/);
-  await page.getByRole('searchbox', { name: 'Search counties or glossary terms' }).fill('Bari');
+  const search = page.getByRole('main').getByRole('searchbox', { name: 'Search AuditGava' });
+  await search.fill('Ba');
   await expect(page.getByRole('link', { name: 'Baringo', exact: true })).toHaveAttribute('href', '/counties/baringo');
-  await page.getByRole('searchbox', { name: 'Search counties or glossary terms' }).fill('muranga');
+  await search.fill('214');
+  await expect(page.getByRole('link', { name: 'Article 214 Public debt' })).toHaveAttribute('href', '/learn?article=214');
+  await search.fill('muranga');
   const muranga = page.getByRole('link', { name: "Murang'a", exact: true });
   await expect(muranga).toHaveAttribute('href', '/counties/Murang%27a');
   await expect(page.getByRole('main').getByRole('link', { name: 'Audit findings' })).toHaveAttribute('href', '/audits');

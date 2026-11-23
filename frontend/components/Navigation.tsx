@@ -3,13 +3,17 @@
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useLang } from '@/lib/i18n/LangProvider';
 import type { TranslationKey } from '@/lib/i18n/messages';
-import { Menu, X } from 'lucide-react';
+import { PUBLIC_SEARCH_MESSAGES } from '@/lib/i18n/messages/publicSearch';
+import { Menu, Search, X } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import AuthModal from './AuthModal';
 import LangSwitcher from './LangSwitcher';
 import ThemeToggle from './ThemeToggle';
+
+const PublicSearch = dynamic(() => import('./search/PublicSearch'));
 
 type NavItem = { href: string; name: TranslationKey; hint: TranslationKey; short?: TranslationKey };
 
@@ -80,12 +84,16 @@ export default function Navigation() {
 function PublicNavigation({ pathname }: { pathname: string }) {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const hydrated = useSyncExternalStore(subscribeToHydration, hydratedSnapshot, serverSnapshot);
-  const { t } = useLang();
+  const { lang, t } = useLang();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const mobileToggle = useRef<HTMLButtonElement>(null);
   const mobilePanel = useRef<HTMLDivElement>(null);
+  const searchToggle = useRef<HTMLButtonElement>(null);
+  const searchDialog = useRef<HTMLDialogElement>(null);
   const account = useRef<HTMLDetailsElement>(null);
+  const searchLabel = PUBLIC_SEARCH_MESSAGES.label[lang];
 
   useEffect(() => {
     const openAuth = () => { setMobileOpen(false); setAuthOpen(true); };
@@ -95,13 +103,14 @@ function PublicNavigation({ pathname }: { pathname: string }) {
 
   useEffect(() => {
     setMobileOpen(false);
+    if (searchDialog.current?.open) searchDialog.current.close();
     if (account.current) account.current.open = false;
   }, [pathname]);
 
   useEffect(() => {
     if (!mobileOpen) return;
     const controls = () => Array.from(mobilePanel.current?.querySelectorAll<HTMLElement>(
-      'a[href], button:not([disabled]), input[type="radio"]:checked',
+      'a[href], button:not([disabled]), input[type="search"], input[type="radio"]:checked',
     ) ?? []);
     controls()[0]?.focus();
     const bodyOverflow = document.body.style.overflow;
@@ -134,6 +143,18 @@ function PublicNavigation({ pathname }: { pathname: string }) {
       mobileToggle.current?.focus();
     };
   }, [mobileOpen]);
+
+  function openSearch() {
+    searchToggle.current?.focus();
+    searchDialog.current?.showModal();
+    setSearchOpen(true);
+  }
+
+  function closeSearch() {
+    setSearchOpen(false);
+    const toggle = searchToggle.current?.getClientRects().length ? searchToggle : mobileToggle;
+    toggle.current?.focus();
+  }
 
   const active = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
   function signIn() { setMobileOpen(false); setAuthOpen(true); }
@@ -193,6 +214,10 @@ function PublicNavigation({ pathname }: { pathname: string }) {
                 </div>
               </details>
             ) : <button type='button' className='audit-control px-2' onClick={signIn}>{t('shell.sign_in')}</button>)}
+            <button ref={searchToggle} type='button' className='audit-control min-w-11 px-0'
+              disabled={!hydrated} onClick={openSearch} aria-haspopup='dialog' aria-label={searchLabel}>
+              <Search size={19} aria-hidden='true' />
+            </button>
           </div>
           <button ref={mobileToggle} type='button' className='audit-control self-center lg:hidden'
             disabled={!hydrated} onClick={() => setMobileOpen(open => !open)} aria-expanded={mobileOpen}
@@ -203,6 +228,20 @@ function PublicNavigation({ pathname }: { pathname: string }) {
       </header>
       <KiswahiliOffer />
 
+      <dialog ref={searchDialog} aria-label={searchLabel} onClose={closeSearch} onKeyDown={event => {
+        if (event.key === 'Escape' && !event.nativeEvent.isComposing) {
+          event.preventDefault();
+          event.currentTarget.close();
+        }
+      }}
+        className='mx-auto mt-20 max-h-[calc(100dvh-6rem)] w-[calc(100%-2rem)] max-w-xl overflow-y-auto overscroll-contain rounded border border-neutral-border bg-surface-base text-neutral-text shadow-elevated backdrop:bg-gov-dark/55'>
+        <button type='button' className='audit-control absolute right-2 top-2 min-w-11 px-0'
+          aria-label={PUBLIC_SEARCH_MESSAGES.close[lang]} onClick={() => searchDialog.current?.close()}>
+          <X size={20} aria-hidden='true' />
+        </button>
+        {searchOpen && <PublicSearch autoFocus onNavigate={() => searchDialog.current?.close()} />}
+      </dialog>
+
       {mobileOpen && (
         <div className='fixed inset-0 z-[60] bg-gov-dark/55 lg:hidden' onMouseDown={event => {
           if (event.target === event.currentTarget) setMobileOpen(false);
@@ -212,6 +251,9 @@ function PublicNavigation({ pathname }: { pathname: string }) {
             <div className='sticky top-0 z-10 flex min-h-16 items-center justify-between border-b border-neutral-border bg-surface-base'>
               <span className='text-base font-semibold'>{t('shell.menu')}</span>
               <button type='button' className='audit-control min-w-11 px-0' aria-label={t('shell.close_menu')} onClick={() => setMobileOpen(false)}><X size={20} aria-hidden='true' /></button>
+            </div>
+            <div className='border-b border-neutral-border py-2'>
+              <PublicSearch onNavigate={() => setMobileOpen(false)} />
             </div>
             <nav aria-label={t('shell.mobile_nav')}>
               {GROUPS.map(({ label, items }) => (

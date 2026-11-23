@@ -9,7 +9,16 @@
  */
 
 import '@testing-library/jest-dom';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { fireEvent, render as renderComponent, screen, within } from '@testing-library/react';
+import type { ReactElement } from 'react';
+
+function render(element: ReactElement) {
+  const client = new QueryClient();
+  return renderComponent(element, {
+    wrapper: ({ children }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>,
+  });
+}
 
 // Mock next/navigation
 const mockPathname = jest.fn().mockReturnValue('/');
