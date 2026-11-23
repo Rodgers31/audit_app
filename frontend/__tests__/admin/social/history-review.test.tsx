@@ -19,7 +19,7 @@ test.each([-1, 1])('dirty browser traversal %s can be cancelled without losing t
   window.history.pushState({}, '', '/admin/social/review');
   if (direction === 1) {
     window.history.pushState({}, '', '/admin/social/accounts');
-    await act(async () => { window.history.back(); await new Promise(resolve => setTimeout(resolve, 30)); });
+    act(() => window.history.back());
     await waitFor(() => expect(window.location.pathname).toBe('/admin/social/review'));
   }
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -30,14 +30,15 @@ test.each([-1, 1])('dirty browser traversal %s can be cancelled without losing t
   const confirm = jest.spyOn(window, 'confirm').mockReturnValue(false);
   const reached = jest.fn(); window.addEventListener('popstate', reached);
   try {
-    await act(async () => { window.history.go(direction); await new Promise(resolve => setTimeout(resolve, 50)); });
+    act(() => window.history.go(direction));
     await waitFor(() => expect(confirm).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(window.location.pathname).toBe('/admin/social/review'));
     expect(screen.getByLabelText('Post text')).toHaveValue('Unsaved review wording');
     expect(reached).not.toHaveBeenCalled();
     confirm.mockReturnValue(true);
-    await act(async () => { window.history.go(direction); await new Promise(resolve => setTimeout(resolve, 40)); });
+    act(() => window.history.go(direction));
+    await waitFor(() => expect(reached).toHaveBeenCalledTimes(1));
     expect(window.location.pathname + window.location.search).toBe(direction < 0 ? '/admin/social?page=2' : '/admin/social/accounts');
-    expect(reached).toHaveBeenCalledTimes(1);
+    expect(confirm).toHaveBeenCalledTimes(2);
   } finally { window.removeEventListener('popstate', reached); queryClient.clear(); }
 });
