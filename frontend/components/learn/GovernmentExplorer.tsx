@@ -1,24 +1,10 @@
-/**
- * GovernmentExplorer – Interactive visualisation of Kenya's government structure.
- *
- * Three clickable branches (Executive, Legislature, Judiciary) expand to show
- * key offices, functions, and fun facts.  A second tier shows the National ↔
- * County relationship under devolution.
- */
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
-import {
-  Building2,
-  ChevronDown,
-  Gavel,
-  Landmark,
-  MapPin,
-  Scale,
-  Shield,
-  Users,
-} from 'lucide-react';
-import { useState } from 'react';
+import { useLang } from '@/lib/i18n/LangProvider';
+import { GOVERNMENT_MESSAGES } from '@/lib/i18n/messages/government';
+import { Building2, ChevronDown, ChevronRight, Landmark, MapPin, Scale, Shield, type LucideIcon } from 'lucide-react';
+import Link from 'next/link';
+import { useId, useState } from 'react';
 
 interface BranchDetail {
   office: string;
@@ -26,12 +12,8 @@ interface BranchDetail {
 }
 
 interface Branch {
-  id: string;
-  title: string;
-  tagline: string;
-  icon: React.ElementType;
-  gradient: string;
-  iconBg: string;
+  id: 'executive' | 'legislature' | 'judiciary';
+  icon: LucideIcon;
   details: BranchDetail[];
   funFact: string;
 }
@@ -39,11 +21,7 @@ interface Branch {
 const branches: Branch[] = [
   {
     id: 'executive',
-    title: 'Executive',
-    tagline: 'Implements laws & runs the country',
     icon: Shield,
-    gradient: 'from-gov-forest to-emerald-700',
-    iconBg: 'bg-emerald-100 text-emerald-700',
     details: [
       {
         office: 'President',
@@ -70,11 +48,7 @@ const branches: Branch[] = [
   },
   {
     id: 'legislature',
-    title: 'Legislature',
-    tagline: 'Makes laws & controls public spending',
     icon: Landmark,
-    gradient: 'from-sky-600 to-indigo-700',
-    iconBg: 'bg-sky-100 text-sky-700',
     details: [
       {
         office: 'National Assembly (350 members, incl. Speaker)',
@@ -98,11 +72,7 @@ const branches: Branch[] = [
   },
   {
     id: 'judiciary',
-    title: 'Judiciary',
-    tagline: 'Interprets the Constitution & settles disputes',
     icon: Scale,
-    gradient: 'from-amber-600 to-orange-700',
-    iconBg: 'bg-amber-100 text-amber-700',
     details: [
       {
         office: 'Supreme Court',
@@ -133,196 +103,127 @@ const branches: Branch[] = [
   },
 ];
 
-interface DevolutionTier {
-  id: string;
-  title: string;
-  icon: React.ElementType;
-  items: string[];
-  color: string;
-}
-
-const devolutionTiers: DevolutionTier[] = [
+const tiers = [
   {
     id: 'national',
-    title: 'National Government',
     icon: Building2,
-    items: [
-      'Foreign affairs & international trade',
-      'National defence & security',
-      'Monetary policy & national economic planning',
-      'Immigration & citizenship',
-      'National public works & housing policy',
-      'Education curriculum & standards',
+    functions: [
+      'foreignAffairs', 'security', 'economicPlanning',
+      'immigration', 'publicWorks', 'educationStandards',
     ],
-    color: 'border-gov-forest bg-gov-forest/5',
   },
   {
     id: 'county',
-    title: 'County Governments (47)',
     icon: MapPin,
-    items: [
-      'County health services & ambulances',
-      'Pre-primary education & childcare',
-      'County roads & public transport',
-      'Agriculture, livestock & fisheries',
-      'Trade development & regulation',
-      'County planning & development',
-    ],
-    color: 'border-gov-gold bg-gov-gold/5',
+    functions: ['health', 'earlyEducation', 'roads', 'agriculture', 'trade', 'countyPlanning'],
   },
-];
+] as const;
+
+const focusClass = 'focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-signal-good';
+const linkClass = `inline-flex min-h-11 max-w-full items-center gap-1 rounded px-1 text-sm font-semibold text-neutral-text underline decoration-neutral-border underline-offset-4 hover:decoration-current ${focusClass}`;
+
+const parliamentBudget =
+  'https://newsite.treasury.go.ke/sites/default/files/Budget%20Books/Budget%20books%202026-2027/FY%202026%202027%20Programme%20Based%20Budget%20Book_Approved.pdf#page=10';
 
 export default function GovernmentExplorer() {
-  const [expanded, setExpanded] = useState<string | null>(null);
-
-  const toggle = (id: string) => setExpanded((prev) => (prev === id ? null : id));
+  const { lang } = useLang();
+  const id = useId();
+  const [expanded, setExpanded] = useState<Branch['id'] | null>(null);
+  const copy = (key: keyof typeof GOVERNMENT_MESSAGES) => GOVERNMENT_MESSAGES[key][lang];
 
   return (
-    <div className='space-y-10'>
-      {/* ── Three Branches ── */}
-      <div>
-        <h3 className='font-display text-2xl text-gov-dark dark:text-white mb-1'>Three Arms of Government</h3>
-        <p className='text-sm text-neutral-muted mb-6'>
-          Click a branch to explore its structure and functions
-        </p>
-
-        <div className='space-y-4'>
-          {branches.map((b) => {
-            const Icon = b.icon;
-            const isOpen = expanded === b.id;
-
+    <div data-government-explorer className='min-w-0 space-y-10'>
+      <section aria-labelledby={`${id}-branches`}>
+        <h2 id={`${id}-branches`} className='font-display text-2xl font-semibold text-neutral-text'>
+          {copy('branches')}
+        </h2>
+        <p className='mb-4 mt-1 text-sm text-neutral-muted'>{copy('branchInstructions')}</p>
+        <ul role='list' className='divide-y divide-neutral-border rounded border border-neutral-border bg-surface-base'>
+          {branches.map(({ id: key, icon: Icon, details, funFact }) => {
+            const open = expanded === key;
+            const panel = `${id}-${key}`;
             return (
-              <div
-                key={b.id}
-                className='rounded-2xl overflow-hidden border border-white/50 shadow-surface'>
-                {/* Header */}
-                <motion.button
-                  onClick={() => toggle(b.id)}
-                  className='w-full flex items-center gap-4 p-5 bg-white/60 dark:bg-surface-elevated backdrop-blur hover:bg-white/80 dark:bg-surface-elevated transition-colors text-left'
-                  whileTap={{ scale: 0.995 }}>
-                  <div
-                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${b.iconBg}`}>
-                    <Icon size={24} />
+              <li key={key}>
+                <h3>
+                  <button
+                    type='button'
+                    aria-expanded={open}
+                    aria-controls={panel}
+                    onClick={() => setExpanded(current => current === key ? null : key)}
+                    className={`flex min-h-11 w-full items-start gap-3 rounded px-3 py-3 text-left hover:bg-surface-sunken sm:px-4 ${focusClass}`}>
+                    <Icon size={20} aria-hidden='true' className='mt-1 shrink-0 text-neutral-text' />
+                    <span className='min-w-0 flex-1'>
+                      <span className='block break-words font-display text-xl font-semibold text-neutral-text'>
+                        {copy(key)}
+                      </span>
+                      <span className='block break-words text-sm font-normal text-neutral-text'>
+                        {copy(`${key}Description`)}
+                      </span>
+                    </span>
+                    <ChevronDown size={18} aria-hidden='true'
+                      className={`mt-1 shrink-0 text-neutral-muted ${open ? 'rotate-180' : ''}`} />
+                  </button>
+                </h3>
+                {key === 'legislature' && (
+                  <div className='ml-10 flex flex-wrap items-center gap-x-3 px-1 pb-1 sm:ml-11'>
+                    <a href={parliamentBudget} className={linkClass}>
+                      <span className='min-w-0 break-words'>{copy('parliamentBudget')}</span>
+                      <ChevronRight aria-hidden='true' size={16} className='shrink-0' />
+                    </a>
+                    <Link href='/learn?article=95' className={linkClass}>
+                      {copy('article95')} <ChevronRight aria-hidden='true' size={16} className='shrink-0' />
+                    </Link>
                   </div>
-                  <div className='flex-1 min-w-0'>
-                    <h4 className='font-bold text-gov-dark dark:text-white text-lg'>{b.title}</h4>
-                    <p className='text-sm text-neutral-muted truncate'>{b.tagline}</p>
-                  </div>
-                  <motion.div
-                    animate={{ rotate: isOpen ? 180 : 0 }}
-                    transition={{ duration: 0.25 }}>
-                    <ChevronDown size={20} className='text-neutral-muted' />
-                  </motion.div>
-                </motion.button>
-
-                {/* Expandable body */}
-                <AnimatePresence initial={false}>
-                  {isOpen && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                      className='overflow-hidden'>
-                      <div className='px-5 pb-5 pt-2 space-y-4'>
-                        {/* Details list */}
-                        <div className='grid gap-3 sm:grid-cols-2'>
-                          {b.details.map((d) => (
-                            <div
-                              key={d.office}
-                              className='rounded-xl bg-white/50 dark:bg-surface-elevated border border-white/40 p-4'>
-                              <h5 className='font-semibold text-gov-dark dark:text-white text-sm mb-1'>
-                                {d.office}
-                              </h5>
-                              <p className='text-xs leading-relaxed text-neutral-muted'>
-                                {d.description}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Fun fact */}
-                        <div className={`rounded-xl bg-gradient-to-r ${b.gradient} p-4 text-white`}>
-                          <div className='flex items-start gap-2'>
-                            <Gavel size={16} className='mt-0.5 shrink-0 text-white/70' />
-                            <div>
-                              <span className='text-xs font-semibold uppercase tracking-wide text-white/70'>
-                                Did you know?
-                              </span>
-                              <p className='text-sm leading-relaxed mt-1'>{b.funFact}</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ── Devolution Section ── */}
-      <div>
-        <h3 className='font-display text-2xl text-gov-dark dark:text-white mb-1'>Devolution: Power Shared</h3>
-        <p className='text-sm text-neutral-muted mb-6'>
-          The 2010 Constitution created two levels of government — national and county
-        </p>
-
-        <div className='grid gap-4 md:grid-cols-2'>
-          {devolutionTiers.map((tier) => {
-            const Icon = tier.icon;
-            return (
-              <motion.div
-                key={tier.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-                className={`rounded-2xl border-2 ${tier.color} p-5`}>
-                <div className='flex items-center gap-3 mb-4'>
-                  <Icon size={22} className='text-gov-dark dark:text-white' />
-                  <h4 className='font-bold text-gov-dark dark:text-white'>{tier.title}</h4>
+                )}
+                <div id={panel} hidden={!open} className='border-t border-neutral-border px-3 pb-4 sm:px-4'>
+                  <ul lang='en' role='list' className='grid gap-x-5 sm:grid-cols-2'>
+                    {details.map(({ office, description }) => (
+                      <li key={office} className='min-w-0 border-b border-neutral-border py-3'>
+                        <h4 className='break-words text-sm font-semibold text-neutral-text'>{office}</h4>
+                        <p className='mt-1 break-words text-sm leading-relaxed text-neutral-muted'>{description}</p>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className='mt-3 text-sm leading-relaxed text-neutral-text'>
+                    <strong className='font-semibold'>{copy('fact')}</strong>{' '}
+                    <span lang='en'>{funFact}</span>
+                  </p>
                 </div>
-                <ul className='space-y-2'>
-                  {tier.items.map((item) => (
-                    <li key={item} className='flex items-start gap-2 text-sm text-gov-dark/80 dark:text-white/80'>
-                      <span className='mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gov-sage' />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
+              </li>
             );
           })}
-        </div>
+        </ul>
+      </section>
 
-        {/* Connector line / CRA note */}
-        <div className='flex items-center justify-center gap-3 mt-5'>
-          <Users size={16} className='text-gov-sage' />
-          <span className='text-xs text-neutral-muted text-center'>
-            {/* Two errors corrected here (credibility audit F20).
-                (a) Article 216 makes the CRA a RECOMMENDING body — Parliament
-                decides, through the Division of Revenue Act and the County
-                Allocation of Revenue Act. Saying CRA "ensures" misstates a
-                constitutional body's powers.
-                (b) Article 203(2)-(3): the floor is 15% of revenue raised
-                nationally, calculated on the MOST RECENTLY AUDITED accounts
-                approved by the National Assembly — typically two to three years
-                behind. Omitting that is why the equitable share (~KES 400B)
-                looks like a breach against current revenue (~KES 2.9T): it is
-                measured against a much older, smaller base. */}
-            The Commission on Revenue Allocation (CRA) <strong>recommends</strong> how revenue
-            should be shared between the two levels; Parliament decides, through the Division of
-            Revenue Act and the County Allocation of Revenue Act each year. The Constitution sets
-            a floor: counties receive at least <strong>15 %</strong> of revenue raised nationally,
-            calculated on the <strong>most recently audited</strong> national accounts approved by
-            the National Assembly — usually two to three years old, so the share looks small
-            against the current year&apos;s revenue.
-          </span>
+      <section aria-labelledby={`${id}-devolution`}>
+        <h2 id={`${id}-devolution`} className='font-display text-2xl font-semibold text-neutral-text'>
+          {copy('devolution')}
+        </h2>
+        <p className='mb-4 mt-1 text-sm text-neutral-muted'>{copy('devolutionDescription')}</p>
+        <div className='grid gap-6 md:grid-cols-2'>
+          {tiers.map(({ id: key, icon: Icon, functions }) => (
+            <section key={key} aria-labelledby={`${id}-${key}`} className='min-w-0'>
+              <h3 id={`${id}-${key}`} className='flex items-center gap-2 font-display text-xl font-semibold text-neutral-text'>
+                <Icon aria-hidden='true' size={20} className='shrink-0' /> {copy(key)}
+              </h3>
+              <ul role='list' className='mt-2 divide-y divide-neutral-border border-y border-neutral-border'>
+                {functions.map(item => (
+                  <li key={item} className='break-words py-2.5 text-sm font-semibold text-neutral-text'>{copy(item)}</li>
+                ))}
+              </ul>
+            </section>
+          ))}
         </div>
-      </div>
+        <p lang='en' className='mt-4 border-l-2 border-neutral-border pl-3 text-sm leading-relaxed text-neutral-muted'>
+          The Commission on Revenue Allocation (CRA) <strong>recommends</strong> how revenue
+          should be shared between the two levels; Parliament decides, through the Division of
+          Revenue Act and the County Allocation of Revenue Act each year. The Constitution sets
+          a floor: counties receive at least <strong>15 %</strong> of revenue raised nationally,
+          calculated on the <strong>most recently audited</strong> national accounts approved by
+          the National Assembly — usually two to three years old, so the share looks small
+          against the current year&apos;s revenue.
+        </p>
+      </section>
     </div>
   );
 }

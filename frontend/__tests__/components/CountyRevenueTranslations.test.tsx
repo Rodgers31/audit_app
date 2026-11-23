@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import FinancialOverview from '@/components/audit-report-card/FinancialOverview';
 import OverviewTab from '@/app/counties/[id]/tabs/OverviewTab';
 import { countyRevenueNotes } from '@/lib/counties/revenueNotes';
@@ -54,6 +54,7 @@ it('translates the county overview cash-and-opening-balance KPI and notes', () =
     demographics: {}, economic_profile: { major_issues: [] },
   } as unknown as CountyComprehensive;
   render(<OverviewTab data={data} />);
+  fireEvent.click(screen.getByText('Zaidi kuhusu kaunti hii'));
   expect(screen.getByText('Fedha zilizopokelewa na salio la mwanzo')).toBeVisible();
   expect(screen.getByText(/hutofautiana na fedha zilizopokelewa/)).toBeVisible();
   expect(document.body.textContent).not.toContain('Cash receipts and opening balance');
