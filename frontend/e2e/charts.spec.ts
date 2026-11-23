@@ -77,12 +77,16 @@ test.describe('Chart Data Validation - Debt Page', () => {
 });
 
 test.describe('Chart Data Validation - County Details', () => {
-  test('county spending breakdown chart is accurate', async ({ page }) => {
-    await page.goto('/counties/001');
-    await expect(page.getByText('KES 6.00B spent of KES 10.00B allocated', { exact: true })).toBeVisible();
-    await expect(page.getByText('60.0%', { exact: true }).first()).toBeVisible();
-    // The fixture publishes totals only; a sector pie must not be invented.
-    await expect(page.getByText('Not reported', { exact: true }).first()).toBeVisible();
+  test('county budget shows exact totals and preserves the missing breakdown', async ({ page }) => {
+    await page.goto('/counties/001?tab=budget');
+    const budget = page.getByRole('tabpanel', { name: 'Budget', exact: true });
+    await expect(budget.getByText('KES 10.00B', { exact: true })).toBeVisible();
+    await expect(budget.getByText('KES 6.00B', { exact: true })).toBeVisible();
+    await expect(budget.getByText('60.0% execution', { exact: true })).toBeVisible();
+
+    // The fixture publishes totals only.
+    await expect(budget.getByText('Not classified in source data', { exact: true })).toHaveCount(2);
+    await expect(budget.getByRole('heading', { name: 'Sector Spending', exact: true })).toHaveCount(0);
   });
   // No sector data is supplied; inventing a split to display a tooltip would
   // hide the missing-source behavior. Current totals are checked above. #291.
