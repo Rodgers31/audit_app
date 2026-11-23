@@ -33,9 +33,19 @@ request_database.POOL_SIZE = 32
 
 import database
 from dev_fixtures import block_external_http, seed_local_fixture
-from models import BudgetLine
+from models import BudgetLine, SourceDocument
 
 seed_local_fixture(database)
+
+# The ephemeral acceptance fixture exercises the Explorer's published-zero
+# contract. Keep the reusable local-preview database on its strict base fixture.
+if not PERSISTENT_DB:
+    with database.SessionLocal() as db:
+        county_budget_report = db.get(SourceDocument, 1)
+        county_budget_report.publisher = "Controller of Budget"
+        county_budget_report.url = "https://cob.go.ke/synthetic-browser-acceptance.pdf"
+        county_budget_report.content_type = "application/pdf"
+        db.commit()
 
 import main
 from contextlib import asynccontextmanager

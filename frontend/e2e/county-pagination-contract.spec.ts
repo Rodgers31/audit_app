@@ -54,10 +54,13 @@ test('browser back and forward retain the page-2 URL and a legitimate saved list
   await page.goto('/counties?p=2&retained=one');
   await waitForAppReady(page);
   await expect(page.getByText(/Showing\s+11[–\-]20\s+of/)).toBeVisible();
-  await page.evaluate(() => window.scrollTo({ top: 900, behavior: 'instant' }));
-  await expect.poll(() => page.evaluate(() => scrollY)).toBe(900);
+  const firstCounty = page.locator('table tbody tr').first().getByRole('link').first();
+  // Save the position the browser actually has when the reader opens the county.
+  await firstCounty.evaluate(link => link.scrollIntoView({ block: 'center', behavior: 'instant' }));
+  await expect(firstCounty).toBeInViewport({ ratio: 1 });
   const before = await page.evaluate(() => scrollY);
-  await page.locator('table tbody tr').first().getByRole('link').first().click();
+  expect(before).toBeGreaterThan(0);
+  await firstCounty.click();
   await page.waitForURL(/\/counties\/[\w-]+/);
   const detailUrl = page.url();
   await page.getByRole('link', { name: /All counties/i }).first().click();
