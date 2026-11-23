@@ -24,8 +24,12 @@ def wait_for(read, predicate):
     raise AssertionError("Expected process barrier/receipt not observed")
 
 
-def start(tmp_path, url, module, *args):
-    env = {"PATH": os.environ["PATH"], "DATABASE_URL": url, "PYTHON_DOTENV_DISABLED": "1", "PYTHONDONTWRITEBYTECODE": "1",
+def start(tmp_path, engine, module, *args):
+    from tests.admin_audit_epoch.ephemeral_database import validate_created_engine
+
+    url = validate_created_engine(engine)
+    env = {"PATH": os.environ["PATH"], "DATABASE_URL": url, "BATCH10_MAPPINGS_TARGET": url,
+        "PYTHON_DOTENV_DISABLED": "1", "PYTHONDONTWRITEBYTECODE": "1",
         "PYTHONPATH": os.pathsep.join([str(BACKEND / 'tests/batch10_etl_mappings_fixture'), str(BACKEND / 'tests'), str(BACKEND)]),
         "ADMIN_ETL_DISPATCH_ENABLED": "true", "ADMIN_ETL_DISPATCH_SOURCES": ",".join(MAPPINGS), "BATCH10_MAPPINGS_INERT": "true",
         "SEED_STORAGE_PATH": str(tmp_path / "storage"), "SEED_CACHE_PATH": str(tmp_path / "cache"), "SEED_LOG_PATH": str(tmp_path / 'seed.jsonl')}
@@ -68,7 +72,7 @@ def receipt(client, identity):
 @pytest.mark.parametrize("source", MAPPINGS)
 def test_real_worker_each_mapping_normal_dry_run_and_failure(process_pg, tmp_path, source):
     client, _, engine = process_pg
-    worker = start(tmp_path, engine.url.render_as_string(hide_password=False), 'admin_etl_dispatch_worker')
+    worker = start(tmp_path, engine, 'admin_etl_dispatch_worker')
     try:
         capability = ready(client)
         for dry_run in (False, True):
@@ -95,7 +99,7 @@ def test_death_retains_exact_domain_and_independent_successor_progresses(process
     domain = MAPPINGS[source]
     with engine.begin() as c:
         c.execute(text('UPDATE batch10_control SET mode=:mode WHERE domain=:d'), {'mode':phase,'d':domain})
-    worker = start(tmp_path, engine.url.render_as_string(hide_password=False), 'admin_etl_dispatch_worker')
+    worker = start(tmp_path, engine, 'admin_etl_dispatch_worker')
     replacement = native = None
     try:
         capability = ready(client)
@@ -109,11 +113,11 @@ def test_death_retains_exact_domain_and_independent_successor_progresses(process
         os.killpg(worker.pid, signal.SIGKILL); worker.wait(timeout=5)
         with engine.begin() as c:
             c.execute(text("UPDATE etl_dispatch_worker SET last_seen_at=clock_timestamp()-interval '2 seconds',expires_at=clock_timestamp()-interval '1 second'"))
-        replacement = start(tmp_path, engine.url.render_as_string(hide_password=False), 'admin_etl_dispatch_worker')
+        replacement = start(tmp_path, engine, 'admin_etl_dispatch_worker')
         new = wait_for(lambda: ready(client), lambda c:c['generation']!=capability['generation'])
         assert receipt(client, identity)['status']=='interrupted'
         blocked = post(client,new['generation'],source).json()['command']['id']
-        native = start(tmp_path, engine.url.render_as_string(hide_password=False),'seeding.cli','seed','--domain',domain,'--no-dry-run')
+        native = start(tmp_path, engine, 'seeding.cli', 'seed', '--domain', domain, '--no-dry-run')
         assert native.wait(timeout=12)==1
         other_source = 'knbs' if source!='knbs' else 'oag'
         other = post(client,new['generation'],other_source).json()['command']['id']

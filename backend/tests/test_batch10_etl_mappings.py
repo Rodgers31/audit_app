@@ -6,6 +6,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import sessionmaker
 
 import database
@@ -24,14 +25,26 @@ _TEMPLATE = pytest.StashKey()
 
 @pytest.fixture(scope="module")
 def mapping_url(tmp_path_factory):
-    from batch10_etl_mappings_fixture.owned_postgres import postgres
+    from tests.batch10_etl_mappings_fixture.owned_postgres import postgres
     with postgres(tmp_path_factory.mktemp("batch10-mappings-resources")) as url:
         yield url
 
 
+def test_two_owned_mapping_databases_use_independent_ports(mapping_url, tmp_path, monkeypatch):
+    from tests.admin_audit_epoch.ephemeral_database import profile
+    from tests.batch10_etl_mappings_fixture.owned_postgres import postgres
+
+    monkeypatch.delenv("BATCH10_MAPPINGS_DATABASE_URL", raising=False)
+    with postgres(tmp_path) as second:
+        target = profile(second)
+        assert target.port != make_url(mapping_url).port
+        with pytest.raises(ValueError, match="Exact established inert fixture profile required"):
+            profile(target.set(port=1))
+
+
 @pytest.fixture
 def pg(monkeypatch, mapping_url, request):
-    # Imported process fixtures retain their static URL and exported fixture pair.
+    # Imported process fixtures use the same owned target and fixture pair.
     from tests.admin_audit_epoch.ephemeral_database import EmptyTemplate
     module = request.node.getparent(pytest.Module)
     if _TEMPLATE not in module.stash:
