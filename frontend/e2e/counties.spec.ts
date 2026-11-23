@@ -6,7 +6,7 @@ test('counties explorer renders and interactions', async ({ page }) => {
   const rows = page.locator('table tbody tr');
   await expect(rows).toHaveCount(1);
   await expect(rows.first()).toContainText('10.0B');
-  await expect(rows.first()).toContainText('60%');
+  await expect(rows.getByRole('cell', { name: 'No published rate' })).toBeVisible();
   await rows.getByRole('link', { name: 'Nairobi', exact: true }).click();
   await expect(page).toHaveURL(/\/counties\/001/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Nairobi County');
@@ -21,41 +21,46 @@ test.describe('county map with a touchscreen', () => {
 
   test('first tap selects a county and Open navigates', async ({ page }) => {
     await page.goto('/counties');
-    const map = page.getByRole('region', { name: 'County Performance Map' });
-    const county = map.getByRole('link', { name: /^Garissa, Grade:/ });
+    await page.getByRole('button', { name: 'Map', exact: true }).tap();
+    const map = page.getByRole('region', { name: 'County spending map' });
+    const county = map.getByRole('link', { name: /^Garissa, Spending rate/ });
 
     await county.tap();
     await expect(page).toHaveURL(/\/counties$/);
-    await expect(county).toHaveAttribute('aria-current', 'true');
-    await expect(map.getByRole('definition').filter({ hasText: 'KES 10.0B' })).toBeVisible();
-
-    await map.getByRole('link', { name: 'Open Garissa' }).tap();
+    const summary = page.getByRole('dialog', { name: 'Garissa' });
+    await expect(summary.getByRole('definition')).toHaveText('No published rate');
+    await summary.getByRole('link', { name: 'Open Garissa' }).tap();
     await expect(page).toHaveURL(/\/counties\/007(?:\?|$)/);
   });
 
-  test('a different county needs its own first tap before a second tap opens it', async ({ page }) => {
+  test('Escape restores map focus so readers can open a different county summary', async ({ page }) => {
     await page.goto('/counties');
-    const map = page.getByRole('region', { name: 'County Performance Map' });
-    const garissa = map.getByRole('link', { name: /^Garissa, Grade:/ });
-    const nairobi = map.getByRole('link', { name: /^Nairobi, Grade:/ });
+    await page.getByRole('button', { name: 'Map', exact: true }).tap();
+    const map = page.getByRole('region', { name: 'County spending map' });
+    const garissa = map.getByRole('link', { name: /^Garissa, Spending rate/ });
+    const nairobi = map.getByRole('link', { name: /^Nairobi, Spending rate/ });
 
     await garissa.tap();
-    await expect(map.getByRole('link', { name: 'Open Garissa' })).toBeVisible();
-    await nairobi.tap();
-    await expect(page).toHaveURL(/\/counties$/);
-    await expect(nairobi).toHaveAttribute('aria-current', 'true');
-    await expect(garissa).not.toHaveAttribute('aria-current', 'true');
-    await expect(map.getByRole('link', { name: 'Open Nairobi' })).toBeVisible();
+    const garissaSummary = page.getByRole('dialog', { name: 'Garissa' });
+    await expect(garissaSummary.getByRole('link', { name: 'Open Garissa' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(garissaSummary).toBeHidden();
+    await expect(garissa).toBeFocused();
 
     await nairobi.tap();
+    await expect(page).toHaveURL(/\/counties$/);
+    const nairobiSummary = page.getByRole('dialog', { name: 'Nairobi' });
+    await expect(nairobiSummary.getByRole('link', { name: 'Open Nairobi' })).toBeVisible();
+    await nairobiSummary.getByRole('link', { name: 'Open Nairobi' }).tap();
     await expect(page).toHaveURL(/\/counties\/001(?:\?|$)/);
   });
 
   test('a mouse click opens the county on a touchscreen device', async ({ page }) => {
     await page.goto('/counties');
     expect(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(true);
-    const map = page.getByRole('region', { name: 'County Performance Map' });
-    const county = map.getByRole('link', { name: /^Garissa, Grade:/ });
+    await page.getByRole('button', { name: 'Map', exact: true }).tap();
+    const map = page.getByRole('region', { name: 'County spending map' });
+    const county = map.getByRole('link', { name: /^Garissa, Spending rate/ });
 
     await county.click();
     await expect(page).toHaveURL(/\/counties\/007(?:\?|$)/);
@@ -64,8 +69,9 @@ test.describe('county map with a touchscreen', () => {
 
 test('county map Space selects and Enter opens a county', async ({ page }) => {
   await page.goto('/counties');
-  const map = page.getByRole('region', { name: 'County Performance Map' });
-  const county = map.getByRole('link', { name: /^Garissa, Grade:/ });
+  await page.getByRole('button', { name: 'Map', exact: true }).click();
+  const map = page.getByRole('region', { name: 'County spending map' });
+  const county = map.getByRole('link', { name: /^Garissa, Spending rate/ });
   await county.focus();
   const scrollY = await page.evaluate(() => window.scrollY);
 
@@ -82,8 +88,9 @@ test('county map Space selects and Enter opens a county', async ({ page }) => {
 
 test('county map mouse hover previews and the first click opens', async ({ page }) => {
   await page.goto('/counties');
-  const map = page.getByRole('region', { name: 'County Performance Map' });
-  const county = map.getByRole('link', { name: /^Garissa, Grade:/ });
+  await page.getByRole('button', { name: 'Map', exact: true }).click();
+  const map = page.getByRole('region', { name: 'County spending map' });
+  const county = map.getByRole('link', { name: /^Garissa, Spending rate/ });
 
   await county.hover();
   await expect(map.getByRole('link', { name: 'Open Garissa' })).toBeVisible();

@@ -349,7 +349,11 @@ jobs:
             local range_args=()
             # A bounded prefix establishes transport only, never full edition
             # acceptance. Large reviewed PDFs must not require full downloads.
-            case "$2" in *.pdf|*.PDF|*.xlsx) range_args=(--range 0-65535) ;; esac
+            case "$2" in
+              *.pdf|*.PDF|*.xlsx|https://repository.knbs.or.ke/server/api/core/bitstreams/*/content)
+                range_args=(--range 0-65535)
+                ;;
+            esac
             code=$(curl -q --globoff -s -o "$HC_BODY_FILE" -w "%{http_code}" \
               --max-filesize 8388608 "${range_args[@]}" --proto =https,http --proto-redir =https \
               -L --max-time "$3" \

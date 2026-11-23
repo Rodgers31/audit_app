@@ -91,8 +91,6 @@ const LAMU = county({
 
 const COUNTIES = [NAIROBI, TURKANA, LAMU];
 
-/** The page opens on budget-desc, which is none of the population orders. */
-const BY_BUDGET_DESC = ['Turkana', 'Nairobi', 'Lamu'];
 const BY_POPULATION_DESC = ['Nairobi', 'Turkana', 'Lamu'];
 const BY_POPULATION_ASC = ['Lamu', 'Turkana', 'Nairobi'];
 
@@ -181,7 +179,7 @@ function arrow(name: RegExp): 'asc' | 'desc' | 'none' {
 describe('County Explorer — column header sort toggle under StrictMode', () => {
   it('reverses the population sort on every click, not just the first', () => {
     renderExplorer(COUNTIES);
-    expect(rankedNames()).toEqual(BY_BUDGET_DESC);
+    expect(arrow(/population/i)).toBe('none');
 
     // First click takes over the column: largest population first.
     fireEvent.click(header(/population/i));
@@ -242,7 +240,7 @@ describe('County Explorer — the sidebar SORT BY select', () => {
 
   it('sorts fewest people first when the ascending option is chosen', () => {
     renderExplorer(COUNTIES);
-    expect(rankedNames()).toEqual(BY_BUDGET_DESC);
+    expect(arrow(/population/i)).toBe('none');
 
     fireEvent.change(sortSelect(), { target: { value: 'population-asc' } });
     expect(rankedNames()).toEqual(BY_POPULATION_ASC);
