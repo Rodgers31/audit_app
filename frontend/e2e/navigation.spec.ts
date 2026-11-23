@@ -159,6 +159,38 @@ test('a missing page offers working county search and primary routes', async ({ 
 
 test.describe('Kiswahili browser preference', () => {
   test.use({ locale: 'sw-KE' });
+
+  for (const width of [360, 1440]) {
+    test(`the first-visit banner leaves the homepage heading clear at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto('/');
+
+      const offer = page.getByRole('complementary').filter({ hasText: 'Ukurasa huu unapatikana kwa Kiswahili.' });
+      const header = page.getByRole('banner');
+      const heading = page.getByRole('heading', { level: 1 });
+      await expect(offer).toBeVisible();
+      await expect(heading).toBeVisible();
+
+      const [offerBox, headerBox, headingBox] = await Promise.all([
+        offer.boundingBox(), header.boundingBox(), heading.boundingBox(),
+      ]);
+      if (!offerBox || !headerBox || !headingBox) throw new Error('Expected visible header, language offer, and page heading');
+      expect(offerBox.y).toBeGreaterThanOrEqual(headerBox.y + headerBox.height);
+      expect(headingBox.y).toBeGreaterThanOrEqual(offerBox.y + offerBox.height);
+
+      await page.evaluate(() => window.scrollTo({ top: 400, behavior: 'instant' }));
+      await expect(offer).not.toBeInViewport();
+      await expect(header).toBeInViewport();
+
+      await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+      await offer.getByRole('button', { name: 'Endelea kwa Kiingereza' }).click();
+      await expect(offer).toHaveCount(0);
+      await page.reload();
+      await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+      await expect(offer).toHaveCount(0);
+    });
+  }
+
   test('offers Kiswahili on a first visit and remembers the choice', async ({ page }) => {
     await page.goto('/missing-foundation-test-page');
     await expect(page.getByText('Ukurasa huu unapatikana kwa Kiswahili.')).toBeVisible();
