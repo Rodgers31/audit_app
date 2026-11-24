@@ -40,7 +40,7 @@ describe('readable debt cost observations', () => {
     expect(within(table).getAllByRole('cell').map(cell => cell.textContent)).toEqual([
       'Not published', '400', 'Withheld: debt service not published',
       '50', '0', 'Withheld: revenue must be greater than zero',
-      'Not published', 'Not published', 'Withheld: debt service not published; revenue not published',
+      'Not published', 'Not published', 'Withheld: debt service not published · revenue not published',
     ]);
   });
 
@@ -51,7 +51,7 @@ describe('readable debt cost observations', () => {
     ]);
     expect(within(table).getAllByRole('rowheader')[0]).toHaveTextContent('Fiscal year not published');
     expect(within(table).getAllByRole('cell').map(cell => cell.textContent)).toEqual([
-      'Not published', 'Not published', 'Withheld: debt service not published; revenue not published',
+      'Not published', 'Not published', 'Withheld: debt service not published · revenue not published',
       '200', 'Not published', 'Withheld: revenue not published',
     ]);
   });
@@ -72,8 +72,8 @@ it('carries each measure source, vintage and printed precision into readable his
     { fiscal_year: 'FY 2026/27', debt_service_cost: 2315900000000, total_revenue: 2985700000000,
       measure_qualifications: { debt_service_cost: { ...proof, fiscal_year: 'FY 2026/27', vintage: 'Approved', precision_kes: 100000000 } } },
   ]);
-  expect(within(table).getAllByText(/Preliminary; printed precision KES 1,000,000/)).toHaveLength(2);
-  expect(within(table).getByText(/Approved; printed precision KES 100,000,000/)).toBeInTheDocument();
+  expect(within(table).getAllByText(/Preliminary · printed precision KES 1,000,000/)).toHaveLength(2);
+  expect(within(table).getByText(/Approved · printed precision KES 100,000,000/)).toBeInTheDocument();
   expect(within(table).getAllByRole('link')).toHaveLength(3);
   expect(within(table).getAllByRole('link')[0]).toHaveAttribute('href', source.url);
   expect(within(table).getByText('Withheld: compatible source evidence unconfirmed')).toBeInTheDocument();
