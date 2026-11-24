@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import OverviewTab from '@/app/counties/[id]/tabs/OverviewTab';
 import FinancialOverview from '@/components/audit-report-card/FinancialOverview';
 import { countyRevenueNotes } from '@/lib/counties/revenueNotes';
@@ -31,6 +31,7 @@ test.each([
     demographics: {}, economic_profile: { major_issues: [] },
   } as unknown as CountyComprehensive;
   render(<OverviewTab data={data} />);
+  fireEvent.click(screen.getByText('More about this county'));
   const label = screen.getByText('Total Revenue');
   expect(label.parentElement).toHaveTextContent('—');
   expect(label.parentElement).toHaveTextContent('Total cash receipts unavailable. ' + explanation);

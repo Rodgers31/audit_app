@@ -15,6 +15,7 @@
  * pages keep English until a reader requests translation.
  */
 
+import { COUNTY_EXPLORER_MESSAGES } from './messages/countyExplorer';
 import { budgetMessages } from './messages/budget';
 import { DEBT_MESSAGES } from './messages/debt';
 import { FOUNDATION_MESSAGES } from './messages/foundation';
@@ -30,6 +31,7 @@ export interface Translation {
 
 export const MESSAGES = {
   ...budgetMessages,
+  ...COUNTY_EXPLORER_MESSAGES,
   ...DEBT_MESSAGES,
   ...FOUNDATION_MESSAGES,
   ...SHELL_MESSAGES,

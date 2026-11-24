@@ -13,7 +13,7 @@ from email.mime.text import MIMEText
 from email.utils import formatdate
 from urllib.parse import quote
 
-from config.settings import settings
+from config.settings import SigningKeyUnavailable, settings
 
 logger = logging.getLogger(__name__)
 
@@ -167,6 +167,47 @@ def _smtp_configured() -> bool:
     return bool(settings.SMTP_HOST and settings.SMTP_USER and settings.SMTP_PASSWORD)
 
 
+def unsubscribe_email_ready() -> bool:
+    if not _smtp_configured():
+        return False
+    try:
+        _hmac_key()
+    except SigningKeyUnavailable:
+        return False
+    return True
+
+
+def _send_message(message) -> None:
+    with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15) as server:
+        server.starttls()
+        server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+        server.send_message(message)
+
+
+def send_unsubscribe_link_email(email: str) -> bool:
+    """Send only the requested link. Delivery results stay private."""
+    if not unsubscribe_email_ready():
+        return False
+    try:
+        link = build_unsubscribe_url(email)
+        message = MIMEText(
+            f"Use the link below to unsubscribe from the AuditGava digest.\n\n{link}\n\n"
+            "If you did not request this link, you can ignore this email.",
+            "plain",
+            "utf-8",
+        )
+        message["Subject"] = "Your AuditGava unsubscribe link"
+        message["From"] = settings.SMTP_FROM or settings.SMTP_USER
+        message["To"] = email
+        message["Date"] = formatdate(localtime=True)
+        _send_message(message)
+    except Exception:
+        # SMTP errors may quote the recipient or message. Log the event only.
+        logger.warning("Newsletter unsubscribe link delivery failed")
+        return False
+    return True
+
+
 def send_welcome_email(email: str) -> bool:
     """Send welcome email to a new newsletter subscriber.
 
@@ -195,10 +236,7 @@ def send_welcome_email(email: str) -> bool:
     msg.attach(MIMEText(_WELCOME_HTML.format(**ctx), "html", "utf-8"))
 
     try:
-        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15) as server:
-            server.starttls()
-            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-            server.send_message(msg)
+        _send_message(msg)
         logger.info("Welcome email sent to %s", email)
         return True
     except Exception as exc:
