@@ -8,7 +8,7 @@
  */
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import type { UnaccountedCase } from '@/types';
 
 // NAROK is one of the eight cases production derives (prod clone, 2026-09-26),
@@ -98,19 +98,64 @@ describe('the unaccounted-funds page', () => {
   it('lists each finding under the report’s own heading, linked to its page', async () => {
     renderPage();
     expect(await screen.findByText('“Unaccounted Expenditure on Transfers to Polytechnics”')).toBeInTheDocument();
-    const link = screen.getByRole('link', { name: 'OAG · FY2020/21 · p.322' });
+    const link = screen.getByRole('link', { name: 'OAG · County Executives FY2020/21 · Vol. 1 · p.322' });
     expect(link).toHaveAttribute('href', NAROK.source.page_url);
     expect(screen.getByRole('link', { name: 'County Executive of Narok' })).toHaveAttribute('href', '/counties/narok-county');
     expect(screen.getByText('Basis for Adverse Opinion')).toBeInTheDocument();
-    expect(screen.getByText(/From the FY2024\/25 and FY2020\/21 reports/)).toBeInTheDocument();
+    expect(screen.getByText(/Reports for FY2024\/25 · FY2020\/21/)).toBeInTheDocument();
   });
 
   it('never publishes a money total, and never the word "missing"', async () => {
     renderPage();
     await screen.findByText('“Unaccounted for Motor Vehicles”');
-    expect(screen.getByText('Not stated here')).toBeInTheDocument();
+    expect(screen.getByText('Reviewed total unavailable')).toBeInTheDocument();
     expect(screen.queryByText(/KES\s*\d/)).toBeNull();
     expect(document.body.textContent).not.toMatch(/missing/i);
+  });
+
+  it('copies the report excerpt and keeps undocumented numbers out of the amount fields', async () => {
+    const excerpt = 'The account total is KES 2,000. The report separately questions KES 1,000.';
+    mockGet.mockResolvedValueOnce({ data: {
+      total_cases: 1, affected_counties: 0, affected_national_entities: 1, fiscal_years: ['FY2024/25'],
+      total_amount: 2000, cases: [{ ...HEADING_ONLY, excerpt, amount: 2000, amount_questioned: 1000 }],
+      withheld: { count: 0, by_reason: {} },
+    } });
+    renderPage();
+
+    const finding = await screen.findByRole('article');
+    expect(within(finding).getByText(excerpt)).toBeVisible();
+    expect(finding.querySelector('[data-reviewed-amount]')).toHaveTextContent(/^Reviewed amount unavailable$/);
+    expect(screen.getByText('Reviewed total unavailable')).toBeVisible();
+    expect(screen.queryByText('No amount stated in the report')).not.toBeInTheDocument();
+  });
+
+  it('shows ten findings by default and searches the full report collection and county metadata', async () => {
+    const cases = Array.from({ length: 12 }, (_, i) => ({
+      ...HEADING_ONLY,
+      finding_id: i + 1,
+      title: `Unaccounted example ${i + 1}`,
+      entity_type: 'county',
+      county_name: i === 11 ? 'Example North' : 'Example South',
+    }));
+    mockGet.mockResolvedValueOnce({ data: {
+      total_cases: cases.length, affected_counties: 2, affected_national_entities: 0,
+      fiscal_years: ['FY2024/25'], cases, withheld: { count: 0, by_reason: {} },
+    } });
+    renderPage();
+
+    const showAll = await screen.findByRole('button', { name: 'Show all 12' });
+    expect(screen.getAllByRole('article')).toHaveLength(10);
+    fireEvent.click(showAll);
+    expect(screen.getAllByRole('article')).toHaveLength(12);
+    fireEvent.click(screen.getByRole('button', { name: 'Show first 10' }));
+    const search = screen.getByRole('searchbox', { name: 'Search findings' });
+    fireEvent.change(search, { target: { value: 'example 12' } });
+    expect(screen.getAllByRole('article')).toHaveLength(1);
+    expect(screen.getByText('“Unaccounted example 12”')).toBeVisible();
+    fireEvent.change(search, { target: { value: '' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'County' }), { target: { value: 'Example North' } });
+    expect(screen.getAllByRole('article')).toHaveLength(1);
+    expect(screen.getByText('“Unaccounted example 12”')).toBeVisible();
   });
 
   it('uses the actual withholding reason, including unreadable text', async () => {
