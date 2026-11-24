@@ -9,7 +9,7 @@ import { toRawKES } from '@/lib/utils';
  * `/components/budget`, each of which owns one clear chapter of the story:
  *
  *   1. BudgetFlowHero              — "where money comes from / where it goes"
- *   2. FiscalTrendStrip            — multi-year sparklines (is the gap widening?)
+ *   2. FiscalTrendStrip            — aligned budget history by measure
  *   3. RevenueMix                  — KRA revenue streams with YoY deltas
  *   4. ExecutionAuditLens          — sectors ranked by unspent (the audit lens)
  *   5. CountyUtilizationStrip      — best / worst absorbers + link to /counties
@@ -403,7 +403,7 @@ export default function BudgetSpendingPage() {
       <BudgetFlowHero data={selectedFiscal} />
 
       {/* ─── 2. Multi-year trend strip ─── */}
-      <FiscalTrendStrip history={fiscalHistory} />
+      <FiscalTrendStrip history={fiscalHistoryRaw} />
 
       {/* ─── 3. Where revenue comes from ─── */}
       <RevenueMix revenueBySource={revenueBySource as any} />
