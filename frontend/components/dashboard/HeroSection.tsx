@@ -38,7 +38,7 @@ const TOPIC_LINKS = [
 export default function HeroSection() {
   const { lang, t } = useLang();
   return (
-    <section aria-labelledby='home-hero-title' className='border-b border-neutral-border bg-gov-sand pt-16 dark:bg-surface-sunken'>
+    <section aria-labelledby='home-hero-title' className='border-b border-neutral-border bg-gov-sand pt-[var(--public-page-top-offset)] dark:bg-surface-sunken'>
       <div className='mx-auto max-w-dashboard px-4 py-4 sm:px-6 sm:py-8 lg:px-8 lg:py-10'>
         <h1 id='home-hero-title' className='max-w-[17rem] text-pretty font-display text-[1.875rem] font-bold uppercase leading-none sm:max-w-none sm:text-audit-title lg:text-audit-hero'>
           {HOME_TOPICS_MESSAGES['home.topics.hero_title'][lang]}

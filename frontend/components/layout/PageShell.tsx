@@ -36,7 +36,7 @@ export default function PageShell({ title, subtitle, children, className = '', b
 
   return (
     <div className='relative min-h-screen bg-gov-sand dark:bg-surface-sunken'>
-      <header className='border-b border-neutral-border bg-gov-dark pt-[var(--public-header-height)] text-white'>
+      <header className='border-b border-neutral-border bg-gov-dark pt-[var(--public-page-top-offset)] text-white'>
         <div className='mx-auto max-w-screen-xl px-4 py-4 sm:px-6 md:py-6'>
           {back && (
             <SmartBackLink href={back.href} className='inline-flex min-h-11 items-center gap-2 text-sm text-gov-cream underline-offset-4 hover:underline'>

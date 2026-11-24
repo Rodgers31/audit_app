@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 export default function GlossaryPage() {
   return (
     <div className='min-h-screen bg-gov-sand dark:bg-surface-sunken'>
-      <div className='mx-auto w-full max-w-screen-lg px-4 pb-8 pt-[calc(var(--public-header-height)+1rem)] sm:px-6'>
+      <div className='mx-auto w-full max-w-screen-lg px-4 pb-8 pt-[calc(var(--public-page-top-offset)+1rem)] sm:px-6'>
         <InteractiveGlossary />
       </div>
     </div>
