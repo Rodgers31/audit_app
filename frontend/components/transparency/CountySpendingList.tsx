@@ -3,7 +3,7 @@
 import { useLang } from '@/lib/i18n/LangProvider';
 import { countySpendingMessages } from '@/lib/i18n/messages/transparency';
 import CountySpendingDistribution from './CountySpendingDistribution';
-import { ArrowUpDown, Search, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Search, X } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
 import {
@@ -25,6 +25,13 @@ const executionBands = [
   { min: 80, verdict: 'above', range: 'atLeast80' },
 ] as const;
 const highestBandFirst = [...executionBands].reverse();
+const headingLabels = {
+  name: 'headingCounty',
+  efficiency: 'headingSpent',
+  gap: 'unspent',
+  flagged: 'auditQuestioned',
+  allocated: 'headingAllocated',
+} as const;
 
 interface Props {
   rows: (CountyFlowRow & { rank: number })[];
@@ -96,6 +103,8 @@ export default function CountySpendingList({
   const period = copy('fiscalYear', { year: fiscalYear });
   const sortOptions: CountySortKey[] = projected ? ['allocated', 'name'] : ['efficiency', 'gap', 'name'];
   if (!projected && !auditUnavailable) sortOptions.push('flagged');
+  const desktopOptions: CountySortKey[] = ['name', ...sortOptions.filter((option) => option !== 'name')];
+  const columnLabels = shownRows.length > 1 ? ['leftColumn', 'rightColumn'] as const : ['leftColumn'] as const;
   const markerNote =
     nationalEfficiency == null
       ? copy('targetMarker', { target: TARGET })
@@ -158,7 +167,8 @@ export default function CountySpendingList({
             </button>
           )}
         </div>
-        <div className={styles.sortWrap} role='group' aria-label={copy('sort')}>
+        <div className={styles.sortWrap} role='group' aria-label={copy('sort')}
+          data-desktop-headings={!loading && !error && rows.length > 0 || undefined}>
           {sortOptions.map((option) => (
             <button
               key={option}
@@ -209,6 +219,29 @@ export default function CountySpendingList({
         </p>
       ) : (
         <>
+          <div className={styles.desktopSorts}>
+            {columnLabels.map((column) => (
+              <div key={column} role='group' aria-label={copy('columnSortGroup', { column: copy(column) })}>
+                {desktopOptions.map((option) => {
+                  const active = option === sortKey;
+                  const ascending = (option === 'name' || option === 'efficiency') !== reversed;
+                  const Icon = active ? ascending ? ArrowUp : ArrowDown : ArrowUpDown;
+                  const heading = copy(headingLabels[option]);
+                  const context = active
+                    ? copy('activeColumnSort', { column: copy(column), direction: copy(ascending ? 'sortAscending' : 'sortDescending') })
+                    : copy('inactiveColumnSort', { column: copy(column) });
+                  return (
+                    <button key={option} type='button' className={`audit-control ${styles.desktopSortButton}`}
+                      aria-controls={listId} aria-pressed={active} aria-label={heading + context}
+                      onClick={() => active ? onReverse() : onSort(option)}>
+                      {heading}
+                      <Icon size={16} aria-hidden='true' />
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
           <ol
             id={listId}
             className={styles.counties}

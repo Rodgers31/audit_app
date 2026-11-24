@@ -17,6 +17,8 @@ import re
 import subprocess
 import sys
 import sysconfig
+import time
+import urllib.error
 import venv
 import zipfile
 from email.parser import BytesParser
@@ -372,14 +374,27 @@ def validate_runtime(value):
     return value
 
 
+def _open_wheel(opener, row, deadline):
+    for delay in (1, 2, None):
+        remaining = deadline - time.monotonic()
+        require(remaining > 0, 'acquisition wall ceiling')
+        try:
+            return opener.open(row['url'], timeout=min(20, remaining))
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
+            reason = exc.reason if isinstance(exc, urllib.error.URLError) else exc
+            if (delay is None or not isinstance(reason, (TimeoutError, ConnectionError))
+                    or time.monotonic() + delay >= deadline):
+                raise
+            print(f"Retrying locked wheel connection for {row['name']} ({type(reason).__name__}).", file=sys.stderr)
+            time.sleep(delay)
+
+
 def acquire(lock_path, wheelhouse):
     """Download only sealed official wheel URLs: 64MiB/file, 256MiB/300s total.
 
     No ambient proxies, redirects, sdists or resolver. Partial acquisitions remain
     explicitly incomplete and cannot pass wheels_verified or be installed.
     """
-    import hashlib
-    import time
     import urllib.request
     lock = load_lock(lock_path)
     wheelhouse = Path(wheelhouse).absolute()
@@ -395,11 +410,9 @@ def acquire(lock_path, wheelhouse):
     deadline = time.monotonic() + 300
     total = 0
     for row in lock['packages']:
-        remaining = deadline - time.monotonic()
-        require(remaining > 0, 'acquisition wall ceiling')
         h, size = hashlib.sha256(), 0
         path = wheelhouse / row['filename']
-        with opener.open(row['url'], timeout=min(20, remaining)) as response, path.open('xb') as output:
+        with _open_wheel(opener, row, deadline) as response, path.open('xb') as output:
             require(response.status == 200 and response.url == row['url'], 'unexpected wheel response')
             while True:
                 require(time.monotonic() < deadline, 'acquisition wall ceiling')

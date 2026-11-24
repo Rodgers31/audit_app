@@ -192,3 +192,172 @@ test('discloses the basis of principal-only amounts and keeps small positive sha
   await expect(section.getByText('Synthetic lender with a zero balance').locator('..')).toContainText('KES 0');
   await expect(section.getByText('Other lenders (3 reported)').locator('..')).toContainText('Amount unavailable');
 });
+
+const loanRateSource = { title: 'Synthetic CBK rates', url: 'https://example.test/rates', as_of: '2026-10-15' };
+const registerRow = (id: number, lender: string, lender_type: string, outstanding_numeric: number, fields = {}) => ({
+  record_id: id,
+  lender,
+  lender_type,
+  outstanding_numeric,
+  interest_rate_pct: null as number | null,
+  annual_service_cost: null as number | null,
+  maturity_date: '',
+  ...fields,
+});
+const longLender = 'Multilateral (Eastern and Southern African Trade and Development Bank)';
+const loanRows = [
+  registerRow(201, 'Domestic Treasury Bonds', 'domestic_bonds', 600e9, {
+    interest_rate_pct: 13.46,
+    interest_rate_basis: 'coupon_weighted_average',
+    interest_rate_label: 'Published reference covers 57% of the bond stock.',
+    interest_rate_source: loanRateSource,
+    annual_service_basis: 'modelled',
+    annual_service_cost: 60e9,
+    qualifications: {
+      interest_rate: {
+        status: 'conflicting', reason: 'conflicting_reporting_dates', publisher: 'Synthetic Central Bank',
+        source_url: loanRateSource.url, source_kind: 'document',
+        identity: { measure: 'interest_rate', geography: 'national', period: '2026', unit: 'percent', basis: 'actual' },
+      },
+    },
+  }),
+  registerRow(202, longLender, 'external_multilateral', 500e9, {
+    annual_service_basis: 'published', annual_service_cost: 70e9, annual_service_label: 'Interest paid in 2024',
+    maturity_date: '2044-12-31',
+  }),
+  registerRow(203, 'Commercial Bank label only', 'domestic_overdraft', 400e9),
+  registerRow(204, 'Bilateral external test', 'external_bilateral', 300e9),
+  registerRow(205, 'Domestic Treasury Bills', 'domestic_bills', 200e9, {
+    interest_rate_pct: 8.75, interest_rate_basis: 'auction_yield', interest_rate_source: loanRateSource,
+  }),
+  registerRow(206, 'External Commercial Bank', 'external_commercial', 100e9, {
+    interest_rate_pct: 99, interest_rate_basis: 'auction_yield',
+    annual_service_basis: 'published', annual_service_cost: 0, annual_service_label: 'Interest paid in 2024',
+  }),
+  registerRow(207, 'Other Domestic Debt', 'other', 90e9),
+  ...Array.from({ length: 4 }, (_, index) => registerRow(208 + index, `Bilateral fixture ${index}`, 'external_bilateral', 80e9 - index)),
+  registerRow(212, 'Multilateral lender beyond initial list', 'external_multilateral', 50e9),
+];
+
+test('loan register searches matching groups over the full collection and retains readable mobile cards', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 840 });
+  await page.clock.setFixedTime(new Date(Date.now() + 2 * 60 * 60 * 1000));
+  await page.route('**/api/v1/debt/loans', route => route.fulfill({ json: { loans: loanRows } }));
+  await page.goto('/debt#loan-register');
+
+  const register = page.getByRole('region', { name: 'The full loan register' });
+  const cards = register.getByRole('list', { name: 'The full loan register' }).getByRole('listitem');
+  await expect(register.getByRole('status')).toHaveText('Showing 10 of 12 matching lines');
+  await expect(cards).toHaveCount(10);
+  const name = cards.nth(1).getByText(longLender, { exact: true });
+  expect(await name.evaluate(element => element.getBoundingClientRect().height > parseFloat(getComputedStyle(element).lineHeight) * 1.5)).toBe(true);
+  await expect(register.getByRole('table')).toHaveCount(0);
+
+  const showAll = register.getByRole('button', { name: 'Show all 12 matching lines' });
+  await showAll.click();
+  await expect(cards).toHaveCount(12);
+  const showFirst = register.getByRole('button', { name: 'Show the first 10 lines' });
+  await expect(showFirst).toHaveAttribute('aria-expanded', 'true');
+  await showFirst.click();
+
+  const search = register.getByRole('searchbox', { name: 'Search lender names' });
+  await search.fill('   BEYOND   INITIAL  ');
+  await expect(cards).toHaveCount(1);
+  await expect(cards.first()).toContainText('Multilateral lender beyond initial list');
+
+  const domestic = register.getByRole('button', { name: 'Domestic', exact: true });
+  await domestic.click();
+  await expect(domestic).toHaveAttribute('aria-pressed', 'true');
+  await expect(register.getByText('No register lines match these filters.')).toBeVisible();
+  await register.getByRole('button', { name: 'Clear search and filter' }).click();
+  await expect(search).toBeFocused();
+  await expect(register.getByRole('button', { name: 'All', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(cards.getByText('Other Domestic Debt', { exact: true })).toBeVisible();
+
+  await domestic.click();
+  await expect(cards).toHaveCount(3);
+  await expect(cards.getByText('Other Domestic Debt', { exact: true })).toHaveCount(0);
+  await expect(cards.getByText('Commercial Bank label only', { exact: true })).toBeVisible();
+  for (const [group, count] of [['Multilateral', 2], ['Bilateral', 5], ['Commercial', 1]] as const) {
+    await register.getByRole('button', { name: group, exact: true }).click();
+    await expect(cards).toHaveCount(count);
+  }
+  expect(await register.evaluate(element => element.scrollWidth)).toBe(await register.evaluate(element => element.clientWidth));
+});
+
+test('loan register sorts the table and keeps published reference rates, absences and evidence distinct', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 840 });
+  await page.clock.setFixedTime(new Date(Date.now() + 2 * 60 * 60 * 1000));
+  await page.route('**/api/v1/debt/loans', route => route.fulfill({ json: { loans: loanRows.slice(0, 7).reverse() } }));
+  await page.goto('/debt#loan-register');
+
+  const register = page.getByRole('region', { name: 'The full loan register' });
+  const table = register.getByRole('table');
+  const rows = table.getByRole('row').filter({ has: page.getByRole('cell') });
+  await expect(rows.first()).toContainText('Domestic Treasury Bonds');
+  await expect(table.getByRole('columnheader', { name: 'Outstanding' })).toHaveAttribute('aria-sort', 'descending');
+
+  const sort = register.getByRole('combobox', { name: 'Sort by' });
+  await sort.selectOption('rate');
+  await expect(table.getByRole('columnheader', { name: 'Interest rate', exact: true })).toHaveAttribute('aria-sort', 'descending');
+  await expect(rows.first()).toContainText('13.46%');
+  await expect(rows.first()).toContainText('Conflicting evidence');
+  await expect(rows.nth(1)).toContainText('91-day Treasury bill yield');
+  const misleadingRate = rows.filter({ hasText: 'External Commercial Bank' });
+  await expect(misleadingRate.getByRole('cell', { name: 'Not published', exact: true })).toBeVisible();
+  await expect(misleadingRate.getByText('99.00%')).toHaveCount(0);
+  await expect(misleadingRate.getByRole('cell', { name: 'KES 0 Paid 2024' })).toBeVisible();
+  await expect(rows.first().getByRole('link', { name: 'Weighted coupon average' })).toHaveAttribute('href', 'https://example.test/rates');
+
+  const source = rows.first().getByRole('button', { name: /Synthetic Central Bank.*Domestic Treasury Bonds/ });
+  await source.click();
+  const dialog = page.getByRole('dialog', { name: 'Where this figure comes from' });
+  await expect(dialog.getByText(/Published reference covers 57% of the bond stock/)).toContainText('Rate source date 2026-10-15.');
+  await expect(dialog.getByRole('link', { name: 'Observation evidence details' })).toHaveAttribute('href', '/sources/figures/loans/201');
+  await dialog.press('Escape');
+  await expect(source).toBeFocused();
+
+  await sort.selectOption('service');
+  await expect(table.getByRole('columnheader', { name: 'Annual interest' })).toHaveAttribute('aria-sort', 'descending');
+  await expect(rows.first()).toContainText('Paid 2024');
+  await expect(rows.first()).toContainText('2044-12-31');
+  await expect(rows.nth(1)).toContainText('Modelled');
+  await expect(rows.nth(2)).toContainText('External Commercial Bank');
+  await expect(rows.last().getByRole('cell', { name: 'Date unavailable', exact: true })).toBeVisible();
+});
+
+test('the loan register refreshes and retries independently of the debt headline', async ({ page }) => {
+  await page.clock.setFixedTime(new Date(Date.now() + 2 * 60 * 60 * 1000));
+  let release!: () => void;
+  const waitForRelease = new Promise<void>(resolve => { release = resolve; });
+  let available = false;
+  const requests = { overview: 0, timeline: 0 };
+  page.on('request', request => {
+    const path = new URL(request.url()).pathname;
+    if (path === '/api/v1/debt/national') requests.overview += 1;
+    if (path === '/api/v1/debt/timeline') requests.timeline += 1;
+  });
+  await page.route('**/api/v1/debt/loans', async route => {
+    await waitForRelease;
+    if (available) await route.fulfill({ json: { loans: [] } });
+    else await route.fulfill({ status: 503, json: { status: 'unavailable' } });
+  });
+  await page.goto('/debt#loan-register');
+  const register = page.getByRole('region', { name: 'The full loan register' });
+  await expect(page.getByTestId('national-debt-outstanding')).toHaveText('KES 12.00T');
+  // The loopback API prefetches an empty register. Retain that last response
+  // during a failed background refetch, and retry without fetching the page again.
+  await expect(register.getByText('No loan register records are available.')).toBeVisible();
+  await expect(register.getByRole('alert')).toHaveCount(0);
+  release();
+  await expect(register.getByRole('alert')).toHaveText('The loan register could not be refreshed. Showing the last available result.');
+  await expect(register.getByText('No loan register records are available.')).toBeVisible();
+  const before = { ...requests };
+
+  available = true;
+  await register.getByRole('button', { name: 'Try again' }).click();
+  await expect(register.getByText('No loan register records are available.')).toBeVisible();
+  await expect(register.getByRole('alert')).toHaveCount(0);
+  await expect(page.getByTestId('national-debt-outstanding')).toHaveText('KES 12.00T');
+  expect(requests).toEqual(before);
+});
