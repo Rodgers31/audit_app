@@ -1,19 +1,23 @@
 """Inert handlers only; real CLI/session/ownership/observation code stays intact."""
 import os
 import time
+from urllib.parse import urlsplit
 
 if os.getenv("BATCH10_MAPPINGS_INERT") == "true":
     try:
         import socket
+        from tests.batch10_etl_mappings_fixture.owned_postgres import fixture_url
+
+        target = os.environ["BATCH10_MAPPINGS_TARGET"]
+        port = urlsplit(target).port
+        if not port or target != fixture_url(port) or os.environ["DATABASE_URL"] != target:
+            raise ValueError("Wrong owned fixture target")
         original = socket.socket.connect
         def local_only(sock, address):
-            if not isinstance(address, tuple) or address[:2] != ("127.0.0.1", 55522):
+            if not isinstance(address, tuple) or address[:2] != ("127.0.0.1", port):
                 raise RuntimeError("Unowned transport refused")
             return original(sock, address)
         socket.socket.connect = local_only
-        from batch10_etl_mappings_fixture.owned_postgres import URL
-        if os.environ["DATABASE_URL"] != URL:
-            raise ValueError("Wrong owned fixture target")
         from sqlalchemy import text
         from database import SessionLocal
         from seeding.registries import REGISTRY, load_builtin_domains

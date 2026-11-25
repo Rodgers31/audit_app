@@ -73,9 +73,13 @@ def close_owned_connections(connections):
 def profile(raw):
     url = make_url(raw)
     if (url.drivername != "postgresql+psycopg2" or url.host != "127.0.0.1"
-            or url.query or any(k.startswith("PG") for k in os.environ)
-            or (url.port, url.username, url.password, url.database) not in PROFILES):
+            or url.query or any(k.startswith("PG") for k in os.environ)):
         raise ValueError("Exact established inert fixture profile required")
+    if (url.port, url.username, url.password, url.database) not in PROFILES:
+        from tests.batch10_etl_mappings_fixture.owned_postgres import is_owned_url
+
+        if not is_owned_url(url.render_as_string(hide_password=False)):
+            raise ValueError("Exact established inert fixture profile required")
     return url
 
 
