@@ -1,7 +1,8 @@
+import { ABOUT_MESSAGES } from './messages';
+
 export const metadata = {
   title: 'About',
-  description:
-    'Learn about AuditGava, our mission to bring transparency to Kenya\u2019s public finances, and the team behind the platform.',
+  description: ABOUT_MESSAGES.intro.en,
 };
 
 export default function AboutLayout({ children }: { children: React.ReactNode }) {
