@@ -1,0 +1,163 @@
+.pair {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.plot {
+  position: relative;
+  height: 10.5rem;
+  margin-block-start: 1.5rem;
+  margin-inline-start: 2.6rem;
+}
+
+.repaymentPlot {
+  height: 8.5rem;
+}
+
+.graph,
+.targets,
+.columns,
+.guide {
+  position: absolute;
+  inset: 0;
+}
+
+.columns,
+.targets,
+.axis {
+  display: grid;
+  grid-template-columns: repeat(var(--year-count), minmax(0, 1fr));
+}
+
+.targets {
+  touch-action: pan-y;
+}
+
+.targets button:focus-visible {
+  outline: 2px solid var(--signal-context);
+  outline-offset: -2px;
+}
+
+.column {
+  display: flex;
+  position: relative;
+  justify-content: center;
+}
+
+.tick,
+.reference {
+  position: absolute;
+  width: 100%;
+  border-top: 1px solid rgb(var(--c-neutral-border));
+  font-size: 0.75rem;
+  color: rgb(var(--c-neutral-muted));
+}
+
+.tick span {
+  position: absolute;
+  right: calc(100% + 0.35rem);
+  transform: translateY(-50%);
+}
+
+.reference {
+  border-top: 2px solid var(--signal-alarm);
+  color: var(--signal-alarm);
+}
+
+.reference span {
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  background: rgb(var(--page-bg-rgb));
+  padding-inline: 0.25rem;
+  font-weight: 600;
+}
+
+.line {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  color: var(--signal-context);
+}
+
+.guide {
+  inset-inline: 50% auto;
+  border-inline-start: 1px dashed rgb(var(--c-neutral-muted));
+}
+
+.bar,
+.dot,
+.value {
+  position: absolute;
+  bottom: 0;
+}
+
+.bar {
+  width: min(60%, 2.5rem);
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+  outline: 1px solid rgb(var(--c-neutral-muted));
+  outline-offset: -1px;
+  background: var(--chart-context);
+}
+
+.dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  transform: translateY(50%);
+  border-radius: 50%;
+  border: 1px solid rgb(var(--page-bg-rgb));
+  background: var(--signal-context);
+}
+
+.bar[data-highlight='true'],
+.dot[data-highlight='true'] {
+  background: var(--signal-context);
+}
+
+.bar[data-alarm='true'],
+.dot[data-alarm='true'] {
+  background: var(--signal-alarm);
+}
+
+.value {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.axis {
+  margin-inline-start: 2.6rem;
+  margin-block-start: 0.45rem;
+  font-family: var(--font-mono), monospace;
+  color: rgb(var(--c-neutral-muted));
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.desktopAxis {
+  display: none;
+}
+
+.desktopYear {
+  visibility: hidden;
+}
+
+@media (min-width: 64rem) {
+  .pair {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: end;
+  }
+
+  .desktopAxis {
+    display: grid;
+  }
+
+  .desktopYear {
+    visibility: visible;
+  }
+
+  .repaymentPlot {
+    height: 10.5rem;
+  }
+}

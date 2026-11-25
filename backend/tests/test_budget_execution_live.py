@@ -356,6 +356,40 @@ def test_fetcher_promotes_the_annual_report_and_records_the_edition(tmp_path):
     assert freshness.get_publisher_edition("national_budget")["edition"] == "FY 2025/26"
 
 
+def test_annual_report_can_complete_a_slow_tls_handshake(tmp_path, monkeypatch):
+    from seeding.config import SeedingSettings
+    from seeding.domains.national_budget import fetcher
+    from seeding.http_client import SeedingHttpClient
+    from services.receipt_store import LocalReceiptStore
+
+    listing = (FIXTURES / "ng_birr_listing_2026-09-26.html").read_text()
+    pages = _pages("ngbirr_fy2025_26_annual_pages.json")
+    settings = SeedingSettings(
+        _env_file=None, cache_path=tmp_path / "cache", rate_limit="1000/sec"
+    )
+    report = fetcher.discover_latest_annual_ng_birr(listing, settings.cob_birr_page_url)
+    monkeypatch.setattr(fetcher, "_extract_page_texts", lambda _: [
+        {"page": number, "text": text} for number, text in pages.items()
+    ])
+
+    def publisher(request):
+        if str(request.url) == report.url.split("?", 1)[0]:
+            return httpx.Response(503)
+        assert str(request.url) == report.url
+        if request.extensions["timeout"]["connect"] < 28.5:
+            raise httpx.ConnectTimeout("TLS handshake took 28.5 seconds", request=request)
+        return httpx.Response(200, content=b"%PDF-1.7\n%%EOF\n",
+                              headers={"content-type": "application/pdf"})
+
+    transport = httpx.MockTransport(publisher)
+    with SeedingHttpClient(settings, client=httpx.Client(transport=transport),
+                           receipt_store=LocalReceiptStore(tmp_path / "receipts")) as client:
+        records, status = fetcher._fetch_annual_sector_expenditure(client, settings, report)
+
+    assert status.startswith("promoted:10/10 sectors FY 2025/26")
+    assert {row["category"] for row in records} == set(FY2526_TOTALS)
+
+
 def test_fetcher_refuses_a_report_whose_cover_disagrees_with_its_slug(tmp_path):
     from seeding.domains.national_budget import fetcher
 

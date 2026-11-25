@@ -21,14 +21,23 @@ app identifier + a GitHub URL so site operators can reach us.
 from __future__ import annotations
 
 import logging
+from html.parser import HTMLParser
+import re
 from typing import Any, Dict
+from urllib.parse import urljoin, urlsplit
 
 from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
+from .workbook import WORKBOOK_BYTES, parse_workbook
 
 logger = logging.getLogger("seeding.imf_weo.fetcher")
 
 _BASE_URL = "https://www.imf.org/external/datamapper/api/v1"
+WEO_CATALOGUE_URL = "https://data.imf.org/datasets/WEO"
+WEO_WORKBOOK_URL = (
+    "https://data.imf.org/-/media/iData/External-Storage/Documents/"
+    "0FA3DC49A04D446E9D69DBEB29979E1C/en/WEOOct2026all.xlsx"
+)
 
 # ── Indicators ────────────────────────────────────────────────────
 INDICATORS: tuple[str, ...] = (
@@ -61,36 +70,18 @@ def fetch_imf_weo(
           ...
         }
 
-    Raises on network failure; caller logs and skips.
+    The caller handles a failed acquisition and selects the workbook when eligible.
     """
-    from ...freshness import mark_fixture, mark_live
+    from ...freshness import mark_live
 
     results: Dict[str, Dict[str, Any]] = {}
     countries = "/".join(COUNTRIES)
-    try:
-        for indicator in INDICATORS:
-            url = f"{_BASE_URL}/{indicator}/{countries}"
-            logger.info("Fetching IMF WEO %s for %s", indicator, countries)
-            # Override the seeder's default UA only for this call — other
-            # sources might have their own constraints.
-            response = client.get(url, headers={"User-Agent": _IMF_UA})
-            response.raise_for_status()
-            results[indicator] = response.json()
-    except Exception as exc:
-        # This domain has NO fixture, so a failure is not a fall back to
-        # stale data — it is a run that ingested nothing. Recorded as
-        # non-live either way, because the staleness gate's question is
-        # "did we reach the publisher", and the answer here is no.
-        mark_fixture(
-            "imf_weo",
-            reason=f"imf_api_unreachable({type(exc).__name__})",
-            detail=(
-                "no fixture exists for this domain — this run ingested "
-                "NOTHING and the existing rows are whatever a previous run "
-                "left behind"
-            ),
-        )
-        raise
+    for indicator in INDICATORS:
+        url = f"{_BASE_URL}/{indicator}/{countries}"
+        logger.info("Fetching IMF WEO %s for %s", indicator, countries)
+        response = client.get(url, headers={"User-Agent": _IMF_UA})
+        response.raise_for_status()
+        results[indicator] = response.json()
     mark_live(
         "imf_weo",
         detail=(
@@ -99,3 +90,30 @@ def fetch_imf_weo(
         ),
     )
     return results
+
+
+def fetch_reviewed_workbook(client: SeedingHttpClient) -> Dict[str, Dict[str, Any]]:
+    """Only use the reviewed workbook while the publisher lists it as current."""
+    class CurrentWorkbooks(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.links = set()
+
+        def handle_starttag(self, tag, attrs):
+            if tag != 'a':
+                return
+            href = dict(attrs).get('href')
+            if href:
+                url = urljoin(WEO_CATALOGUE_URL, href)
+                if re.search(r'/WEO[A-Za-z]{3}\d{4}all\.xlsx$', urlsplit(url).path):
+                    self.links.add(url)
+
+    catalogue = client.get(WEO_CATALOGUE_URL, max_seconds=16, max_bytes=2 * 1024**2,
+                           allowed_hosts={'data.imf.org'})
+    parser = CurrentWorkbooks()
+    parser.feed(catalogue.text)
+    if parser.links != {WEO_WORKBOOK_URL}:
+        raise ValueError('IMF WEO catalogue no longer identifies the reviewed workbook as current')
+    workbook = client.get(WEO_WORKBOOK_URL, max_seconds=45, max_bytes=WORKBOOK_BYTES,
+                          allowed_hosts={'data.imf.org'})
+    return parse_workbook(workbook.content)

@@ -400,6 +400,7 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
         *,
         max_seconds: float,
         max_bytes: Optional[int] = None,
+        connect_timeout_seconds: float = 15.0,
         headers: Optional[Dict[str, str]] = None,
         raise_for_status: bool = True,
         resume_part: Optional[Path] = None,
@@ -425,7 +426,8 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
 
         Reconnects share the wall-clock and cumulative byte caps, with at most
         the configured transient attempts. Per-operation timeouts are capped
-        by remaining time; partial bodies may resume under the rules below.
+        by remaining time. Callers can allow a slower handshake with
+        ``connect_timeout_seconds``. Partial bodies may resume under the rules below.
 
         Redirects are refused before their target is resolved or contacted,
         regardless of the injected/default client's redirect policy. A caller
@@ -468,6 +470,7 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
         replaced by the two checks above, which run on every resume.
         """
         _positive_bound(max_seconds, "max_seconds")
+        _positive_bound(connect_timeout_seconds, "connect_timeout_seconds")
         if max_bytes is not None:
             _positive_bound(max_bytes, "max_bytes", integer=True)
         dest = Path(dest_path)
@@ -592,7 +595,8 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
                     with _wall_clock_budget(remaining), self._rate_limiter.context():
                         with self._client_for(url).stream(
                             "GET", url, headers=request_headers, follow_redirects=False,
-                            timeout=httpx.Timeout(min(remaining, 30.0), connect=min(remaining, 15.0))
+                            timeout=httpx.Timeout(min(remaining, 30.0),
+                                                  connect=min(remaining, connect_timeout_seconds)),
                         ) as response:
                             if 300 <= response.status_code < 400:
                                 # Even raise_for_status=False must not consume a
