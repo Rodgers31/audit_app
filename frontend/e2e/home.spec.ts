@@ -1,5 +1,68 @@
 import { expect, test } from '@playwright/test';
 import { waitForAppReady } from './utils/selectors';
+import { syntheticDebtTimeline20261105 } from '../test/fixtures/deploymentDebt20261105';
+
+test.describe('Home debt timeline', () => {
+  test.use({ hasTouch: true, viewport: { width: 360, height: 780 } });
+
+  test('aligns the plots, reads a tapped year, and exposes the gaps in a table', async ({ page }) => {
+    const latest = syntheticDebtTimeline20261105(65.9);
+    const previous = syntheticDebtTimeline20261105(50);
+    previous.year = 2023;
+    previous.period.stock_as_of_month = '2023-12';
+    previous.period.gdp_calendar_year = 2023;
+    previous.qualifications.total.locator.cell = '2023-12 / total';
+    previous.qualifications.gdp.locator.date = '2023';
+    for (const source of Object.values(previous.qualifications)) source.identity.period = '2023';
+    await page.clock.setFixedTime(new Date(Date.now() + 2 * 60 * 60 * 1000));
+    await page.route('**/api/v1/debt/timeline', route => route.fulfill({
+      json: { status: 'success', timeline: [previous, latest] },
+    }));
+    await page.goto('/');
+    const charts = page.locator('[data-home-debt-charts]');
+    const nominal = charts.getByRole('figure', { name: 'Debt in shillings' });
+    const ratio = charts.getByRole('figure', { name: 'Debt as a share of GDP' });
+    const plot = nominal.locator('[data-debt-plot-target]');
+    const current = charts.locator('[data-home-debt-readout]');
+    const year = charts.getByRole('combobox', { name: 'Choose a year' });
+    await expect(year.locator('option')).toHaveText(['2023', '2024', '2025']);
+    await expect(ratio.locator('[data-debt-point="2025"]')).toHaveCount(1);
+    await expect(nominal.locator('[data-debt-line-segment]')).toHaveCount(2);
+    await expect(ratio.locator('[data-debt-line-segment]')).toHaveCount(2);
+
+    const bounds = (await plot.boundingBox())!;
+    await plot.tap({ position: { x: bounds.width / 2, y: bounds.height / 2 } });
+    await expect(current.getByText('2024')).toBeVisible();
+    await expect(current.getByText('Unavailable', { exact: true })).toHaveCount(4);
+    expect((await year.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await year.focus();
+    // Native select keys differ on WebKit. Selecting via the focused control
+    // exercises the same change path without tapping a plot.
+    await year.selectOption('2023');
+    await expect(year).toBeFocused();
+    await expect(current).toContainText('Central Bank debt stock as of 2023-12 · World Bank GDP for 2023');
+    await expect(current.getByText('50%', { exact: true })).toBeVisible();
+    await charts.getByText('Debt figures by year', { exact: true }).first().press('Enter');
+    const table = charts.getByRole('table', { name: 'Debt figures by year' });
+    await expect(table.getByRole('row').filter({ has: page.getByRole('rowheader', { name: '2023', exact: true }) })).toContainText('KES 4.00T');
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBe(360);
+  });
+
+  test('shows nominal debt when a legacy timeline lacks any matched period', async ({ page }) => {
+    const { period, ...legacy } = syntheticDebtTimeline20261105(65.9);
+    expect(period.stock_as_of_month).toBe('2025-12');
+    await page.clock.setFixedTime(new Date(Date.now() + 2 * 60 * 60 * 1000));
+    await page.route('**/api/v1/debt/timeline', route => route.fulfill({
+      json: { status: 'success', timeline: [legacy] },
+    }));
+    await page.goto('/');
+    const charts = page.locator('[data-home-debt-charts]');
+    await expect(charts.getByRole('figure', { name: 'Debt in shillings' }).locator('[data-debt-point="2025"]')).toHaveCount(1);
+    const ratio = charts.getByRole('figure', { name: 'Debt as a share of GDP' });
+    await expect(ratio.getByText(/could not be verified together/)).toBeVisible();
+    await expect(ratio.locator('[data-debt-point]')).toHaveCount(0);
+  });
+});
 
 test('the Home questions offer keyboard navigation to the existing public pages', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 780 });
