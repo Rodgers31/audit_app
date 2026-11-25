@@ -2,9 +2,11 @@
 
 import DataFreshnessBadge from '@/components/DataFreshnessBadge';
 import InfoSheet from '@/components/ui/InfoSheet';
+import AuditFindingsDesktop from './AuditFindingsDesktop';
 import AuditRecurringFindings from './AuditRecurringFindings';
 import AuditSeverity from './AuditSeverity';
 import AuditYearBars from './AuditYearBars';
+import { FINDING_SEVERITY, formatFindingAmount } from './auditFindingPresentation';
 import PageShell from '@/components/layout/PageShell';
 import type { FindingDetailItem, FindingsFilters } from '@/lib/api/audits';
 import { useLang } from '@/lib/i18n/LangProvider';
@@ -21,36 +23,13 @@ import {
   ChevronLeft,
   ChevronRight,
   ExternalLink,
-  FileText,
   FileWarning,
   Loader2,
-  Search,
   Shield,
   X,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useCallback, useId, useMemo, useState } from 'react';
-import ResponsiveTable from '@/components/ui/ResponsiveTable';
-
-/* ═══════════════════════════════════════════════════════
-   Helpers
-   ═══════════════════════════════════════════════════════ */
-
-function fmtKES(val: number): string {
-  if (!val || val === 0) return 'KES 0';
-  const abs = Math.abs(val);
-  if (abs >= 1e12) return `KES ${(val / 1e12).toFixed(2)}T`;
-  if (abs >= 1e9) return `KES ${(val / 1e9).toFixed(1)}B`;
-  if (abs >= 1e6) return `KES ${(val / 1e6).toFixed(1)}M`;
-  return `KES ${val.toLocaleString()}`;
-}
-
-const OPINION_COLORS: Record<string, string> = {
-  Adverse: '#ef4444',
-  Disclaimer: '#f59e0b',
-  Qualified: '#f97316',
-  Unqualified: '#22c55e',
-};
+import { useCallback, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 /* ═══════════════════════════════════════════════════════
    Page Component
@@ -69,6 +48,14 @@ export default function AuditFindingsPage() {
   const { data: summary, isLoading: summaryLoading, refetch: retrySummary } = useAuditDashboardSummary();
   const { data: trends, isLoading: trendsLoading, isError: trendsError, refetch: retryTrends } = useAuditTrends();
   const { data: findings, isLoading: findingsLoading } = useAuditFindings(filters);
+  const findingsHeading = useRef<HTMLHeadingElement>(null);
+  const focusFindingsAfterPaging = useRef(false);
+  useLayoutEffect(() => {
+    if (!findingsLoading && focusFindingsAfterPaging.current) {
+      focusFindingsAfterPaging.current = false;
+      findingsHeading.current?.focus();
+    }
+  }, [findings, findingsLoading]);
 
   // --- Derived data ---
   // `0` here would mean "the Auditor-General issued no adverse or disclaimer
@@ -119,13 +106,20 @@ export default function AuditFindingsPage() {
     }));
   }, []);
 
+  function changePage(page: number) {
+    focusFindingsAfterPaging.current = true;
+    updateFilter('page', page);
+  }
+
   const clearFilters = useCallback(() => {
     setFilters(AUDIT_FINDINGS_INITIAL_FILTERS);
+    findingsHeading.current?.focus();
   }, []);
 
   const hasActiveFilters = !!(filters.county_id || filters.year || filters.query_type || filters.severity || filters.audit_opinion || filters.status);
 
   const totalPages = findings ? Math.ceil(findings.total / (filters.limit || 20)) : 0;
+  const displayNumber = new Intl.NumberFormat(lang === 'sw' ? 'sw-KE' : 'en-KE');
 
   // --- Loading state ---
   if (summaryLoading) {
@@ -263,15 +257,14 @@ export default function AuditFindingsPage() {
 
       <AuditRecurringFindings />
 
-      {/* ═══ F. FILTER BAR ═══ */}
-      <div>
+      <section aria-labelledby='audit-findings-heading' className='min-w-0 space-y-6' data-audit-findings>
         <div className='space-y-3'>
           <div className='flex items-center justify-between gap-2'>
-            <h2 id='audit-findings-heading' className='scroll-mt-24 font-display text-xl text-gov-dark dark:text-white'>{copy('audits.all_findings')}</h2>
+            <h2 id='audit-findings-heading' ref={findingsHeading} tabIndex={-1} className='scroll-mt-24 font-display text-xl text-gov-dark dark:text-white'>{copy('audits.all_findings')}</h2>
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
-                className='flex min-h-11 items-center gap-1 text-sm text-gov-sage hover:text-gov-forest dark:text-emerald-100 transition-colors'>
+                className='audit-control'>
                 <X className='w-3 h-3' aria-hidden='true' />
                 {copy('audits.clear_filters')}
               </button>
@@ -315,12 +308,9 @@ export default function AuditFindingsPage() {
               placeholder={copy('audits.all')}
               value={filters.severity || ''}
               onChange={(v) => updateFilter('severity', v || undefined)}
-              options={[
-                { value: 'Critical', label: 'Critical' },
-                { value: 'High', label: 'High' },
-                { value: 'Medium', label: 'Medium' },
-                { value: 'Low', label: 'Low' },
-              ]}
+              options={Object.entries(FINDING_SEVERITY).map(([severity, { label }]) => ({
+                value: severity.toUpperCase(), label: copy(label),
+              }))}
             />
 
             {/* Status filter */}
@@ -337,142 +327,60 @@ export default function AuditFindingsPage() {
             />
           </div>
         </div>
-      </div>
 
-      {/* ═══ G. FINDINGS TABLE ═══ */}
-      <div>
         {findingsLoading ? (
-          <div className='flex items-center justify-center py-16'>
-            <Loader2 className='w-6 h-6 animate-spin text-gov-sage' />
-            <span className='ml-3 text-gov-dark/60 dark:text-white/60'>Loading findings...</span>
-          </div>
+          <p role='status' className='py-8 text-sm text-neutral-muted'>{copy('audits.findings_loading')}</p>
         ) : findings && findings.items.length > 0 ? (
           <div className='space-y-4'>
-            <div className='text-xs text-gov-dark/50 dark:text-white/50'>
-              Showing {(findings.page - 1) * (filters.limit || 20) + 1}–
-              {Math.min(findings.page * (filters.limit || 20), findings.total)} of{' '}
-              {findings.total.toLocaleString()} findings
+            <div className='flex flex-wrap justify-between gap-x-3 text-sm text-neutral-muted'>
+              <p role='status'>
+                {copy('audits.findings_range')
+                  .replace('{first}', displayNumber.format((findings.page - 1) * findings.limit + 1))
+                  .replace('{last}', displayNumber.format(Math.min(findings.page * findings.limit, findings.total)))
+                  .replace('{total}', displayNumber.format(findings.total))}
+              </p>
+              <p className='hidden lg:block'>{copy('audits.sort_current_page')}</p>
             </div>
 
-            <ul role='list' aria-label={copy('audits.all_findings')} className='space-y-2 md:hidden'>
+            <ul role='list' aria-label={copy('audits.all_findings')} className='space-y-2 lg:hidden'>
               {findings.items.map((finding) => (
                 <MobileFindingCard key={finding.id} finding={finding} lang={lang} />
               ))}
             </ul>
 
-            <ResponsiveTable className='hidden md:block'>
-              <table className='w-full text-sm'>
-                <thead>
-                  <tr className='border-b border-gov-dark/10 text-left'>
-                    <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>Entity audited</th>
-                    <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>Year</th>
-                    <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>{copy('audits.section')}</th>
-                    <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70 text-right'>Amount</th>
-                    <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>Severity</th>
-                    <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>Status</th>
-                    <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70'>Opinion</th>
-                    <th className='py-2 pr-3 font-semibold text-gov-dark/70 dark:text-white/70 text-center w-10'>Source</th>
-                    <th className='py-2 font-semibold text-gov-dark/70 dark:text-white/70 text-center w-8' title='Data confidence'>DQ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {findings.items.map((f) => (
-                    <tr
-                      key={f.id}
-                      className='border-b border-gov-dark/5 hover:bg-gov-forest/[0.03] transition-colors'
-                      title={f.finding_text}>
-                      <td className='py-2.5 pr-3'>
-                        <span className='block font-medium'>
-                          {f.audited_entity_name ?? 'Audited institution not identified'}
-                        </span>
-                        {f.county_slug && f.county_name && (
-                          <Link
-                            href={`/counties/${encodeURIComponent(f.county_slug)}`}
-                            className='text-gov-forest dark:text-emerald-100 hover:underline'>
-                            {f.county_name}
-                          </Link>
-                        )}
-                      </td>
-                      <td className='py-2.5 pr-3 font-mono text-xs'>{f.audit_year || '—'}</td>
-                      <td className='py-2.5 pr-3'>
-                        {f.query_type ? (
-                          <span className='text-xs text-neutral-muted'>{f.query_type}</span>
-                        ) : (
-                          '—'
-                        )}
-                      </td>
-                      <td className='py-2.5 pr-3 text-right font-mono text-red-600'>
-                        {f.amount ? fmtKES(f.amount) : '—'}
-                      </td>
-                      <td className='py-2.5 pr-3'>
-                        <SeverityBadge severity={f.severity} />
-                      </td>
-                      <td className='py-2.5 pr-3'>
-                        <StatusBadge status={f.status} />
-                      </td>
-                      <td className='py-2.5 pr-3'>
-                        {f.audit_opinion ? (
-                          <span
-                            className='text-xs font-medium'
-                            style={{ color: OPINION_COLORS[f.audit_opinion] || '#6b7280' }}>
-                            {f.audit_opinion}
-                          </span>
-                        ) : (
-                          '—'
-                        )}
-                      </td>
-                      <td className='py-2.5 pr-3 text-center'>
-                        {f.source_document_url ? (
-                          <a
-                            href={f.source_document_url}
-                            target='_blank'
-                            rel='noopener noreferrer'
-                            className='inline-flex items-center text-gov-sage hover:text-gov-forest dark:text-emerald-100 transition-colors'
-                            title={f.page_ref ? `View OAG source report, ${f.page_ref}` : 'View OAG source report'}>
-                            <FileText className='w-4 h-4' />
-                          </a>
-                        ) : (
-                          <span className='text-gov-dark/20 dark:text-white/20'>—</span>
-                        )}
-                      </td>
-                      <td className='py-2.5 text-center'>
-                        <ConfidenceIndicator score={f.confidence_score} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </ResponsiveTable>
+            <AuditFindingsDesktop key={JSON.stringify(filters)} items={findings.items} lang={lang} />
 
             {/* Pagination */}
             {totalPages > 1 && (
               <div className='flex items-center justify-between pt-2'>
                 <button
-                  onClick={() => updateFilter('page', Math.max(1, (filters.page || 1) - 1))}
+                  onClick={() => changePage((filters.page || 1) - 1)}
                   disabled={(filters.page || 1) <= 1}
-                  className='flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg bg-gov-dark/5 hover:bg-gov-dark/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors'>
-                  <ChevronLeft className='w-4 h-4' />
-                  Previous
+                  className='audit-control'>
+                  <ChevronLeft className='w-4 h-4' aria-hidden='true' />
+                  {copy('audits.findings_previous')}
                 </button>
-                <span className='text-xs text-gov-dark/60 dark:text-white/60'>
-                  Page {filters.page || 1} of {totalPages}
+                <span className='text-sm text-neutral-muted'>
+                  {copy('audits.findings_page_of')
+                    .replace('{page}', displayNumber.format(findings.page))
+                    .replace('{total}', displayNumber.format(totalPages))}
                 </span>
                 <button
-                  onClick={() => updateFilter('page', Math.min(totalPages, (filters.page || 1) + 1))}
+                  onClick={() => changePage((filters.page || 1) + 1)}
                   disabled={(filters.page || 1) >= totalPages}
-                  className='flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg bg-gov-dark/5 hover:bg-gov-dark/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors'>
-                  Next
-                  <ChevronRight className='w-4 h-4' />
+                  className='audit-control'>
+                  {copy('audits.findings_next')}
+                  <ChevronRight className='w-4 h-4' aria-hidden='true' />
                 </button>
               </div>
             )}
           </div>
         ) : (
-          <div className='text-center py-16 text-gov-dark/40 dark:text-white/40'>
-            {hasActiveFilters ? 'No findings match your filters.' : 'No findings data available.'}
+          <div role='status' className='py-8 text-sm text-neutral-muted'>
+            {copy(hasActiveFilters ? 'audits.findings_no_match' : 'audits.findings_empty')}
           </div>
         )}
-      </div>
+      </section>
 
       {/* Data freshness badge */}
       <DataFreshnessBadge sources="OAG" className="mt-6 justify-center" />
@@ -541,31 +449,29 @@ function FilterSelect({
       <label htmlFor={id} className='text-xs font-semibold text-neutral-muted'>
         {label}
       </label>
-      <select
-        id={id}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className='min-h-11 w-full min-w-0 max-w-full rounded border border-neutral-border bg-surface-base px-3 text-sm text-neutral-text'>
-        <option value=''>{placeholder}</option>
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
+      <div className='relative min-w-0'>
+        <select
+          id={id}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className='min-h-11 w-full min-w-0 max-w-full appearance-none rounded border border-neutral-border bg-surface-base pl-3 pr-9 text-base text-neutral-text'>
+          <option value=''>{placeholder}</option>
+          {options.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+        <ChevronDown size={16} aria-hidden='true'
+          className='pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-neutral-muted' />
+      </div>
     </div>
   );
 }
 
-const MOBILE_SEVERITY: Record<string, { label: keyof typeof AUDITS_MESSAGES; tone: string }> = {
-  critical: { label: 'audits.severity_critical', tone: 'text-signal-alarm' },
-  warning: { label: 'audits.severity_warning', tone: 'text-signal-caution' },
-  info: { label: 'audits.severity_info', tone: 'text-neutral-muted' },
-};
-
 function MobileFindingCard({ finding, lang }: { finding: FindingDetailItem; lang: Lang }) {
   const copy = (key: keyof typeof AUDITS_MESSAGES) => AUDITS_MESSAGES[key][lang];
-  const severity = MOBILE_SEVERITY[finding.severity.toLowerCase()];
+  const severity = FINDING_SEVERITY[finding.severity.toLowerCase()];
 
   return (
     <li className='min-w-0 space-y-2 rounded border border-neutral-border bg-surface-base p-3 [overflow-wrap:anywhere]'>
@@ -581,13 +487,13 @@ function MobileFindingCard({ finding, lang }: { finding: FindingDetailItem; lang
         {finding.finding_title ?? finding.finding_text}
       </h3>
       <p className='flex flex-wrap items-baseline gap-x-2 gap-y-1 text-audit-label text-neutral-muted'>
-        <span className={`rounded bg-surface-sunken px-1.5 font-semibold ${severity?.tone ?? 'text-neutral-muted'}`}>
+        <span className={`rounded bg-surface-sunken px-1.5 font-semibold ${severity?.tone ?? 'text-neutral-text'}`}>
           {severity ? copy(severity.label) : finding.severity}
         </span>
         <span>
           {finding.amount == null
             ? copy('audits.amount_not_stated')
-            : `${copy('audits.finding_amount')}: ${fmtKES(finding.amount)}`}
+            : `${copy('audits.finding_amount')}: ${formatFindingAmount(finding.amount)}`}
         </span>
         {finding.query_type && (
           <span>{copy('audits.section')}: {auditSectionLabel(finding.query_type, lang)}</span>
@@ -607,56 +513,5 @@ function MobileFindingCard({ finding, lang }: { finding: FindingDetailItem; lang
         </a>
       )}
     </li>
-  );
-}
-
-function SeverityBadge({ severity }: { severity: string }) {
-  const styles: Record<string, string> = {
-    Critical: 'bg-red-100 text-red-700',
-    High: 'bg-orange-100 text-orange-700',
-    Medium: 'bg-amber-100 text-amber-700',
-    Low: 'bg-green-100 text-green-700',
-  };
-  return (
-    <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${styles[severity] || 'bg-gray-100 dark:bg-surface-elevated text-gray-600 dark:text-neutral-muted'}`}>
-      {severity}
-    </span>
-  );
-}
-
-function StatusBadge({ status }: { status: string | null }) {
-  if (!status) return <span className='text-gov-dark/30 dark:text-white/30'>—</span>;
-  const styles: Record<string, string> = {
-    Resolved: 'bg-emerald-100 text-emerald-700',
-    Unresolved: 'bg-red-100 text-red-700',
-    'Partially Resolved': 'bg-amber-100 text-amber-700',
-  };
-  return (
-    <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${styles[status] || 'bg-gray-100 dark:bg-surface-elevated text-gray-600 dark:text-neutral-muted'}`}>
-      {status}
-    </span>
-  );
-}
-
-function ConfidenceIndicator({ score }: { score: number | null }) {
-  if (score === null || score > 0.8) {
-    // High confidence or unknown — no indicator needed
-    return <span className='text-gov-dark/15 dark:text-white/15'>—</span>;
-  }
-  if (score >= 0.5) {
-    return (
-      <span
-        className='cursor-help text-amber-500'
-        title='Medium confidence — data extracted via heuristic parsing'>
-        &#9888;&#65039;
-      </span>
-    );
-  }
-  return (
-    <span
-      className='cursor-help text-red-500'
-      title='Low confidence — verify against source document'>
-      &#128308;
-    </span>
   );
 }
