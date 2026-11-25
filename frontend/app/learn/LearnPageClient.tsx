@@ -37,6 +37,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { AUDITOR_GUIDE_MESSAGES } from '@/lib/i18n/messages/auditorGuide';
+import { AUDITOR_GUIDE_ANCHOR, AUDITOR_GUIDE_PATH } from './auditor-general-guide/auditorGuideData';
 
 const KEEP_LEARNING: {
   href: string;
@@ -211,6 +213,14 @@ export default function LearningHubPage() {
             </p>
           </div>
         </div>
+
+        <Link
+          id={AUDITOR_GUIDE_ANCHOR}
+          href={AUDITOR_GUIDE_PATH}
+          className='audit-panel flex min-h-11 w-full scroll-mt-24 items-center justify-between gap-2 px-3 py-2 text-sm font-semibold text-neutral-text hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-signal-good sm:w-fit'>
+          <span className='min-w-0 break-words'>{AUDITOR_GUIDE_MESSAGES.title[lang]}</span>
+          <ArrowRight size={16} aria-hidden='true' className='shrink-0' />
+        </Link>
 
         <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4'>
           {KEEP_LEARNING.map((card, i) => {
