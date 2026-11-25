@@ -17,17 +17,20 @@ export const assembly: any = {
 
 test('renders separately sourced assembly bands with correct scope, summary discrepancy and no chart',()=>{
   expect(readScopedAging(assembly,'county_assembly')).not.toBeNull();
-  render(<PendingBillsAgingPanel observations={{ county_assembly: assembly } as any}/>);
-  fireEvent.change(screen.getByLabelText('Aging population'),{target:{value:'county_assembly'}});
-  expect(screen.getByRole('table')).toHaveTextContent('Reported assembly aging');
+  const { container } = render(<PendingBillsAgingPanel observations={{ county_assembly: assembly } as any}/>);
+  fireEvent.change(screen.getByLabelText('Whose bills'),{target:{value:'county_assembly'}});
+  expect(screen.getByRole('table')).toHaveTextContent('Reported assembly bill ages');
   expect(screen.getByRole('table')).toHaveTextContent('KES 2,481,980,000');
   expect(screen.getByText(/47 of 47 counties/)).toHaveTextContent('assembly aging total');
-  expect(screen.getByText(/These source year bands cover county assemblies only/)).toBeInTheDocument();
+  expect(screen.getByText(/age bands and printed total differ/)).toBeInTheDocument();
+  expect(screen.getByText(/36 of 47 counties/)).toHaveTextContent('all four source age bands');
+  container.querySelector('dialog')!.setAttribute('open', '');
+  expect(screen.getByText('These age bands cover county assembly bills.')).toBeInTheDocument();
   expect(screen.getByText(/bands differ from printed total/)).toBeInTheDocument();
-  expect(screen.getByText(/36 of 47 counties/)).toHaveTextContent('Missing bands: Bungoma, Kajiado, Kericho, Kilifi, Kirinyaga, Kisii, Kisumu, Kitui, Kwale, Narok, Uasin Gishu');
+  expect(screen.getByText('Missing bands: Bungoma, Kajiado, Kericho, Kilifi, Kirinyaga, Kisii, Kisumu, Kitui, Kwale, Narok, Uasin Gishu.')).toBeInTheDocument();
   expect(screen.getByRole('link')).toHaveTextContent('Table 2.12, PDF p.55');
-  expect(screen.queryByRole('img')).not.toBeInTheDocument();
-  fireEvent.change(screen.getByLabelText('Aging population'),{target:{value:'combined'}});
+  expect(screen.queryByRole('group', { name: /bills by age/ })).not.toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText('Whose bills'),{target:{value:'combined'}});
   expect(screen.queryByRole('table')).not.toBeInTheDocument();
 });
 
@@ -38,11 +41,12 @@ test('assembly needs its own schema, table and scope; executive evidence cannot 
 
 test('active Swahili covers assembly scope, caption, date and qualifications',()=>{
   localStorage.setItem('auditgava-lang','sw');
-  const {unmount}=render(<LangProvider><PendingBillsAgingPanel observations={{county_assembly:assembly} as any}/></LangProvider>);
+  const {container, unmount}=render(<LangProvider><PendingBillsAgingPanel observations={{county_assembly:assembly} as any}/></LangProvider>);
   fireEvent.change(screen.getByLabelText('Kundi la bili'),{target:{value:'county_assembly'}});
   expect(screen.getByRole('table')).toHaveTextContent('bili za mabunge');
   expect(screen.getByText(/30 Juni 2026/)).toHaveTextContent('Mabunge ya kaunti');
-  expect(screen.getByText(/yanahusu mabunge ya kaunti pekee/)).toBeInTheDocument();
+  container.querySelector('dialog')!.setAttribute('open', '');
+  expect(screen.getByText(/yanahusu bili za mabunge ya kaunti/)).toBeInTheDocument();
   unmount();localStorage.removeItem('auditgava-lang');
 });
 
