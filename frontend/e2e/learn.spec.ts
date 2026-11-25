@@ -1,5 +1,27 @@
 import { expect, test, type Page } from '@playwright/test';
 
+test('Why this matters shows three service sections and four real actions across public widths', async ({ page, browserName }) => {
+  await page.setViewportSize({ width: 360, height: 900 });
+  await page.goto('/learn/why-it-matters');
+  await expect(page.getByRole('heading', { name: 'Why this matters', exact: true })).toHaveCount(1);
+  for (const name of ['Health', 'Education', 'Roads']) {
+    await expect(page.getByRole('region', { name, exact: true })).toContainText('Comparable county budget and spending figures are unavailable here.');
+  }
+  const actions = page.getByRole('region', { name: 'What you can do' });
+  await expect(actions.getByRole('link')).toHaveCount(4);
+  await expect(actions.getByRole('link', { name: /Article 201/ })).toHaveAttribute('href', '/learn?article=201#constitution-book');
+  await expect(actions.getByRole('link', { name: /Email AuditGava/ })).toHaveAttribute('href', /^mailto:/);
+  if (browserName === 'chromium') {
+    for (const width of [360, 390, 768, 1024, 1280, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+      for (const link of await actions.getByRole('link').all()) {
+        expect((await link.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+      }
+    }
+  }
+});
+
 async function glossary(page: Page) {
   await page.goto('/learn/glossary');
   await expect(page.getByRole('searchbox', { name: 'Search glossary' })).toBeVisible();
@@ -350,22 +372,10 @@ test.describe('Engagement Quiz', () => {
   });
 });
 
-test.describe('Why This Matters Section', () => {
-  test('stories section is visible', async ({ page }) => {
-    await page.goto('/learn/why-it-matters');
-    await expect(page.getByRole('heading', { name: 'Your Money, Your Life', exact: true })).toBeVisible();
-    await expect(page.getByText(/Healthcare: Whether hospitals have medicine/)).toBeVisible();
-  });
-  // Current stories/action steps are static prose. Clicking arbitrary buttons
-  // never exercised expansion or an action. Named quarantine under #291.
-  test.fixme('story cards can be expanded', async () => {});
-  test.fixme('action steps are interactive', async () => {});
-});
-
 test.describe('Learn Page Accessibility', () => {
-  test('learn page is keyboard navigable', async ({ page }) => {
+  test('learn page is keyboard navigable', async ({ page, browserName }) => {
     await page.goto('/learn');
-    await page.keyboard.press('Tab');
+    await page.keyboard.press(browserName === 'webkit' && process.platform === 'darwin' ? 'Alt+Tab' : 'Tab');
     await expect(page.getByRole('link', { name: 'Skip to main content' })).toBeFocused();
   });
   test('learn page has proper headings structure', async ({ page }) => {

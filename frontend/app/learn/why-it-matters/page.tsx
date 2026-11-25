@@ -9,13 +9,17 @@
 
 import PageShell from '@/components/layout/PageShell';
 import WhyThisMatters from '@/components/WhyThisMatters';
+import { whyMoneyMatters } from '@/components/why-this-matters/messages';
+import { useLang } from '@/lib/i18n/LangProvider';
 
 export default function WhyItMattersPage() {
+  const { lang, t } = useLang();
   return (
     <PageShell
-      title='Why This Matters'
-      subtitle='How to read these figures — what public spending on healthcare, education and roads is reported to be, where the numbers come from, and what they leave out'
-      back={{ href: '/learn', label: 'Back to Learning Hub' }}>
+      title={whyMoneyMatters.title[lang]}
+      subtitle={whyMoneyMatters.intro[lang]}
+      back={{ href: '/learn', label: t('shell.learn') }}>
+      {/* The reported county service series is tracked in #1017. */}
       <WhyThisMatters />
     </PageShell>
   );
