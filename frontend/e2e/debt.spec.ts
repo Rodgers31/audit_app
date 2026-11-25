@@ -110,10 +110,10 @@ test('debt page source line names the ratio inputs explicitly', async ({ page })
     .toContainText('Synthetic browser fiscal framework (p. 1)');
 });
 
-test.describe('ranked lender groups', () => {
+test.describe('debt composition and lender groups', () => {
   test.use({ hasTouch: true, viewport: { width: 360, height: 820 }, reducedMotion: 'reduce' });
 
-  test('ranks every group, opens full lender names and preserves the published tail', async ({ page }) => {
+  test('shows both rings, all seven keyed instruments and their full lender details', async ({ page }) => {
     await page.route('**/api/v1/debt/national', route => route.fulfill({ json: {
       ...nationalObservation,
       data: { ...nationalObservation.data, categories: lenderGroups },
@@ -121,18 +121,33 @@ test.describe('ranked lender groups', () => {
     await page.goto('/debt');
     const section = page.getByRole('region', { name: 'Who Kenya owes' });
     await expect(section.getByText('Domestic lenders hold more than half of the debt shown (55%).')).toBeVisible();
-    const ranking = section.getByRole('list').nth(1);
-    const categories = ranking.getByRole('button');
-    await expect(categories).toHaveCount(5);
+    const breakdown = section.getByRole('list', { name: 'Breakdown by instrument' });
+    const categories = breakdown.getByRole('button');
+    const donut = section.locator('[data-debt-donut]');
+    const bar = section.locator('[data-instrument-share-bar]');
+    await expect(donut.locator('[data-outer-ring] circle')).toHaveCount(3);
+    await expect(donut.locator('[data-inner-ring] circle')).toHaveCount(7);
+    await expect(donut.locator('[data-donut-center]')).toContainText('KES 13.00T');
+    await expect(donut.locator('[data-donut-center]')).toContainText('7 categories');
+    await expect(categories).toHaveCount(7);
     await expect(categories.first()).toContainText('Domestic bonds');
-    await expect(categories.nth(1)).toContainText('World Bank and other multilaterals');
-    await expect(categories.nth(2)).toContainText('Eurobonds and commercial loans');
-    await expect(section.locator('.recharts-wrapper')).toHaveCount(0);
+    const order = (locator: typeof bar) => locator.evaluateAll(elements => elements.map(el => el.getAttribute('data-key')));
+    expect(await order(bar.locator('[data-key]'))).toEqual(await order(breakdown.locator('[data-key]')));
+    expect(await order(donut.locator('[data-inner-ring] [data-key]'))).toEqual(await order(bar.locator('[data-key]')));
+    const colors = await bar.locator('[data-key]').evaluateAll(elements =>
+      elements.map(el => getComputedStyle(el).backgroundColor));
+    expect(new Set(colors).size).toBe(7);
 
     const multilaterals = section.getByRole('button', { name: /World Bank and other multilaterals/ });
+    const bonds = bar.locator('[data-key="domestic_bonds"]');
+    const originalFill = await bonds.evaluate(segment => getComputedStyle(segment).backgroundColor);
     await multilaterals.focus();
     await page.keyboard.press('Enter');
     await expect(multilaterals).toHaveAttribute('aria-expanded', 'true');
+    await expect(bar.locator('[data-key="external_multilateral"]')).toHaveAttribute('data-muted', 'false');
+    await expect(bonds).toHaveAttribute('data-muted', 'true');
+    await expect(bonds).toHaveCSS('opacity', '1');
+    await expect(bonds).not.toHaveCSS('background-color', originalFill);
     await expect(section.getByText('World Bank International Development Association', { exact: true })).toBeVisible();
     await expect(section.getByText('Synthetic ninth named lender with an intentionally long full name', { exact: true })).toBeVisible();
     const tail = section.getByText('Other lenders (4 reported)', { exact: true }).locator('..');
@@ -140,10 +155,6 @@ test.describe('ranked lender groups', () => {
     await page.keyboard.press('Space');
     await expect(multilaterals).toHaveAttribute('aria-expanded', 'false');
 
-    const more = section.getByRole('button', { name: 'Show 2 more groups', exact: true });
-    await more.tap();
-    await expect(categories).toHaveCount(7);
-    await expect(categories.nth(5)).toBeFocused();
     const unclassified = section.getByRole('button', { name: /Future External Lenders/ });
     await expect(unclassified).toContainText('Lender type unclassified');
     await unclassified.tap();
@@ -151,6 +162,65 @@ test.describe('ranked lender groups', () => {
     await expect(section.getByText(/Shares use the KES 13\.00T total of the lender groups shown/)).toBeVisible();
     await expect(section.getByRole('button', { name: /pending bills/i })).toHaveCount(0);
   });
+});
+
+test('previews the lender type and keyed instrument when hovering the chart', async ({ page }) => {
+  await page.route('**/api/v1/debt/national', route => route.fulfill({ json: {
+    ...nationalObservation, data: { ...nationalObservation.data, categories: lenderGroups },
+  } }));
+  await page.goto('/debt');
+  const section = page.getByRole('region', { name: 'Who Kenya owes' });
+  const donut = section.locator('[data-debt-donut]');
+  const center = donut.locator('[data-donut-center]');
+  await expect(center).toContainText('Total owed');
+  await donut.scrollIntoViewIfNeeded();
+  const bounds = (await donut.boundingBox())!;
+  await page.mouse.move(bounds.x + bounds.width * (0.5 + 124 / 280), bounds.y + bounds.height / 2);
+  await expect(center).toContainText('Domestic');
+  await expect(center).toContainText('KES 7.15T');
+  await page.mouse.move(bounds.x + bounds.width * (0.5 + 94 / 280), bounds.y + bounds.height / 2);
+  await expect(center).toContainText('Instrument 1');
+  await expect(center).toContainText('KES 6.02T');
+  await section.locator('[data-instrument-share-bar] [data-key="external_multilateral"]').hover();
+  await expect(center).toContainText('Instrument 3');
+  await expect(center).toContainText('KES 3.40T');
+  const readout = section.locator('[data-composition-preview]');
+  await expect(readout).toContainText('World Bank and other multilaterals');
+  await expect(readout).toContainText('KES 3.40T · 26%');
+  await section.getByRole('heading', { name: 'Breakdown by instrument' }).hover();
+  await expect(center).toContainText('7 categories');
+  await expect(readout).toHaveCount(0);
+});
+
+test('keeps a numbered key and a full long instrument name readable on a phone', async ({ page }) => {
+  const longKey = 'synthetic_debt_instrument_with_a_very_long_published_name_and_a_precise_scope';
+  await page.route('**/api/v1/debt/national', route => route.fulfill({ json: {
+    ...nationalObservation,
+    data: { ...nationalObservation.data, categories: {
+      domestic_bonds: { total_outstanding: 74 },
+      [longKey]: { total_outstanding: 26 },
+    } },
+  } }));
+  await page.setViewportSize({ width: 360, height: 780 });
+  await page.goto('/debt');
+  const section = page.getByRole('region', { name: 'Who Kenya owes' });
+  const segment = section.locator(`[data-instrument-share-bar] [data-key="${longKey}"]`);
+  for (const width of [360, 390]) {
+    await page.setViewportSize({ width, height: 780 });
+    await expect(segment.locator('> span')).toBeVisible();
+    await expect(segment.getByText(/26%/)).toBeHidden();
+    await segment.hover();
+    const readout = section.locator('[data-composition-preview]');
+    await expect(readout).toContainText('Synthetic Debt Instrument With A Very Long Published Name And A Precise Scope');
+    await expect(readout).toContainText('KES 26 · 26%');
+    const position = await readout.evaluate(el => {
+      const bounds = el.getBoundingClientRect();
+      return { left: bounds.left, right: bounds.right, width: el.clientWidth, scroll: el.scrollWidth };
+    });
+    expect(position.left).toBeGreaterThanOrEqual(0);
+    expect(position.right).toBeLessThanOrEqual(width);
+    expect(position.scroll).toEqual(position.width);
+  }
 });
 
 test('gives separate commercial loans and Eurobonds their own labels when both are reported', async ({ page }) => {
@@ -186,6 +256,11 @@ test('discloses the basis of principal-only amounts and keeps small positive sha
   await expect(section.getByText('The largest group is Domestic bonds, with 99.8% of the amounts shown.')).toBeVisible();
   await expect(section.getByText('Groups labeled original principal use the loan amount originally recorded.')).toBeVisible();
   await expect(section.getByText(/Shares use the KES 10,000 total of the amounts shown/)).toBeVisible();
+  await expect(section.locator('[data-donut-center]')).toContainText('Total shown');
+  const smallSegment = section.locator('[data-instrument-share-bar] [data-key="future_external_lenders"]');
+  expect(await smallSegment.evaluate(el =>
+    el.getBoundingClientRect().width / el.parentElement!.getBoundingClientRect().width)).toBeCloseTo(0.002, 3);
+  await expect(smallSegment.locator('> span')).toBeHidden();
   const small = section.getByRole('button', { name: /Future External Lenders/ });
   await expect(small).toContainText('0.2% · Lender type unclassified · Original principal');
   await small.click();
