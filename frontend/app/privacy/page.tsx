@@ -203,6 +203,16 @@ export default function PrivacyPolicyPage() {
           (if you create an account). We do not use advertising, marketing, or cross-site tracking
           cookies.
         </p>
+        <p>
+          If the{' '}
+          <Link href='/counties' className='text-neutral-text underline underline-offset-2'>
+            County Explorer
+          </Link>{' '}
+          offers &ldquo;Your county&rdquo; and your browser allows site storage, your browser
+          remembers the last county page that loaded successfully so you can return to it. This
+          preference stays in that browser on your device. To remove it, clear AuditGava&rsquo;s
+          site data in your browser settings.
+        </p>
       </Section>
 
       {/* ── Children ── */}
