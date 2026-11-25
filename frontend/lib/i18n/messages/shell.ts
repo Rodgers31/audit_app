@@ -65,6 +65,17 @@ export const SHELL_MESSAGES = {
   'shell.footer_independent': { en: 'Independent · not a government agency', sw: 'Huru · si shirika la serikali', plain: 'Independent · not a government agency' },
   'shell.footer_notice': { en: 'By using AuditGava you agree to our {terms}.', sw: 'Kwa kutumia AuditGava unakubali {terms} yetu.', plain: 'By using AuditGava you agree to our {terms}.' },
   'shell.footer_social': { en: 'Follow AuditGava', sw: 'Fuatilia AuditGava', plain: 'Follow AuditGava' },
+  'shell.footer_support_title': {
+    en: 'Help keep AuditGava independent',
+    sw: 'Saidia AuditGava iendelee kuwa huru',
+    plain: 'Help keep AuditGava independent',
+  },
+  'shell.footer_support_message': {
+    en: 'Every coffee helps cover the domain, database hosting, and other costs of keeping AuditGava free. We plan to cover more African countries, and your support helps fund the engineering time to add their budgets and audit reports.',
+    sw: 'Kila kahawa unayoninunulia hutusaidia kulipia jina la tovuti, kuhifadhi hifadhidata na kugharamia huduma nyingine ili AuditGava iendelee kuwa ya bure. Tunapanga kuongeza nchi nyingine za Afrika. Mchango wako husaidia kulipia kazi ya wahandisi ya kuleta bajeti na ripoti za ukaguzi za nchi hizo kwenye tovuti.',
+    plain: 'Buying me a coffee helps pay for the web address, the database, and other costs of keeping AuditGava free. We plan to add budgets and audit reports from more African countries. Your support helps pay for the time it takes to build that.',
+  },
+  'shell.footer_support_link': { en: 'Buy me a coffee', sw: 'Ninunulie kahawa', plain: 'Buy me a coffee' },
   'shell.not_found': { en: 'We can’t find that page', sw: 'Hatuwezi kupata ukurasa huo', plain: 'We can’t find that page' },
   'shell.not_found_hint': { en: 'The link may be old, or the page may have moved.', sw: 'Huenda kiungo ni cha zamani, au ukurasa umehamishwa.', plain: 'The link may be old, or the page may have moved.' },
   'shell.search': { en: 'Search counties, findings, terms', sw: 'Tafuta kaunti, matokeo ya ukaguzi au istilahi', plain: 'Search counties, findings, terms' },
