@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { expect, test, type Page } from '@playwright/test';
 
 async function glossary(page: Page) {
@@ -6,8 +7,11 @@ async function glossary(page: Page) {
 }
 async function quiz(page: Page) {
   await page.goto('/learn/quiz');
-  await page.getByRole('button', { name: /Public finance/i }).click();
-  await expect(page.getByRole('progressbar', { name: 'Quiz progress' })).toHaveAttribute('aria-valuetext', '1 of 6');
+  const finance = page.getByRole('button', { name: /Public finance/i });
+  // The shared browser fixture supplies qualified Approved fiscal measures.
+  await expect(finance).toContainText('7 questions');
+  await finance.click();
+  await expect(page.getByRole('progressbar', { name: 'Quiz progress' })).toHaveAttribute('aria-valuetext', '1 of 7');
 }
 
 test.describe('Learn Page', () => {
@@ -258,21 +262,21 @@ test.describe('Engagement Quiz', () => {
     await quiz(page);
     await page.getByRole('group', { name: 'Answers' }).getByRole('button').first().click();
     await page.getByRole('button', { name: /Next Question/i }).click();
-    await expect(page.getByRole('progressbar', { name: 'Quiz progress' })).toHaveAttribute('aria-valuetext', '2 of 6');
+    await expect(page.getByRole('progressbar', { name: 'Quiz progress' })).toHaveAttribute('aria-valuetext', '2 of 7');
   });
   test('quiz shows results after completion', async ({ page }) => {
     await quiz(page);
-    for (let n = 1; n <= 6; n++) {
-      await expect(page.getByRole('progressbar', { name: 'Quiz progress' })).toHaveAttribute('aria-valuetext', `${n} of 6`);
+    for (let n = 1; n <= 7; n++) {
+      await expect(page.getByRole('progressbar', { name: 'Quiz progress' })).toHaveAttribute('aria-valuetext', `${n} of 7`);
       await page.getByRole('group', { name: 'Answers' }).getByRole('button').first().click();
       await page.getByRole('button', { name: /Next Question|See Results/i }).click();
     }
     await expect(page.getByRole('heading', { name: 'Review Answers', exact: true })).toBeVisible();
-    const score = page.getByRole('heading', { name: /^\d of 6 correct$/ });
+    const score = page.getByRole('heading', { name: /^\d of 7 correct$/ });
     await expect(score).toBeFocused();
-    await expect(page.getByRole('region', { name: 'Review Answers' }).getByRole('listitem')).toHaveCount(6);
+    await expect(page.getByRole('region', { name: 'Review Answers' }).getByRole('listitem')).toHaveCount(7);
     await page.getByRole('button', { name: /Play Again/i }).click();
-    await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuetext', '1 of 6');
+    await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuetext', '1 of 7');
   });
 
   test('focus mode preserves keyboard play and restores the launcher on quit', async ({ page }) => {
@@ -305,6 +309,13 @@ test.describe('Engagement Quiz', () => {
     await page.addInitScript(() => { Math.random = () => 0.5; });
     await quiz(page);
     const active = page.getByRole('dialog');
+    await active.getByRole('button', { name: 'KES 50', exact: true }).click();
+    await expect(active.getByRole('heading', { name: 'Correct.' })).toBeFocused();
+    await expect(active.getByRole('link', { name: /See it on the debt page/ })).toHaveAttribute('href', '/debt');
+    await expect(active.getByRole('link', { name: /Source document/ })).toHaveAttribute(
+      'href', 'https://www.treasury.go.ke/synthetic-browser-fixture.pdf',
+    );
+    await active.getByRole('button', { name: 'Next question' }).click();
     await active.getByRole('group', { name: 'Answers' }).getByRole('button').first().click();
     await expect(active.getByRole('link', { name: /Article/ })).toHaveCount(0);
     await active.getByRole('button', { name: 'Next question' }).click();
@@ -318,7 +329,7 @@ test.describe('Engagement Quiz', () => {
     await expect(newTab).toHaveURL(/\/learn\?article=228$/);
     await expect(newTab.getByRole('heading', { name: 'Controller of Budget', exact: true })).toBeVisible();
     await newTab.close();
-    await expect(active.getByRole('progressbar')).toHaveAttribute('aria-valuetext', '2 of 6');
+    await expect(active.getByRole('progressbar')).toHaveAttribute('aria-valuetext', '3 of 7');
   });
 
   test('the mobile quiz keeps answers in reach and closes by touch', async ({ browser }, testInfo) => {
@@ -347,6 +358,44 @@ test.describe('Engagement Quiz', () => {
     } finally {
       await phone.close();
     }
+  });
+
+  test('Daily 3 keeps the result on this browser and exports only a score image', async ({ page }) => {
+    await page.goto('/learn/quiz');
+    await expect(page.getByRole('button', { name: /Public finance/ })).toContainText('7 questions');
+    const difficulty = page.getByRole('combobox', { name: 'Difficulty' });
+    await difficulty.selectOption('hard');
+    await expect(page.getByRole('button', { name: /Quick Play/ })).not.toContainText('10 questions');
+    const daily = page.getByRole('button', { name: /Daily 3/ });
+    await daily.press('Enter');
+
+    const round = page.getByRole('dialog');
+    const first = await round.getByRole('heading', { level: 1 }).textContent();
+    for (let number = 1; number <= 3; number++) {
+      await expect(round.getByRole('progressbar')).toHaveAttribute('aria-valuetext', `${number} of 3`);
+      await round.getByRole('group', { name: 'Answers' }).getByRole('button').first().press('Enter');
+      await expect(round.getByRole('link', { name: /Article/ })).toBeVisible();
+      await round.getByRole('button', { name: number === 3 ? 'See results' : 'Next question' }).press('Enter');
+    }
+    const score = page.getByRole('heading', { name: /^[0-3] of 3 correct$/ });
+    await expect(score).toBeFocused();
+    const result = await score.textContent();
+    const downloadPromise = page.waitForEvent('download');
+    await page.getByRole('link', { name: 'Download result image' }).press('Enter');
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toBe('auditgava-daily-3.png');
+    const png = await readFile(await download.path());
+    expect(png.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
+    expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([1200, 630]);
+
+    await page.reload();
+    await expect(daily).toContainText('View result');
+    await daily.press('Enter');
+    await expect(score).toHaveText(result ?? '');
+    await page.getByRole('button', { name: 'Play Again' }).press('Enter');
+    await expect(round.getByRole('heading', { level: 1 })).toHaveText(first ?? '');
+    await page.keyboard.press('Escape');
+    await expect(daily).toBeFocused();
   });
 });
 

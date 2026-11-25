@@ -13,6 +13,9 @@ export interface QuizQuestion {
   correctIndex: number;
   explanation: string;
   difficulty: 'easy' | 'medium' | 'hard';
+  language?: 'en' | 'sw';
+  context?: string;
+  sourceUrl?: string;
 }
 
 export interface QuizCategory {
@@ -192,7 +195,7 @@ export const quizCategories: QuizCategory[] = [
         options: ['44', '47', '50', '54'],
         correctIndex: 1,
         explanation:
-          'Kenya has 47 counties established under the Fourth Schedule of the Constitution. Each has its own elected governor and county assembly.',
+          'Kenya has 47 counties. Article 6(1) refers to the First Schedule, which lists all 47 by name.',
         difficulty: 'easy',
       },
       {
@@ -319,7 +322,7 @@ export const quizCategories: QuizCategory[] = [
       },
       {
         id: 'fin-5',
-        question: 'Which office audits government spending and reports to Parliament?',
+        question: 'Which office audits national and county government accounts?',
         options: [
           'Kenya Anti-Corruption Commission',
           'Office of the Auditor General',
@@ -328,7 +331,7 @@ export const quizCategories: QuizCategory[] = [
         ],
         correctIndex: 1,
         explanation:
-          'Article 229: The Auditor General audits all accounts of national and county governments and reports to Parliament within 6 months.',
+          'Article 229(4) gives the Auditor-General six months from the end of each financial year to audit and report. Under Article 229(7), the report goes to Parliament or the relevant county assembly.',
         difficulty: 'medium',
       },
       {
@@ -536,9 +539,9 @@ export function getAllQuestions(): QuizQuestion[] {
   return quizCategories.flatMap((c) => c.questions);
 }
 
-export function getRandomQuestions(count: number): QuizQuestion[] {
-  const all = getAllQuestions();
-  const shuffled = [...all].sort(() => Math.random() - 0.5);
+export function getRandomQuestions(count: number, difficulty?: QuizQuestion['difficulty']): QuizQuestion[] {
+  const all = getAllQuestions().filter(question => !difficulty || question.difficulty === difficulty);
+  const shuffled = all.sort(() => Math.random() - 0.5);
   return shuffled.slice(0, count);
 }
 
