@@ -21,8 +21,8 @@ import { waitForAppReady } from './utils/selectors';
 
 test.describe('Back-navigation state preservation', () => {
   test('county list → detail → back restores pagination (?p=N)', async ({ page }) => {
-    // Start on /counties fresh (no query params)
-    await page.goto('/counties');
+    // Open the sortable table without a saved page.
+    await page.goto('/counties?layout=table');
     await waitForAppReady(page);
 
     // Wait for the rankings table to populate
@@ -61,7 +61,7 @@ test.describe('Back-navigation state preservation', () => {
   });
 
   test('?p=N deep link round-trip (reload + share)', async ({ page }) => {
-    await page.goto('/counties?p=3');
+    await page.goto('/counties?layout=table&p=3');
     await waitForAppReady(page);
 
     await expect(page.getByText(/Showing\s+21[–\-]30\s+of/)).toBeVisible({
@@ -138,7 +138,7 @@ test.describe('URL-driven state', () => {
 
 test.describe('Scroll restoration', () => {
   test('back-navigation restores approximate scroll position', async ({ page }) => {
-    await page.goto('/counties');
+    await page.goto('/counties?layout=table');
     await waitForAppReady(page);
 
     // Scroll down

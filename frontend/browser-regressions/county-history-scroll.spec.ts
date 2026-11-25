@@ -5,17 +5,23 @@ test.use({ viewport: { width: 1128, height: 906 } });
 // Separate from the original browser inventory. Exercise the browser's history
 // restoration, including a forward transition interrupted by another Back.
 test('rapid county history returns retain the saved list position', async ({ page }) => {
-  await page.goto('/counties?p=2');
+  await page.goto('/counties?layout=table&p=2');
   await expect(page.getByText(/Showing\s+11[–\-]20\s+of/)).toBeVisible();
-  const firstCounty = page.locator('table tbody tr').first().getByRole('link').first();
-  // Position the link before measuring; a click's implicit auto-scroll is not
-  // part of the list position that browser history is expected to restore.
+  await expect(page.getByRole('button', { name: 'Table view', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  const table = page.getByRole('table', { name: 'County Rankings' });
+  const firstCounty = table.locator('tbody tr').first().getByRole('link').first();
   await firstCounty.scrollIntoViewIfNeeded();
+  // The nested table and viewport can already show the link near the fold.
+  // Set a document position that keeps the link visible for keyboard activation.
+  await firstCounty.evaluate(link => {
+    const top = window.scrollY + link.getBoundingClientRect().top;
+    window.scrollTo({ top: Math.round(top - window.innerHeight / 3), behavior: 'instant' });
+  });
+  await expect(firstCounty).toBeInViewport({ ratio: 1 });
   const listUrl = page.url();
   const saved = await page.evaluate(() => ({
     y: scrollY,
     height: document.documentElement.scrollHeight,
-    viewport: innerHeight,
   }));
   expect(saved.y).toBeGreaterThan(100);
   const expectSavedPosition = async () => {

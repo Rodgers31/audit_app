@@ -1,6 +1,10 @@
 import type { Translation } from '../messages';
 
 export const COUNTY_EXPLORER_MESSAGES = {
+  'counties.desktop.table_view': { en: 'Table view', sw: 'Mwonekano wa jedwali', plain: 'Table view' },
+  'counties.desktop.table_area': { en: 'Sortable county table', sw: 'Jedwali la kupanga kaunti', plain: 'Sortable county table' },
+  'counties.desktop.county_name': { en: '{county} County', sw: 'Kaunti ya {county}', plain: '{county} County' },
+  'counties.desktop.selected': { en: 'Selected county', sw: 'Kaunti iliyochaguliwa', plain: 'Selected county' },
   'counties.rankings.show_all_count': { en: 'Show all {count} counties', sw: 'Onyesha kaunti zote {count}', plain: 'Show all {count} counties' },
   'counties.rankings.rank': { en: 'Rank', sw: 'Nafasi', plain: 'Rank' },
   'counties.rankings.spending_period': { en: 'Spending rate · {period}', sw: 'Kiwango cha matumizi · {period}', plain: 'Share of budget spent · {period}' },

@@ -5,7 +5,7 @@ import { registerApiMocks } from './utils/mockApi';
 // synthetic API rather than conditionally accepting absent charts or SVG icons.
 test.describe('Chart Data Validation - Counties Page', () => {
   test('budget chart displays correct data', async ({ page }) => {
-    await page.goto('/counties');
+    await page.goto('/counties?layout=table');
     await page.getByPlaceholder('Type to search…').fill('Nairobi');
     await expect(page.locator('table tbody tr')).toHaveCount(1);
     await expect(page.locator('table tbody tr')).toContainText('10.0B');
@@ -16,7 +16,7 @@ test.describe('Chart Data Validation - Counties Page', () => {
     expect(response.ok()).toBe(true);
     const county = await response.json();
     expect(county.financial_summary.total_allocation).toBe(10_000_000_000);
-    await page.goto('/counties');
+    await page.goto('/counties?layout=table');
     await page.getByPlaceholder('Type to search…').fill('Nairobi');
     await expect(page.locator('table tbody tr')).toContainText(`${(county.financial_summary.total_allocation / 1e9).toFixed(1)}B`);
   });

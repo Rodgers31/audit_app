@@ -14,7 +14,7 @@ for (const delivery of ['pending', 'failed'] as const) {
       await route.fulfill({ response });
     });
     try {
-      await page.goto('/counties');
+      await page.goto('/counties?layout=table');
       await waitForAppReady(page);
       await expect(page.locator('table tbody tr')).toHaveCount(10);
       const documentOrigin = await page.evaluate(() => performance.timeOrigin);
@@ -43,7 +43,7 @@ test('rapid pagination and view-all keep the latest list state without a server 
     await route.fulfill({ response });
   });
   try {
-    await page.goto('/counties');
+    await page.goto('/counties?layout=table');
     await waitForAppReady(page);
     await expect(page.locator('table tbody tr')).toHaveCount(10);
     await page.getByRole('button', { name: '2', exact: true }).click();
