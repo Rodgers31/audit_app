@@ -1,0 +1,15 @@
+export const FIGURE_SHARE_MESSAGES = {
+  card: { en: 'Shareable figure', sw: 'Takwimu ya kushiriki', plain: 'Figure to share' },
+  missingFigure: { en: 'A public figure is unavailable.', sw: 'Takwimu ya umma haipatikani.', plain: 'There is no published figure to share.' },
+  missingSource: { en: 'The source and reporting period are incomplete.', sw: 'Taarifa za chanzo na kipindi cha ripoti hazijakamilika.', plain: 'The figure needs a source and reporting period.' },
+  invalidSource: { en: 'The source link is invalid.', sw: 'Kiungo cha chanzo si halali.', plain: 'The source link is invalid.' },
+  prepare: { en: 'Prepare image', sw: 'Andaa picha', plain: 'Make image' },
+  prepareAgain: { en: 'Prepare again', sw: 'Andaa tena', plain: 'Make image again' },
+  preparing: { en: 'Preparing image…', sw: 'Inaandaa picha…', plain: 'Making image…' },
+  prepareFailed: { en: 'The image could not be prepared. Try again.', sw: 'Picha haikuweza kuandaliwa. Jaribu tena.', plain: 'We could not make the image. Try again.' },
+  share: { en: 'Share image', sw: 'Shiriki picha', plain: 'Share image' },
+  download: { en: 'Download image', sw: 'Pakua picha', plain: 'Download image' },
+  readyShare: { en: 'Image ready to share or download.', sw: 'Picha iko tayari kushiriki au kupakua.', plain: 'You can now share or download the image.' },
+  readyDownload: { en: 'Image ready to download.', sw: 'Picha iko tayari kupakuliwa.', plain: 'You can now download the image.' },
+  shareFailed: { en: 'Could not open file sharing. Download the image to share it.', sw: 'Ushiriki wa faili haukuweza kufunguka. Pakua picha ili kuishiriki.', plain: 'Download the image to share it from your device.' },
+} as const;
