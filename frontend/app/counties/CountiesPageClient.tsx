@@ -23,6 +23,18 @@ import {
   spendingBand,
   type SpendingBand,
 } from '@/lib/counties/spendingRate';
+import { COUNTY_CENSUS_YEAR, loadCountyCensus, publishedBudgetPerPerson } from '@/lib/counties/budgetPerPerson';
+import { useQuery } from '@tanstack/react-query';
+import {
+  PerPersonLegend,
+  PerPersonSummary,
+  formatPerPerson,
+  perPersonTone,
+  type PerPersonMeasure,
+} from './CountyPerPerson';
+import { countyUnpaidBills, formatUnpaidBills, unpaidBillsTone, type UnpaidBillsMeasure } from '@/lib/counties/explorerUnpaidBills';
+import { UnpaidBillsDate, UnpaidBillsLegend, UnpaidBillsSource, UnpaidBillsSummary } from './CountyUnpaidBills';
+import unpaidBillsStyles from './CountyExplorerUnpaidBills.module.css';
 import { countyDebtRatio } from '@/components/map/MapUtilities';
 import { useCounties, useCountyFiscalYears } from '@/lib/react-query';
 import { resolveExplorerYear } from '@/lib/utils';
@@ -407,6 +419,7 @@ function FiltersSidebar({
   setCollapsed,
   onApply,
   onReset,
+  hideSort,
 }: {
   filters: FilterState;
   setFilters: React.Dispatch<React.SetStateAction<FilterState>>;
@@ -414,6 +427,7 @@ function FiltersSidebar({
   setCollapsed: (v: boolean) => void;
   onApply: () => void;
   onReset: () => void;
+  hideSort: boolean;
 }) {
   const { t } = useLang();
 
@@ -530,38 +544,40 @@ function FiltersSidebar({
             />
             <span>KES 0B — {filters.spendingRange[1]}B+</span>
           </label>
-          <label className={styles.selectField}>
-            <span>{t('counties.filter.sort')}</span>
-            <select
-              value={filters.sortBy}
-              onChange={(e) => setFilters((f) => ({ ...f, sortBy: e.target.value }))}>
-              {(
-                [
-                  'budget-desc',
-                  'budget-asc',
-                  'debt-desc',
-                  'population-desc',
-                  'population-asc',
-                  'health-desc',
-                  'utilization-desc',
-                ] as const
-              ).map((value, i) => (
-                <option key={value} value={value}>
-                  {t(
-                    [
-                      'counties.sort.budget_high_low',
-                      'counties.sort.budget_low_high',
-                      'counties.sort.debt_high_low',
-                      'counties.sort.population_high_low',
-                      'counties.sort.population_low_high',
-                      'counties.sort.grade_best_worst',
-                      'counties.sort.execution_high_low',
-                    ][i] as TranslationKey
-                  )}
-                </option>
-              ))}
-            </select>
-          </label>
+          {!hideSort && (
+            <label className={styles.selectField}>
+              <span>{t('counties.filter.sort')}</span>
+              <select
+                value={filters.sortBy}
+                onChange={(e) => setFilters((f) => ({ ...f, sortBy: e.target.value }))}>
+                {(
+                  [
+                    'budget-desc',
+                    'budget-asc',
+                    'debt-desc',
+                    'population-desc',
+                    'population-asc',
+                    'health-desc',
+                    'utilization-desc',
+                  ] as const
+                ).map((value, i) => (
+                  <option key={value} value={value}>
+                    {t(
+                      [
+                        'counties.sort.budget_high_low',
+                        'counties.sort.budget_low_high',
+                        'counties.sort.debt_high_low',
+                        'counties.sort.population_high_low',
+                        'counties.sort.population_low_high',
+                        'counties.sort.grade_best_worst',
+                        'counties.sort.execution_high_low',
+                      ][i] as TranslationKey
+                    )}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <div className={styles.filterActions}>
             <button onClick={onApply}>{t('counties.filters.apply')}</button>
             <button onClick={onReset}>{t('counties.filters.reset')}</button>
@@ -603,6 +619,8 @@ function CountyPerformanceMap({
   counties,
   allCounties,
   readSpendingRate,
+  perPerson,
+  unpaidBills,
   selectedRegion,
   fiscalYear,
 }: {
@@ -610,6 +628,8 @@ function CountyPerformanceMap({
   allCounties: County[]; // all counties (always render all polygons)
   readSpendingRate: (county: County) => number | undefined;
   selectedRegion: string;
+  perPerson?: PerPersonMeasure;
+  unpaidBills?: UnpaidBillsMeasure;
   fiscalYear?: string;
 }) {
   const { lang, t } = useLang();
@@ -628,6 +648,8 @@ function CountyPerformanceMap({
     if (!sheetCounty && sheet?.open) sheet.close();
   }, [sheetCounty]);
 
+  const mapTitle = t(unpaidBills ? 'counties.unpaid_bills.map_title'
+    : perPerson ? 'counties.per_person.map_title' : 'counties.spending.map_title');
   const annualTarget = hasAnnualSpendingTarget(fiscalYear);
   const legendBands: SpendingBand[] = annualTarget
     ? [...ANNUAL_SPENDING_BANDS, 'unavailable']
@@ -693,25 +715,33 @@ function CountyPerformanceMap({
   const inspected = counties.find((county) => county.id === activeCounty?.id) ?? counties[0] ?? null;
   const countyHref = (county: County) =>
     `/counties/${county.id}${fiscalYear ? `?fy=${encodeURIComponent(fiscalYear)}` : ''}`;
+  const renderSummary = (county: County) => {
+    if (unpaidBills) return <UnpaidBillsSummary measure={unpaidBills} countyId={county.id} />;
+    return perPerson
+      ? <PerPersonSummary amount={perPerson.amounts.get(county.id)} fiscalYear={fiscalYear} />
+      : <SpendingSummary rate={readSpendingRate(county)} fiscalYear={fiscalYear} />;
+  };
   return (
     <section className={styles.spendingMap} aria-labelledby='county-map-title'>
       <header className={styles.sectionHeading}>
-        <h2 id='county-map-title'>{t('counties.spending.map_title')}</h2>
-        <span>{fiscalYear}</span>
+        <h2 id='county-map-title'>{mapTitle}</h2>
+        <span>{unpaidBills ? <UnpaidBillsDate asAt={unpaidBills.asAt} /> : fiscalYear}</span>
       </header>
-      <ul className={styles.mapLegend} aria-label={t('counties.spending.legend')}>
-        {legendBands.map((band) => (
-          <li key={band} data-spending-band={band}>
-            <i aria-hidden='true' />
-            <SpendingStatus band={band} />
-          </li>
-        ))}
-      </ul>
+      {unpaidBills ? <UnpaidBillsLegend measure={unpaidBills} /> : perPerson ? <PerPersonLegend measure={perPerson} /> : (
+        <ul className={styles.mapLegend} aria-label={t('counties.spending.legend')}>
+          {legendBands.map((band) => (
+            <li key={band} data-spending-band={band}>
+              <i aria-hidden='true' />
+              <SpendingStatus band={band} />
+            </li>
+          ))}
+        </ul>
+      )}
       <div className={styles.mapCanvas}>
         <svg
           viewBox={regionViewBox}
           className={styles.mapSvg}
-          aria-label={t('counties.spending.map_title')}
+          aria-label={mapTitle}
           onPointerDown={(event) => {
             pointerType.current = event.pointerType;
           }}
@@ -722,6 +752,11 @@ function CountyPerformanceMap({
             const county = allLookup.get(normalizeCountyName(cp.name));
             const rate = county ? readSpendingRate(county) : undefined;
             const band = spendingBand(rate, fiscalYear);
+            const amount = county && (unpaidBills ?? perPerson)?.amounts.get(county.id)?.value;
+            const amountMeasureLabel = unpaidBills ? t('counties.unpaid_bills.measure') : t('counties.per_person.measure');
+            const amountLabel = unpaidBills
+              ? amount == null ? t('counties.unpaid_bills.unavailable') : formatUnpaidBills(amount)
+              : amount == null ? t('counties.per_person.unavailable') : formatPerPerson(amount);
             const dimmed = !filteredNames.has(normalizeCountyName(cp.name));
             const interactive = county != null && !dimmed;
             const selected = interactive && activeCounty?.id === county.id && activeCounty.selected;
@@ -729,21 +764,25 @@ function CountyPerformanceMap({
               <path
                 key={cp.name}
                 d={cp.path}
-                fill='var(--county-spending-fill)'
+                fill={unpaidBills ? 'var(--unpaid-bills-fill)' : perPerson ? 'var(--county-per-person-fill)' : 'var(--county-spending-fill)'}
                 stroke='var(--county-map-boundary)'
                 strokeWidth={0.7}
                 opacity={dimmed ? 0.2 : 1}
                 role={interactive ? 'link' : undefined}
                 tabIndex={interactive ? 0 : undefined}
-                data-spending-band={band}
+                data-spending-band={unpaidBills || perPerson ? undefined : band}
+                data-unpaid-bills-tone={unpaidBills ? unpaidBillsTone(amount, unpaidBills.maximum) : undefined}
+                data-per-person-tone={perPerson ? perPersonTone(amount, perPerson.maximum) : undefined}
                 aria-controls={interactive ? 'county-map-readout' : undefined}
                 aria-hidden={interactive ? undefined : true}
                 aria-current={selected ? 'true' : undefined}
                 aria-label={
                   interactive
-                    ? [county.name, t('counties.spending.measure'),
-                        rate == null ? null : formatSpendingRate(rate),
-                        t(`counties.spending.${band}`)].filter(Boolean).join(', ')
+                    ? unpaidBills || perPerson
+                      ? [county.name, amountMeasureLabel, amountLabel].join(', ')
+                      : [county.name, t('counties.spending.measure'),
+                          rate == null ? null : formatSpendingRate(rate),
+                          t(`counties.spending.${band}`)].filter(Boolean).join(', ')
                     : undefined
                 }
                 onClick={(event) => {
@@ -789,7 +828,7 @@ function CountyPerformanceMap({
               {COUNTY_EXPLORER_MESSAGES['counties.map.open'][lang].replace('{county}', inspected.name)}
               <span aria-hidden='true'>↗</span>
             </Link>
-            <SpendingSummary rate={readSpendingRate(inspected)} fiscalYear={fiscalYear} />
+            {renderSummary(inspected)}
           </>
         )}
       </div>
@@ -808,7 +847,7 @@ function CountyPerformanceMap({
                 </button>
               </form>
             </header>
-            <SpendingSummary rate={readSpendingRate(sheetCounty)} fiscalYear={fiscalYear} />
+            {renderSummary(sheetCounty)}
             <Link href={countyHref(sheetCounty)}>
               {COUNTY_EXPLORER_MESSAGES['counties.map.open'][lang].replace('{county}', sheetCounty.name)}
               <span aria-hidden='true'>↗</span>
@@ -1179,10 +1218,14 @@ function CountyRankingsTable({
   onSort,
   fiscalYear,
   readSpendingRate,
+  perPerson,
+  unpaidBills,
 }: {
   counties: County[];
   sortField: SortField;
   sortDir: SortDir;
+  perPerson?: PerPersonMeasure;
+  unpaidBills?: UnpaidBillsMeasure;
   onSort: (f: SortField) => void;
   /** The year the list is showing, or undefined while the API has not said
    *  which one that is. Undefined omits ?fy= from the row links, which leaves
@@ -1315,6 +1358,11 @@ function CountyRankingsTable({
           <h3 className={`${styles.rankingsTitle} text-sm font-bold text-gray-900 dark:text-neutral-text`}>
             {t('counties.rankings.title')}
           </h3>
+          {unpaidBills && (
+            <span className={styles.spendingPeriod}>
+              {t('counties.unpaid_bills.measure')} · <UnpaidBillsDate asAt={unpaidBills.asAt} />
+            </span>
+          )}
           {counties.length > 0 && <span className='text-sm text-neutral-muted' aria-live='polite'>
             {showAll
               ? t('counties.rankings.showing_all').replace('{n}', String(counties.length))
@@ -1327,28 +1375,30 @@ function CountyRankingsTable({
       </div>
 
       <div className={styles.mobileSort}>
-        <label className={styles.selectField}>
-          <span>{t('counties.filter.sort')}</span>
-          <select
-            aria-label={`${t('counties.rankings.title')} — ${t('counties.filter.sort')}`}
-            value={sortField}
-            onChange={(event) => onSort(event.target.value as SortField)}>
-            {(
-              [
-                ['name', 'counties.rankings.col_county'],
-                ['population', 'counties.rankings.col_population'],
-                ['health', 'counties.rankings.col_health'],
-                ['budget', 'counties.rankings.col_budget'],
-                ['utilization', 'counties.spending.measure'],
-                ['debt', 'counties.rankings.col_debt'],
-              ] as const
-            ).map(([field, label]) => (
-              <option key={field} value={field}>
-                {t(label)}
-              </option>
-            ))}
-          </select>
-        </label>
+        {!perPerson && !unpaidBills && (
+          <label className={styles.selectField}>
+            <span>{t('counties.filter.sort')}</span>
+            <select
+              aria-label={`${t('counties.rankings.title')} — ${t('counties.filter.sort')}`}
+              value={sortField}
+              onChange={(event) => onSort(event.target.value as SortField)}>
+              {(
+                [
+                  ['name', 'counties.rankings.col_county'],
+                  ['population', 'counties.rankings.col_population'],
+                  ['health', 'counties.rankings.col_health'],
+                  ['budget', 'counties.rankings.col_budget'],
+                  ['utilization', 'counties.spending.measure'],
+                  ['debt', 'counties.rankings.col_debt'],
+                ] as const
+              ).map(([field, label]) => (
+                <option key={field} value={field}>
+                  {t(label)}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <button
           className={styles.exportButton}
           onClick={() => onSort(sortField)}
@@ -1358,7 +1408,46 @@ function CountyRankingsTable({
         </button>
       </div>
       <MobileCountyRanking counties={counties} paged={paged} firstRank={showAll ? 1 : (page - 1) * PAGE_SIZE + 1}
-        sort={sortField} fiscalYear={fiscalYear} formatKes={fmtKES} readSpendingRate={readSpendingRate} />
+        sort={sortField} fiscalYear={fiscalYear} formatKes={fmtKES} perPerson={perPerson} unpaidBills={unpaidBills} readSpendingRate={readSpendingRate} />
+      {perPerson || unpaidBills ? (
+        <ResponsiveTable className={styles.rankingsTable}>
+          <table className={styles.perPersonTable} aria-label={t('counties.rankings.title')}>
+            <thead className={unpaidBills ? unpaidBillsStyles.tableHeader : undefined}>
+              <tr>
+                <th scope='col'>#</th>
+                <th scope='col'>{t('counties.rankings.col_county')}</th>
+                <th scope='col' aria-sort={sortDir === 'asc' ? 'ascending' : 'descending'}>
+                  <button type='button' onClick={() => onSort(sortField)}>
+                    {t(unpaidBills ? 'counties.unpaid_bills.measure' : 'counties.per_person.measure')} <span aria-hidden='true'>{sortDir === 'asc' ? '↑' : '↓'}</span>
+                  </button>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {paged.map((county, index) => {
+                const perPersonAmount = perPerson?.amounts.get(county.id);
+                const unpaidAmount = unpaidBills?.amounts.get(county.id);
+                const hasAmount = perPersonAmount != null || unpaidAmount != null;
+                const displayAmount = unpaidBills
+                  ? unpaidAmount ? formatUnpaidBills(unpaidAmount.value) : t('counties.unpaid_bills.unavailable')
+                  : perPersonAmount ? formatPerPerson(perPersonAmount.value) : t('counties.per_person.unavailable');
+                return (
+                  <tr key={county.id}>
+                    <td>{hasAmount ? (showAll ? 0 : (page - 1) * PAGE_SIZE) + index + 1 : '—'}</td>
+                    <td><Link href={countyRecordHref(county.id, fiscalYear)}>{county.name}</Link></td>
+                    <td>
+                      {displayAmount}
+                      {unpaidAmount && (
+                        <div><UnpaidBillsSource sourceUrl={unpaidAmount.sourceUrl} sourceTable={unpaidAmount.sourceTable} /></div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </ResponsiveTable>
+      ) : (
       <ResponsiveTable className={styles.rankingsTable}>
         <table className='w-full border-collapse' aria-label={t('counties.rankings.title')}>
           <thead>
@@ -1497,6 +1586,7 @@ function CountyRankingsTable({
           </tbody>
         </table>
       </ResponsiveTable>
+      )}
 
       {counties.length === 0 && (
         <div className='text-center py-12 px-4'>
@@ -1597,6 +1687,35 @@ export default function CountyExplorerPage() {
   // county detail page restores the full-list view.
 
   const [view, setView] = useState<'list' | 'map'>('list');
+  const [measure, setMeasure] = useState<'spending' | 'per-person' | 'unpaid-bills'>('spending');
+  const [perPersonDirection, setPerPersonDirection] = useState<SortDir>('desc');
+  const [unpaidBillsDirection, setUnpaidBillsDirection] = useState<SortDir>('desc');
+  const unpaidBills = useMemo(() => measure === 'unpaid-bills'
+    ? countyUnpaidBills(counties ?? []) : undefined, [counties, measure]);
+  const showBudgetPerPerson = measure === 'per-person';
+  const census = useQuery({
+    queryKey: ['counties', 'census', COUNTY_CENSUS_YEAR],
+    queryFn: async ({ signal }) => (await loadCountyCensus(signal)) ?? null,
+    enabled: showBudgetPerPerson,
+    staleTime: Infinity,
+    retry: false,
+  });
+  const perPerson = useMemo<PerPersonMeasure | undefined>(() => {
+    if (!showBudgetPerPerson) return undefined;
+    const amounts = new Map((counties ?? []).flatMap(county => {
+      const amount = publishedBudgetPerPerson({
+        countyName: county.name,
+        fiscalYear: selectedYear,
+        budgetSource: county.budgetSource,
+        financialSummary: county.financialSummary,
+        budgetLines: county.figureQualifications?.budget_lines,
+        census: census.data ?? undefined,
+      });
+      return amount ? [[county.id, amount] as const] : [];
+    }));
+    return { amounts, maximum: Math.max(0, ...Array.from(amounts.values(), amount => amount.value)) };
+  }, [showBudgetPerPerson, census.data, counties, selectedYear]);
+
   const spendingRates = useMemo(
     () => new Map(counties?.map((county) => [county.id, publishedSpendingRate(county, selectedYear)])),
     [counties, selectedYear]
@@ -1638,6 +1757,8 @@ export default function CountyExplorerPage() {
   const handleReset = useCallback(() => {
     setFilters(defaultFilters);
     setSort(defaultSort);
+    setPerPersonDirection('desc');
+    setUnpaidBillsDirection('desc');
   }, []);
 
   const filtered = useMemo(() => {
@@ -1676,6 +1797,12 @@ export default function CountyExplorerPage() {
     }
 
     list.sort((a, b) => {
+      if (unpaidBills) {
+        return compareByPublishedFigure(a, b, county => unpaidBills.amounts.get(county.id)?.value, unpaidBillsDirection);
+      }
+      if (perPerson) {
+        return compareByPublishedFigure(a, b, county => perPerson.amounts.get(county.id)?.value, perPersonDirection);
+      }
       // Handled whole rather than through the direction flip below, so a
       // county with no published figure sinks in BOTH directions.
       const pick = RANKED_FIGURE[sortField];
@@ -1691,12 +1818,17 @@ export default function CountyExplorerPage() {
     });
 
     return list;
-  }, [counties, filters, readSpendingRate, sortField, sortDir]);
+  }, [counties, filters, perPerson, perPersonDirection, readSpendingRate, sortField, sortDir, unpaidBills, unpaidBillsDirection]);
 
   // Export filtered data as CSV
   const handleExport = useCallback(() => {
     if (!filtered.length) return;
-    const headers = [
+    const headers = unpaidBills
+      ? ['Rank', 'County', 'Unpaid bills (KES)', 'Reporting date', 'Source table', 'Source URL']
+      : perPerson ? [
+      'Rank', 'County', 'Budget per person (KES)', 'Budget fiscal period',
+      'Budget source', 'Population census year', 'Census source',
+    ] : [
       'Rank',
       'County',
       'Population',
@@ -1706,25 +1838,40 @@ export default function CountyExplorerPage() {
       'Debt (KES)',
       'Audit Status',
     ];
-    const rows = filtered.map((c, i) => [
-      i + 1,
-      c.name,
-      c.population ?? '',
-      getGrade(c.financial_health_score).letter,
-      countyBudget(c) ?? '',
-      readSpendingRate(c) ?? '',
-      countyDebt(c) ?? '',
-      c.auditStatus ?? 'pending',
-    ]);
-    const csv = [headers, ...rows].map((r) => r.map((v) => `"${v}"`).join(',')).join('\n');
+    const rows = filtered.map((c, i) => {
+      if (unpaidBills) {
+        const row = unpaidBills.amounts.get(c.id);
+        return [row ? i + 1 : '', c.name, row?.value ?? '', unpaidBills.asAt ?? '', row?.sourceTable ?? '', row?.sourceUrl ?? ''];
+      }
+      if (perPerson) {
+        const amount = perPerson.amounts.get(c.id);
+        return [
+          amount ? i + 1 : '', c.name, amount ? Math.round(amount.value) : '', amount?.fiscalPeriod ?? '',
+          amount?.budget.url ?? '', amount?.censusYear ?? '', amount?.censusSource.url ?? '',
+        ];
+      }
+      return [
+        i + 1,
+        c.name,
+        c.population ?? '',
+        getGrade(c.financial_health_score).letter,
+        countyBudget(c) ?? '',
+        readSpendingRate(c) ?? '',
+        countyDebt(c) ?? '',
+        c.auditStatus ?? 'pending',
+      ];
+    });
+    const csv = [headers, ...rows].map(row => row.map(value => `"${String(value).replaceAll('"', '""')}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `county_data_${(selectedYear ?? 'unspecified-fy').replace('/', '-')}.csv`;
+    a.download = unpaidBills
+      ? `county_unpaid_bills_${unpaidBills.asAt ?? 'unspecified-date'}.csv`
+      : `county_data_${(selectedYear ?? 'unspecified-fy').replace('/', '-')}${perPerson ? '_budget_per_person' : ''}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [filtered, readSpendingRate, selectedYear]);
+  }, [filtered, perPerson, readSpendingRate, selectedYear, unpaidBills]);
 
   if (isLoading || error || !counties) {
     return (
@@ -1756,7 +1903,7 @@ export default function CountyExplorerPage() {
   }
 
   return (
-    <div className={styles.explorer}>
+    <div className={`${styles.explorer} ${unpaidBillsStyles.explorer}`}>
       <div className={styles.container}>
         <header className={styles.explorerHeader}>
           <div>
@@ -1774,7 +1921,7 @@ export default function CountyExplorerPage() {
               className={`${styles.selectField} ${styles.yearField}`}
               style={YEARS.length === 0 ? { visibility: 'hidden' } : undefined}
               aria-hidden={YEARS.length === 0 ? true : undefined}>
-              <span>{t('counties.header.year')}</span>
+              <span>{t(unpaidBills ? 'counties.unpaid_bills.budget_year' : 'counties.header.year')}</span>
               <select
                 disabled={YEARS.length === 0}
                 value={selectedYear ?? ''}
@@ -1805,13 +1952,41 @@ export default function CountyExplorerPage() {
           setCollapsed={setSidebarCollapsed}
           onApply={handleApply}
           onReset={handleReset}
+          hideSort={showBudgetPerPerson || !!unpaidBills}
         />
         <div className={styles.explorerViewBar}>
+          <div className={`${styles.explorerViewToggle} ${unpaidBillsStyles.measureSwitch}`} role='group' aria-label={t('counties.per_person.measure_group')}>
+            <button type='button' aria-pressed={measure === 'spending'} onClick={() => setMeasure('spending')}>
+              {t('counties.spending.measure')}
+            </button>
+            <button type='button' aria-pressed={showBudgetPerPerson} onClick={() => setMeasure('per-person')}>
+              {t('counties.per_person.measure')}
+            </button>
+            <button type='button' aria-pressed={measure === 'unpaid-bills'} onClick={() => setMeasure('unpaid-bills')}>
+              {t('counties.unpaid_bills.measure')}
+            </button>
+          </div>
           <div>
             <p className={styles.spendingMeasure}>
-              {t('counties.spending.measure')}{selectedYear && ` · ${selectedYear}`}
+              {unpaidBills ? <><UnpaidBillsDate asAt={unpaidBills.asAt} /> <InfoTip term='pending-bills' /></> : selectedYear}
+              {perPerson && census.data && (
+                <>{selectedYear && ' · '}<a href={census.data.source.url}>
+                  {t('counties.per_person.census').replace('{year}', String(census.data.year))}
+                </a></>
+              )}
             </p>
-            {hasAnnualSpendingTarget(selectedYear) && (
+            {perPerson ? (
+              <p className={styles.spendingPeriod} role='status'>
+                {census.isFetching ? t('counties.per_person.loading') : census.isError ? (
+                  <>
+                    {t('counties.per_person.load_error')}{' '}
+                    <button type='button' onClick={() => void census.refetch()}>{t('counties.header.retry')}</button>
+                  </>
+                ) : t('counties.per_person.coverage')
+                  .replace('{reported}', String(perPerson.amounts.size))
+                  .replace('{total}', String(counties.length))}
+              </p>
+            ) : !unpaidBills && hasAnnualSpendingTarget(selectedYear) && (
               <p className={styles.spendingPeriod}>
                 {t('counties.spending.target').replace('{target}', String(COUNTY_SPENDING_TARGET))}
               </p>
@@ -1829,10 +2004,13 @@ export default function CountyExplorerPage() {
           <CountyRankingsTable
             counties={filtered}
             sortField={sortField}
-            sortDir={sortDir}
-            onSort={handleSort}
+            sortDir={unpaidBills ? unpaidBillsDirection : perPerson ? perPersonDirection : sortDir}
+            onSort={unpaidBills ? () => setUnpaidBillsDirection(current => current === 'asc' ? 'desc' : 'asc')
+              : perPerson ? () => setPerPersonDirection(current => current === 'asc' ? 'desc' : 'asc') : handleSort}
             fiscalYear={selectedYear}
             readSpendingRate={readSpendingRate}
+            perPerson={perPerson}
+            unpaidBills={unpaidBills}
           />
         </div>
         {view === 'map' && (
@@ -1840,6 +2018,8 @@ export default function CountyExplorerPage() {
             counties={filtered}
             allCounties={counties}
             readSpendingRate={readSpendingRate}
+            perPerson={perPerson}
+            unpaidBills={unpaidBills}
             selectedRegion={filters.region}
             fiscalYear={selectedYear}
           />

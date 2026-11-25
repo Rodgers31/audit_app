@@ -332,6 +332,116 @@
   color: var(--county-paper);
   font-weight: 700;
 }
+.explorerViewBar a,
+.perPersonSummary a {
+  color: var(--county-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.explorerViewBar [role='status'] button {
+  min-width: 44px;
+  min-height: 44px;
+  text-decoration: underline;
+}
+.explorer {
+  --county-per-person-4: #176b49;
+  --county-per-person-1: color-mix(in srgb, var(--county-per-person-4) 24%, var(--county-paper));
+  --county-per-person-2: color-mix(in srgb, var(--county-per-person-4) 45%, var(--county-paper));
+  --county-per-person-3: color-mix(in srgb, var(--county-per-person-4) 72%, var(--county-paper));
+}
+:global(.dark) .explorer {
+  --county-per-person-4: #a2c4ac;
+}
+.explorer [data-per-person-tone='1'] {
+  --county-per-person-fill: var(--county-per-person-1);
+}
+.explorer [data-per-person-tone='2'] {
+  --county-per-person-fill: var(--county-per-person-2);
+}
+.explorer [data-per-person-tone='3'] {
+  --county-per-person-fill: var(--county-per-person-3);
+}
+.explorer [data-per-person-tone='4'] {
+  --county-per-person-fill: var(--county-per-person-4);
+}
+.explorer [data-per-person-tone='unavailable'] {
+  --county-per-person-fill: #a6ada6;
+}
+.explorer [data-per-person-tone='4'],
+:global(.dark) .explorer :is([data-per-person-tone='1'], [data-per-person-tone='2']) {
+  --county-map-outline: #fff8e8;
+}
+:global(.dark) .explorer [data-per-person-tone='4'] {
+  --county-map-outline: #101b14;
+}
+.perPersonLegend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px 24px;
+  margin-top: 12px;
+  font-size: 0.875rem;
+}
+.perPersonScale {
+  width: min(100%, 16rem);
+}
+.perPersonSwatches,
+.perPersonRange,
+.perPersonMissing {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.perPersonSwatches {
+  gap: 0;
+}
+.perPersonSwatches span,
+.perPersonMissing i {
+  height: 12px;
+  background: var(--county-per-person-fill);
+}
+.perPersonSwatches span {
+  flex: 1;
+}
+.perPersonMissing i {
+  flex: 0 0 12px;
+}
+.perPersonRange {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-top: 4px;
+  color: var(--county-muted);
+}
+.perPersonSummary dd {
+  color: var(--county-ink);
+}
+.perPersonSources {
+  margin-top: 6px;
+  font-size: 0.875rem;
+}
+.perPersonSources a,
+.perPersonTable button,
+.perPersonTable a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+.perPersonTable {
+  width: 100%;
+  font-size: 0.875rem;
+}
+.perPersonTable th,
+.perPersonTable td {
+  padding: 4px 12px;
+  border-block-end: 1px solid var(--county-line);
+  text-align: start;
+}
+.perPersonTable th:first-child {
+  width: 3rem;
+}
+.perPersonTable :is(td, th):last-child {
+  text-align: end;
+}
 .spendingMap {
   padding-block: 16px 32px;
 }

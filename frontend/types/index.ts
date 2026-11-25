@@ -1,4 +1,5 @@
 import type { BorrowingCoverage } from '@/lib/countyBorrowingCoverage';
+import type { CountyFinancialSummary } from '@/lib/api/types';
 export interface AuditIssue {
   id: string;
   type: 'financial' | 'compliance' | 'performance' | 'governance';
@@ -353,6 +354,8 @@ export interface CountyComprehensive {
 export type BudgetSource = 'cob_cbirr' | 'cra_model' | 'mixed' | null;
 
 export interface County {
+  financialSummary?: Pick<CountyFinancialSummary, 'total_allocation'> &
+    Partial<Pick<CountyFinancialSummary, 'accounting_basis' | 'currency' | 'fiscal_period' | 'sources'>>;
   figureQualifications?: { budget_lines?: QualificationRows; gdp_data?: QualificationRows };
   id: string;
   name: string;
@@ -386,6 +389,10 @@ export interface County {
   revenueCollection?: number; // Measure described by revenue.local_revenue_basis
   revenue?: CountyRevenue;
   pendingBills?: number; // Outstanding payments
+  pendingBillsAsAt?: CountyComprehensive['debt']['pending_bills_as_at'];
+  pendingBillsReportingDate?: string | null;
+  pendingBillsSource?: CountyComprehensive['debt']['pending_bills_source'];
+  pendingBillsNotes?: CountyComprehensive['debt']['pending_bills_notes'];
   developmentBudget?: number; // Capital/development budget
   recurrentBudget?: number; // Operational budget
   // Provenance of `budget` above — the list and compare pages carry the same

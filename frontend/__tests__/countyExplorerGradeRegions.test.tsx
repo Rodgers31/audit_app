@@ -1,7 +1,15 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import '@testing-library/jest-dom';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import React from 'react';
 import CountiesPageClient from '@/app/counties/CountiesPageClient';
+
+function renderExplorer() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(<CountiesPageClient />, {
+    wrapper: ({ children }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>,
+  });
+}
 import type { County } from '@/types';
 import { financialHealthBand } from '@/lib/counties/financialHealth';
 import { getCountyRegion, normalizeCountyName } from '@/lib/counties/regions';
@@ -49,7 +57,7 @@ it('uses the same health bands for regional averages and the sidebar filter', ()
     county('Taita Taveta', 45, '006'),
     county('Mombasa', null, '047'),
   ];
-  render(<CountiesPageClient />);
+  renderExplorer();
   expect(screen.getByText('B (60.5)')).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
@@ -62,7 +70,7 @@ it('uses the same health bands for regional averages and the sidebar filter', ()
 
 it('offers B+ and B- and applies the sidebar filter to the spending map', () => {
   mockCounties = [county('Lamu', 76, '005'), county('Taita Taveta', 45, '006')];
-  render(<CountiesPageClient />);
+  renderExplorer();
   fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
   const gradeChoices = screen.getByRole('group', { name: 'Grade' });
   expect(within(gradeChoices).getByRole('button', { name: 'B+' })).toBeInTheDocument();
@@ -80,7 +88,7 @@ it('ranks a reported health score before unavailable scores in both directions',
     county('Mombasa', 76, '047'),
     county('Kwale', Number.NaN, '002'),
   ];
-  render(<CountiesPageClient />);
+  renderExplorer();
   const names = () => Array.from(screen.getByRole('table').querySelectorAll('tbody tr')).map(
     (row) => row.querySelector('td:nth-child(2) a span:last-child')?.textContent?.trim()
   );
@@ -95,7 +103,7 @@ it('does not call an ungraded county a worst health performer', () => {
   mockCounties = [
     county('Lamu', 76, '005'), county('Kwale', 45, '002'), county('Mombasa', null, '047'),
   ];
-  render(<CountiesPageClient />);
+  renderExplorer();
   const needsAttention = screen.getByRole('heading', { name: 'Needs Attention' }).parentElement!;
   expect(needsAttention).toHaveTextContent('Kwale');
   expect(needsAttention).not.toHaveTextContent('Mombasa');
@@ -103,14 +111,14 @@ it('does not call an ungraded county a worst health performer', () => {
 
 it('shows an unavailable state when no county has a health score', () => {
   mockCounties = [county('Lamu', null, '005'), county('Mombasa', Number.NaN, '047')];
-  render(<CountiesPageClient />);
+  renderExplorer();
   expect(screen.getByText('No financial-health grades are available for this selection.')).toBeInTheDocument();
   expect(screen.queryByRole('heading', { name: 'Needs Attention' })).not.toBeInTheDocument();
 });
 
 it('classifies the same rounded average health score the reader sees', () => {
   mockCounties = [county('Lamu', 84.9, '005'), county('Mombasa', 85, '047')];
-  render(<CountiesPageClient />);
+  renderExplorer();
   expect(screen.getByText('A (85.0)')).toBeInTheDocument();
 });
 
@@ -134,7 +142,7 @@ it('places all 47 API county names in exactly one intended region and includes v
   expect(new Set(names).size).toBe(47);
   expect(new Set(names.map(normalizeCountyName)).size).toBe(47);
   mockCounties = names.map((name, index) => county(name, 60, String(index + 1).padStart(3, '0')));
-  render(<CountiesPageClient />);
+  renderExplorer();
   const region = screen.getByRole('combobox', { name: 'Region' });
   const rows = () => Array.from(screen.getByRole('table').querySelectorAll('tbody tr'));
   for (const [slug, expectedNames] of Object.entries(REGIONS)) {

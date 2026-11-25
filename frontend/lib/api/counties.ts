@@ -35,7 +35,7 @@ interface BackendCountyResponse {
   // Budget
   coordinates?: [number, number];
   total_budget?: number;
-  financial_summary?: { total_allocation: number | null; accounting_basis?: string | null };
+  financial_summary?: County['financialSummary'];
   total_spent?: number;
   budget_utilization?: number;
   development_budget?: number;
@@ -50,6 +50,10 @@ interface BackendCountyResponse {
   revenue_collection?: number;
   revenue?: CountyRevenue;
   pending_bills?: number | null;
+  pending_bills_as_at?: County['pendingBillsAsAt'];
+  pending_bills_selection?: { as_at?: County['pendingBillsReportingDate'] } | null;
+  pending_bills_source?: County['pendingBillsSource'];
+  pending_bills_notes?: County['pendingBillsNotes'];
   // Debt
   debt?: number | null;
   total_debt?: number | null;
@@ -151,6 +155,7 @@ export const transformCountyData = (value: unknown): County => {
 
   return {
     figureQualifications: bc.figure_qualifications,
+    financialSummary: bc.financial_summary,
     id: bc.id,
     name: bc.name,
     code: bc.code || bc.id,
@@ -188,6 +193,10 @@ export const transformCountyData = (value: unknown): County => {
     // backend's SUM-backed fields but wrong here. A publisher can report zero
     // pending bills, and that is a figure.
     pendingBills: reportedAmount(bc.pending_bills),
+    pendingBillsAsAt: bc.pending_bills_as_at,
+    pendingBillsReportingDate: bc.pending_bills_selection?.as_at,
+    pendingBillsSource: bc.pending_bills_source,
+    pendingBillsNotes: bc.pending_bills_notes,
     developmentBudget: bc.development_budget || undefined,
     recurrentBudget: bc.recurrent_budget || undefined,
     // Passed through verbatim, including null: the provenance note treats
