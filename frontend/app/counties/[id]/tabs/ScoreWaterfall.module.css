@@ -1,0 +1,218 @@
+.chart > figure {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Focusing a step must not move its tap target before the click arrives. */
+.chart > figure > :is(p, details) {
+  order: 1;
+}
+
+.plot {
+  --plot-height: clamp(8.25rem, 19vw, 11rem);
+  --number-space: 1.25rem;
+  margin-top: 0.75rem;
+  display: grid;
+  grid-template-columns: var(--axis-width) minmax(0, 1fr);
+  position: relative;
+  color: rgb(var(--c-neutral-text));
+}
+
+/* The plot can use the section’s phone gutters while the caption stays inset. */
+@media (max-width: 639px) {
+  .plot {
+    margin-inline: -0.75rem;
+  }
+}
+
+.axis {
+  position: absolute;
+  top: var(--number-space);
+  inset-inline: 0;
+  height: var(--plot-height);
+  pointer-events: none;
+  font-size: 0.75rem;
+  color: rgb(var(--c-neutral-muted));
+}
+
+.axis span {
+  position: absolute;
+  bottom: var(--tick);
+  inset-inline: 0;
+  padding-right: calc(100% - var(--axis-width) + 2px);
+  text-align: right;
+  transform: translateY(50%);
+  font-variant-numeric: tabular-nums;
+}
+
+.axis span::after {
+  content: '';
+  position: absolute;
+  inset-inline: var(--axis-width) 0;
+  top: 50%;
+  border-top: 1px solid rgb(var(--c-neutral-border));
+}
+
+.steps {
+  grid-column: 2;
+  display: grid;
+  column-gap: var(--column-gap);
+  grid-template-columns: minmax(var(--endpoint-width), 1fr) repeat(var(--deduction-count), minmax(var(--min-target), 1fr)) minmax(var(--endpoint-width), 1fr);
+  min-width: 0;
+}
+
+.plot[data-no-deductions='true']:not([data-layout='rows']) .steps {
+  grid-template-columns: repeat(2, minmax(var(--endpoint-width), 1fr));
+}
+
+.step {
+  display: grid;
+  align-content: start;
+  grid-template-rows: calc(var(--plot-height) + var(--number-space)) auto;
+  min-width: 0;
+  min-height: var(--min-target);
+  position: relative;
+  text-align: center;
+  border-radius: 4px;
+  padding-bottom: 0.25rem;
+}
+
+button.step {
+  cursor: pointer;
+}
+
+button.step:focus-visible,
+button.step[aria-pressed='true'] {
+  outline: 2px solid rgb(var(--c-focus-ring));
+  outline-offset: -2px;
+}
+
+.mark {
+  --bar-color: var(--signal-caution-fill);
+  position: relative;
+  margin-top: var(--number-space);
+}
+
+.mark[data-impact='major'],
+.mark[data-impact='score'] {
+  --bar-color: var(--signal-alarm);
+}
+
+.mark[data-impact='start'] {
+  --bar-color: var(--chart-context);
+}
+
+.bar {
+  position: absolute;
+  bottom: var(--bar-from);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(calc(100% - 8px), 4rem);
+  height: var(--bar-size);
+  background: var(--bar-color);
+  border-radius: 2px;
+}
+
+.number {
+  position: absolute;
+  bottom: calc(var(--bar-from) + var(--bar-size));
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.mark[data-impact='score'] .number {
+  left: auto;
+  right: max(0px, calc((100% - 3rem) / 2));
+  transform: none;
+}
+
+.label {
+  font-size: 0.75rem;
+  padding: 0.25rem 0 0;
+  color: rgb(var(--c-neutral-muted));
+  overflow-wrap: anywhere;
+}
+
+.plot[data-layout='columns'] .label[data-short] {
+  justify-self: center;
+  white-space: nowrap;
+  letter-spacing: -0.015em;
+}
+
+.measurement {
+  display: block;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Rotate the scale when adjacent steps cannot each offer a 44px target. */
+.plot[data-layout='rows'] {
+  display: block;
+}
+
+.plot[data-layout='rows'] .axis {
+  position: relative;
+  height: 1.25rem;
+  top: auto;
+  margin-left: calc(50% + 1.5rem);
+}
+
+.plot[data-layout='rows'] .axis span {
+  bottom: auto;
+  inset-inline: auto;
+  left: var(--tick);
+  padding: 0;
+  transform: translateX(-50%);
+}
+
+.plot[data-layout='rows'] .axis span:first-child { transform: none; }
+.plot[data-layout='rows'] .axis span:last-child { transform: translateX(-100%); }
+.plot[data-layout='rows'] .axis span::after { display: none; }
+
+.plot[data-layout='rows'] .steps {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.plot[data-layout='rows'] .step {
+  align-content: center;
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr) 3rem minmax(0, 1fr);
+  grid-template-rows: auto;
+  text-align: start;
+  padding: 0.25rem 0;
+}
+
+.plot[data-layout='rows'] .label {
+  grid-column: 1;
+  grid-row: 1;
+  padding: 0 4px 0 2px;
+  font-size: 0.875rem;
+}
+
+.plot[data-layout='rows'] .mark {
+  grid-column: 3;
+  grid-row: 1;
+  margin: 0;
+  height: 1rem;
+  background: rgb(var(--c-neutral-border));
+  background-clip: content-box;
+  padding-block: 7px;
+}
+
+.plot[data-layout='rows'] .bar {
+  bottom: 0;
+  height: 100%;
+  transform: none;
+  left: var(--bar-from);
+  width: var(--bar-size);
+}
+
+.plot[data-layout='rows'] .number {
+  left: -0.375rem;
+  right: auto;
+  bottom: 50%;
+  transform: translate(-100%, 50%);
+}
