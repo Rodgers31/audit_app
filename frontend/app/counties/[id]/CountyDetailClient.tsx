@@ -14,6 +14,7 @@ import WatchButton from '@/components/WatchButton';
 import { useLang } from '@/lib/i18n/LangProvider';
 import type { TranslationKey } from '@/lib/i18n/messages';
 import { COUNTY_TAB_LABELS } from '@/lib/i18n/messages/countyDetail';
+import { rememberCounty } from '../lastViewedCounty';
 import {
   useCountyAccountability,
   useCountyComprehensive,
@@ -630,6 +631,11 @@ export default function CountyDetailClient() {
     else if (target.right > strip.right) list.scrollLeft += target.right - strip.right;
   }, []);
   const hasCounty = Boolean(data && !isLoading && !error);
+  const viewedCountyName = hasCounty ? data?.name : undefined;
+  useEffect(() => {
+    if (countyId && viewedCountyName) rememberCounty(viewedCountyName);
+  }, [countyId, viewedCountyName]);
+
   useEffect(() => {
     if (hasCounty) revealTab(tab);
   }, [hasCounty, lang, revealTab, tab]);

@@ -28,3 +28,8 @@ export const COUNTY_EXPLORER_MESSAGES = {
   'counties.spending.reported': { en: 'Reported for this period', sw: 'Imeripotiwa kwa kipindi hiki', plain: 'Reported for this period' },
   'counties.spending.unavailable': { en: 'No published rate', sw: 'Kiwango hakijachapishwa', plain: 'No published rate' },
 } as const satisfies Record<string, Translation>;
+
+export const COUNTY_PIN_MESSAGES = {
+  label: { en: 'Your county', sw: 'Kaunti yako', plain: 'Your county' },
+  spent: { en: '{rate}% spent', sw: '{rate}% imetumika', plain: '{rate}% of budget spent' },
+} as const satisfies Record<string, Translation>;

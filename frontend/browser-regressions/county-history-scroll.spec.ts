@@ -7,6 +7,8 @@ test.use({ viewport: { width: 1128, height: 906 } });
 test('rapid county history returns retain the saved list position', async ({ page }) => {
   await page.goto('/counties?p=2');
   await expect(page.getByText(/Showing\s+11[–\-]20\s+of/)).toBeVisible();
+  const countyPin = page.getByRole('link', { name: /^Your county\b/ });
+  await expect(countyPin).toHaveCount(0);
   const firstCounty = page.locator('table tbody tr').first().getByRole('link').first();
   // Position the link before measuring; a click's implicit auto-scroll is not
   // part of the list position that browser history is expected to restore.
@@ -32,6 +34,14 @@ test('rapid county history returns retain the saved list position', async ({ pag
   await page.getByRole('link', { name: /All counties/i }).first().click();
   await expect(page).toHaveURL(listUrl);
   await expectSavedPosition();
+  await expect(countyPin).toBeVisible();
+  const pinnedLayout = await countyPin.evaluate((pin) => ({
+    height: document.documentElement.scrollHeight,
+    addedHeight: pin.getBoundingClientRect().height + parseFloat(getComputedStyle(pin).marginBlockStart),
+  }));
+  // The newly remembered county adds one row above the list. It must not
+  // move the saved browser offset or accumulate height on repeated returns.
+  expect(Math.abs(pinnedLayout.height - saved.height - pinnedLayout.addedHeight)).toBeLessThanOrEqual(1);
 
   // Document-level smooth scrolling also animates native history restoration.
   // A rapid reverse can save an intermediate offset into the history entry.
@@ -47,5 +57,5 @@ test('rapid county history returns retain the saved list position', async ({ pag
     await expect(page.getByText(/Showing\s+11[–\-]20\s+of/)).toBeVisible();
     await expectSavedPosition();
   }
-  expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBe(saved.height);
+  expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBe(pinnedLayout.height);
 });
