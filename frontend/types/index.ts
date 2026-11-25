@@ -487,7 +487,9 @@ export interface AccountabilityScorecard {
   critical_findings?: number;
   warning_findings?: number;
   recurring_findings_count: number;
-  unresolved_findings_count: number;
+  /** null when published audit data does not establish resolution status. */
+  unresolved_findings_count: number | null;
+  unresolved_findings_count_reason?: 'resolution_status_not_published' | null;
   absorption_rate: number | null;
   /** Total flagged amount as % of current-FY budget. */
   flagged_pct_of_budget?: number | null;

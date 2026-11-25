@@ -1487,15 +1487,15 @@ export const MESSAGES = {
     plain: 'We cannot grade this county yet — none of its findings link to a document you can open. No grade does not mean a bad grade.',
   },
   'county.acct.grade_description': {
-    en: 'Scored out of 100 across five dimensions: audit opinions, finding volume & severity, recurring issues, unresolved items, flagged spend, and absorption. Grade bands: A ≥ 85, B ≥ 70, C ≥ 55, D ≥ 40, else F.',
-    sw: 'Inapimwa kati ya 100 katika vipimo vitano: maoni ya ukaguzi, idadi na uzito wa matokeo, matatizo yanayojirudia, masuala yasiyoshughulikiwa, matumizi yaliyogunduliwa, na utekelezaji. Alama: A ≥ 85, B ≥ 70, C ≥ 55, D ≥ 40, vinginevyo F.',
-    plain: 'Scored out of 100 on five things: audit results, how many and how bad the findings are, repeat problems, open issues, flagged money, and spending rate. Grades: A ≥ 85, B ≥ 70, C ≥ 55, D ≥ 40, else F.',
+    en: 'Scored out of 100 using audit opinions, the number and severity of findings, recurring issues, flagged spending, and the share of the budget spent. Grade bands: A ≥ 85, B ≥ 70, C ≥ 55, D ≥ 40, else F.',
+    sw: 'Alama kati ya 100 inategemea maoni ya ukaguzi, idadi na uzito wa matokeo, masuala yanayojirudia, matumizi yaliyoibuliwa kwenye ukaguzi, na sehemu ya bajeti iliyotumika. Madaraja: A ≥ 85, B ≥ 70, C ≥ 55, D ≥ 40, vinginevyo F.',
+    plain: 'The score is out of 100. It uses the auditor’s opinion, how many findings there were and how serious they were, repeat problems, flagged money, and how much of the budget was spent. Grades: A ≥ 85, B ≥ 70, C ≥ 55, D ≥ 40, else F.',
   },
   'county.acct.how_calculated': { en: 'How this grade was calculated', sw: 'Jinsi alama hii ilihesabiwa', plain: 'How this grade was figured out' },
   'county.acct.how_calc_intro': { en: 'Starting from 100, we subtract points for each risk factor. Mouse-over each row for the specific threshold triggered.', sw: 'Kuanzia 100, tunapunguza pointi kwa kila sababu ya hatari. Weka kipanya juu ya kila mstari kuona kiwango kilichosababisha.', plain: 'We start at 100 and take away points for each problem. Hover any row to see what triggered it.' },
   'county.acct.score_label': { en: 'Score', sw: 'Alama', plain: 'Score' },
-  'county.acct.no_penalties': { en: 'No penalty factors triggered — clean accountability record.', sw: 'Hakuna sababu za adhabu — rekodi safi ya uwajibikaji.', plain: 'No problems found — clean record.' },
-  'county.acct.calc_footnote': { en: 'Penalties are derived from OAG audit records and COB budget implementation reports. "Unresolved" counts any finding not explicitly resolved, closed, dismissed, or settled — including items marked "Under Review" or "Escalated".', sw: 'Adhabu zinatokana na rekodi za ukaguzi wa OAG na ripoti za utekelezaji wa bajeti za COB. "Yasiyoshughulikiwa" inajumuisha matokeo yoyote ambayo hayajafungwa rasmi — pamoja na yale yaliyoandikwa "Inachunguzwa" au "Imepandishwa".', plain: 'Penalties come from the Auditor-General\u2019s records and the Controller of Budget\u2019s reports. "Unresolved" means any finding not clearly closed — including ones marked "Being Checked" or "Raised Higher".' },
+  'county.acct.no_penalties': { en: 'No deductions based on the published evidence.', sw: 'Hakuna pointi zilizopunguzwa kulingana na ushahidi uliochapishwa.', plain: 'The published records did not lower this score.' },
+  'county.acct.calc_footnote': { en: 'Resolution status: not applied. The audit records used here do not say which findings have been resolved.', sw: 'Hali ya utatuzi haikujumuishwa katika alama. Rekodi za ukaguzi zilizotumika hapa hazionyeshi ni matokeo gani yaliyotatuliwa.', plain: 'The score does not count unresolved findings. These audit records do not tell us which problems were fixed.' },
   'county.acct.pt_suffix': { en: 'pt', sw: 'pt', plain: 'pt' },
   'county.acct.impact_positive': { en: 'Positive', sw: 'Chanya', plain: 'Good' },
   'county.acct.impact_minor': { en: 'Minor', sw: 'Ndogo', plain: 'Small' },
@@ -1742,7 +1742,7 @@ export const MESSAGES = {
 
   // Grade badge tooltips
   'county.grade.health_tooltip': { en: 'Financial health — budget absorption, revenue, pending bills, audit signal. Click for methodology.', sw: 'Afya ya kifedha — matumizi ya bajeti, mapato, bili, kiashiria cha ukaguzi. Bonyeza kwa maelezo.', plain: 'Money health — budget spending, revenue, unpaid bills, audit signal. Click to see how it\u2019s scored.' },
-  'county.grade.audit_tooltip': { en: 'Accountability — audit findings, unresolved items, flagged spend. Click to view breakdown.', sw: 'Uwajibikaji — matokeo ya ukaguzi, masuala yasiyoshughulikiwa, matumizi yaliyogunduliwa. Bonyeza kuona maelezo.', plain: 'Accountability — audit findings, open issues, flagged money. Click to see details.' },
+  'county.grade.audit_tooltip': { en: 'Accountability score from published audit findings and budget records. Open for details.', sw: 'Alama ya uwajibikaji kutoka kwa matokeo ya ukaguzi na rekodi za bajeti zilizochapishwa. Fungua kuona maelezo.', plain: 'Accountability score based on published audit and budget records. Open for details.' },
 
   // PDF export
   'county.pdf.report_suffix': { en: 'County Report', sw: 'Ripoti ya Kaunti', plain: 'County Report' },

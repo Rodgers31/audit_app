@@ -1,38 +1,38 @@
 {
   "backend/main.py": {
-    "ast_sha256": "43a0616147b48e95eaa7790a3c7505479d3fa89abf969540c9b5cfc8150bcd9d",
+    "ast_sha256": "2c35820951134024a2b9a24d197ea74946d81be75428a06d951a7310856a16f2",
     "sites": [
       {
         "signature": "'_MAX_COUNTY_BUDGET_KES' is published from typed-in numbers [50000000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
         "reason": "unused private upper-bound constant; no code reference beyond definition",
         "disposition": "reviewed contextual value",
         "tracking": "https://github.com/Rodgers31/audit_app/issues/301",
-        "reviewed_against": "4f9f313ad548096d660576278ceaf284c66aa7c7: #952 previous-to-current figure use review",
-        "review_context": "docs/verification/2026-11-15-pr-ci-figure-context-review.md"
+        "reviewed_against": "96ea284794f72989ceae5ceb03a720161ae5e05e: #959 county score context review",
+        "review_context": "docs/verification/2026-11-15-county-score-figure-context-review.md"
       },
       {
         "signature": "'_PENDING_BILLS_SEVERE_SHARE' is published from typed-in numbers [25.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
         "reason": "documented score policy calibration threshold, not a measured monetary observation",
         "disposition": "reviewed contextual value",
         "tracking": "https://github.com/Rodgers31/audit_app/issues/301",
-        "reviewed_against": "4f9f313ad548096d660576278ceaf284c66aa7c7: #952 previous-to-current figure use review",
-        "review_context": "docs/verification/2026-11-15-pr-ci-figure-context-review.md"
+        "reviewed_against": "96ea284794f72989ceae5ceb03a720161ae5e05e: #959 county score context review",
+        "review_context": "docs/verification/2026-11-15-county-score-figure-context-review.md"
       },
       {
         "signature": "'_budget_overview_meta' is published from typed-in numbers [1800]. Nothing measured it. Serve a sourced figure or serve nothing.",
         "reason": "response metadata TTL keyword 1800 seconds, not a finance amount",
         "disposition": "reviewed contextual value",
         "tracking": "https://github.com/Rodgers31/audit_app/issues/301",
-        "reviewed_against": "4f9f313ad548096d660576278ceaf284c66aa7c7: #952 previous-to-current figure use review",
-        "review_context": "docs/verification/2026-11-15-pr-ci-figure-context-review.md"
+        "reviewed_against": "96ea284794f72989ceae5ceb03a720161ae5e05e: #959 county score context review",
+        "review_context": "docs/verification/2026-11-15-county-score-figure-context-review.md"
       },
       {
         "signature": "'anchor_pct_gdp' is published from typed-in numbers [55.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
         "reason": "documented legislative debt-anchor threshold, not a reported debt observation",
         "disposition": "reviewed contextual value",
         "tracking": "https://github.com/Rodgers31/audit_app/issues/301",
-        "reviewed_against": "4f9f313ad548096d660576278ceaf284c66aa7c7: #952 previous-to-current figure use review",
-        "review_context": "docs/verification/2026-11-15-pr-ci-figure-context-review.md"
+        "reviewed_against": "96ea284794f72989ceae5ceb03a720161ae5e05e: #959 county score context review",
+        "review_context": "docs/verification/2026-11-15-county-score-figure-context-review.md"
       }
     ]
   },

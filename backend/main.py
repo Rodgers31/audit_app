@@ -6367,8 +6367,8 @@ async def list_county_audits(
 def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
     """Compute accountability scorecard for a county entity.
 
-    Returns dict with opinion history, flagged amounts, recurring/unresolved
-    findings, absorption rate, grade, and peer comparison.
+    Returns dict with opinion history, flagged amounts, recurring findings,
+    absorption rate, grade, and peer comparison.
     """
     audits = (
         db.query(DBAudit)
@@ -6449,18 +6449,6 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
         if a.query_type and a.audit_year:
             qt_years.setdefault(a.query_type, set()).add(a.audit_year)
     recurring_findings_count = sum(1 for years in qt_years.values() if len(years) >= 2)
-
-    # --- unresolved_findings_count ---
-    # Any status that is NOT a terminal resolution counts as unresolved.
-    # This includes intermediate states ("Under Review", "Escalated")
-    # that the previous implementation missed — making counties with
-    # many pending investigations appear "accountable" when they aren't.
-    resolved_statuses = {"resolved", "closed", "dismissed", "settled"}
-    unresolved_findings_count = sum(
-        1
-        for a in audits
-        if not a.status or a.status.strip().lower() not in resolved_statuses
-    )
 
     # --- severity + amount context (used for grade) ---
     total_findings = len(audits)
@@ -6566,22 +6554,6 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
             "Repeated across fiscal years",
         )
 
-    # Unresolved backlog (includes "Under Review", "Escalated", etc.)
-    if unresolved_findings_count > 15:
-        _penalise(
-            20,
-            "major",
-            f"{unresolved_findings_count} unresolved findings",
-            "Large backlog of open issues",
-        )
-    elif unresolved_findings_count > 5:
-        _penalise(
-            10,
-            "moderate",
-            f"{unresolved_findings_count} unresolved findings",
-            "Pending / under-review items",
-        )
-
     # Flagged amount material to budget
     if flagged_pct_of_budget is not None and flagged_pct_of_budget > 10:
         _penalise(
@@ -6614,9 +6586,8 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
                 "impact": "positive",
                 "label": "No penalty triggers",
                 "detail": (
-                    f"{total_findings} finding"
-                    f"{'s' if total_findings != 1 else ''}, "
-                    f"{unresolved_findings_count} unresolved"
+                    f"{total_findings} published finding"
+                    f"{'s' if total_findings != 1 else ''}"
                 ),
                 "points": 0,
             }
@@ -6905,7 +6876,9 @@ def _compute_accountability(db, entity, county_id: str) -> Dict[str, Any]:
         "critical_findings": critical_findings,
         "warning_findings": warning_findings,
         "recurring_findings_count": recurring_findings_count,
-        "unresolved_findings_count": unresolved_findings_count,
+        # The stored audit status describes publication, not resolution.
+        "unresolved_findings_count": None,
+        "unresolved_findings_count_reason": "resolution_status_not_published",
         "absorption_rate": absorption_rate,
         "flagged_pct_of_budget": (
             round(flagged_pct_of_budget, 2) if flagged_pct_of_budget is not None else None
