@@ -15,7 +15,8 @@ jest.mock('framer-motion', () => ({ motion: new Proxy({}, { get: () => ({ childr
 jest.mock('@/components/dashboard/DebtExplainerModal', () => ({ __esModule: true, default: () => null }));
 jest.mock('@/lib/react-query/useDebt', () => ({
   useDebtTimeline: () => ({ data: undefined }),
-  useNationalDebtOverview: () => ({ data: { data: { total_outstanding: 0, gdp: 0, debt_to_gdp_ratio: 0,
+  useNationalDebtOverview: () => ({ data: { status: 'success', data: { total_outstanding: 0, gdp: 0, debt_to_gdp_ratio: 0,
+    reconciliation: { primary_source: 'loans_table', primary_value_kes: 0 },
     debt_to_gdp_year: 2025, debt_to_gdp_source: 'IMF World Economic Outlook',
     debt_to_gdp_basis: 'IMF General Government Gross Debt, % of GDP (GGXWDG_NGDP)',
     categories: {}, figure_qualifications: { loans: {}, gdp_data: {}, derived_ratio: { status: 'qualified', reason: 'published_imf_ratio_outside_seven_table_contract' } } } } }),
@@ -67,16 +68,17 @@ it.each([
 });
 
 it.each([
-  ['sw', 'Ushahidi wa vipengele vya rejesta ya deni', 'Ushahidi wa takwimu za GDP', 'Ushahidi wa takwimu ya deni ikilinganishwa na GDP'],
-  ['plain', 'Evidence for debt register inputs', 'Evidence for GDP observations', 'Evidence for debt compared with GDP'],
-])('localizes actual dashboard debt disclosure labels in %s with original selectors and ratio unchanged', (lang, loans, gdp, ratio) => {
+  ['sw', 'Ushahidi wa vipengele vya rejesta ya deni', 'Ushahidi wa takwimu ya deni ikilinganishwa na GDP'],
+  ['plain', 'Evidence for debt register inputs', 'Evidence for debt compared with GDP'],
+])('localizes the Home debt and ratio source labels in %s and retains published zero', (lang, loans, ratio) => {
   subject(<SummaryStrip />);
   fireEvent.click(screen.getByRole('button', { name: lang }));
   expect(evidence('debt register operands').getByRole('button', { name: name => name.endsWith(loans) })).toBeInTheDocument();
-  expect(evidence('GDP observations').getByRole('button', { name: name => name.endsWith(gdp) })).toBeInTheDocument();
   expect(evidence('debt-to-GDP observation').getByRole('button', { name: name => name.endsWith(ratio) })).toBeInTheDocument();
   expect(screen.getByText('0.0%')).toBeInTheDocument();
-  expect(evidence('debt-to-GDP observation').getByText(/published imf ratio outside seven table contract/)).toBeInTheDocument();
+  expect(screen.getByText('KES 0')).toBeInTheDocument();
+  expect(evidence('debt-to-GDP observation').getByText(/IMF/, { selector: 'dialog a' }))
+    .toHaveAttribute('href', 'https://www.imf.org/external/datamapper/GGXWDG_NGDP@WEO/KEN');
 });
 
 it.each([

@@ -26,6 +26,14 @@ import { render, screen } from '@testing-library/react';
  * printed on.
  */
 
+const stockProof = (unit: string) => ({
+  total: { status: 'verified', value_checked: true, document_bytes_checked: true,
+    source_kind: 'pdf', source_url: 'https://www.centralbank.go.ke/sample.pdf',
+    source_document_id: 1, receipt_id: 1, digest: 'a'.repeat(64),
+    identity: { measure: 'total', geography: 'KEN', entity_id: null, period: '2024', unit, basis: 'actual' },
+    locator: { cell: '2024-12 / total', page: 56, table: '4.1.3' } },
+});
+
 const RAW_KES_ROW = {
   year: 2024,
   external: 5_100_000_000_000,
@@ -34,6 +42,7 @@ const RAW_KES_ROW = {
   gdp: 16_224_478_000_000,
   gdp_ratio: 65.9,
   unit: 'KES' as const,
+  qualifications: stockProof('KES'),
 };
 
 const BILLIONS_ROW = {
@@ -41,6 +50,7 @@ const BILLIONS_ROW = {
   external: 5_100,
   domestic: 5_600,
   total: 10_700,
+  qualifications: stockProof('billion_KES'),
   gdp: 16_224.478,
   gdp_ratio: 65.9,
 };
@@ -83,9 +93,7 @@ describe('F1 — the headline must respect the declared unit', () => {
     mockTimeline.mockReturnValue({ data: { timeline: [RAW_KES_ROW] } });
     render(<SummaryStrip />);
     // 10.7T. Pre-fix this produced 10700000000.00T.
-    // The figure and its "T" suffix render in one text node beside a
-    // separate "KES" span, so match the node rather than a bare number.
-    expect(screen.getByText(/^10\.70T$/)).toBeInTheDocument();
+    expect(screen.getByText('KES 10.70T')).toBeInTheDocument();
     expect(screen.queryByText(/\d{7,}\.\d\dT/)).toBeNull();
   });
 
@@ -93,7 +101,7 @@ describe('F1 — the headline must respect the declared unit', () => {
     // POSITIVE CONTROL — the deploy precedes the migration.
     mockTimeline.mockReturnValue({ data: { timeline: [BILLIONS_ROW] } });
     render(<SummaryStrip />);
-    expect(screen.getByText(/^10\.70T$/)).toBeInTheDocument();
+    expect(screen.getByText('KES 10.70T')).toBeInTheDocument();
   });
 });
 
@@ -172,7 +180,7 @@ describe('#269 — the risk rating is the IMF\u2019s, or it is absent', () => {
       },
     });
     render(<SummaryStrip />);
-    expect(screen.queryByText(/debt distress/i)).toBeNull();
+    expect(screen.queryByText(/Overall risk of debt distress|^High risk$|^In debt distress$/i)).toBeNull();
     expect(screen.queryByText(/\bIMF\b/)).toBeNull();
     expect(screen.getByText(/not assessed/i)).toBeInTheDocument();
   });
@@ -188,7 +196,7 @@ describe('#269 — the risk rating is the IMF\u2019s, or it is absent', () => {
       },
     });
     render(<SummaryStrip />);
-    expect(screen.queryByText(/debt distress/i)).toBeNull();
+    expect(screen.queryByText(/Overall risk of debt distress|^High risk$|^In debt distress$/i)).toBeNull();
     expect(screen.getByText(/not assessed/i)).toBeInTheDocument();
   });
 
@@ -197,8 +205,8 @@ describe('#269 — the risk rating is the IMF\u2019s, or it is absent', () => {
       data: { debt_to_gdp_ratio: 69.3, debt_sustainability: { imf_dsa: IMF_DSA } },
     });
     render(<SummaryStrip />);
-    expect(screen.getByText(/Overall risk of debt distress: High/)).toBeInTheDocument();
-    const link = screen.getByRole('link', { name: /IMF\u2013World Bank DSA, Oct 2024/ });
+    expect(screen.getByText(/overall risk of debt distress rating is “High”/i)).toBeInTheDocument();
+    const link = screen.getByText(/IMF\u2013World Bank DSA, Oct 2024/, { selector: 'dialog a' });
     // #page=132 opens the PDF at the DSA's first page.
     expect(link).toHaveAttribute('href', `${IMF_DSA.source.url}#page=132`);
     expect(link.getAttribute('title')).toMatch(/Country Report No\. 24\/316.*p\. 132/);
@@ -208,9 +216,8 @@ describe('#269 — the risk rating is the IMF\u2019s, or it is absent', () => {
 /* ═══════════════════════════════════════════════════════════════════════════
    The alarm treatment is data-driven, not decorative.
 
-   The headline turns copper only while a published figure exceeds a published
-   threshold, and it names the threshold when it does. These pin both
-   directions, because a warning that cannot switch off is not a warning.
+   A source-qualified High rating affects only the dated DSA. Nominal
+   amounts and ratios stay neutral when an anchor uses another basis.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /** /api/v1/fiscal/summary → debt_anchor, as served on 2026-09-04. */
@@ -239,20 +246,20 @@ describe('the headline states why it is alarmed', () => {
     mockFiscal.mockReturnValue(ANCHOR_BREACHED);
     mockOverview.mockReturnValue(OVERVIEW_HIGH_RISK);
     render(<SummaryStrip />);
-    expect(screen.getByText(/Overall risk of debt distress: High/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /IMF\u2013World Bank DSA, Oct 2024/ })).toBeInTheDocument();
+    expect(screen.getByText(/overall risk of debt distress rating is “High”/i)).toBeInTheDocument();
+    expect(screen.getByText(/IMF\u2013World Bank DSA, Oct 2024/, { selector: 'dialog a' })).toBeInTheDocument();
   });
 
-  it('colours the two debt figures only while the threshold is exceeded', () => {
+  it('keeps both figures neutral and reserves the alarm for the dated DSA', () => {
     mockFiscal.mockReturnValue(ANCHOR_BREACHED);
     mockOverview.mockReturnValue(OVERVIEW_HIGH_RISK);
     const { container } = render(<SummaryStrip />);
-    const figures = Array.from(container.querySelectorAll('[data-figure]'));
-    expect(figures).toHaveLength(2);
-    figures.forEach((f) => expect(f.className).toMatch(/text-gov-copper/));
+    expect(container.querySelector('[data-summary-debt]')).not.toHaveAttribute('data-signal', 'alarm');
+    expect(container.querySelector('[data-summary-ratio]')).not.toHaveAttribute('data-signal', 'alarm');
+    expect(container.querySelector('[data-summary-dsa]')).toHaveAttribute('data-signal', 'alarm');
   });
 
-  it('drops the alarm entirely when debt is inside the anchor', () => {
+  it('shows the otherwise unchanged official low rating in neutral ink', () => {
     // NEGATIVE CONTROL. A warning that is always on carries no information.
     mockFiscal.mockReturnValue({
       data: { debt_anchor: { anchor_pct_gdp: 55, debt_to_gdp_pct: 41.2, above_anchor: false } },
@@ -268,10 +275,9 @@ describe('the headline states why it is alarmed', () => {
     });
     const { container } = render(<SummaryStrip />);
     expect(screen.queryByText(/above the .* anchor/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/debt distress/i)).not.toBeInTheDocument();
-    Array.from(container.querySelectorAll('[data-figure]')).forEach((f) =>
-      expect(f.className).not.toMatch(/text-gov-copper/)
-    );
+    expect(screen.queryByText(/^High risk$|^In debt distress$/i)).not.toBeInTheDocument();
+    expect(container.querySelector('[data-summary-dsa]')).toHaveAttribute('data-signal', 'context');
+    expect(screen.getByText('Low risk')).toBeInTheDocument();
   });
 
   it('does not raise the anchor alarm on a zero from a failed request', () => {

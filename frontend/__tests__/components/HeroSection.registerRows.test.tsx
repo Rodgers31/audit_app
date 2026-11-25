@@ -75,7 +75,7 @@ beforeEach(() => {
 describe('hero source line — the set the headline was summed over', () => {
   it('states 47 rows, the rows behind KES 11.86T', () => {
     render(<SummaryStrip />);
-    expect(screen.getByText(/Sum of 47 loan rows/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sum of 47 loan rows.*No single reporting date/i, { selector: '.audit-panel > p' })).toBeVisible();
   });
 
   it('never states the 60 rows in the table', () => {
@@ -85,7 +85,7 @@ describe('hero source line — the set the headline was summed over', () => {
 
   it('says which rows are excluded, so 47-vs-60 is explained rather than merely correct', () => {
     render(<SummaryStrip />);
-    expect(screen.getByText(/pending bills excluded/i)).toBeInTheDocument();
+    expect(screen.getByText(/pending bills excluded/i, { selector: '.audit-panel > p' })).toBeInTheDocument();
   });
 
   it('does not call the loans table "the instrument register"', () => {
@@ -103,7 +103,7 @@ describe('hero source line — when the count cannot be established', () => {
     // Categories absent: the label must not fall back to `loan_count`.
     overview = { data: { ...LIVE_OVERVIEW.data, categories: undefined } };
     render(<SummaryStrip />);
-    expect(screen.getByText(/Sum of our loans table, excluding pending bills/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sum of our loans table, excluding pending bills/i, { selector: '.audit-panel > p' })).toBeInTheDocument();
     expect(screen.queryByText(/\d+ rows/)).not.toBeInTheDocument();
   });
 
