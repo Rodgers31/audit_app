@@ -1,56 +1,59 @@
 import type { FiscalMeasureQualification } from '@/lib/api/fiscal';
 import type { DebtServicePoint } from '@/lib/debt/debtServiceSeries';
+import { useLang } from '@/lib/i18n/LangProvider';
 
-const money = (value: number | null) =>
-  value == null ? 'Not published' : value.toLocaleString('en-KE', { maximumFractionDigits: 20 });
+const formatMoney = (value: number) => value.toLocaleString('en-KE', { maximumFractionDigits: 20 });
+type Translate = ReturnType<typeof useLang>['t'];
 
-function share(point: DebtServicePoint): string {
+function share(point: DebtServicePoint, t: Translate): string {
   if (point.ratio != null) return `${point.ratio.toFixed(1)}%`;
   const reasons = [];
-  if (point.service == null) reasons.push('debt service not published');
-  if (point.revenue == null) reasons.push('revenue not published');
-  else if (point.revenue <= 0) reasons.push('revenue must be greater than zero');
-  if (!reasons.length) reasons.push('compatible source evidence unconfirmed');
-  return `Withheld: ${reasons.join('; ')}`;
+  if (point.service == null) reasons.push(t('debt.cost.no_service_reason'));
+  if (point.revenue == null) reasons.push(t('debt.cost.no_revenue_reason'));
+  else if (point.revenue <= 0) reasons.push(t('debt.cost.zero_revenue_reason'));
+  if (!reasons.length) reasons.push(t('debt.cost.no_pair_reason'));
+  return t('debt.cost.withheld_reason').replace('{reason}', reasons.join(' · '));
 }
 
 function MeasureSource({ proof }: { proof?: FiscalMeasureQualification }) {
+  const { t } = useLang();
   if (!proof) return null;
   return <span className='mt-1 block font-normal text-neutral-muted'>
-    {proof.vintage}; printed precision KES {proof.precision_kes.toLocaleString('en-KE')}.{' '}
-    <a className='underline' href={proof.source.url} target='_blank' rel='noopener noreferrer'>
-      {proof.source.title ?? 'Source document'} · {proof.source.page}
+    {t('debt.cost.precision').replace('{vintage}', proof.vintage).replace('{precision}', formatMoney(proof.precision_kes))}{' '}
+    <a className='inline-flex min-h-11 min-w-11 max-w-full items-center underline' href={proof.source.url} target='_blank' rel='noopener noreferrer'>
+      {proof.source.title ?? t('debt.cost.source')} · {proof.source.page}
     </a>
   </span>;
 }
 
 /** Same observations as the plotted series, available without pointer hover. */
 export default function DebtServiceObservations({ points }: { points: DebtServicePoint[] }) {
+  const { t } = useLang();
+  const money = (value: number | null) => value == null ? t('foundation.no_chart_value') : formatMoney(value);
   return (
     <details className='mt-3 min-w-0'>
-      <summary className='cursor-pointer rounded-lg py-3 text-sm font-semibold text-gov-dark dark:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gov-forest'>
-        Read chart data
+      <summary className='flex min-h-11 w-fit min-w-11 cursor-pointer items-center rounded py-2 text-sm font-semibold underline underline-offset-4'>
+        {t('foundation.chart_table')}
       </summary>
-      {/* Fixed table layout lets cells wrap within the card at narrow widths. */}
-      <table className='w-full table-fixed text-xs sm:text-sm text-gov-dark dark:text-white'>
-        <caption className='text-left py-3 font-semibold'>Debt cost observations by fiscal year</caption>
+      <table className='w-full table-fixed break-words text-sm'>
+        <caption className='py-3 text-left font-semibold'>{t('debt.cost.table')}</caption>
         <thead>
           <tr className='border-b border-neutral-border text-left align-top'>
-            <th scope='col' className='w-1/5 px-1 py-2 sm:px-3'>Fiscal year</th>
-            <th scope='col' className='px-1 py-2 sm:px-3'>Debt service (KES)</th>
-            <th scope='col' className='px-1 py-2 sm:px-3'>Revenue (KES)</th>
-            <th scope='col' className='px-1 py-2 sm:px-3'>Service / revenue (%)</th>
+            <th scope='col' className='w-1/5 px-1 py-2 sm:px-3'>{t('debt.cost.year_column')}</th>
+            <th scope='col' className='px-1 py-2 sm:px-3'>{t('debt.cost.service_column')}</th>
+            <th scope='col' className='px-1 py-2 sm:px-3'>{t('debt.cost.revenue_column')}</th>
+            <th scope='col' className='px-1 py-2 sm:px-3'>{t('debt.cost.share_column')}</th>
           </tr>
         </thead>
         <tbody>
           {points.map((point, index) => (
-            <tr key={`${point.year}-${index}`} className='border-b border-neutral-border/40 align-top'>
-              <th scope='row' className='px-1 py-3 sm:px-3 text-left font-medium break-words'>
-                {point.year ?? 'Fiscal year not published'}
+            <tr key={`${point.year}-${index}`} className='border-b border-neutral-border align-top'>
+              <th scope='row' className='px-1 py-3 text-left font-medium sm:px-3'>
+                {point.year ?? t('debt.cost.no_year')}
               </th>
-              <td className='px-1 py-3 sm:px-3 tabular-nums break-words'>{money(point.service)}<MeasureSource proof={point.serviceQualification} /></td>
-              <td className='px-1 py-3 sm:px-3 tabular-nums break-words'>{money(point.revenue)}<MeasureSource proof={point.revenueQualification} /></td>
-              <td className='px-1 py-3 sm:px-3 tabular-nums break-words'>{share(point)}</td>
+              <td className='px-1 py-3 tabular-nums sm:px-3'>{money(point.service)}<MeasureSource proof={point.serviceQualification} /></td>
+              <td className='px-1 py-3 tabular-nums sm:px-3'>{money(point.revenue)}<MeasureSource proof={point.revenueQualification} /></td>
+              <td className='px-1 py-3 tabular-nums sm:px-3'>{share(point, t)}</td>
             </tr>
           ))}
         </tbody>

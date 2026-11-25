@@ -1,0 +1,22 @@
+export const unsubscribeMessages = {
+  title: { en: 'Unsubscribe from the digest', sw: 'Jiondoe kwenye jarida', plain: 'Stop getting the digest' },
+  help: {
+    en: 'Use the link at the bottom of any AuditGava email, or enter your address and we’ll send you one.',
+    sw: 'Tumia kiungo kilicho chini ya barua pepe yoyote ya AuditGava, au weka anwani yako tukutumie kiungo.',
+    plain: 'Use the link at the bottom of an AuditGava email, or enter your email here to get a link.',
+  },
+  email: { en: 'Email', sw: 'Barua pepe', plain: 'Email' },
+  send: { en: 'Send unsubscribe link', sw: 'Tuma kiungo cha kujiondoa', plain: 'Send unsubscribe link' },
+  sending: { en: 'Requesting link…', sw: 'Inaomba kiungo…', plain: 'Requesting a link…' },
+  home: { en: 'Home', sw: 'Mwanzo', plain: 'Home' },
+  expired: { en: 'This link is no longer usable. Request a fresh link below.', sw: 'Kiungo hiki hakitumiki tena. Omba kiungo kipya hapa chini.', plain: 'This link no longer works. Ask for a new one below.' },
+  requested: { en: 'If this address is subscribed, check your inbox for an unsubscribe link.', sw: 'Ikiwa anwani hii imesajiliwa, angalia kikasha chako kwa kiungo cha kujiondoa.', plain: 'If you get the digest at this address, look for an unsubscribe link in your inbox.' },
+  requestError: { en: 'We couldn’t request a link right now. Please try again.', sw: 'Hatukuweza kuomba kiungo sasa hivi. Tafadhali jaribu tena.', plain: 'We couldn’t ask for a link right now. Try again.' },
+  confirmPrompt: { en: 'Confirm that you want to stop receiving the AuditGava digest.', sw: 'Thibitisha kuwa hutaki kupokea tena jarida la AuditGava.', plain: 'Confirm that you want to stop getting the AuditGava digest.' },
+  confirm: { en: 'Unsubscribe', sw: 'Jiondoe', plain: 'Unsubscribe' },
+  confirming: { en: 'Unsubscribing…', sw: 'Inaondoa usajili…', plain: 'Unsubscribing…' },
+  confirmError: { en: 'We couldn’t confirm the request right now. Please try again.', sw: 'Hatukuweza kuthibitisha ombi sasa hivi. Tafadhali jaribu tena.', plain: 'We couldn’t confirm your request right now. Try again.' },
+  doneTitle: { en: 'You’re unsubscribed', sw: 'Umejiondoa kwenye jarida', plain: 'You’re unsubscribed' },
+  done: { en: 'This email address won’t receive the AuditGava digest.', sw: 'Anwani hii ya barua pepe haitapokea jarida la AuditGava.', plain: 'We won’t send the digest to this email address.' },
+  loading: { en: 'Loading the unsubscribe form…', sw: 'Inapakia fomu ya kujiondoa…', plain: 'Loading the unsubscribe form…' },
+} as const;

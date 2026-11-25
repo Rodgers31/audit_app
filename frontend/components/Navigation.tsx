@@ -61,11 +61,11 @@ function KiswahiliOffer() {
   };
 
   return (
-    <aside lang='sw' className='fixed inset-x-0 top-16 z-40 border-b border-neutral-border bg-surface-base px-4 py-3'>
-      <div className='mx-auto flex max-w-screen-xl flex-wrap items-center gap-2 text-sm'>
-        <p className='grow font-semibold'>{t('shell.sw_offer')}</p>
-        <button type='button' className='audit-control' onClick={() => choose('sw')}>{t('shell.use_sw')}</button>
-        <button type='button' className='audit-control' onClick={() => choose('en')}>{t('shell.keep_english')}</button>
+    <aside lang='sw' className='public-language-offer border-b border-neutral-border bg-gov-dark py-3 text-gov-cream'>
+      <div className='mx-auto flex max-w-screen-xl flex-wrap items-center gap-2 px-4 text-sm sm:px-6'>
+        <p className='min-w-0 grow basis-full font-semibold sm:basis-auto'>{t('shell.sw_offer')}</p>
+        <button type='button' className='audit-control max-w-full border-gov-cream/40 bg-gov-cream text-gov-dark hover:bg-white' onClick={() => choose('sw')}>{t('shell.use_sw')}</button>
+        <button type='button' className='audit-control max-w-full border-gov-cream/40 text-gov-cream hover:bg-white/10' onClick={() => choose('en')}>{t('shell.keep_english')}</button>
       </div>
     </aside>
   );

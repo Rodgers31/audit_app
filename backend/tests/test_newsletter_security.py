@@ -205,3 +205,135 @@ def test_configured_signature_survives_process_restart():
         for _ in range(2)
     ]
     assert outputs[0] == outputs[1] and len(outputs[0]) == 64
+
+
+@pytest.fixture
+def unsubscribe_transport(monkeypatch):
+    from routers import user_features
+
+    transport = Mock()
+    blocked_smtp = Mock(side_effect=AssertionError("Test attempted live SMTP"))
+    monkeypatch.setattr(email_service.smtplib, "SMTP", blocked_smtp)
+    monkeypatch.setattr(email_service, "_smtp_configured", lambda: True)
+    monkeypatch.setattr(email_service.settings, "SMTP_FROM", "digest@example.com")
+    monkeypatch.setattr(email_service.settings, "FRONTEND_URL", "https://example.com")
+    monkeypatch.setattr(email_service, "_send_message", transport)
+    monkeypatch.setattr(user_features, "_unsubscribe_dispatch", user_features._UnsubscribeDispatch())
+    yield transport
+    blocked_smtp.assert_not_called()
+
+
+def test_request_returns_one_private_receipt_and_delivers_only_to_active_subscriber(
+    client, db_session, unsubscribe_transport,
+):
+    from urllib.parse import parse_qs, urlsplit
+
+    timestamp = datetime.now(timezone.utc)
+    db_session.add_all([
+        NewsletterSubscriber(email="owner@example.com"),
+        NewsletterSubscriber(email="opted-out@example.com", unsubscribed_at=timestamp),
+    ])
+    db_session.commit()
+
+    path = "/api/v1/newsletter/unsubscribe-request"
+    responses = [client.post(path, json={"email": address}) for address in (
+        "OWNER@example.com", "absent@example.com", "opted-out@example.com", "owner@example.com",
+    )]
+    assert all(r.status_code == 202 and r.headers["cache-control"] == "no-store" for r in responses)
+    assert all(r.json() == responses[0].json() for r in responses)
+    assert responses[0].json()["status"] == "requested"
+    assert "owner@example.com" not in responses[0].text
+    assert db_session.query(NewsletterSubscriber).count() == 2
+    assert db_session.query(NewsletterSubscriber).filter_by(email="owner@example.com").one().unsubscribed_at is None
+    assert db_session.query(NewsletterSubscriber).filter_by(email="opted-out@example.com").one().unsubscribed_at is not None
+
+    unsubscribe_transport.assert_called_once()
+    message = unsubscribe_transport.call_args.args[0]
+    assert message["To"] == "owner@example.com"
+    assert message["Subject"] == "Your AuditGava unsubscribe link"
+    content = message.get_payload(decode=True).decode("utf-8")
+    link = urlsplit(next(line for line in content.splitlines() if line.startswith("https://")))
+    assert (link.hostname, link.path) == ("example.com", "/newsletter/unsubscribe")
+    signed = {name: values[0] for name, values in parse_qs(link.query).items()}
+    assert email_service.verify_unsubscribe_token(signed["email"], signed["token"])
+    for expected in ("unsubscribed", "already_unsubscribed"):
+        assert client.post("/api/v1/newsletter/unsubscribe-verify", json=signed).json()["status"] == expected
+
+
+def test_delivery_timeout_is_private_and_does_not_retry_or_mutate_membership(
+    client, db_session, unsubscribe_transport, caplog,
+):
+    owner = "timeout@example.com"
+    db_session.add(NewsletterSubscriber(email=owner))
+    db_session.commit()
+    unsubscribe_transport.side_effect = TimeoutError(f"Could not send to {owner}")
+    path = "/api/v1/newsletter/unsubscribe-request"
+    first = client.post(path, json={"email": owner})
+    retry = client.post(path, json={"email": owner})
+    absent = client.post(path, json={"email": "absent@example.com"})
+    assert [r.status_code for r in (first, retry, absent)] == [202, 202, 202]
+    assert first.json() == retry.json() == absent.json()
+    assert db_session.query(NewsletterSubscriber).one().unsubscribed_at is None
+    assert owner not in caplog.text
+    unsubscribe_transport.assert_called_once()
+
+
+def test_unavailable_delivery_is_generic_for_all_addresses(client, db_session, unsubscribe_transport, monkeypatch):
+    db_session.add(NewsletterSubscriber(email="active@example.com"))
+    db_session.commit()
+    monkeypatch.setattr(email_service, "_smtp_configured", lambda: False)
+    responses = [client.post("/api/v1/newsletter/unsubscribe-request", json={"email": email})
+                 for email in ("active@example.com", "absent@example.com")]
+    assert [r.status_code for r in responses] == [503, 503]
+    assert responses[0].json() == responses[1].json()
+    assert all(r.headers["cache-control"] == "no-store" for r in responses)
+    unsubscribe_transport.assert_not_called()
+
+
+def test_resend_admission_caps_recipient_and_aggregate_until_their_windows_expire(monkeypatch):
+    from types import SimpleNamespace
+    from middleware import security
+    from routers.user_features import _UnsubscribeDispatch
+
+    now = 0
+    monkeypatch.setattr(security, "time", SimpleNamespace(monotonic=lambda: now))
+    dispatch = _UnsubscribeDispatch()
+    assert all(dispatch.reserve(f"owner{index}@example.com") for index in range(12))
+    assert not dispatch.reserve("additional@example.com")
+    now = 60
+    assert dispatch.reserve("additional@example.com")
+    assert not dispatch.reserve("owner0@example.com")
+    now = 900
+    assert dispatch.reserve("owner0@example.com")
+
+
+def test_resend_dispatch_drops_work_when_all_transport_slots_are_in_use(monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier, Event
+    from routers.user_features import _UnsubscribeDispatch
+
+    entered = Barrier(4)
+    release = Event()
+    delivered = []
+
+    def send(email):
+        delivered.append(email)
+        if email.startswith("wait"):
+            entered.wait(timeout=5)
+            assert release.wait(timeout=5)
+
+    monkeypatch.setattr(email_service, "send_unsubscribe_link_email", send)
+    dispatch = _UnsubscribeDispatch()
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        pending = [pool.submit(dispatch.deliver, f"wait{index}@example.com") for index in range(3)]
+        try:
+            entered.wait(timeout=5)
+            dispatch.deliver("dropped@example.com")
+            assert len(delivered) == 3
+        finally:
+            release.set()
+        for item in pending:
+            item.result(timeout=5)
+    dispatch.deliver("after@example.com")
+    assert delivered[-1] == "after@example.com"
+    assert "dropped@example.com" not in delivered

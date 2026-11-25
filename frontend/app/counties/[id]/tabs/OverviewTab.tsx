@@ -3,29 +3,16 @@
 import CountyBorrowingNote from '@/components/county/CountyBorrowingNote';
 import FigureEvidence from '@/components/evidence/FigureEvidence';
 import styles from '../../CountyExperience.module.css';
-import { severityTone, SignalMark } from '../../CountySignals';
 
-/**
- * OverviewTab — the default landing tab for a county.
- *
- * Shows budget-execution hero, debt-position card, audit snapshot,
- * missing-funds banner, profile KPIs, named officials, and stalled-
- * projects summary. Pulled into its own chunk so the other five tabs
- * (which many users never open) don't bloat the initial JS payload.
- */
 import { useLang } from '@/lib/i18n/LangProvider';
 import UnaccountedFindings from '@/components/accountability/UnaccountedFindings';
 import type { TranslationKey } from '@/lib/i18n/messages';
 import { CountyComprehensive, OfficialSource } from '@/types';
-import { AlertTriangle, ExternalLink, Scale, TrendingDown, TrendingUp } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import React from 'react';
-import ModelledDataNote from '@/components/ModelledDataNote';
-import { ABSENT, hasIngestedAudit, fmtKES, fmtLabel, fmtPop, pct, SEVERITY_STYLE } from '../shared';
-import {
-  pendingBillsAbsenceLine,
-  pendingBillsAsAtLine,
-  pendingBillsNoteLines,
-} from '@/lib/counties/pendingBillsNotes';
+import { ABSENT, fmtKES, fmtLabel, fmtPop, pct } from '../shared';
+import OverviewHighlights, { type OverviewDestination } from './OverviewHighlights';
+import { COUNTY_OVERVIEW_MESSAGES } from '@/lib/i18n/messages/countyDetail';
 import KPI from './KPI';
 import { countyRevenueNotes } from '@/lib/counties/revenueNotes';
 
@@ -114,241 +101,45 @@ function OfficialsCard({ data }: { data: CountyComprehensive }) {
 }
 
 /* ═══════════ Tab: Overview ═══════════ */
-export default function OverviewTab({ data }: { data: CountyComprehensive }) {
-  const { t, lang } = useLang();
-  const {
-    demographics,
-    economic_profile,
-    budget,
-    debt,
-    audit,
-    financial_summary,
-    missing_funds,
-    revenue,
-  } = data;
+export default function OverviewTab({ data, onOpenTab }: {
+  data: CountyComprehensive;
+  onOpenTab?: (tab: OverviewDestination) => void;
+}) {
+  const { lang } = useLang();
+  return (
+    <div className='space-y-4'>
+      <OverviewHighlights data={data} onOpenTab={onOpenTab} />
+      <details className='min-w-0 max-w-3xl border-y border-neutral-border'>
+        <summary className='min-h-11 cursor-pointer py-3 text-sm font-semibold text-neutral-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2'>
+          {COUNTY_OVERVIEW_MESSAGES.more[lang]}
+        </summary>
+        <AdditionalCountyDetails data={data} />
+      </details>
+    </div>
+  );
+}
 
-  // Only beside a figure: a date or a note on an absent figure would describe
-  // nothing.
-  const pendingAsAt =
-    debt.pending_bills != null
-      ? pendingBillsAsAtLine(debt.pending_bills_as_at, debt.pending_bills_source?.table, lang, t)
-      : null;
-  const pendingNotes =
-    debt.pending_bills != null ? pendingBillsNoteLines(debt.pending_bills_notes, t, fmtKES) : [];
-  // And only beside an absence: the report's own reason there is no figure.
-  const pendingAbsent =
-    debt.pending_bills == null
-      ? pendingBillsAbsenceLine(debt.pending_bills_absence, lang, t)
-      : null;
-
-  // Provenance comes from the API, which knows whether this period's headline
-  // was read from a CoB BIRR table or modelled from the CRA formula. The
-  // static string this replaced asserted "modelled" for every county and every
-  // period, which denied the provenance of figures that ARE published.
-  // Falls back to the translated string only when the API omits it.
-  const budgetSourceLabel = data.data_sources?.budget || t('county.overview.source_cob');
-
-  const sustainLabel: Record<
-    string,
-    { textKey: TranslationKey; color: string; Icon: React.ElementType }
-  > = {
-    sustainable: {
-      textKey: 'county.overview.sustain.sustainable',
-      color: 'text-emerald-700',
-      Icon: TrendingUp,
-    },
-    moderate: {
-      textKey: 'county.overview.sustain.moderate',
-      color: 'text-amber-700',
-      Icon: Scale,
-    },
-    at_risk: {
-      textKey: 'county.overview.sustain.at_risk',
-      color: 'text-red-700',
-      Icon: TrendingDown,
-    },
-    unknown: {
-      textKey: 'county.overview.sustain.unknown',
-      color: 'text-gray-500',
-      Icon: AlertTriangle,
-    },
-  };
-  // `?? moderate` labelled a county nobody has measured. The API now returns
-  // null where no source published a debt figure — 43 of the 47 — and an
-  // absent assessment has to read as absent, not as the middle of three
-  // verdicts.
-  const sust =
-    sustainLabel[financial_summary.debt_sustainability as string] ?? sustainLabel.unknown;
+function AdditionalCountyDetails({ data }: { data: CountyComprehensive }) {
+  const { t } = useLang();
+  const { demographics, economic_profile, debt, missing_funds, revenue } = data;
 
   return (
-    <div className='space-y-6'>
-      <ModelledDataNote className={styles.provenance} budgetSource={budget.source} />
-      <FigureEvidence label='county budget observations' labelKey='evidence.label.county_budget' rows={budget.figure_qualifications} table='budget_lines' />
-      {/* Hero row: Budget execution as a magazine-style feature */}
-      <div className='grid grid-cols-1 lg:grid-cols-5 gap-5'>
-        {/* Budget execution — large, editorial */}
-        <div className={`${styles.section} lg:col-span-3`}>
-          <div className='flex items-start gap-6'>
-            <div className='min-w-0 flex-1'>
-              <div className='text-[11px] uppercase tracking-widest font-semibold text-gray-400 dark:text-neutral-muted/80 mb-1'>
-                {t('county.overview.budget_execution')}
-              </div>
-              <div className='text-2xl font-bold text-gray-900 dark:text-neutral-text mb-2'>
-                {pct(budget.utilization_rate)}
-                <span className='text-sm font-normal text-gray-500 dark:text-neutral-muted/80 ml-2'>
-                  {t('county.overview.utilized_suffix')}
-                </span>
-              </div>
-              <div className='text-sm text-gray-600 dark:text-neutral-muted leading-relaxed'>
-                <span className='font-semibold tabular-nums'>{fmtKES(budget.total_spent)}</span>{' '}
-                {t('county.overview.spent_of')}{' '}
-                <span className='font-semibold tabular-nums'>{fmtKES(budget.total_allocated)}</span>{' '}
-                {t('county.overview.allocated_suffix')}
-              </div>
-              {budget.utilization_rate != null && (
-                <div
-                  className={styles.executionBar}
-                  role='img'
-                  aria-label={`${t('county.overview.budget_execution')}: ${pct(budget.utilization_rate)}`}>
-                  <span
-                    style={
-                      {
-                        width: `${Math.min(budget.utilization_rate, 100)}%`,
-                        '--execution-color':
-                          budget.utilization_rate >= 70
-                            ? '#42765d'
-                            : budget.utilization_rate >= 50
-                              ? '#a78246'
-                              : '#a56559',
-                      } as React.CSSProperties
-                    }
-                  />
-                </div>
-              )}
-              {budget.fiscal_year && (
-                <div className='mt-2 text-[11px] text-gray-400 dark:text-neutral-muted/80'>
-                  {budgetSourceLabel} · {budget.fiscal_year}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Debt sustainability — minimal, gradient tinted */}
-        <div className={`${styles.section} lg:col-span-2`}>
-          <div className='flex items-center gap-2 mb-3'>
-            <sust.Icon size={18} className={sust.color} />
-            <span className={`text-sm font-semibold ${sust.color}`}>{t(sust.textKey)}</span>
-          </div>
-          <div className='text-[11px] uppercase tracking-widest font-semibold text-gray-400 dark:text-neutral-muted/80 mb-2'>
-            {t('county.overview.debt_position')}
-          </div>
-          <CountyBorrowingNote balance={debt.total_debt} absentReason={debt.total_debt_absent_reason}
-            coverage={debt.debt_source_coverage} asAt={debt.debt_as_at} />
-          <div className='space-y-1.5 text-sm'>
-            <div className='flex justify-between'>
-              <span className='text-gray-500 dark:text-neutral-muted/80'>
-                {t('county.overview.debt_total')}
-              </span>
-              <span className='font-semibold text-gray-800 dark:text-neutral-text tabular-nums'>
-                {fmtKES(debt.total_debt)}
-              </span>
-            </div>
-            <div className='flex justify-between'>
-              <span className='text-gray-500 dark:text-neutral-muted/80'>
-                {t('county.overview.debt_to_budget')}
-              </span>
-              <span className='font-semibold text-gray-800 dark:text-neutral-text tabular-nums'>
-                {pct(debt.debt_to_budget_ratio)}
-              </span>
-            </div>
-            <div className='flex justify-between'>
-              <span className='text-gray-500 dark:text-neutral-muted/80'>
-                {t('county.overview.debt_pending')}
-              </span>
-              <span className='font-semibold text-gray-800 dark:text-neutral-text tabular-nums'>
-                {fmtKES(debt.pending_bills)}
-              </span>
-            </div>
-            {/* The day the figure is a stock on and what the report says
-                about it (#238); both come from the API and are absent with
-                the figure. */}
-            {pendingAsAt && (
-              <p className='text-[11px] text-gray-500 dark:text-neutral-muted/80 text-right'>
-                {pendingAsAt}
-              </p>
+    <div className='space-y-3 pb-3'>
+      {data.budget.figure_qualifications && <FigureEvidence label='county budget observations'
+        labelKey='evidence.label.county_budget' rows={data.budget.figure_qualifications} table='budget_lines' />}
+      <section className={styles.section}>
+        <h3 className='mb-2 text-base font-semibold'>{t('county.overview.debt_position')}</h3>
+        <CountyBorrowingNote balance={debt.total_debt} absentReason={debt.total_debt_absent_reason}
+          coverage={debt.debt_source_coverage} asAt={debt.debt_as_at} />
+        {debt.total_debt != null && (
+          <dl className='space-y-2 text-sm'>
+            <div><dt>{t('county.overview.debt_total')}</dt><dd className='font-semibold'>{fmtKES(debt.total_debt)}</dd></div>
+            {debt.debt_to_budget_ratio != null && (
+              <div><dt>{t('county.overview.debt_to_budget')}</dt><dd className='font-semibold'>{pct(debt.debt_to_budget_ratio)}</dd></div>
             )}
-            {pendingAbsent && (
-              <p className='text-[11px] text-gray-500 dark:text-neutral-muted/80 text-right'>
-                {pendingAbsent}
-              </p>
-            )}
-            {pendingNotes.map((line) => (
-              <p
-                key={line}
-                className='flex items-start gap-1.5 text-[11px] text-amber-800 dark:text-amber-200'>
-                <AlertTriangle size={12} className='mt-0.5 flex-shrink-0' aria-hidden />
-                <span>{line}</span>
-              </p>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Audit snapshot — wide banner */}
-      <div className={`${styles.section} relative`}>
-        <div
-          aria-hidden
-          className={`absolute inset-y-0 left-0 w-1 ${
-            // Green for "0 findings" told the reader this county came back
-            // clean. Absent is grey, not green (credibility audit F23).
-            !hasIngestedAudit(audit)
-              ? 'bg-neutral-border'
-              : audit.findings_count === 0
-                ? 'bg-emerald-400'
-                : (audit.by_severity.critical || 0) > 0
-                  ? 'bg-rose-500'
-                  : 'bg-amber-400'
-          }`}
-        />
-        <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-3 pl-2'>
-          <div>
-            <div className='text-[11px] uppercase tracking-widest font-semibold text-gray-400 dark:text-neutral-muted/80 mb-1'>
-              {t('county.overview.audit_snapshot')}
-            </div>
-            <div className='flex items-center gap-4 flex-wrap'>
-              {(['critical', 'warning', 'info'] as const).map((sev) => {
-                const count = hasIngestedAudit(audit) ? audit.by_severity[sev] || 0 : null;
-                const s = SEVERITY_STYLE[sev];
-                return (
-                  <div
-                    key={sev}
-                    className={`${styles.signal} ${styles.severityCount}`}
-                    data-tone={count == null ? 'unavailable' : severityTone(sev)}
-                    data-empty={count === 0}>
-                    <SignalMark tone={count == null ? 'unavailable' : severityTone(sev)} />
-                    <span className='text-sm'>
-                      <span className='font-semibold tabular-nums'>{count ?? '—'}</span>{' '}
-                      {t(s.lowerKey)}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          {audit.total_amount_involved != null && audit.total_amount_involved > 0 && (
-            <div className='text-right'>
-              <div className='text-xs text-gray-500 dark:text-neutral-muted/80'>
-                {t('county.overview.total_amount_involved')}
-              </div>
-              <div className='text-base font-bold text-rose-700 tabular-nums'>
-                {fmtKES(audit.total_amount_involved)}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
+          </dl>
+        )}
+      </section>
       {/* Missing funds banner */}
       <UnaccountedFindings cases={missing_funds.cases} />
 
@@ -420,10 +211,6 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
       {/* Who Runs This County — named officials */}
       <OfficialsCard data={data} />
 
-      {/* The stalled-projects summary card was withdrawn along with the
-          Projects tab (credibility audit F6) — it summarised a hand-written
-          fixture whose Auditor-General case references were never read from any
-          OAG report. See the note on TABS in CountyDetailClient.tsx. */}
     </div>
   );
 }

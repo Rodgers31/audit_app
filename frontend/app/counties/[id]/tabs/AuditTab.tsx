@@ -1,132 +1,50 @@
 'use client';
 
-import styles from '../../CountyExperience.module.css';
-import { severityTone, SignalMark } from '../../CountySignals';
-
-/**
- * AuditTab — expanded list and category breakdown of a county's audit
- * findings, powered by the OAG dataset. Each finding gets a plain-language
- * "what this means" explanation and a status chip. Split into its own
- * chunk so framer-motion's expand/collapse animations don't load for
- * users who never open this tab.
- */
-import { useLang } from '@/lib/i18n/LangProvider';
 import UnaccountedFindings from '@/components/accountability/UnaccountedFindings';
-import type { TranslationKey } from '@/lib/i18n/messages';
-import { CountyComprehensive } from '@/types';
-import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, CheckCircle2, ChevronDown } from 'lucide-react';
+import { useLang } from '@/lib/i18n/LangProvider';
+import type { CountyComprehensive } from '@/types';
 import { useMemo, useState } from 'react';
-import { fmtKES, hasIngestedAudit, SEVERITY_STYLE } from '../shared';
-
-const CATEGORY_CONFIG: Record<
-  string,
-  { labelKey: TranslationKey; color: string; bg: string; icon: string }
-> = {
-  'Financial Irregularity': {
-    labelKey: 'county.audit.cat.financial_irregularity',
-    color: 'text-red-700',
-    bg: 'bg-red-50 border-red-200',
-    icon: '💰',
-  },
-  'Asset Management': {
-    labelKey: 'county.audit.cat.asset_management',
-    color: 'text-amber-700',
-    bg: 'bg-amber-50 border-amber-200',
-    icon: '🏗️',
-  },
-  'Missing Funds': {
-    labelKey: 'county.audit.cat.missing_funds',
-    color: 'text-red-800',
-    bg: 'bg-red-100 border-red-300',
-    icon: '🚨',
-  },
-  'Procurement Issues': {
-    labelKey: 'county.audit.cat.procurement',
-    color: 'text-orange-700',
-    bg: 'bg-orange-50 border-orange-200',
-    icon: '📋',
-  },
-  'Payroll Issues': {
-    labelKey: 'county.audit.cat.payroll',
-    color: 'text-purple-700',
-    bg: 'bg-purple-50 border-purple-200',
-    icon: '👥',
-  },
-  'Revenue Collection': {
-    labelKey: 'county.audit.cat.revenue_collection',
-    color: 'text-blue-700',
-    bg: 'bg-blue-50 border-blue-200',
-    icon: '🏦',
-  },
-  other: {
-    labelKey: 'county.audit.cat.other',
-    color: 'text-gray-700 dark:text-neutral-muted',
-    bg: 'bg-gray-50 dark:bg-surface-elevated border-gray-200 dark:border-neutral-border',
-    icon: '📄',
-  },
-};
-
-const STATUS_CONFIG: Record<string, { labelKey: TranslationKey; color: string; dot: string }> = {
-  'Under Review': {
-    labelKey: 'county.audit.status.under_review',
-    color: 'text-yellow-700 bg-yellow-50 border-yellow-200',
-    dot: 'bg-yellow-500',
-  },
-  Escalated: {
-    labelKey: 'county.audit.status.escalated',
-    color: 'text-red-700 bg-red-50 border-red-200',
-    dot: 'bg-red-500',
-  },
-  Resolved: {
-    labelKey: 'county.audit.status.resolved',
-    color: 'text-green-700 bg-green-50 border-green-200',
-    dot: 'bg-green-500',
-  },
-  Pending: {
-    labelKey: 'county.audit.status.pending',
-    color:
-      'text-gray-600 dark:text-neutral-muted bg-gray-50 dark:bg-surface-elevated border-gray-200 dark:border-neutral-border',
-    dot: 'bg-gray-400',
-  },
-  open: {
-    labelKey: 'county.audit.status.open',
-    color: 'text-yellow-700 bg-yellow-50 border-yellow-200',
-    dot: 'bg-yellow-500',
-  },
-};
+import styles from '../../CountyExperience.module.css';
+import { fmtKES, hasIngestedAudit } from '../shared';
+import CountyAuditFindingsList, { CATEGORY_LABELS, STATUS_LABELS } from './CountyAuditFindingsList';
 
 export default function AuditTab({ data }: { data: CountyComprehensive }) {
   const { t } = useLang();
   const { audit, missing_funds } = data;
-  const [expanded, setExpanded] = useState<number | null>(null);
   const [filterCategory, setFilterCategory] = useState<string>('all');
 
   // Group findings by category for the summary
   const categoryBreakdown = useMemo(() => {
-    const map: Record<string, { count: number; amount: number }> = {};
+    const map = new Map<string, { count: number; amount: number }>();
     for (const f of audit.findings) {
       const cat = f.category || 'other';
-      if (!map[cat]) map[cat] = { count: 0, amount: 0 };
-      map[cat].count++;
+      const totals = map.get(cat) ?? { count: 0, amount: 0 };
+      totals.count += 1;
       // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- accumulator seed, not a published figure
-      map[cat].amount += f.amount_involved || 0;
+      totals.amount += f.amount_involved || 0;
+      map.set(cat, totals);
     }
-    return Object.entries(map).sort((a, b) => b[1].amount - a[1].amount);
+    return Array.from(map).sort((a, b) => b[1].amount - a[1].amount);
   }, [audit.findings]);
 
-  const filteredFindings = useMemo(() => {
-    if (filterCategory === 'all') return audit.findings;
-    return audit.findings.filter((f) => (f.category || 'other') === filterCategory);
-  }, [audit.findings, filterCategory]);
+  const hasCategories = categoryBreakdown.length > 1;
+  const activeCategory = hasCategories && categoryBreakdown.some(([category]) => category === filterCategory)
+    ? filterCategory : 'all';
+  const filteredFindings = activeCategory === 'all'
+    ? audit.findings
+    : audit.findings.filter(finding => (finding.category || 'other') === activeCategory);
+  const categoryLabel = (category: string) => {
+    const label = CATEGORY_LABELS.get(category);
+    return label ? t(label) : category;
+  };
 
   const ingested = hasIngestedAudit(audit);
 
   const statusCounts = useMemo(() => {
-    const map: Record<string, number> = {};
+    const map = new Map<string, number>();
     for (const f of audit.findings) {
       const st = f.status || 'open';
-      map[st] = (map[st] || 0) + 1;
+      map.set(st, (map.get(st) ?? 0) + 1);
     }
     return map;
   }, [audit.findings]);
@@ -193,7 +111,7 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
         </div>
         <div className={styles.tabMetric}>
           <div className='text-2xl font-bold text-green-700'>
-            {ingested ? statusCounts['Resolved'] || 0 : '—'}
+            {ingested ? statusCounts.get('Resolved') ?? 0 : '—'}
           </div>
           <div className='text-[11px] text-gray-500 dark:text-neutral-muted/80 mt-0.5'>
             {t('county.audit.kpi_resolved')}
@@ -201,78 +119,40 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
         </div>
       </div>
 
-      {/* ── Category breakdown ── */}
-      {categoryBreakdown.length > 0 && (
-        <div className={styles.section}>
-          <h3 className='text-sm font-semibold text-gray-800 dark:text-neutral-text mb-3'>
+      {hasCategories && (
+        <div className={styles.section} role='group' aria-label={t('county.audit.findings_by_category')}>
+          <h3 className='mb-3 text-sm font-semibold text-neutral-text'>
             {t('county.audit.findings_by_category')}
           </h3>
-          <div className='space-y-2'>
-            {categoryBreakdown.map(([cat, { count, amount }]) => {
-              const cfg = CATEGORY_CONFIG[cat] || CATEGORY_CONFIG.other;
-              // A null total means the figure is unsourced, not zero — a share
-              // of an unknown total is unknown, so show none (PR #135 review).
-              const total = audit.total_amount_involved;
-              const pctOfTotal = total != null && total > 0 ? (amount / total) * 100 : 0;
-              return (
-                <button
-                  key={cat}
-                  onClick={() => setFilterCategory(filterCategory === cat ? 'all' : cat)}
-                  className={`w-full text-left rounded-lg border p-3 transition-all ${
-                    filterCategory === cat
-                      ? 'ring-2 ring-gov-forest/30 border-gov-forest/40 bg-gov-forest/5'
-                      : 'hover:bg-gray-50 dark:bg-surface-elevated border-gray-100 dark:border-neutral-border'
-                  }`}>
-                  <div className='flex items-center justify-between mb-1'>
-                    <div className='flex items-center gap-2'>
-                      <span className='text-sm'>{cfg.icon}</span>
-                      <span className='text-sm font-medium text-gray-800 dark:text-neutral-text'>
-                        {t(cfg.labelKey)}
-                      </span>
-                      <span className='text-xs text-gray-400 dark:text-neutral-muted/80'>
-                        {count}{' '}
-                        {count !== 1
-                          ? t('county.audit.finding_plural')
-                          : t('county.audit.finding_singular')}
-                      </span>
-                    </div>
-                    {amount > 0 && (
-                      <span className={`text-sm font-semibold ${cfg.color}`}>{fmtKES(amount)}</span>
-                    )}
-                  </div>
-                  {pctOfTotal > 0 && (
-                    <div className='h-1.5 bg-gray-100 dark:bg-surface-elevated rounded-full overflow-hidden'>
-                      <div
-                        className='h-full bg-red-400 rounded-full transition-all'
-                        style={{ width: `${Math.min(pctOfTotal, 100)}%` }}
-                      />
-                    </div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-          {filterCategory !== 'all' && (
-            <button
-              onClick={() => setFilterCategory('all')}
-              className='mt-2 text-xs text-gov-forest dark:text-emerald-100 hover:underline'>
+          <div className='flex flex-wrap items-center gap-2'>
+            <button type='button' className='audit-control aria-pressed:border-neutral-text aria-pressed:bg-surface-sunken'
+              aria-pressed={activeCategory === 'all'} onClick={() => setFilterCategory('all')}>
               {t('county.audit.show_all_categories')}
             </button>
-          )}
+            {categoryBreakdown.map(([category, { count, amount }]) => (
+              <button key={category} type='button'
+                className='audit-control min-w-0 max-w-full flex-wrap text-left [overflow-wrap:anywhere] aria-pressed:border-neutral-text aria-pressed:bg-surface-sunken'
+                aria-pressed={activeCategory === category}
+                onClick={() => setFilterCategory(activeCategory === category ? 'all' : category)}>
+                <span>{categoryLabel(category)}</span>
+                <span className='text-neutral-muted'>
+                  {count} {t(count === 1 ? 'county.audit.finding_singular' : 'county.audit.finding_plural')}
+                </span>
+                {amount > 0 && <span>{fmtKES(amount)}</span>}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
       {/* ── Status summary row ── */}
       <div className='flex flex-wrap gap-2'>
-        {Object.entries(statusCounts).map(([status, count]) => {
-          const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.open;
+        {Array.from(statusCounts).map(([status, count]) => {
+          const label = STATUS_LABELS.get(status.toLowerCase());
           return (
-            <div
-              key={status}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${cfg.color}`}>
-              <div className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-              {t(cfg.labelKey)}: {count}
-            </div>
+            <span key={status} className='text-sm text-neutral-muted'>
+              {label ? t(label) : status} · {count}
+            </span>
           );
         })}
       </div>
@@ -280,199 +160,11 @@ export default function AuditTab({ data }: { data: CountyComprehensive }) {
       {/* ── Missing funds alert ── */}
       <UnaccountedFindings cases={missing_funds.cases} />
 
-      {/* ── Findings list ── */}
-      <div className='space-y-3'>
-        <div className='flex items-center justify-between'>
-          <h3 className='text-sm font-semibold text-gray-800 dark:text-neutral-text'>
-            {filterCategory === 'all'
-              ? t('county.audit.all_findings_title')
-              : `${t((CATEGORY_CONFIG[filterCategory] || CATEGORY_CONFIG.other).labelKey)} ${t('county.audit.category_findings_suffix')}`}
-          </h3>
-          <span className='text-xs text-gray-400 dark:text-neutral-muted/80'>
-            {filteredFindings.length}{' '}
-            {filteredFindings.length !== 1
-              ? t('county.audit.finding_plural')
-              : t('county.audit.finding_singular')}
-          </span>
-        </div>
-
-        {filteredFindings.slice(0, 20).map((f) => {
-          const s = SEVERITY_STYLE[f.severity] || SEVERITY_STYLE.info;
-          const catCfg = CATEGORY_CONFIG[f.category] || CATEGORY_CONFIG.other;
-          const stCfg = STATUS_CONFIG[f.status] || STATUS_CONFIG.open;
-          const open = expanded === f.id;
-
-          // Pre-compute the "what does this mean" text
-          const amountStr = f.amount_involved > 0 ? f.amount_involved.toLocaleString() : '';
-          const undisclosedAmount = t('county.audit.explain.undisclosed_amount');
-          const undisclosedValue = t('county.audit.explain.undisclosed_value');
-          const amountFallback = t('county.audit.explain.amount_fallback');
-          const fundsFallback = t('county.audit.explain.funds_fallback');
-          const undisclosedAmounts = t('county.audit.explain.undisclosed_amounts');
-
-          let meansText = '';
-          if (f.category === 'Missing Funds') {
-            meansText = t('county.audit.explain.missing_funds').replace(
-              '{amount}',
-              amountStr || undisclosedAmount
-            );
-          } else if (f.category === 'Financial Irregularity') {
-            meansText = t('county.audit.explain.financial_irregularity').replace(
-              '{amount}',
-              amountStr || amountFallback
-            );
-          } else if (f.category === 'Asset Management') {
-            meansText = t('county.audit.explain.asset_management').replace(
-              '{amount}',
-              amountStr || undisclosedValue
-            );
-          } else if (f.category === 'Procurement Issues') {
-            meansText = t('county.audit.explain.procurement').replace(
-              '{amount}',
-              amountStr || fundsFallback
-            );
-          } else if (f.category === 'Payroll Issues') {
-            meansText = t('county.audit.explain.payroll').replace(
-              '{amount}',
-              amountStr || undisclosedAmounts
-            );
-          } else {
-            const amountClause =
-              f.amount_involved > 0
-                ? t('county.audit.explain.amount_clause').replace('{amount}', amountStr)
-                : '';
-            meansText = t('county.audit.explain.default').replace('{amount_clause}', amountClause);
-          }
-
-          // Status explanation
-          let statusExplain = '';
-          if (f.status === 'Resolved') {
-            statusExplain = t('county.audit.status_explain.resolved');
-          } else if (f.status === 'Escalated') {
-            statusExplain = t('county.audit.status_explain.escalated');
-          } else if (f.status === 'Under Review') {
-            statusExplain = t('county.audit.status_explain.under_review');
-          } else if (f.status === 'Pending') {
-            statusExplain = t('county.audit.status_explain.pending');
-          } else {
-            statusExplain = t('county.audit.status_explain.default');
-          }
-
-          return (
-            <div
-              key={f.id}
-              className={`${styles.finding} ${styles.signal}`}
-              data-tone={severityTone(f.severity)}>
-              <button
-                aria-expanded={open}
-                onClick={() => setExpanded(open ? null : f.id)}
-                className='w-full text-left px-4 py-3.5 hover:bg-gray-50/50 dark:hover:bg-surface-elevated/70 transition-colors'>
-                {/* Top row: category tag + status + amount */}
-                <div className='flex items-center gap-2 flex-wrap mb-2'>
-                  <span
-                    className={`inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${catCfg.bg} ${catCfg.color}`}>
-                    {catCfg.icon} {t(catCfg.labelKey)}
-                  </span>
-                  <span
-                    className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border ${stCfg.color}`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${stCfg.dot}`} />
-                    {t(stCfg.labelKey)}
-                  </span>
-                  <span className={styles.findingSeverity}>
-                    <SignalMark tone={severityTone(f.severity)} />
-                    {t(s.labelKey)}
-                  </span>
-                  {f.audit_year && (
-                    <span className='text-[11px] text-gray-400 dark:text-neutral-muted/80 ml-auto'>
-                      {t('county.audit.fy_prefix')} {f.audit_year}
-                    </span>
-                  )}
-                </div>
-
-                <p className='text-xs font-medium mb-1'>
-                  {f.audited_entity_name ?? 'Audited institution not identified'}
-                </p>
-                {/* Finding text */}
-                <p className='text-sm text-gray-800 dark:text-neutral-text leading-relaxed mb-1.5'>
-                  {f.finding}
-                </p>
-
-                {/* Bottom row: amount + reference + expand arrow */}
-                <div className='flex items-center gap-3'>
-                  {f.amount_involved > 0 && (
-                    <span className='text-sm font-bold text-red-700 tabular-nums'>
-                      {fmtKES(f.amount_involved)}
-                    </span>
-                  )}
-                  {f.reference && (
-                    <span className='text-[11px] text-gray-400 dark:text-neutral-muted/80 font-mono'>
-                      {t('county.audit.ref_prefix')} {f.reference}
-                    </span>
-                  )}
-                  <ChevronDown
-                    size={14}
-                    className={`text-gray-400 dark:text-neutral-muted/80 ml-auto flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
-                  />
-                </div>
-              </button>
-              {f.source_url && (
-                <a
-                  href={f.source_url}
-                  target='_blank'
-                  rel='noopener noreferrer'
-                  className='block px-4 pb-3 text-xs text-gov-forest dark:text-emerald-100 underline'>
-                  Source report{f.page_ref ? `, ${f.page_ref}` : ''}
-                </a>
-              )}
-
-              <AnimatePresence>
-                {open && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className='overflow-hidden'>
-                    <div className='px-4 pb-4 pt-0 border-t border-gray-100 dark:border-neutral-border'>
-                      {/* What this means section */}
-                      <div className='mt-3 mb-3 bg-blue-50 border border-blue-100 rounded-lg p-3'>
-                        <h4 className='text-xs font-semibold text-blue-800 mb-1'>
-                          {t('county.audit.what_means')}
-                        </h4>
-                        <p className='text-xs text-blue-700 leading-relaxed'>{meansText}</p>
-                      </div>
-
-                      {/* Recommendation */}
-                      {f.recommendation && (
-                        <div className='bg-green-50 border border-green-100 rounded-lg p-3'>
-                          <h4 className='text-xs font-semibold text-green-800 mb-1'>
-                            <CheckCircle2 size={12} className='inline mr-1' />
-                            {t('county.audit.recommendation')}
-                          </h4>
-                          <p className='text-xs text-green-700 leading-relaxed'>
-                            {f.recommendation}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Status explanation */}
-                      <div className='mt-2 text-[11px] text-gray-500 dark:text-neutral-muted/80'>
-                        {statusExplain}
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          );
-        })}
-      </div>
-
-      {filteredFindings.length > 20 && (
-        <p className='text-xs text-gray-500 dark:text-neutral-muted/80 text-center'>
-          {t('county.audit.showing_of').replace('{n}', String(filteredFindings.length))}
-        </p>
-      )}
+      <CountyAuditFindingsList key={activeCategory} findings={filteredFindings} sourceCases={missing_funds.cases}
+        title={activeCategory === 'all'
+          ? t('county.audit.all_findings_title')
+          : t('county.audit.category_findings_title').replace('{category}', () => categoryLabel(activeCategory))}
+      />
     </div>
   );
 }
