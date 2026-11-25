@@ -187,9 +187,7 @@ test.describe('Follow the Money — national page (/transparency)', () => {
     for (const label of await picker.locator('option').allTextContents()) {
       expect(label).not.toMatch(/FY\s*FY/);
     }
-    await expect(page.getByRole('region', { name: 'At a glance' })).toContainText(
-      `FY ${defaultYear}`
-    );
+    await expect(page.getByText(`Counties · FY ${defaultYear}`, { exact: true })).toBeVisible();
   });
 
   test('selecting another period refreshes the national spending verdict and county cards', async ({
@@ -248,11 +246,11 @@ test.describe('Follow the Money — national page (/transparency)', () => {
     await page.goto('/transparency');
     await waitForAppReady(page);
     const picker = page.getByRole('combobox', { name: 'Fiscal year & reporting period' });
-    const summary = page.getByRole('region', { name: 'At a glance' });
+    const verdictHeading = page.locator('#money-flow-verdict');
     const spending = page.getByRole('region', { name: 'County spending' });
     await expect(picker).toHaveValue(defaultYear);
-    await expect(summary).toContainText(`FY ${defaultYear}`);
-    const initialSummary = await summary.textContent();
+    await expect(page.getByText(`Counties · FY ${defaultYear}`, { exact: true })).toBeVisible();
+    const initialVerdict = await verdictHeading.textContent();
 
     const responses = Promise.all(
       [nationalPath, countiesPath].map((path) =>
@@ -280,11 +278,10 @@ test.describe('Follow the Money — national page (/transparency)', () => {
     // WebKit's default keyboard mode uses Option-Tab to include links.
     await page.keyboard.press(browserName === 'webkit' ? 'Alt+Tab' : 'Tab');
     await expect(verdict.getByRole('link')).toBeFocused();
-    await expect(summary).toContainText(`FY ${year}`);
-    await expect(summary).toContainText('KES 40.00B');
-    await expect(summary).toContainText('KES 12.00B');
-    await expect(summary).toContainText('KES 2.00B');
-    await expect(summary).toContainText('70%');
+    await expect(page.getByRole('region', { name: 'At a glance' })).toHaveCount(0);
+    const audit = page.getByRole('region', { name: 'National audit finding amounts' });
+    await expect(audit).toContainText('KES 2.00B');
+    await expect(audit).toContainText('not proven loss or theft');
     await expect(spending).toContainText(`FY ${year}`);
     await expect(spending.getByText('National 70%', { exact: true })).toBeVisible();
     await expect(spending.getByRole('listitem')).toHaveCount(2);
@@ -307,7 +304,7 @@ test.describe('Follow the Money — national page (/transparency)', () => {
     // and restore its figures, rather than retaining the other period's data.
     await picker.selectOption(defaultYear);
     await expect(picker).toHaveValue(defaultYear);
-    await expect(summary).toHaveText(initialSummary!);
+    await expect(verdictHeading).toHaveText(initialVerdict!);
     await expect(spending).toContainText(`FY ${defaultYear}`);
   });
 

@@ -186,6 +186,11 @@ export const MESSAGES = {
   'transparency.overview.fair': { en: 'Fair — needs improvement', sw: 'Wastani — inahitaji kuboreshwa', plain: 'Fair — could improve' },
   'transparency.overview.low': { en: 'Low — limited budget execution', sw: 'Chini — utekelezaji mdogo wa bajeti', plain: 'Low — less of the budget was spent' },
   'transparency.overview.questioned': { en: 'Recorded audit finding amounts', sw: 'Kiasi kilichorekodiwa katika matokeo ya ukaguzi', plain: 'Amounts recorded in audit findings' },
+  'transparency.overview.national_questioned': {
+    en: 'National audit finding amounts',
+    sw: 'Kiasi cha matokeo ya ukaguzi kitaifa',
+    plain: 'Amounts recorded in county audits',
+  },
   'transparency.overview.not_audited': { en: 'Not yet audited', sw: 'Bado haijakaguliwa', plain: 'Audit figures not available yet' },
   'transparency.overview.not_published': { en: 'Amount unavailable', sw: 'Kiasi hakipatikani', plain: 'Audit amounts unavailable' },
   'transparency.overview.audit_pending': { en: 'Audit findings appear when sourced reports become available', sw: 'Matokeo ya ukaguzi huonekana ripoti zenye vyanzo zinapopatikana', plain: 'Audit findings appear when we have a report to support them' },

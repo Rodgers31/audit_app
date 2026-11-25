@@ -80,6 +80,7 @@ function flow(
 let efficiencyOverrides: number[] | undefined;
 let coverageOverride: AuditAmountCoverage | undefined;
 let countyOverrides: MoneyFlowData[] | undefined;
+let nationalOverride: MoneyFlowData | undefined;
 
 function countiesFor(year: string): MoneyFlowData[] {
   if (countyOverrides) return countyOverrides;
@@ -104,6 +105,7 @@ function countiesFor(year: string): MoneyFlowData[] {
   }));
 }
 function nationalFor(year: string): MoneyFlowData {
+  if (nationalOverride) return nationalOverride;
   return year === '2026/27'
     ? {
         ...flow(null, 'National', 60e9, null, null, null),
@@ -122,6 +124,7 @@ describe('Follow the Money presentation contracts', () => {
     efficiencyOverrides = undefined;
     coverageOverride = undefined;
     countyOverrides = undefined;
+    nationalOverride = undefined;
     jest.useFakeTimers();
     jest.setSystemTime(new Date('2026-09-27T12:00:00Z'));
   });
@@ -145,6 +148,43 @@ describe('Follow the Money presentation contracts', () => {
     );
     expect(overview()).toHaveTextContent('KES 24.00B');
     expect(overview()).toHaveTextContent('40.0% of allocation unspent');
+  });
+
+  it('puts the county comparison next and keeps absence coverage in the source disclosure', () => {
+    nationalOverride = {
+      ...flow(null, 'National', 60e9, 36e9, null, 60),
+      source_document_url: 'https://cob.go.ke/reports/example-cbirr.pdf',
+      audit_amount_coverage: {
+        status: 'unavailable', reason: 'no_publishable_findings', total_findings: 0,
+        findings_with_amount: 0, findings_without_amount: 0, findings_with_invalid_amount: 0,
+        withheld_findings: 1,
+      },
+    };
+    countyOverrides = [flow(1, 'Alpha County', 60e9, 36e9, null, 60)];
+    render(<TransparencyPage />);
+
+    const verdict = screen.getByRole('region', { name: /^Counties spent 60%/ });
+    expect(verdict.nextElementSibling).toBe(screen.getByRole('region', { name: 'County spending' }));
+    expect(screen.queryByRole('region', { name: 'At a glance' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'National audit finding amounts' })).not.toBeInTheDocument();
+    expect(screen.getAllByText(/Audit amounts are unavailable for FY 2025\/26 9M/)).toHaveLength(1);
+    const source = within(verdict).getByText('Source and method').closest('details')!;
+    expect(source).not.toHaveAttribute('open');
+    expect(within(source).getByText('No cited audit findings available for this period.')).toBeInTheDocument();
+  });
+
+  it('retains a nationally recorded zero even when county rows have no amounts', () => {
+    nationalOverride = {
+      ...flow(null, 'National', 60e9, 36e9, 0, 60),
+      source_document_url: 'https://cob.go.ke/reports/example-cbirr.pdf',
+    };
+    countyOverrides = [flow(1, 'Alpha County', 60e9, 36e9, null, 60)];
+    render(<TransparencyPage />);
+
+    const audit = screen.getByRole('region', { name: 'National audit finding amounts' });
+    expect(audit).toHaveTextContent('KES 0');
+    expect(audit).toHaveTextContent('sum to zero for this period');
+    expect(screen.queryByRole('region', { name: 'At a glance' })).not.toBeInTheDocument();
   });
 
   it('explains unavailable amounts and the target when county rows have no allocations', () => {

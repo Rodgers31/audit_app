@@ -1,6 +1,6 @@
 'use client';
 
-import MoneyFlowHero from '@/components/transparency/MoneyFlowHero';
+import MoneyFlowHero, { nationalSpendingSummary } from '@/components/transparency/MoneyFlowHero';
 import MoneyFlowSourceReconciliation from '@/components/transparency/MoneyFlowSourceReconciliation';
 import MoneyFlowPeriodPicker from '@/components/transparency/MoneyFlowPeriodPicker';
 import MoneyFlowOverview from '@/components/transparency/MoneyFlowOverview';
@@ -9,7 +9,6 @@ import {
   countyDistributionPoints,
   isProjectedMoneyFlow,
   nationalDistributionGuide,
-  sameMoneyFlowPeriod,
 } from '@/components/transparency/moneyFlowPresentation';
 import type {
   CountyFlowRow,
@@ -267,26 +266,35 @@ export default function TransparencyPage() {
   // year — data unavailable", and the KPI beside it turned the same null into
   // "KES 0 — No flagged findings", exonerating 47 county governments on the
   // strength of a report nobody has read (credibility audit F22).
+  const {
+    samePeriod: nationalPeriodFlow,
+    share: nationalSpendingShare,
+    allocated: nationalAllocated,
+    spent: nationalSpent,
+  } = nationalSpendingSummary(nationalFlow, selectedYear);
   const insights = useMemo(() => {
-    if (!nationalFlow?.stages) return null;
-    const amountOf = (stage: string) =>
-      nationalFlow.stages.find((s) => s.stage === stage)?.amount ?? null;
-    const allocated = amountOf('Allocated');
-    const spent = amountOf('Spent');
-    const flagged = amountOf('Flagged');
-    const gap = allocated != null && spent != null ? allocated - spent : null;
+    if (!nationalPeriodFlow?.stages) return null;
+    const questioned = nationalPeriodFlow.stages.find((stage) => stage.stage === 'Flagged');
+    const recordedAmount = questioned?.amount;
+    const flagged =
+      recordedAmount != null && Number.isFinite(recordedAmount) && !questioned?.data_unavailable
+        ? recordedAmount
+        : null;
+    const gap = nationalAllocated != null && nationalSpent != null ? nationalAllocated - nationalSpent : null;
     const unspentPct =
-      gap != null && allocated != null && allocated > 0 ? (gap / allocated) * 100 : null;
+      gap != null && nationalAllocated != null && nationalAllocated > 0
+        ? (gap / nationalAllocated) * 100
+        : null;
     return {
-      allocated,
-      spent,
+      allocated: nationalAllocated,
+      spent: nationalSpent,
       flagged,
-      audit_amount_coverage: nationalFlow.audit_amount_coverage,
+      audit_amount_coverage: nationalPeriodFlow.audit_amount_coverage,
       gap,
       unspentPct,
-      efficiency: nationalFlow.efficiency_score ?? null,
+      efficiency: nationalPeriodFlow.efficiency_score ?? null,
     };
-  }, [nationalFlow]);
+  }, [nationalAllocated, nationalPeriodFlow, nationalSpent]);
 
   /* ── County rows ── */
   const countyRows: CountyFlowRow[] = useMemo(() => {
@@ -312,7 +320,7 @@ export default function TransparencyPage() {
     });
   }, [allCountyFlows]);
 
-  const isProjectedFY = isProjectedMoneyFlow(sameMoneyFlowPeriod(nationalFlow, selectedYear));
+  const isProjectedFY = isProjectedMoneyFlow(nationalPeriodFlow);
   const distribution = useMemo(
     () => isProjectedFY ? [] : countyDistributionPoints(allCountyFlows ?? [], selectedYear),
     [allCountyFlows, isProjectedFY, selectedYear]
@@ -367,6 +375,22 @@ export default function TransparencyPage() {
 
   const countiesWithData = countyRows.filter((row) => row.allocated != null).length;
 
+  const auditAbsenceExplained =
+    auditUnavailable &&
+    sortedRows.length > 0 &&
+    !isProjectedCountyList &&
+    !allCountyFlowsLoading &&
+    !countyFlowsError;
+  const nationalOverview = insights && (
+    <MoneyFlowOverview
+      insights={insights}
+      fiscalYear={stripFY(selectedYear)}
+      projected={isProjectedFY}
+      auditOnly={nationalSpendingShare != null}
+      auditAbsenceExplained={auditAbsenceExplained}
+    />
+  );
+
   return (
     <PageShell title='Follow the Money' subtitle={nationalSpendingMessages.subtitle[lang]}>
       <MoneyFlowPeriodPicker
@@ -390,19 +414,17 @@ export default function TransparencyPage() {
           </button>
         </div>
       ) : (
-        <MoneyFlowHero data={nationalFlow} selectedYear={selectedYear} />
+        <MoneyFlowHero
+          data={nationalFlow}
+          selectedYear={selectedYear}
+          auditCoverageInSource={
+            nationalSpendingShare != null && auditAbsenceExplained && insights?.flagged == null
+          }
+        />
       )}
 
-      {/* ═══ 4. National summary ═══ */}
-      {insights && (
-        <Section delay={0.12}>
-          <MoneyFlowOverview
-            insights={insights}
-            fiscalYear={stripFY(selectedYear)}
-            projected={isProjectedFY}
-          />
-        </Section>
-      )}
+      {/* The verified verdict already covers allocation, the gap and spending share. */}
+      {nationalSpendingShare == null && nationalOverview}
 
       {/* ═══ 4b. Projected-FY explainer (shown when no execution data yet) ═══ */}
       {isProjectedFY && fiscalStartYear(selectedYear) === currentFiscalStartYear() && (
@@ -436,12 +458,13 @@ export default function TransparencyPage() {
         onReverse={() => setSortDir((direction) => (direction === 'asc' ? 'desc' : 'asc'))}
       />
 
+      {nationalSpendingShare != null && nationalOverview}
+
       {/* ═══ 6. Source reconciliation ═══ */}
       <Section delay={0.18}>
         <MoneyFlowSourceReconciliation
           fiscalYear={selectedYear}
-          budgetSource={nationalFlow?.budget_source}
-          data={nationalFlow}
+          data={nationalPeriodFlow}
         />
       </Section>
 
