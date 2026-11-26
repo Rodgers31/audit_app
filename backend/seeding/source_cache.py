@@ -1,8 +1,8 @@
 """Explicit preparation of reviewed retained PDFs; no DB mutation or parsing.
 
 Default invocation inspects actual bytes and refuses missing/corrupt evidence.
-Only --fetch performs bounded official downloads. Coverage/public APIs never
-call this module. Source paths locate URL-keyed files; SHA256 identifies bytes.
+--fetch permits bounded official downloads. --county-archive permits a pinned
+private restore of county bytes. Coverage/public APIs never call this module.
 """
 from __future__ import annotations
 
@@ -23,6 +23,12 @@ from urllib.parse import urlsplit
 import httpx
 
 from . import pdf_artifact
+from .county_archive import (
+    ARCHIVE_CACHE_ORIGIN,
+    ARCHIVE_URL_ENV,
+    CountyArchiveRefused,
+    open_reviewed_archive,
+)
 from .domains.audits.observation import ACCEPTED_SHA256, accepted_editions
 
 LEGACY_MANIFEST_SHA256 = (
@@ -97,30 +103,35 @@ def _cache_fd(root, create):
             os.close(fd)
 
 
+def _pdf_identity(source, size):
+    if source.read(5) != b"%PDF-":
+        raise SourceCacheRefused("retained artifact is not a PDF")
+    source.seek(max(0, size - 2048))
+    if not source.read().rstrip().endswith(b"%%EOF"):
+        raise SourceCacheRefused("retained PDF is incomplete")
+    source.seek(0)
+    sha, md5 = hashlib.sha256(), hashlib.md5()
+    for chunk in iter(lambda: source.read(1 << 20), b""):
+        sha.update(chunk)
+        md5.update(chunk)
+    return {
+        "sha256": sha.hexdigest(),
+        "md5": md5.hexdigest(),
+        "size_bytes": size,
+    }
+
+
 def _identity(fd):
     info = os.fstat(fd)
     if not stat.S_ISREG(info.st_mode) or not 0 < info.st_size <= MAX_BYTES:
         raise SourceCacheRefused("retained PDF is not a bounded regular file")
     with os.fdopen(os.dup(fd), "rb") as source:
         source.seek(0)
-        if source.read(5) != b"%PDF-":
-            raise SourceCacheRefused("retained artifact is not a PDF")
-        source.seek(max(0, info.st_size - 2048))
-        if not source.read().rstrip().endswith(b"%%EOF"):
-            raise SourceCacheRefused("retained PDF is incomplete")
-        source.seek(0)
-        sha, md5 = hashlib.sha256(), hashlib.md5()
-        for chunk in iter(lambda: source.read(1 << 20), b""):
-            sha.update(chunk)
-            md5.update(chunk)
+        identity = _pdf_identity(source, info.st_size)
     after = os.fstat(fd)
     if (info.st_size, info.st_mtime_ns) != (after.st_size, after.st_mtime_ns):
         raise SourceCacheRefused("retained PDF changed during verification")
-    return {
-        "sha256": sha.hexdigest(),
-        "md5": md5.hexdigest(),
-        "size_bytes": info.st_size,
-    }
+    return identity
 
 
 def _verify(cache_fd, name, expected):
@@ -186,7 +197,38 @@ def _preflight(documents, authority):
     return result
 
 
-def _download(client, cache_fd, name, expected, deadline):
+def _write_sidecar(cache_fd, name, metadata, *, from_archive):
+    sidecar = name[:-4] + ".json"
+    # An orphan sidecar may have existed before the archive PDF was installed.
+    # Swap it atomically so archive bytes always carry the correct provenance.
+    dest = ".retained-" + uuid.uuid4().hex + ".json" if from_archive else sidecar
+    try:
+        meta_fd = os.open(
+            dest,
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+            0o600,
+            dir_fd=cache_fd,
+        )
+    except FileExistsError:
+        if from_archive:
+            raise
+        return
+    try:
+        with os.fdopen(meta_fd, "w") as meta:
+            json.dump(metadata, meta, allow_nan=False)
+            meta.flush()
+            os.fsync(meta.fileno())
+        if from_archive:
+            os.replace(dest, sidecar, src_dir_fd=cache_fd, dst_dir_fd=cache_fd)
+    finally:
+        if from_archive:
+            try:
+                os.unlink(dest, dir_fd=cache_fd)
+            except FileNotFoundError:
+                pass
+
+
+def _install(cache_fd, name, expected, deadline, chunks, *, from_archive=False):
     staging = ".retained-" + uuid.uuid4().hex + ".pdf"
     fd = os.open(
         staging,
@@ -195,39 +237,24 @@ def _download(client, cache_fd, name, expected, deadline):
         dir_fd=cache_fd,
     )
     try:
-        remaining = deadline - time.monotonic()
-        if remaining <= 0:
-            raise SourceCacheRefused("source preparation total deadline exceeded")
-        timeout = httpx.Timeout(min(remaining, 30), connect=min(remaining, 15))
         size = 0
-        with client.stream(
-            "GET", expected["url"], follow_redirects=False, timeout=timeout
-        ) as response:
-            if (
-                response.status_code != 200
-                or str(response.url) != expected["url"]
-                or "html" in response.headers.get("content-type", "").lower()
-            ):
-                raise SourceCacheRefused(
-                    "publisher artifact response identity/type changed"
-                )
-            with os.fdopen(os.dup(fd), "wb") as dest:
-                for chunk in response.iter_bytes():
-                    if time.monotonic() >= deadline:
-                        raise SourceCacheRefused(
-                            "source preparation total deadline exceeded"
-                        )
-                    size += len(chunk)
-                    if size > MAX_BYTES:
-                        raise SourceCacheRefused("publisher artifact exceeds byte cap")
-                    dest.write(chunk)
-                dest.flush()
-                os.fsync(dest.fileno())
+        with os.fdopen(os.dup(fd), "wb") as dest:
+            for chunk in chunks:
+                if time.monotonic() >= deadline:
+                    raise SourceCacheRefused(
+                        "source preparation total deadline exceeded"
+                    )
+                size += len(chunk)
+                if size > MAX_BYTES:
+                    raise SourceCacheRefused("retained artifact exceeds byte cap")
+                dest.write(chunk)
+            dest.flush()
+            os.fsync(dest.fileno())
         actual = _identity(fd)
         if any(actual[k] != expected[k] for k in ("sha256", "md5")):
-            raise SourceCacheRefused("publisher serves an unreviewed PDF edition")
+            raise SourceCacheRefused("delivered bytes differ from reviewed PDF edition")
         if "size_bytes" in expected and actual["size_bytes"] != expected["size_bytes"]:
-            raise SourceCacheRefused("publisher bytes differ from artifact binding")
+            raise SourceCacheRefused("delivered bytes differ from artifact binding")
         if time.monotonic() >= deadline:
             raise SourceCacheRefused("source preparation total deadline exceeded")
         staged = os.stat(staging, dir_fd=cache_fd, follow_symlinks=False)
@@ -250,6 +277,16 @@ def _download(client, cache_fd, name, expected, deadline):
             try:
                 # Check the actual link before earning cache bookkeeping.
                 _verify(cache_fd, name, expected)
+                metadata = {
+                    "url": expected["url"],
+                    "created_at": time.time(),
+                    "bytes": size,
+                    "sha256": actual["sha256"],
+                    "fingerprint": None,
+                }
+                if from_archive:
+                    metadata["restored_from"] = ARCHIVE_CACHE_ORIGIN
+                _write_sidecar(cache_fd, name, metadata, from_archive=from_archive)
             except Exception:
                 current = os.stat(name, dir_fd=cache_fd, follow_symlinks=False)
                 if (current.st_dev, current.st_ino) == (
@@ -259,33 +296,6 @@ def _download(client, cache_fd, name, expected, deadline):
                     os.unlink(name, dir_fd=cache_fd)
                     os.fsync(cache_fd)
                 raise
-            # Same sidecar contract as pdf_download; this timestamp is earned
-            # by the actual download. Existing valid cache entries are unchanged.
-            sidecar = name[:-4] + ".json"
-            try:
-                meta_fd = os.open(
-                    sidecar,
-                    os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
-                    0o600,
-                    dir_fd=cache_fd,
-                )
-            except FileExistsError:
-                pass  # Preserve existing cache bookkeeping; bytes were checked.
-            else:
-                with os.fdopen(meta_fd, "w") as meta:
-                    json.dump(
-                        {
-                            "url": expected["url"],
-                            "created_at": time.time(),
-                            "bytes": size,
-                            "sha256": actual["sha256"],
-                            "fingerprint": None,
-                        },
-                        meta,
-                        allow_nan=False,
-                    )
-                    meta.flush()
-                    os.fsync(meta.fileno())
         os.fsync(cache_fd)
         return _verify(cache_fd, name, expected)
     finally:
@@ -296,12 +306,72 @@ def _download(client, cache_fd, name, expected, deadline):
             pass  # A removed staging locator cannot become a ready receipt.
 
 
+def _download(client, cache_fd, name, expected, deadline):
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise SourceCacheRefused("source preparation total deadline exceeded")
+    timeout = httpx.Timeout(min(remaining, 30), connect=min(remaining, 15))
+    with client.stream(
+        "GET", expected["url"], follow_redirects=False, timeout=timeout
+    ) as response:
+        if (
+            response.status_code != 200
+            or str(response.url) != expected["url"]
+            or "html" in response.headers.get("content-type", "").lower()
+        ):
+            raise SourceCacheRefused(
+                "publisher artifact response identity/type changed"
+            )
+        return _install(cache_fd, name, expected, deadline, response.iter_bytes())
+
+
+def _verify_county_archive(archive, selected):
+    names = archive.namelist()
+    required = {"manifest.json", *(locator for _, _, locator, _ in selected)}
+    if len(names) != len(required) or set(names) != required:
+        raise SourceCacheRefused(
+            "county archive does not contain the exact reviewed paths"
+        )
+    if archive.getinfo("manifest.json").file_size > 32 * 1024:
+        raise SourceCacheRefused("county archive manifest exceeds byte cap")
+    index = json.loads(archive.read("manifest.json"))
+    if (
+        index.get("version") != 1
+        or index.get("kind") != "reviewed_pdf_bytes"
+        or not isinstance(index.get("entries"), list)
+        or len(index["entries"]) != len(selected)
+    ):
+        raise SourceCacheRefused("county archive manifest schema changed")
+    entries = {entry["path"]: entry for entry in index["entries"]}
+    if set(entries) != required - {"manifest.json"}:
+        raise SourceCacheRefused("county archive manifest paths changed")
+    for doc, _, locator, expected in selected:
+        size = archive.getinfo(locator).file_size
+        if not 0 < size <= MAX_BYTES:
+            raise SourceCacheRefused("county archive PDF exceeds byte cap")
+        if entries[locator] != {
+            "source_id": doc.id,
+            "source_url": doc.url,
+            "path": locator,
+            "sha256": expected["sha256"],
+            "md5": expected["md5"],
+            "bytes": size,
+            "profile": "county",
+        } or size != expected.get("size_bytes", size):
+            raise SourceCacheRefused("county archive PDF binding changed")
+        with archive.open(locator) as source:
+            actual = _pdf_identity(source, size)
+        if any(actual[key] != expected[key] for key in ("sha256", "md5")):
+            raise SourceCacheRefused("county archive PDF differs from reviewed edition")
+
+
 def prepare_sources(
     documents,
     *,
     root=None,
     profile="county",
     fetch=False,
+    county_archive_url=None,
     client=None,
     max_seconds=MAX_SECONDS,
 ):
@@ -311,6 +381,8 @@ def prepare_sources(
         or (not math.isfinite(max_seconds) or not 0 < max_seconds <= MAX_SECONDS)
     ):
         raise SourceCacheRefused("typed fetch and bounded finite deadline required")
+    if county_archive_url is not None and profile != "county":
+        raise SourceCacheRefused("private archive requires the county profile")
     deadline = time.monotonic() + max_seconds
     selected = _preflight(documents, reviewed_sources(profile))
     receipt = {
@@ -324,6 +396,10 @@ def prepare_sources(
         "database_mutations": False,
         "entries": [],
     }
+    if county_archive_url is not None:
+        receipt["county_archive"] = (
+            "not_needed" if county_archive_url else "unconfigured"
+        )
     explicit_root = (Path.cwd() if root is None else Path(root)).resolve(strict=True)
     root_before = explicit_root.stat()
     cache_fd = _cache_fd(explicit_root, False)
@@ -342,12 +418,34 @@ def prepare_sources(
             receipt["entries"].append(item)
             if actual is None:
                 missing.append((name, expected, item))
-        if missing and fetch:
-            if cache_fd is None:
-                cache_fd = _cache_fd(explicit_root, True)
+        if missing and (fetch or county_archive_url):
             if client is None:
                 owned_client = httpx.Client(trust_env=False, follow_redirects=False)
                 client = owned_client
+        if missing and county_archive_url:
+            with open_reviewed_archive(client, county_archive_url, deadline) as archive:
+                if archive is None:
+                    receipt["county_archive"] = "unavailable"
+                else:
+                    _verify_county_archive(archive, selected)
+                    if cache_fd is None:
+                        cache_fd = _cache_fd(explicit_root, True)
+                    for name, expected, item in missing:
+                        with archive.open(item["file_path"]) as source:
+                            item["identity"] = _install(
+                                cache_fd,
+                                name,
+                                expected,
+                                deadline,
+                                iter(lambda: source.read(1 << 20), b""),
+                                from_archive=True,
+                            )
+                        item["state"] = "restored"
+                    missing.clear()
+                    receipt["county_archive"] = "restored"
+        if missing and fetch:
+            if cache_fd is None:
+                cache_fd = _cache_fd(explicit_root, True)
             for name, expected, item in missing:
                 item["identity"] = _download(client, cache_fd, name, expected, deadline)
                 item["state"] = "restored"
@@ -398,6 +496,11 @@ def main(argv=None):
     parser.add_argument("--profile", choices=("county", "reviewed"), default="county")
     parser.add_argument("--root", type=Path, default=Path.cwd())
     parser.add_argument("--fetch", action="store_true")
+    parser.add_argument(
+        "--county-archive",
+        action="store_true",
+        help="try the pinned private county archive before official downloads",
+    )
     parser.add_argument("--max-seconds", type=float, default=MAX_SECONDS)
     parser.add_argument("--receipt", type=Path)
     args = parser.parse_args(argv)
@@ -456,6 +559,9 @@ def main(argv=None):
                     root=args.root,
                     profile=args.profile,
                     fetch=args.fetch,
+                    county_archive_url=os.environ.get(ARCHIVE_URL_ENV, "")
+                    if args.county_archive
+                    else None,
                     max_seconds=args.max_seconds,
                 )
                 # Same current identity must remain available through preparation.
@@ -483,8 +589,17 @@ def main(argv=None):
                 out.flush()
                 os.fsync(out.fileno())
         print(json.dumps(receipt, sort_keys=True, allow_nan=False))
-        return 0 if receipt["ready"] else 1
-    except SourceCacheRefused as exc:
+        return (
+            0
+            if receipt["ready"]
+            or (
+                args.county_archive
+                and not args.fetch
+                and receipt["county_archive"] in ("unconfigured", "unavailable")
+            )
+            else 1
+        )
+    except (SourceCacheRefused, CountyArchiveRefused) as exc:
         print(json.dumps({"ready": False, "status": "refused", "reason": str(exc)}))
         return 1
     except Exception as exc:
