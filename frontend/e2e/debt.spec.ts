@@ -66,10 +66,20 @@ test('a failed debt snapshot can be retried without a substitute figure', async 
 test('national debt page shows key stats and charts', async ({ page }) => {
   await page.goto('/debt');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText("Kenya's National Debt");
-  const ratio = page.getByText('Debt-to-GDP', { exact: true }).locator('..');
+  const ratio = page.getByRole('region', { name: 'Debt-to-GDP', exact: true });
   await expect(ratio).toContainText('60.0%');
   await expect(ratio).toContainText('IMF World Economic Outlook');
-  await expect(ratio).toContainText('Observation: 2025');
+  await expect(ratio).toContainText('Reference year: 2025');
+  await expect(ratio.getByRole('link', { name: 'IMF World Economic Outlook · GGXWDG_NGDP' }))
+    .toHaveAttribute('href', 'https://www.imf.org/external/datamapper/GGXWDG_NGDP@WEO/KEN');
+  const help = ratio.getByRole('button', { name: /^What is / });
+  await expect(help).toBeVisible();
+  const box = await help.boundingBox();
+  expect(Math.min(box!.width, box!.height)).toBeGreaterThanOrEqual(44);
+  await expect(ratio.getByRole('img')).toHaveCount(0);
+  const cost = page.getByRole('figure', { name: 'The cost of debt over time', exact: true });
+  await expect(cost).toBeVisible();
+  expect(await cost.evaluate(node => node.nextElementSibling?.id)).toBe('debt-to-gdp');
   await expect(page.getByText('Not assessed', { exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'The cost of debt over time' })).toBeVisible();
   await expect(page.getByRole('img', { name: 'Debt repayments in KES by fiscal year' })).toBeVisible();

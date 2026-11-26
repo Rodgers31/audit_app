@@ -24,6 +24,7 @@ jest.mock('recharts', () => ({
 }));
 
 import { publishedHeadlineRatio, publishedTimelineRatio } from '@/lib/debt/qualification';
+import DebtGdpContext from '@/app/debt/DebtGdpContext';
 import { frameworkOf, qualifiedFrameworkValue } from '@/lib/fiscal/framework';
 import { SummaryStrip } from '@/components/dashboard/HeroSection';
 import NationalDebtCard from '@/components/dashboard/NationalDebtCard';
@@ -74,6 +75,20 @@ test('independently checked CBK pair and exact IMF contract keep their separate 
   expect(publishedTimelineRatio(timeline())).toBe(50);
   expect(publishedHeadlineRatio(cbkHeadline())).toBe(50);
   expect(publishedHeadlineRatio(imfHeadline())).toBe(69.3);
+});
+
+test('the debt page context keeps the qualified fallback pair and its date on their own basis', () => {
+  const { container, getByRole, queryByRole } = render(<DebtGdpContext data={cbkHeadline()} />);
+  expect(container.textContent).toMatch(/50\.0%/);
+  expect(container.textContent).toMatch(/Reference year: 2025 · Debt balance month: 2025-12/);
+  expect(container.textContent).toMatch(/Central government debt as a share of annual GDP/);
+  const observed = timeline();
+  expect(getByRole('link', { name: 'Central Bank of Kenya debt stock' }))
+    .toHaveAttribute('href', observed.qualifications.total.source_url);
+  expect(getByRole('link', { name: 'World Bank nominal GDP' }))
+    .toHaveAttribute('href', observed.qualifications.gdp.source_url);
+  expect(queryByRole('link', { name: /IMF World Economic Outlook/ })).toBeNull();
+  expect(queryByRole('img')).toBeNull();
 });
 
 test.each(['imf-source', 'imf-basis', 'unavailable-derived'] as const)(

@@ -43,7 +43,7 @@ test.describe('Chart Data Validation - Debt Page', () => {
   test('debt values are formatted correctly', async ({ page }) => {
     await page.goto('/debt');
     await expect(page.getByText('KES 12.00T', { exact: true })).toBeVisible();
-    await expect(page.getByText('Debt-to-GDP', { exact: true }).locator('..')).toContainText('60.0%');
+    await expect(page.getByRole('region', { name: 'Debt-to-GDP', exact: true })).toContainText('60.0%');
   });
   test('debt trend charts align their fiscal years and keep one measure in each chart', async ({ page }) => {
     await page.goto('/debt');
