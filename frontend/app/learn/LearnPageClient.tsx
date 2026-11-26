@@ -26,9 +26,12 @@ import {
 } from '@/data/constitution';
 import { useLang } from '@/lib/i18n/LangProvider';
 import { learnCopy } from '@/lib/i18n/messages/learn';
+import { BUDGET_GUIDE_MESSAGES } from '@/lib/i18n/messages/budgetGuide';
+import { BUDGET_GUIDE_PATH } from './budget-guide/budgetGuideData';
 import { motion } from 'framer-motion';
 import {
   ArrowRight,
+  ChevronRight,
   Gamepad2,
   Heart,
   Landmark,
@@ -175,6 +178,17 @@ export default function LearningHubPage() {
       subtitle='Understand the rules behind every shilling — the Constitution, budgets, audits and devolution, in plain Kenyan English.'>
       {/* 1 ── Hero ─────────────────────────────────── */}
       <LearnHero onSearchSubmit={handleHeroSearch} onArticleSelect={jumpToArticle} />
+
+      <section id='guided-paths' aria-labelledby='guided-paths-title' className='scroll-mt-24 space-y-2'>
+        <h2 id='guided-paths-title' className='font-display text-2xl font-semibold text-neutral-text'>
+          {BUDGET_GUIDE_MESSAGES.paths[lang]}
+        </h2>
+        <Link href={BUDGET_GUIDE_PATH}
+          className='audit-panel flex min-h-11 w-full items-center justify-between gap-2 px-3 py-2 text-sm font-semibold text-neutral-text hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-signal-good sm:w-fit'>
+          <span className='min-w-0 break-words'>{BUDGET_GUIDE_MESSAGES.title[lang]}</span>
+          <ChevronRight size={16} aria-hidden='true' className='shrink-0' />
+        </Link>
+      </section>
 
       {/* 2 ── Constitution book ───────────────────── */}
       <div ref={bookRef} className='scroll-mt-[72px]'>
