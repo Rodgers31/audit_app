@@ -1,6 +1,7 @@
 'use client';
-import { publishedHeadlineRatio, headlineRatioDisclosure } from '@/lib/debt/qualification';
+import DebtGdpContext from './DebtGdpContext';
 import PendingBillsAgingPanel from './PendingBillsAgingPanel';
+import LoanRegister from './LoanRegister';
 import FigureEvidence from '@/components/evidence/FigureEvidence';
 import { readDsaRating, dsaIsAlarm, dsaSourceLabel, dsaVintageLabel, dsaHref, dsaCitation } from '@/lib/debt/dsaRating';
 
@@ -14,7 +15,7 @@ import PDFExportButton from '@/components/PDFExportButton';
 import { useLang } from '@/lib/i18n/LangProvider';
 import RankedLenders from '@/components/debt/RankedLenders';
 import MaturityLadder from '@/components/debt/MaturityLadder';
-import DebtServiceObservations from '@/components/debt/DebtServiceObservations';
+import DebtCostOverTime from './DebtCostOverTime';
 import {
   useDebtTimeline,
   useNationalDebtOverview,
@@ -22,10 +23,10 @@ import {
   usePendingBills,
   usePendingBillsSummary,
 } from '@/lib/react-query/useDebt';
-import { buildDebtServiceSeries, yearMissingRevenue } from '@/lib/debt/debtServiceSeries';
+import { buildDebtServiceSeries } from '@/lib/debt/debtServiceSeries';
 import { useFiscalSummary } from '@/lib/react-query/useFiscal';
 import { apiClient } from '@/lib/api/axios';
-import type { NationalLoan, PendingBillsSource } from '@/lib/api/debt';
+import type { PendingBillsSource } from '@/lib/api/debt';
 import {
   computeRevenueAllocation,
   fiscalSourceLine,
@@ -33,21 +34,16 @@ import {
   ratioWorking,
 } from '@/lib/debt/revenueAllocation';
 import FiscalMeasureDisclosure from '@/components/budget/FiscalMeasureDisclosure';
-import { annualCostCell, rateCell, sortLoans } from '@/lib/debt/loanInterest';
 import { motion } from 'framer-motion';
 import {
   AlertTriangle,
   ArrowDown,
   ArrowUp,
-  BadgeDollarSign,
   ChevronDown,
-  ChevronUp,
   CircleDollarSign,
   FileWarning,
   Gauge,
-  Scale,
   ShieldAlert,
-  TrendingUp,
   Users,
 } from 'lucide-react';
 import {
@@ -55,21 +51,11 @@ import {
   lenderCategoryTotal,
 } from '@/lib/debt/lenderBreakdown';
 import { formatAsAt } from '@/lib/counties/pendingBillsNotes';
-import { displayLenderName } from '@/lib/debt/lenderName';
 import { useEffect, useMemo, useState } from 'react';
 import {
   Area,
   AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  ComposedChart,
-  Line,
   ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
 } from 'recharts';
 
 /* ═══════════════════════════════════════════════════════
@@ -87,11 +73,6 @@ function fmtT(val: number | null | undefined, locale?: string): string {
 function fmtKES(val: number | null | undefined): string {
   if (val == null || Number.isNaN(val)) return '—';
   return `KES ${fmtT(val)}`;
-}
-
-function pct(val: number | null | undefined): string {
-  if (val == null || Number.isNaN(val)) return '—';
-  return `${val.toFixed(1)}%`;
 }
 
 function sourceText(value: unknown): string | null {
@@ -202,53 +183,6 @@ function Sparkline({
 }
 
 /* ═══════════════════════════════════════════════════════
-   Register cells — a figure, its basis tag, or "—" with the reason.
-   See lib/debt/loanInterest for the rules (issue #235).
-   ═══════════════════════════════════════════════════════ */
-
-function FigureText({
-  cell,
-  kind,
-  className = '',
-}: {
-  cell: ReturnType<typeof rateCell>;
-  kind: 'rate' | 'kes';
-  className?: string;
-}) {
-  if (cell.value == null) {
-    return (
-      <span className={`${className} text-neutral-muted`} title={cell.title} aria-label={`Not published: ${cell.title}`}>
-        —
-      </span>
-    );
-  }
-  return (
-    <span className={className} title={cell.title}>
-      {kind === 'rate' ? `${cell.value.toFixed(2)}%` : fmtKES(cell.value)}
-      {cell.tag && (
-        <span className='ml-1 text-[10px] font-normal text-neutral-muted'>{cell.tag}</span>
-      )}
-    </span>
-  );
-}
-
-function RateTd({ loan }: { loan: NationalLoan }) {
-  return (
-    <td className='px-4 py-3 text-xs text-right'>
-      <FigureText cell={rateCell(loan)} kind='rate' className='text-gov-copper tabular-nums' />
-    </td>
-  );
-}
-
-function CostTd({ loan }: { loan: NationalLoan }) {
-  return (
-    <td className='px-4 py-3 text-xs text-right'>
-      <FigureText cell={annualCostCell(loan)} kind='kes' className='text-neutral-muted tabular-nums' />
-    </td>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════
    MAIN PAGE
    ═══════════════════════════════════════════════════════ */
 
@@ -266,6 +200,7 @@ export default function NationalDebtPage() {
     data: loansResp,
     isLoading: loansLoading,
     isError: loansError,
+    isFetching: loansFetching,
     refetch: refetchLoans,
   } = useNationalLoans({ enabled: backendReady });
   const {
@@ -316,10 +251,8 @@ export default function NationalDebtPage() {
      strip (F5/F10). It contained the `?? 0` that turned Kenya's null
      debt-service-to-revenue into a published 0.0%. */
 
-  const [loanSort, setLoanSort] = useState<'outstanding' | 'rate' | 'service'>('outstanding');
   const [fetchedPopulation, setFetchedPopulation] = useState<number | null>(null);
   const [pbView, setPbView] = useState<'national' | 'counties'>('national');
-  const [showAllLoans, setShowAllLoans] = useState(false);
 
   useEffect(() => {
     if (!backendReady) return;
@@ -344,10 +277,6 @@ export default function NationalDebtPage() {
     const reported = api.total_outstanding === undefined ? api.total_debt : api.total_outstanding;
     const totalDebt = typeof reported === 'number' && Number.isFinite(reported) && reported >= 0
       ? reported : null;
-    const gdp = api.gdp ?? null;
-    // The API declares the ratio's measure and observation year. The register
-    // total and GDP can be from different periods; they cannot fill its absence.
-    const gdpRatio = publishedHeadlineRatio(api);
     const summary = api.summary || {};
     const categories = api.categories || {};
     const population = fetchedPopulation || api.population || null;
@@ -358,14 +287,6 @@ export default function NationalDebtPage() {
     return {
       hasData,
       totalDebt,
-      gdp,
-      gdpRatio,
-      gdpRatioYear:
-        gdpRatio != null && typeof api.debt_to_gdp_year === 'number' && Number.isInteger(api.debt_to_gdp_year) &&
-        api.debt_to_gdp_year >= 1000 && api.debt_to_gdp_year <= 9999
-          ? api.debt_to_gdp_year : null,
-      gdpRatioBasis: gdpRatio == null ? null : headlineRatioDisclosure(api),
-      gdpRatioSource: gdpRatio == null ? null : sourceText(api.debt_to_gdp_source),
       summary,
       categories,
       loanCount: api.loan_count ?? null,
@@ -379,13 +300,6 @@ export default function NationalDebtPage() {
       reconciliation,
     };
   }, [overview, fetchedPopulation]);
-
-  // Absent rates and costs sort LAST. The old comparator read them as 0,
-  // which ranked "no publisher gives a rate" as "the cheapest loan".
-  const loans = useMemo(
-    () => (loansResp?.loans ? sortLoans(loansResp.loans, loanSort) : []),
-    [loansResp, loanSort]
-  );
 
   // Normalise both series to RAW KES once, on each row's declared unit
   // (raw KES since the stage1 3a migration; bare billions from an older
@@ -489,8 +403,8 @@ export default function NationalDebtPage() {
   );
 
   /* ── Loading / Error states ── */
-  const isLoading = ovLoading || loansLoading || tlLoading;
-  const isError = ovError || loansError || tlError;
+  const isLoading = ovLoading || tlLoading;
+  const isError = ovError || tlError;
   const headline = <DebtHeadline amount={d.totalDebt} source={d.source} />;
 
   if (isLoading) {
@@ -515,7 +429,6 @@ export default function NationalDebtPage() {
           <button
             onClick={() => {
               refetchOverview();
-              refetchLoans();
               refetchTimeline();
             }}
             className='btn btn-primary'>
@@ -578,7 +491,7 @@ export default function NationalDebtPage() {
             )}
           </div>
 
-          <div className='grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-3'>
+          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3'>
             <div className='rounded border border-neutral-border p-4'>
               <div className='mb-1.5 flex items-center gap-2 text-audit-label font-semibold text-neutral-muted'>
                 <Users size={12} />
@@ -590,27 +503,6 @@ export default function NationalDebtPage() {
               <p className='mt-1 text-sm text-neutral-muted'>
                 If every Kenyan paid an equal share
               </p>
-            </div>
-            <div className='rounded border border-neutral-border p-4'>
-              <div className='mb-1.5 flex flex-wrap items-center gap-2 text-audit-label font-semibold text-neutral-muted'>
-                <Scale size={12} />
-                Debt-to-GDP
-                <InfoTip term='debt-to-gdp' size={11} />
-              </div>
-              <div className='text-2xl sm:text-3xl font-bold tabular-nums'>
-                {d.gdpRatio != null ? pct(d.gdpRatio) : 'Unavailable'}
-              </div>
-              {d.gdpRatio != null ? (
-                <p className='mt-1 text-sm text-neutral-muted'>
-                  <span className='block'>Nominal debt · {d.gdpRatioBasis || 'Basis unavailable'}</span>
-                  <span className='block mt-1'>
-                    {d.gdpRatioSource || 'Source unavailable'} ·{' '}
-                    {d.gdpRatioYear != null ? `Observation: ${d.gdpRatioYear}` : 'Observation year unavailable'}
-                  </span>
-                </p>
-              ) : (
-                <p className='mt-1 text-sm text-neutral-muted'>No debt-to-GDP observation received.</p>
-              )}
             </div>
             <div className='rounded border border-neutral-border p-4'>
               <div className='mb-1.5 flex items-center gap-2 text-audit-label font-semibold text-neutral-muted'>
@@ -686,7 +578,6 @@ export default function NationalDebtPage() {
         )}
 
       <FigureEvidence label='debt register operands' labelKey='evidence.label.debt_register' rows={(overview?.data ?? overview)?.figure_qualifications?.loans} table='loans' />
-      <FigureEvidence label='published debt-to-GDP ratio' labelKey='evidence.label.published_debt_ratio' note={(overview?.data ?? overview)?.figure_qualifications?.derived_ratio} />
       <FigureEvidence label='GDP observations' labelKey='evidence.label.gdp_observations' rows={(overview?.data ?? overview)?.figure_qualifications?.gdp_data} table='gdp_data' />
       <FigureEvidence label='debt timeline observations' labelKey='evidence.label.timeline_observations' rows={Object.fromEntries(timeline.map(row => [String(row.year), row.qualifications ?? {}]))} />
       {/* ═══════════ SECTION 2 — WHO KENYA OWES ═══════════ */}
@@ -1210,242 +1101,17 @@ export default function NationalDebtPage() {
       })()}
 
       {/* ═══════════ SECTION 8 — DEBT SERVICE TREND ═══════════ */}
-      {fiscal?.years && fiscal.years.length > 1 && (
-        <motion.figure
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-80px' }}
-          transition={{ duration: 0.5 }}
-          className='space-y-4'
-          aria-labelledby='debt-cost-title'
-          aria-describedby={`debt-cost-description${yearMissingRevenue(fiscal.years) ? ' debt-cost-revenue-caveat' : ''}`}>
-          <figcaption>
-            <h2 id='debt-cost-title' className='font-display text-2xl sm:text-3xl text-gov-dark dark:text-white flex items-center gap-2'>
-              <TrendingUp aria-hidden='true' className='text-gov-forest dark:text-emerald-100' size={24} />
-              The cost of debt over time
-            </h2>
-            <p id='debt-cost-description' className='text-sm text-neutral-muted mt-1'>
-              Annual debt service (interest + principal repayments) and what share of revenue it
-              consumes. Debt service is shown in KES and service / revenue as a percentage.
-              Read chart data for each fiscal year’s values and any withheld share.
-            </p>
-            {yearMissingRevenue(fiscal.years) && (
-              <p id='debt-cost-revenue-caveat' className='text-xs text-neutral-muted mt-1.5'>
-                The share stops at {yearMissingRevenue(fiscal.years)}: that year has an enacted
-                debt-service figure but no revenue figure in our data yet, and a share cannot be
-                computed from one of the two.
-              </p>
-            )}
-          </figcaption>
-          <div className='rounded-xl bg-white/70 dark:bg-surface-elevated border border-white/70 shadow-surface p-5'>
-            <div role='img' aria-label='Debt service and service / revenue by fiscal year'>
-              <div aria-hidden='true'>
-                <ResponsiveContainer width='100%' height={260}>
-                  <ComposedChart
-                    data={debtServiceSeries}
-                    margin={{ top: 8, right: 40, left: 0, bottom: 8 }}>
-                    <defs>
-                      <linearGradient id='serviceFill' x1='0' y1='0' x2='0' y2='1'>
-                        <stop offset='0%' stopColor='#C94A4A' stopOpacity={0.5} />
-                        <stop offset='100%' stopColor='#C94A4A' stopOpacity={0.02} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray='3 3' stroke='#E2DDD5' vertical={false} />
-                    <XAxis dataKey='year' tick={{ fill: '#6B7280', fontSize: 11 }} tickLine={false} />
-                    <YAxis
-                      yAxisId='left'
-                      tickFormatter={(v) => fmtT(v)}
-                      tick={{ fill: '#6B7280', fontSize: 11 }}
-                      tickLine={false}
-                      width={60}
-                    />
-                    <YAxis
-                      yAxisId='right'
-                      orientation='right'
-                      tickFormatter={(v) => `${v}%`}
-                      tick={{ fill: '#D9A441', fontSize: 11 }}
-                      tickLine={false}
-                      width={40}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        background: 'rgba(255,255,255,0.95)',
-                        border: '1px solid rgba(226,221,213,0.4)',
-                        borderRadius: 12,
-                        fontSize: 12,
-                      }}
-                      formatter={(v: any, name: any) => {
-                        if (v == null) return ['Not published', name === 'ratio' ? 'Service / Revenue' : 'Debt service'];
-                        if (name === 'ratio') return [`${Number(v).toFixed(1)}%`, 'Service / Revenue'];
-                        return [fmtKES(Number(v)), 'Debt service'];
-                      }}
-                    />
-                    <Area
-                      yAxisId='left'
-                      type='monotone'
-                      dataKey='service'
-                      stroke='#C94A4A'
-                      strokeWidth={2.5}
-                      fill='url(#serviceFill)'
-                      name='service'
-                    />
-                    <Line
-                      yAxisId='right'
-                      type='monotone'
-                      dataKey='ratio'
-                      stroke='#D9A441'
-                      strokeWidth={2}
-                      dot={{ r: 3, fill: '#D9A441' }}
-                      name='ratio'
-                    />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-            <DebtServiceObservations points={debtServiceSeries} />
-          </div>
-        </motion.figure>
-      )}
+      {!!debtServiceSeries.length && <DebtCostOverTime points={debtServiceSeries} />}
 
-      {/* ═══════════ SECTION 9 — FULL LOAN REGISTER ═══════════ */}
-      {loans.length > 0 && (
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-80px' }}
-          transition={{ duration: 0.5 }}
-          className='space-y-4'>
-          <div className='flex flex-wrap items-start justify-between gap-3'>
-            <div>
-              <h2 className='font-display text-2xl sm:text-3xl text-gov-dark dark:text-white flex items-center gap-2'>
-                <BadgeDollarSign className='text-gov-forest dark:text-emerald-100' size={24} />
-                The full loan register
-              </h2>
-              <p className='text-sm text-neutral-muted mt-1'>
-                Every row of the register — one per external creditor, one per domestic
-                instrument — sortable by what matters most to you.
-              </p>
-            </div>
-            <div className='inline-flex rounded-lg bg-white/70 dark:bg-surface-elevated border border-white/70 p-1 text-xs'>
-              {(['outstanding', 'rate', 'service'] as const).map((key) => (
-                <button
-                  key={key}
-                  onClick={() => setLoanSort(key)}
-                  className={`px-3 py-1.5 font-semibold rounded-md transition-colors ${
-                    loanSort === key ? 'bg-gov-dark text-white' : 'text-gov-dark dark:text-white hover:bg-white dark:bg-surface-base'
-                  }`}>
-                  {key === 'outstanding'
-                    ? 'Balance'
-                    : key === 'rate'
-                      ? 'Interest rate'
-                      : 'Service cost'}
-                </button>
-              ))}
-            </div>
-          </div>
+      <DebtGdpContext data={overview?.data || overview} />
 
-          <div className='rounded-xl bg-white/70 dark:bg-surface-elevated border border-white/70 shadow-surface overflow-hidden'>
-            {/* Desktop table */}
-            <table className='w-full hidden md:table'>
-              <thead className='bg-gov-dark/5 border-b border-neutral-border/40'>
-                <tr className='text-[11px] uppercase tracking-wider text-neutral-muted'>
-                  <th className='text-left px-4 py-3 font-semibold'>Lender</th>
-                  <th className='text-left px-4 py-3 font-semibold'>Type</th>
-                  <th className='text-right px-4 py-3 font-semibold'>Outstanding</th>
-                  <th className='text-right px-4 py-3 font-semibold'>Rate</th>
-                  <th className='text-right px-4 py-3 font-semibold'>Annual interest</th>
-                  <th className='text-left px-4 py-3 font-semibold'>Maturity</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(showAllLoans ? loans : loans.slice(0, 10)).map((l, i) => (
-                  <tr
-                    key={`${l.lender}-${i}`}
-                    className='border-b border-neutral-border/20 hover:bg-white/40 dark:bg-surface-elevated transition-colors'>
-                    <td className='px-4 py-3 text-sm font-medium text-gov-dark dark:text-white'>
-                      {displayLenderName(l.lender)}
-                      <FigureEvidence label={displayLenderName(l.lender)} qualifications={l.qualifications} table='loans' recordId={l.record_id ?? l.id} />
-                    </td>
-                    <td className='px-4 py-3 text-xs text-neutral-muted'>
-                      {l.lender_type?.replace(/_/g, ' ')}
-                    </td>
-                    <td className='px-4 py-3 text-sm font-semibold text-gov-dark dark:text-white text-right tabular-nums'>
-                      {fmtKES(l.outstanding_numeric)}
-                    </td>
-                    <RateTd loan={l} />
-                    <CostTd loan={l} />
-                    <td className='px-4 py-3 text-xs text-neutral-muted'>
-                      {/* No maturity date is unknown, not "Revolving" — these are
-                          aggregate buckets and IDS creditor totals (F24). */}
-                      {l.maturity_date || '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {/* Mobile cards */}
-            <div className='md:hidden divide-y divide-neutral-border/20'>
-              {(showAllLoans ? loans : loans.slice(0, 10)).map((l, i) => (
-                <div key={`${l.lender}-${i}`} className='p-4'>
-                  <div className='text-sm font-semibold text-gov-dark dark:text-white mb-0.5'>
-                    {displayLenderName(l.lender)}
-                  </div>
-                  <div className='text-[11px] text-neutral-muted mb-2'>
-                    {l.lender_type?.replace(/_/g, ' ')}
-                  </div>
-                  <FigureEvidence label={displayLenderName(l.lender)} qualifications={l.qualifications} table='loans' recordId={l.record_id ?? l.id} />
-                  <div className='grid grid-cols-2 gap-2 text-xs'>
-                    <div>
-                      <span className='text-neutral-muted block text-[11px] uppercase'>Outstanding</span>
-                      <span className='font-semibold text-gov-dark dark:text-white tabular-nums'>
-                        {fmtKES(l.outstanding_numeric)}
-                      </span>
-                    </div>
-                    <div>
-                      <span className='text-neutral-muted block text-[11px] uppercase'>Rate</span>
-                      <FigureText cell={rateCell(l)} kind='rate' className='font-semibold text-gov-copper tabular-nums' />
-                    </div>
-                    <div>
-                      <span className='text-neutral-muted block text-[11px] uppercase'>Annual interest</span>
-                      <FigureText cell={annualCostCell(l)} kind='kes' className='font-semibold text-gov-dark dark:text-white tabular-nums' />
-                    </div>
-                    <div>
-                      <span className='text-neutral-muted block text-[11px] uppercase'>Maturity</span>
-                      <span className='text-gov-dark dark:text-white'>{l.maturity_date || '—'}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <p className='px-4 py-3 text-[11px] text-neutral-muted border-t border-neutral-border/20 leading-relaxed'>
-              <span className='font-semibold text-gov-dark dark:text-white'>How to read the rate and interest columns.</span>{' '}
-              External rows show the interest Kenya actually paid each creditor in the year World Bank
-              IDS reports (&ldquo;paid&rdquo;); IDS gives no rate per creditor. Treasury bonds show the
-              average coupon of the bonds in CBK&rsquo;s register and bills show CBK&rsquo;s 91-day
-              yield; their interest is <em>modelled</em> as balance × that rate, not published.
-              &ldquo;—&rdquo; means no publisher gives the figure; hover for why. These columns do not
-              add up to a total: they are on different bases and different years.
-            </p>
-
-            {loans.length > 10 && (
-              <button
-                onClick={() => setShowAllLoans((v) => !v)}
-                className='w-full py-3 text-xs font-semibold text-gov-forest dark:text-emerald-100 hover:bg-white/40 dark:bg-surface-elevated transition-colors border-t border-neutral-border/20'>
-                {showAllLoans
-                  ? `Show top 10 only`
-                  : `Show all ${loans.length} creditor and instrument lines`}{' '}
-                {showAllLoans ? (
-                  <ChevronUp size={14} className='inline' />
-                ) : (
-                  <ChevronDown size={14} className='inline' />
-                )}
-              </button>
-            )}
-          </div>
-        </motion.section>
-      )}
+      <LoanRegister
+        data={loansResp}
+        isLoading={loansLoading}
+        isError={loansError}
+        isFetching={loansFetching}
+        retry={() => void refetchLoans({ cancelRefetch: false })}
+      />
 
       {/* ═══════════ FOOTER / SOURCES ═══════════ */}
       <div className='rounded-xl bg-gov-dark/5 border border-gov-dark/10 p-5 text-xs text-neutral-muted'>

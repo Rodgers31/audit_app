@@ -15,6 +15,7 @@ async function nationalObservation(page: Page, patch: Record<string, unknown> = 
         debt_to_gdp_year: 2025,
         debt_to_gdp_basis: 'IMF General Government Gross Debt, % of GDP (GGXWDG_NGDP) — vintage-consistent',
         debt_to_gdp_source: 'IMF World Economic Outlook',
+        debt_to_gdp_vintage: '2026-10-27T04:38:48Z',
         figure_qualifications: {
           derived_ratio: { status: 'qualified', reason: 'published_imf_ratio_outside_seven_table_contract' },
         },
@@ -43,12 +44,15 @@ async function nationalObservation(page: Page, patch: Record<string, unknown> = 
 test('debt page separates the nominal observation from the dated DSA', async ({ page }) => {
   await nationalObservation(page);
   await page.goto('/debt');
-  const ratio = page.getByText('Debt-to-GDP', { exact: true }).locator('..');
+  const ratio = page.getByRole('region', { name: 'Debt-to-GDP', exact: true });
   await expect(ratio).toContainText('69.3%');
   await expect(ratio).toContainText('Nominal debt');
-  await expect(ratio).toContainText('IMF World Economic Outlook');
-  await expect(ratio).toContainText('Observation: 2025');
+  await expect(ratio.getByRole('link', { name: 'IMF World Economic Outlook · GGXWDG_NGDP' }))
+    .toHaveAttribute('href', 'https://www.imf.org/external/datamapper/GGXWDG_NGDP@WEO/KEN');
+  await expect(ratio).toContainText('Reference year: 2025');
+  await expect(ratio).toContainText('Data snapshot: 27 October 2026');
   await expect(page.getByText('vs PFM Act 55%')).toHaveCount(0);
+  await expect(ratio.getByRole('img')).toHaveCount(0);
   await expect(ratio.locator('[style*="background"]')).toHaveCount(0);
   await expect(page.getByText('High', { exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'IMF–World Bank DSA, Oct 2024' }))
@@ -59,9 +63,10 @@ test('debt page separates the nominal observation from the dated DSA', async ({ 
 test('missing ratio and assessment stay absent despite register and GDP inputs', async ({ page }) => {
   await nationalObservation(page, { debt_to_gdp_ratio: null, debt_sustainability: {} });
   await page.goto('/debt');
-  const ratio = page.getByText('Debt-to-GDP', { exact: true }).locator('..');
-  await expect(ratio).toContainText('No debt-to-GDP observation received.');
+  const ratio = page.getByRole('region', { name: 'Debt-to-GDP', exact: true });
+  await expect(ratio).toContainText('Debt-to-GDP unavailable. We couldn’t confirm the figure’s year and source.');
   await expect(ratio).not.toContainText('60.0%');
+  await expect(ratio.getByRole('link', { name: /IMF World Economic Outlook/ })).toHaveCount(0);
   await expect(page.getByText('Not assessed', { exact: true })).toBeVisible();
   await expect(page.getByText('vs PFM Act 55%')).toHaveCount(0);
 });
@@ -69,8 +74,9 @@ test('missing ratio and assessment stay absent despite register and GDP inputs',
 test('a published zero remains zero without a risk band', async ({ page }) => {
   await nationalObservation(page, { debt_to_gdp_ratio: 0, debt_sustainability: {} });
   await page.goto('/debt');
-  const ratio = page.getByText('Debt-to-GDP', { exact: true }).locator('..');
+  const ratio = page.getByRole('region', { name: 'Debt-to-GDP', exact: true });
   await expect(ratio).toContainText('0.0%');
+  await expect(ratio.getByRole('img')).toHaveCount(0);
   await expect(ratio.locator('[style*="background"]')).toHaveCount(0);
   await expect(page.getByText('Not assessed', { exact: true })).toBeVisible();
 });

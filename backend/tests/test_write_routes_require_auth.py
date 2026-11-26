@@ -82,6 +82,10 @@ PUBLIC_WRITE_ROUTES = {
         "Called from the emailed unsubscribe link; the handler 403s unless "
         "verify_unsubscribe_token(email, token) passes."
     ),
+    ("POST", "/api/v1/newsletter/unsubscribe-request"): (
+        "Requests a private signed link with the same response across subscriber states. "
+        "Delivery is bounded, and the request leaves subscription state intact."
+    ),
 }
 
 # Open to anonymous callers, and NOT safe. Tolerated so this test can land

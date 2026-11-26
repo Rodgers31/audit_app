@@ -36,14 +36,14 @@ test.describe(PATH, () => {
     await page.goto(PATH);
     await waitForAppReady(page);
     await expect(pageShell.h1(page)).toContainText(/Unaccounted Funds/i);
-    await expect(page.getByText(/Findings listed/i)).toBeVisible();
-    await expect(page.getByText(/Amount involved/i)).toBeVisible();
+    await expect(page.getByText('Findings', { exact: true })).toBeVisible();
+    await expect(page.getByText('Amount questioned', { exact: true })).toBeVisible();
   });
 
   test('never renders a money total, and never the word "missing"', async ({ page }) => {
     await page.goto(PATH);
     await waitForAppReady(page);
-    await expect(page.getByText(/Not stated here/i)).toBeVisible();
+    await expect(page.getByText('Reviewed total unavailable', { exact: true })).toBeVisible();
     await expect(page.getByText(/^KES\s*0$/)).toHaveCount(0);
     const body = await page.locator('main').innerText();
     expect(body).not.toMatch(/missing/i);
@@ -60,6 +60,9 @@ test.describe(PATH, () => {
     expect((await link.boundingBox())?.height).toBeGreaterThanOrEqual(44);
     await expect(page.locator('article')).not.toContainText('.pdf');
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBe(360);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await expect.poll(async () => (await link.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBe(1440);
   });
 
   test('the empty state explains itself and does not imply a clean bill of health', async ({ page }) => {

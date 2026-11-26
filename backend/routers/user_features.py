@@ -5,23 +5,31 @@ Endpoints:
   GET              /api/v1/user/alerts        — Get data alerts
   PATCH            /api/v1/user/alerts/:id    — Mark alert as read
   POST             /api/v1/newsletter/subscribe   — Subscribe (no auth)
+  POST             /api/v1/newsletter/unsubscribe-request — Request a signed link
   POST              /api/v1/newsletter/unsubscribe-verify — Verify token & unsubscribe
 """
 
 from __future__ import annotations
 
+import hashlib
+import logging
+import secrets
+from collections import OrderedDict
+from threading import BoundedSemaphore, Lock
 from typing import List, Optional
 
 from database import get_db
 from supabase_auth import get_current_db_user as get_current_user
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Response, status
+from middleware.security import _memory_allows
 from models import DataAlert, NewsletterSubscriber, User, WatchlistItem
 from pydantic import ConfigDict, BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 router = APIRouter(tags=["user-features"])
+logger = logging.getLogger(__name__)
 
 
 # ── Schemas ─────────────────────────────────────────────────────────
@@ -216,6 +224,42 @@ def mark_all_read(
 # ── Newsletter ──────────────────────────────────────────────────────
 
 
+class _UnsubscribeDispatch:
+    """Bound the newsletter email operation within the admitted single worker."""
+
+    def __init__(self):
+        self._key = secrets.token_bytes(32)
+        self._recipients = OrderedDict()
+        self._outbound = OrderedDict()
+        self._lock = Lock()
+        self._slots = BoundedSemaphore(3)
+
+    def reserve(self, email: str) -> bool:
+        recipient = hashlib.blake2b(email.encode(), key=self._key, digest_size=16).digest()
+        with self._lock:
+            if not _memory_allows(self._outbound, "unsubscribe", 12, 60, 1, record=False):
+                return False
+            if not _memory_allows(self._recipients, recipient, 1, 900, 256):
+                return False
+            return _memory_allows(self._outbound, "unsubscribe", 12, 60, 1)
+
+    def deliver(self, email: str) -> None:
+        from services.email_service import send_unsubscribe_link_email
+
+        if not self._slots.acquire(blocking=False):
+            return
+        try:
+            send_unsubscribe_link_email(email)
+        except Exception:
+            logger.warning("Newsletter unsubscribe link dispatch failed")
+        finally:
+            self._slots.release()
+
+
+_unsubscribe_dispatch = _UnsubscribeDispatch()
+_UNSUBSCRIBE_REQUEST_MESSAGE = "If this address is subscribed, check your inbox for an unsubscribe link."
+
+
 def _newsletter_key_ready():
     from config.settings import SigningKeyUnavailable
     from services.email_service import _hmac_key
@@ -281,6 +325,49 @@ def subscribe_newsletter(
 class UnsubscribeVerifyRequest(BaseModel):
     email: EmailStr
     token: str
+
+
+class UnsubscribeLinkRequest(BaseModel):
+    email: EmailStr
+
+
+@router.post(
+    "/api/v1/newsletter/unsubscribe-request",
+    response_model=NewsletterResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def request_unsubscribe_link(
+    body: UnsubscribeLinkRequest,
+    response: Response,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """Return the same receipt whether or not delivery was eligible."""
+    from services.email_service import unsubscribe_email_ready
+
+    unavailable = HTTPException(
+        status_code=503,
+        detail="This request is temporarily unavailable. Please try again.",
+        headers={"Cache-Control": "no-store"},
+    )
+    if not unsubscribe_email_ready():
+        raise unavailable
+
+    email = body.email.lower()
+    try:
+        subscriber = (
+            db.query(NewsletterSubscriber.id)
+            .filter(func.lower(NewsletterSubscriber.email) == email, NewsletterSubscriber.unsubscribed_at.is_(None))
+            .first()
+        )
+    except SQLAlchemyError:
+        logger.warning("Newsletter unsubscribe request lookup unavailable")
+        raise unavailable from None
+
+    if subscriber and _unsubscribe_dispatch.reserve(email):
+        background_tasks.add_task(_unsubscribe_dispatch.deliver, email)
+    response.headers["Cache-Control"] = "no-store"
+    return NewsletterResponse(status="requested", message=_UNSUBSCRIBE_REQUEST_MESSAGE)
 
 
 @router.post("/api/v1/newsletter/unsubscribe-verify", response_model=NewsletterResponse)

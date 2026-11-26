@@ -67,9 +67,16 @@ test.describe('Back-navigation state preservation', () => {
     await expect(page.getByText(/Showing\s+21[–\-]30\s+of/)).toBeVisible({
       timeout: 15_000,
     });
-    // Ranks 21-25 should appear in the first few rows
-    const firstRank = page.locator('table tbody tr').first().locator('td').first();
-    await expect(firstRank).toHaveText(/21/);
+    const rows = page.getByRole('table', { name: 'County Rankings' }).locator('tbody tr');
+    await expect(rows).toHaveCount(10);
+    const firstCounty = rows.first().getByRole('link').first();
+    const firstHref = await firstCounty.getAttribute('href');
+    expect(firstHref).toMatch(/^\/counties\//);
+
+    await page.reload();
+    await expect(page).toHaveURL(/[?&]p=3$/);
+    await expect(page.getByText(/Showing\s+21[–\-]30\s+of/)).toBeVisible();
+    await expect(firstCounty).toHaveAttribute('href', firstHref!);
   });
 
   test('clamp out-of-range page to last valid page', async ({ page }) => {
