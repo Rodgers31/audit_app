@@ -50,6 +50,16 @@
   --chart-clay: #a0602e;
   --chart-context: #c9c1b0;
   --public-header-height: 4rem;
+  --public-page-top-offset: var(--public-header-height);
+}
+
+.public-language-offer {
+  margin-block-start: calc(var(--public-header-height) + 1px);
+}
+
+/* The in-flow language offer now provides clearance for the fixed navigation. */
+.public-language-offer ~ #main-content {
+  --public-page-top-offset: 0px;
 }
 
 /* Dark theme triggers when ``<html>`` carries the ``dark`` class

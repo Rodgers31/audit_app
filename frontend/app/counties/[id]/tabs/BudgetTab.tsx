@@ -25,6 +25,8 @@ import { CountyComprehensive } from '@/types';
 import { FileWarning } from 'lucide-react';
 import ModelledDataNote from '@/components/ModelledDataNote';
 import { fmtKES, pct } from '../shared';
+import CountyDevelopmentMeter from './CountyDevelopmentMeter';
+import { countyDevelopmentShare } from './developmentShare';
 import KPI from './KPI';
 
 /** Bucket colours, oldest last — kept out of the render so both the bar and
@@ -39,6 +41,7 @@ const AGING_COLORS: Record<string, string> = {
 export default function BudgetTab({ data }: { data: CountyComprehensive }) {
   const { t } = useLang();
   const { budget, debt } = data;
+  const development = countyDevelopmentShare(budget, data.name);
   const search = useSearchParams();
   const requestedDate = search?.get('as_at') || undefined;
   const validDate = !requestedDate || /^\d{4}-\d{2}-\d{2}$/.test(requestedDate) && !Number.isNaN(Date.parse(requestedDate)) && new Date(requestedDate).toISOString().slice(0, 10) === requestedDate;
@@ -126,25 +129,27 @@ export default function BudgetTab({ data }: { data: CountyComprehensive }) {
           <KPI
             label={t('county.budget.development')}
             value={
-              budget.development_budget
-                ? fmtKES(budget.development_budget)
+              development
+                ? fmtKES(development.projects)
                 : t('county.budget.unavailable')
             }
-            sub={budget.development_budget ? undefined : t('county.budget.not_classified')}
+            sub={development ? undefined : t('county.budget.not_classified')}
             accent='text-amber-700'
           />
           <KPI
             label={t('county.budget.recurrent')}
             value={
-              budget.recurrent_budget
-                ? fmtKES(budget.recurrent_budget)
+              development
+                ? fmtKES(development.operations)
                 : t('county.budget.unavailable')
             }
-            sub={budget.recurrent_budget ? undefined : t('county.budget.not_classified')}
+            sub={development ? undefined : t('county.budget.not_classified')}
             accent='text-purple-700'
           />
         </div>
       </div>
+
+      <CountyDevelopmentMeter share={development} />
 
       {/* The county "Sector Spending" donut and ranked list were withdrawn
           (credibility audit F11). `sector_breakdown` is not extracted from any

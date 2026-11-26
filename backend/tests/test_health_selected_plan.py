@@ -193,9 +193,10 @@ def test_optional_settings_do_not_break_unrelated_selection_and_queries_are_well
 def test_disabled_national_population_still_probes_the_non_dry_run_census():
     from seeding.source_plan import SourcePlan,health_source_lines
     from seeding.config import SeedingSettings
+    from seeding.domains.population.census_counties import CENSUS_VOLUME_I_URL
     settings=SeedingSettings(live_pdf_fetch_enabled=False,enrich_with_worldbank=False)
     lines=health_source_lines(SourcePlan(('population',),False,False),settings).splitlines()
-    assert any('county census edition' in line and '.pdf|' in line for line in lines)
+    assert f'population county census edition|{CENSUS_VOLUME_I_URL}|true' in lines
     assert any('|missing|true' in line for line in lines)
     assert not any('api.worldbank.org' in line for line in lines)
 
