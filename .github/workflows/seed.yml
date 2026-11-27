@@ -67,6 +67,11 @@ on:
         options:
           - none
           - oag-combined-catalogue-20261101
+      approved_schedule:
+        description: 'Reserved for the approved-release schedule dispatcher'
+        required: false
+        type: string
+        default: ''
       run_validation:
         description: 'Run data validation after seeding'
         required: false
@@ -133,6 +138,8 @@ env:
   SEED_KNBS_RELEASE_DISCOVERY_ENABLED: ${{ vars.SEED_KNBS_RELEASE_DISCOVERY_ENABLED || 'false' }}
   SEED_COUNTY_BORROWING_INGESTION_ENABLED: ${{ vars.SEED_COUNTY_BORROWING_INGESTION_ENABLED || 'false' }}
   SEED_NATIVE_FINANCIAL_SOURCE_ADMISSION_ENABLED: ${{ vars.SEED_NATIVE_FINANCIAL_SOURCE_ADMISSION_ENABLED || 'false' }}
+  APPROVED_SCHEDULE_ROUTING: ${{ vars.INGESTION_APPROVED_TAG_SCHEDULE_ENABLED }}
+  SEED_PLAN_ROUTED_CRON: ${{ github.event.inputs.approved_schedule || '' }}
   SEED_PLAN_EVENT: ${{ github.event_name }}
   SEED_PLAN_SCHEDULE: ${{ github.event.schedule }}
   SEED_PLAN_DOMAIN: ${{ github.event.inputs.domain }}
@@ -150,7 +157,7 @@ env:
 jobs:
   source_plan:
     name: Validate source selection before any writer
-    if: github.event_name != 'schedule' || vars.INGESTION_NIGHTLY_ENABLED == 'true'
+    if: github.event_name != 'schedule' || (vars.INGESTION_NIGHTLY_ENABLED == 'true' && vars.INGESTION_APPROVED_TAG_SCHEDULE_ENABLED != 'true')
     outputs:
       domains: ${{ steps.plan.outputs.domains }}
       bootstrap: ${{ steps.plan.outputs.bootstrap }}
@@ -205,7 +212,7 @@ jobs:
   healthcheck:
     needs: [source_plan]
     name: Data Source Health Check
-    if: github.event_name != 'schedule' || vars.INGESTION_NIGHTLY_ENABLED == 'true'
+    if: github.event_name != 'schedule' || (vars.INGESTION_NIGHTLY_ENABLED == 'true' && vars.INGESTION_APPROVED_TAG_SCHEDULE_ENABLED != 'true')
     runs-on: ubuntu-latest
     # Allow time for the reviewed runtime plus the existing 240s probe budget.
     timeout-minutes: 8
@@ -675,17 +682,33 @@ jobs:
           REPOSITORY: ${{ github.repository }}
           DISPATCH_REF: ${{ github.ref }}
           DISPATCH_EVENT: ${{ github.event_name }}
+          DISPATCH_ACTOR: ${{ github.actor }}
+          ROUTED_VALIDATION: ${{ inputs.run_validation }}
           NIGHTLY_ENABLED: ${{ vars.INGESTION_NIGHTLY_ENABLED }}
         run: |
           set -eu
           test "$REPOSITORY" = Rodgers31/audit_app
-          test "$DISPATCH_REF" = refs/heads/main
           test "${#APPROVED_SHA}" -eq 40
           case "$APPROVED_SHA" in *[!0-9a-f]*) exit 1 ;; esac
-          test "$DISPATCH_SHA" = "$APPROVED_SHA"
-          case "$DISPATCH_EVENT" in
-            workflow_dispatch) ;;
-            schedule) test "$NIGHTLY_ENABLED" = true ;;
+          if [ "$DISPATCH_SHA" != "$APPROVED_SHA" ]; then
+            echo '::error::The dispatched SHA differs from the approved ingestion release.'
+            exit 1
+          fi
+          case "$DISPATCH_REF:$DISPATCH_EVENT" in
+            refs/heads/main:workflow_dispatch)
+              test -z "${SEED_PLAN_ROUTED_CRON:-}"
+              ;;
+            refs/heads/main:schedule)
+              test "$NIGHTLY_ENABLED" = true
+              test "${APPROVED_SCHEDULE_ROUTING:-}" != true
+              ;;
+            "refs/tags/ingestion-release-$APPROVED_SHA:workflow_dispatch")
+              test "$NIGHTLY_ENABLED" = true
+              test "${APPROVED_SCHEDULE_ROUTING:-}" = true
+              test "$DISPATCH_ACTOR" = 'github-actions[bot]'
+              test "$ROUTED_VALIDATION" = true
+              case "$SEED_PLAN_ROUTED_CRON" in '0 2 * * 1-6'|'0 3 * * 0') ;; *) exit 1 ;; esac
+              ;;
             *) exit 1 ;;
           esac
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
@@ -761,14 +784,12 @@ jobs:
     # defers at runtime when it sees a seed run in flight
     # (bootstrap._seed_run_in_flight), so ordering the jobs here is what keeps
     # the weekly refresh from deferring itself into a permanent no-op.
-    needs: [migrate, seed]
+    needs: [source_plan, migrate, seed]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
       AUDIT_GITHUB_DATABASE_TLS: '1'
-    if: >-
-      github.event.inputs.run_bootstrap == 'true' ||
-      (github.event_name == 'schedule' && github.event.schedule == '0 3 * * 0')
+    if: needs.source_plan.outputs.bootstrap == 'true'
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
@@ -1619,7 +1640,7 @@ jobs:
   notify:
     name: Post-Run Summary
     needs: [source_plan, healthcheck, migrate, seed, bootstrap, validate, revalidate]
-    if: always() && (github.event_name != 'schedule' || vars.INGESTION_NIGHTLY_ENABLED == 'true')
+    if: always() && (github.event_name != 'schedule' || (vars.INGESTION_NIGHTLY_ENABLED == 'true' && vars.INGESTION_APPROVED_TAG_SCHEDULE_ENABLED != 'true'))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

@@ -202,13 +202,18 @@ class SourcePlan:
 
 def build_plan(*, event, schedule, domain, dry_run, cra, opendata, discovery,
                bootstrap='false', county_borrowing='false', audits_review='',
-               reacquire_pending_pdf='false', audits_source_acceptance=''):
+               reacquire_pending_pdf='false', audits_source_acceptance='',
+               routed_schedule=''):
     # Nonempty choices satisfy Actions semantic validation. Preserve older API
     # dispatches carrying empty inputs, and keep schedule inputs strictly empty.
     if event == 'workflow_dispatch':
         domain = '' if domain == 'all' else domain
         audits_review = '' if audits_review == 'none' else audits_review
         audits_source_acceptance = '' if audits_source_acceptance == 'none' else audits_source_acceptance
+    if routed_schedule:
+        if event != 'workflow_dispatch' or schedule:
+            raise ValueError('Unsupported routed source plan')
+        event, schedule = 'schedule', routed_schedule
     if type(audits_source_acceptance) is not str or audits_source_acceptance not in ('', OAG_SOURCE_ACCEPTANCE):
         raise ValueError('Unknown reviewed audits acquisition scope')
     if audits_review not in ('', 'oag-2542-20261026'):
@@ -258,7 +263,8 @@ def environment_plan():
         county_borrowing=os.environ.get('SEED_COUNTY_BORROWING_INGESTION_ENABLED', 'false'),
         audits_review=os.environ.get('SEED_PLAN_AUDITS_REVIEW', ''),
         reacquire_pending_pdf=os.environ.get('SEED_PLAN_REACQUIRE_PENDING_BILLS_PDF', 'false'),
-        audits_source_acceptance=os.environ.get('SEED_PLAN_AUDITS_SOURCE_ACCEPTANCE', ''))
+        audits_source_acceptance=os.environ.get('SEED_PLAN_AUDITS_SOURCE_ACCEPTANCE', ''),
+        routed_schedule=os.environ.get('SEED_PLAN_ROUTED_CRON', ''))
 
 
 def validate_plan(plan):
