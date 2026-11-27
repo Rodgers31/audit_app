@@ -244,8 +244,6 @@ def fetch_fiscal_summary_payload(
 
     historical_outturn_verified = False
     historical_rows = [row for row in payload.get("fiscal_years", []) if row.get("fiscal_year") == YEAR]
-    for row in historical_rows:
-        row["historical_outturn_attempted"] = True
     if historical_rows and settings.live_pdf_fetch_enabled:
         try:
             apply_historical_outturn(payload, client, settings)

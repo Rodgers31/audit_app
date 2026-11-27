@@ -180,7 +180,7 @@ def _persist_actual_source(session, record, meta):
 
 def _persist_historical_outturn(session, record, meta):
     """Keep the two Treasury PDFs and their observations in the same savepoint."""
-    evidence = record.historical_outturn_evidence
+    evidence = getattr(record, "historical_outturn_evidence", None)
     if evidence is None:
         return
     from models import Extraction
@@ -341,6 +341,25 @@ def _retain_last_good(record, existing):
     return result
 
 
+def _require_historical_acquisition(record, contract, framework):
+    from .historical_outturn import EDITIONS
+
+    if getattr(record, "historical_outturn_evidence", None) is not None:
+        return
+    source_claims = []
+    if isinstance(framework, dict):
+        source_claims.append(framework.get("source"))
+    if isinstance(contract, dict) and isinstance(contract.get("measures"), dict):
+        source_claims.extend(proof.get("source") for proof in contract["measures"].values()
+                             if isinstance(proof, dict))
+    reviewed_digests = tuple(edition[0] for edition in EDITIONS.values())
+    reviewed_urls = tuple(EDITIONS)
+    if any(isinstance(source, dict)
+           and (source.get("url") in reviewed_urls or source.get("sha256") in reviewed_digests)
+           for source in source_claims):
+        raise ValueError("historical fiscal source claims require both sealed acquisitions")
+
+
 def write_fiscal_summary_records(session, records, metadata):
     """A rejected batch cannot leave a partially overwritten fiscal series."""
     from services.fiscal_qualification import fiscal_year_key
@@ -359,6 +378,7 @@ def write_fiscal_summary_records(session, records, metadata):
         for field in MONEY_BASES:
             _raw_kes(getattr(record,field,None))
         contract=getattr(record,"fiscal_measure_contract",None)
+        _require_historical_acquisition(record, contract, getattr(record, "fiscal_framework", None))
         if contract is not None:
             from services.fiscal_qualification import VERSION, MONEY_BASES
             if (not isinstance(contract,dict) or contract.get("version")!=VERSION
@@ -405,7 +425,7 @@ def _write_fiscal_summary_records(
         )
 
         if (existing is not None and record.fiscal_year == YEAR
-                and record.historical_outturn_attempted and record.historical_outturn_evidence is None):
+                and getattr(record, "historical_outturn_evidence", None) is None):
             from services.fiscal_qualification import published_framework
 
             framework = published_framework(existing)

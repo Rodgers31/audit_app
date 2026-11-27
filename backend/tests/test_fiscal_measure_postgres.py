@@ -404,7 +404,7 @@ def test_fy2022_23_outturn_links_two_sources_and_preserves_rows_on_refusal(
     settings = SeedingSettings(_env_file=None, cache_path=tmp_path / "cache",
         storage_path=tmp_path / "storage", max_retries=1, http_cache_enabled=False)
     with SeedingHttpClient(settings, client=httpx.Client(transport=httpx.MockTransport(serve))) as client:
-        baseline = {"fiscal_years": [{"fiscal_year": actuals.FY, "historical_outturn_attempted": True}]}
+        baseline = {"fiscal_years": [{"fiscal_year": actuals.FY}]}
         actuals.apply_apdmr(baseline, actuals.fetch_apdmr(client, settings))
         payload = deepcopy(baseline)
         outturn.apply_historical_outturn(payload, client, settings)
@@ -436,6 +436,11 @@ def test_fy2022_23_outturn_links_two_sources_and_preserves_rows_on_refusal(
         db.commit()
         assert db.query(Extraction).count() == 3
         snapshot = (deepcopy(row.meta), row.source_document_id, row.updated_at)
+        exported = deepcopy(payload)
+        exported["fiscal_years"][0].pop("historical_outturn_evidence")
+        with pytest.raises(ValueError, match="both sealed acquisitions"):
+            write(db, exported)
+        db.rollback()
         for url, reject in ((outturn.OUTTURN_URL, unavailable), (outturn.REVENUE_URL, changed)):
             reject.add(url)
             retry = deepcopy(baseline)
