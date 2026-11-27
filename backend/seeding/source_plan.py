@@ -51,7 +51,8 @@ _SOURCE_LITERALS = {
     'domains/cra/source.py': {'URL':str},
     'domains/opendata/source.py': {'URL':str, 'REPORT_URL':str},
     'domains/opendata/discovery.py': {'INDEX':str},
-    'domains/fiscal_summary/actuals.py': {'APDMR_URL':str, 'BROP_URL':str},
+    'domains/fiscal_summary/actuals.py': {'BROP_URL':str},
+    'fiscal_historical_sources.py': {'APDMR_URL':str, 'OUTTURN_URL':str, 'REVENUE_URL':str},
 }
 
 
@@ -342,12 +343,15 @@ def health_source_lines(plan, settings=None):
         })
         if settings.treasury_brop_url:
             mapping['pending_bills'].append(('Treasury fallback edition',settings.treasury_brop_url,False))
-        # A delivered fiscal lane adds this exact native source. Until then the
-        # baseline has no APDMR fetch; no peer module is imported or adopted.
-        if (_SOURCE_ROOT/'domains/fiscal_summary/actuals.py').is_file():
-            actuals=literals('domains/fiscal_summary/actuals.py')
-            mapping['fiscal_summary'] += [('reviewed historical actuals',actuals['APDMR_URL']),
-                                         ('reviewed historical BROP',actuals['BROP_URL'])]
+        # These are reachability diagnostics for the exact native source URLs.
+        actuals = literals('domains/fiscal_summary/actuals.py')
+        historical = literals('fiscal_historical_sources.py')
+        mapping['fiscal_summary'] += [
+            ('reviewed historical actuals', historical['APDMR_URL']),
+            ('reviewed historical BROP', actuals['BROP_URL']),
+            ('FY2022/23 Treasury outturn', historical['OUTTURN_URL']),
+            ('FY2022/23 Treasury revenue split', historical['REVENUE_URL']),
+        ]
     else:
         for domain in ('audits','counties_budget','national_budget','stalled_projects','fiscal_summary','pending_bills','national_debt','debt_timeline'):
             mapping[domain] = [('live PDF sources disabled','missing')]

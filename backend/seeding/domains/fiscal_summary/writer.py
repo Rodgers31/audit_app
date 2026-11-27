@@ -125,10 +125,10 @@ def _budget_basis_meta(record) -> dict[str, Any]:
     return out
 
 
-def _actual_source_candidates(session, country_id):
-    from .actuals import APDMR_URL, APDMR_SHA256
-    matches=session.query(SourceDocument).filter(SourceDocument.url == APDMR_URL).all()
-    matches=[d for d in matches if isinstance(d.meta,dict) and d.meta.get("source_sha256")==APDMR_SHA256]
+def _actual_source_candidates(session, country_id, url, digest):
+    matches = session.query(SourceDocument).filter(SourceDocument.url == url).all()
+    matches = [doc for doc in matches
+               if isinstance(doc.meta, dict) and doc.meta.get("source_sha256") == digest]
     if len(matches)>1 or any(d.country_id!=country_id or d.publisher!="The National Treasury" for d in matches):
         raise ValueError("ambiguous fiscal source association")
     return matches
@@ -152,7 +152,7 @@ def _persist_actual_source(session, record, meta):
         raise ValueError("fiscal source acquisition identity disagrees")
     acquired=datetime.fromisoformat(receipt["acquired_at"])
     kenya=session.query(Country).filter(Country.iso_code == "KEN").one()
-    matches=_actual_source_candidates(session,kenya.id)
+    matches=_actual_source_candidates(session, kenya.id, APDMR_URL, APDMR_SHA256)
     doc=matches[0] if matches else None
     if doc is None:
         doc=SourceDocument(country_id=kenya.id,publisher="The National Treasury",
@@ -176,6 +176,72 @@ def _persist_actual_source(session, record, meta):
             proofs[field]["source_document_id"]=doc.id
             proofs[field]["extraction_id"]=observation["receipt"]["extraction_id"]
     return doc
+
+
+def _persist_historical_outturn(session, record, meta):
+    """Keep the two Treasury PDFs and their observations in the same savepoint."""
+    evidence = getattr(record, "historical_outturn_evidence", None)
+    if evidence is None:
+        return
+    from models import Extraction
+    from services.response_receipts import persist_evidence, receipt_is_sealed
+    from .historical_outturn import EDITIONS, YEAR
+
+    if record.fiscal_year != YEAR or not isinstance(evidence, list):
+        raise ValueError("invalid historical outturn receipt scope")
+    groups = {url: [] for url in EDITIONS}
+    for item in evidence:
+        receipt = item.get("_response_receipt")
+        if not receipt_is_sealed(receipt) or receipt.get("request_url") not in groups:
+            raise ValueError("historical outturn requires sealed official acquisitions")
+        groups[receipt["request_url"]].append(item)
+
+    kenya = session.query(Country).filter(Country.iso_code == "KEN").one()
+    proofs = meta["fiscal_measure_contract"]["measures"]
+    for url, items in groups.items():
+        digest, page, title, parser, fields = EDITIONS[url]
+        if len(items) != len(fields) or {item["identity"]["measure"] for item in items} != fields:
+            raise ValueError("historical outturn observation inventory changed")
+        for item in items:
+            receipt = item["_response_receipt"]
+            field = item["identity"]["measure"]
+            source = proofs[field]["source"]
+            if (
+                receipt.get("digest") != digest or receipt.get("request_url") != url
+                or receipt.get("response_url") != url or receipt.get("status") != 200
+                or receipt.get("parser_version") != parser or item["locator"]["page"] != page
+                or receipt.get("byte_check", {}).get("status") != "matched"
+                or {k: v for k, v in item.items() if k != "_response_receipt"} not in receipt["observations"]
+                or item["identity"]["period"] != YEAR or item["identity"]["basis"] != proofs[field]["basis"]
+                or item["identity"]["geography"] != "KEN" or item["identity"]["unit"] != "KES"
+                or item["identity"]["dimensions"] != {"vintage": "Actual"}
+                or item["value"] != str(proofs[field]["value_kes"])
+                or source["url"] != url or source["sha256"] != digest
+            ):
+                raise ValueError("historical outturn observation differs from its receipt")
+        matches = _actual_source_candidates(session, kenya.id, url, digest)
+        if matches:
+            doc = matches[0]
+        else:
+            acquired_at = items[0]["_response_receipt"]["acquired_at"]
+            doc = SourceDocument(country_id=kenya.id, publisher="The National Treasury",
+                                 title=title, url=url, fetch_date=datetime.fromisoformat(acquired_at),
+                                 doc_type=DocumentType.REPORT,
+                                 meta={"source_sha256": digest, "original_acquisition_at": acquired_at})
+            session.add(doc)
+            session.flush()
+        persisted = persist_evidence(session, doc, items)
+        for observation in persisted:
+            association = observation["receipt"]
+            extraction_id = association.get("extraction_id")
+            extraction = session.get(Extraction, extraction_id) if extraction_id else None
+            if (extraction is None or extraction.source_document_id != doc.id
+                    or extraction.page_number != page or association.get("digest") != digest
+                    or extraction.extracted_json["response_receipt"]["byte_check"]["status"] != "matched"):
+                raise ValueError("historical outturn receipt could not be retained")
+            field = observation["identity"]["measure"]
+            proofs[field].update(source_document_id=doc.id, extraction_id=extraction.id)
+        meta.setdefault("source_evidence", []).extend(persisted)
 
 
 def _preserve_actual_lineage(session, existing, meta):
@@ -223,7 +289,7 @@ def _preserve_actual_lineage(session, existing, meta):
         new["extraction_id"]=identity
     doc=session.get(SourceDocument,after["total_revenue"]["source_document_id"])
     kenya=session.query(Country).filter(Country.iso_code == "KEN").one()
-    matches=_actual_source_candidates(session,kenya.id)
+    matches=_actual_source_candidates(session, kenya.id, APDMR_URL, APDMR_SHA256)
     if doc is None or len(matches)!=1 or matches[0].id!=doc.id:
         raise ValueError("retained fiscal document association missing")
     meta["source_evidence"]=existing.meta.get("source_evidence",[])
@@ -275,6 +341,25 @@ def _retain_last_good(record, existing):
     return result
 
 
+def _require_historical_acquisition(record, contract, framework):
+    from .historical_outturn import EDITIONS
+
+    if getattr(record, "historical_outturn_evidence", None) is not None:
+        return
+    source_claims = []
+    if isinstance(framework, dict):
+        source_claims.append(framework.get("source"))
+    if isinstance(contract, dict) and isinstance(contract.get("measures"), dict):
+        source_claims.extend(proof.get("source") for proof in contract["measures"].values()
+                             if isinstance(proof, dict))
+    reviewed_digests = tuple(edition[0] for edition in EDITIONS.values())
+    reviewed_urls = tuple(EDITIONS)
+    if any(isinstance(source, dict)
+           and (source.get("url") in reviewed_urls or source.get("sha256") in reviewed_digests)
+           for source in source_claims):
+        raise ValueError("historical fiscal source claims require both sealed acquisitions")
+
+
 def write_fiscal_summary_records(session, records, metadata):
     """A rejected batch cannot leave a partially overwritten fiscal series."""
     from services.fiscal_qualification import fiscal_year_key
@@ -293,6 +378,7 @@ def write_fiscal_summary_records(session, records, metadata):
         for field in MONEY_BASES:
             _raw_kes(getattr(record,field,None))
         contract=getattr(record,"fiscal_measure_contract",None)
+        _require_historical_acquisition(record, contract, getattr(record, "fiscal_framework", None))
         if contract is not None:
             from services.fiscal_qualification import VERSION, MONEY_BASES
             if (not isinstance(contract,dict) or contract.get("version")!=VERSION
@@ -327,6 +413,8 @@ def _write_fiscal_summary_records(
     if not records:
         return created, updated
 
+    from seeding.fiscal_historical_sources import OUTTURN_SHA256, OUTTURN_URL, YEAR
+
     source_doc = _get_or_create_source_document(session, metadata)
 
     for record in records:
@@ -335,6 +423,18 @@ def _write_fiscal_summary_records(
             .filter(FiscalSummary.fiscal_year == record.fiscal_year)
             .first()
         )
+
+        if (existing is not None and record.fiscal_year == YEAR
+                and getattr(record, "historical_outturn_evidence", None) is None):
+            from services.fiscal_qualification import published_framework
+
+            framework = published_framework(existing)
+            source = framework["source"] if framework is not None else {}
+            if source.get("url") == OUTTURN_URL and source.get("sha256") == OUTTURN_SHA256:
+                # Preserve a previously qualified pair atomically. Legacy
+                # rows continue through the existing per-measure retention.
+                updated += 1
+                continue
 
         record=_retain_last_good(record,existing)
 
@@ -363,6 +463,7 @@ def _write_fiscal_summary_records(
         basis_meta = _budget_basis_meta(record)
         actual_source_doc = _persist_actual_source(session, record, basis_meta)
         actual_source_doc = actual_source_doc or _preserve_actual_lineage(session, existing, basis_meta)
+        _persist_historical_outturn(session, record, basis_meta)
         row_source_doc = actual_source_doc or source_doc
         fields["meta"] = basis_meta
         fields["page_ref"] = None
