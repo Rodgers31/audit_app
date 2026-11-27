@@ -171,75 +171,75 @@
     ]
   },
   "backend/seeding/domains/fiscal_summary/actuals.py": {
-    "ast_sha256": "d08d2a739c513e0523dd8d331a2388e3ced3e08612a7587dc877568f12e96cef",
+    "ast_sha256": "6694191398baecb324dd30044c4618d104987128b72b9a049efce5a3467511db",
     "sites": [
       {
         "signature": "'ordinary_revenue_billion' is published from typed-in numbers [2041]. Nothing measured it. Serve a sourced figure or serve nothing.",
-        "reason": "Expected cell in the retained exact 2023 BROP Table 8 PDF p.21, FY 2022/23 preliminary actual column in KES billions; checks the source-bound transcription before use.",
+        "reason": "Expected cell in the retained exact 2023 BROP Table 8 PDF p.21, FY 2022/23 preliminary actual column in KES billions; checks the source-bound transcription before use. The APDMR identity now comes from a shared source module with identical bytes, URL and year. The legacy 2023 BROP transcription and its same-source verification are unchanged.",
         "disposition": "reviewed contextual value",
         "tracking": "https://github.com/Rodgers31/audit_app/issues/955",
-        "reviewed_against": "4f9f313ad548096d660576278ceaf284c66aa7c7: #952 previous-to-current figure use review",
+        "reviewed_against": "52a5851c0d949a07edbcf10f277f270b9f1cc68b through PR #1091",
         "review_context": "docs/verification/2026-11-15-pr-ci-figure-context-review.md"
       },
       {
         "signature": "'tax_revenue_billion' is published from typed-in numbers [1887]. Nothing measured it. Serve a sourced figure or serve nothing.",
-        "reason": "Expected cell in the retained exact 2023 BROP Table 8 PDF p.21, FY 2022/23 preliminary actual column in KES billions; checks the source-bound transcription before use.",
+        "reason": "Expected cell in the retained exact 2023 BROP Table 8 PDF p.21, FY 2022/23 preliminary actual column in KES billions; checks the source-bound transcription before use. The APDMR identity now comes from a shared source module with identical bytes, URL and year. The legacy 2023 BROP transcription and its same-source verification are unchanged.",
         "disposition": "reviewed contextual value",
         "tracking": "https://github.com/Rodgers31/audit_app/issues/955",
-        "reviewed_against": "4f9f313ad548096d660576278ceaf284c66aa7c7: #952 previous-to-current figure use review",
+        "reviewed_against": "52a5851c0d949a07edbcf10f277f270b9f1cc68b through PR #1091",
         "review_context": "docs/verification/2026-11-15-pr-ci-figure-context-review.md"
       },
       {
         "signature": "'non_tax_revenue_billion' is published from typed-in numbers [154]. Nothing measured it. Serve a sourced figure or serve nothing.",
-        "reason": "Expected cell in the retained exact 2023 BROP Table 8 PDF p.21, FY 2022/23 preliminary actual column in KES billions; checks the source-bound transcription before use.",
+        "reason": "Expected cell in the retained exact 2023 BROP Table 8 PDF p.21, FY 2022/23 preliminary actual column in KES billions; checks the source-bound transcription before use. The APDMR identity now comes from a shared source module with identical bytes, URL and year. The legacy 2023 BROP transcription and its same-source verification are unchanged.",
         "disposition": "reviewed contextual value",
         "tracking": "https://github.com/Rodgers31/audit_app/issues/955",
-        "reviewed_against": "4f9f313ad548096d660576278ceaf284c66aa7c7: #952 previous-to-current figure use review",
+        "reviewed_against": "52a5851c0d949a07edbcf10f277f270b9f1cc68b through PR #1091",
         "review_context": "docs/verification/2026-11-15-pr-ci-figure-context-review.md"
       },
       {
         "signature": "'total_revenue_incl_aia_billion' is published from typed-in numbers [2361]. Nothing measured it. Serve a sourced figure or serve nothing.",
-        "reason": "Expected cell in the retained exact 2023 BROP Table 8 PDF p.21, FY 2022/23 preliminary actual column in KES billions; checks the source-bound transcription before use.",
+        "reason": "Expected cell in the retained exact 2023 BROP Table 8 PDF p.21, FY 2022/23 preliminary actual column in KES billions; checks the source-bound transcription before use. The APDMR identity now comes from a shared source module with identical bytes, URL and year. The legacy 2023 BROP transcription and its same-source verification are unchanged.",
         "disposition": "reviewed contextual value",
         "tracking": "https://github.com/Rodgers31/audit_app/issues/955",
-        "reviewed_against": "4f9f313ad548096d660576278ceaf284c66aa7c7: #952 previous-to-current figure use review",
+        "reviewed_against": "52a5851c0d949a07edbcf10f277f270b9f1cc68b through PR #1091",
         "review_context": "docs/verification/2026-11-15-pr-ci-figure-context-review.md"
       }
     ]
   },
   "backend/services/fiscal_qualification.py": {
-    "ast_sha256": "7b6c2ba7dadf9d76db925173d2c346ead12d3554f99883e5d9d22d82596aad68",
+    "ast_sha256": "990033c802c9de0661dcfac0fd6e34d85248d33143b69a6bf9d054f83a0f53a1",
     "sites": [
       {
         "signature": "'ordinary_revenue_billion' is published from typed-in numbers [2041]. Nothing measured it. Serve a sourced figure or serve nothing.",
-        "reason": "Validates the stored FY 2022/23 preliminary actual observation against the independently read 2023 BROP Table 8 PDF p.21, with matching source identity and precision; no missing value is filled.",
+        "reason": "Validates the stored FY 2022/23 preliminary actual observation against the independently read 2023 BROP Table 8 PDF p.21, with matching source identity and precision; no missing value is filled. The new same-basis actual split validator is separate from the preliminary observation. The legacy 2023 BROP Table 8 validation and matching precision and identity still apply.",
         "disposition": "reviewed contextual value",
         "tracking": "https://github.com/Rodgers31/audit_app/issues/955",
-        "reviewed_against": "4f9f313ad548096d660576278ceaf284c66aa7c7: #952 previous-to-current figure use review",
+        "reviewed_against": "52a5851c0d949a07edbcf10f277f270b9f1cc68b through PR #1091",
         "review_context": "docs/verification/2026-11-15-pr-ci-figure-context-review.md"
       },
       {
         "signature": "'tax_revenue_billion' is published from typed-in numbers [1887]. Nothing measured it. Serve a sourced figure or serve nothing.",
-        "reason": "Validates the stored FY 2022/23 preliminary actual observation against the independently read 2023 BROP Table 8 PDF p.21, with matching source identity and precision; no missing value is filled.",
+        "reason": "Validates the stored FY 2022/23 preliminary actual observation against the independently read 2023 BROP Table 8 PDF p.21, with matching source identity and precision; no missing value is filled. The new same-basis actual split validator is separate from the preliminary observation. The legacy 2023 BROP Table 8 validation and matching precision and identity still apply.",
         "disposition": "reviewed contextual value",
         "tracking": "https://github.com/Rodgers31/audit_app/issues/955",
-        "reviewed_against": "4f9f313ad548096d660576278ceaf284c66aa7c7: #952 previous-to-current figure use review",
+        "reviewed_against": "52a5851c0d949a07edbcf10f277f270b9f1cc68b through PR #1091",
         "review_context": "docs/verification/2026-11-15-pr-ci-figure-context-review.md"
       },
       {
         "signature": "'non_tax_revenue_billion' is published from typed-in numbers [154]. Nothing measured it. Serve a sourced figure or serve nothing.",
-        "reason": "Validates the stored FY 2022/23 preliminary actual observation against the independently read 2023 BROP Table 8 PDF p.21, with matching source identity and precision; no missing value is filled.",
+        "reason": "Validates the stored FY 2022/23 preliminary actual observation against the independently read 2023 BROP Table 8 PDF p.21, with matching source identity and precision; no missing value is filled. The new same-basis actual split validator is separate from the preliminary observation. The legacy 2023 BROP Table 8 validation and matching precision and identity still apply.",
         "disposition": "reviewed contextual value",
         "tracking": "https://github.com/Rodgers31/audit_app/issues/955",
-        "reviewed_against": "4f9f313ad548096d660576278ceaf284c66aa7c7: #952 previous-to-current figure use review",
+        "reviewed_against": "52a5851c0d949a07edbcf10f277f270b9f1cc68b through PR #1091",
         "review_context": "docs/verification/2026-11-15-pr-ci-figure-context-review.md"
       },
       {
         "signature": "'total_revenue_incl_aia_billion' is published from typed-in numbers [2361]. Nothing measured it. Serve a sourced figure or serve nothing.",
-        "reason": "Validates the stored FY 2022/23 preliminary actual observation against the independently read 2023 BROP Table 8 PDF p.21, with matching source identity and precision; no missing value is filled.",
+        "reason": "Validates the stored FY 2022/23 preliminary actual observation against the independently read 2023 BROP Table 8 PDF p.21, with matching source identity and precision; no missing value is filled. The new same-basis actual split validator is separate from the preliminary observation. The legacy 2023 BROP Table 8 validation and matching precision and identity still apply.",
         "disposition": "reviewed contextual value",
         "tracking": "https://github.com/Rodgers31/audit_app/issues/955",
-        "reviewed_against": "4f9f313ad548096d660576278ceaf284c66aa7c7: #952 previous-to-current figure use review",
+        "reviewed_against": "52a5851c0d949a07edbcf10f277f270b9f1cc68b through PR #1091",
         "review_context": "docs/verification/2026-11-15-pr-ci-figure-context-review.md"
       }
     ]
@@ -267,6 +267,72 @@
         "tracking": "https://github.com/Rodgers31/audit_app/issues/955",
         "reviewed_against": "4f9f313ad548096d660576278ceaf284c66aa7c7: #952 previous-to-current figure use review",
         "review_context": "docs/verification/2026-11-15-pr-ci-figure-context-review.md"
+      }
+    ]
+  },
+  "backend/seeding/domains/fiscal_summary/historical_outturn.py": {
+    "ast_sha256": "45dd4342136b378a1d7f8ce0f9452483c28fdcb2f520e9e0d33608aeddbbce99",
+    "sites": [
+      {
+        "signature": "'total_revenue' is published from typed-in numbers [2360510]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "Cross-check cell in FY2026/27 Treasury Budget Statement Statistical Annex Table 3A, physical PDF page 11, FY2022/23 Actual (KES million). It checks the value read from the separate BROP outturn at the printed precision. It supplies no public fallback. This is total government revenue including A-in-A.",
+        "disposition": "reviewed contextual value",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/888",
+        "reviewed_against": "FY2026/27 Treasury Budget Statement Statistical Annex Table 3A, physical PDF page 11, FY2022/23 Actual (KES million), SHA-256 8847f557e9663e06ab8e070427449f11d7d8b53502f256500302c6fea12f609f",
+        "review_context": "https://github.com/Rodgers31/audit_app/pull/1091"
+      },
+      {
+        "signature": "'expenditure' is published from typed-in numbers [3221001]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "Cross-check cell in FY2026/27 Treasury Budget Statement Statistical Annex Table 3A, physical PDF page 11, FY2022/23 Actual (KES million). It checks the value read from the separate BROP outturn at the printed precision. It supplies no public fallback. This is total government expenditure.",
+        "disposition": "reviewed contextual value",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/888",
+        "reviewed_against": "FY2026/27 Treasury Budget Statement Statistical Annex Table 3A, physical PDF page 11, FY2022/23 Actual (KES million), SHA-256 8847f557e9663e06ab8e070427449f11d7d8b53502f256500302c6fea12f609f",
+        "review_context": "https://github.com/Rodgers31/audit_app/pull/1091"
+      },
+      {
+        "signature": "'county_transfers' is published from typed-in numbers [415774]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "Cross-check cell in FY2026/27 Treasury Budget Statement Statistical Annex Table 3A, physical PDF page 11, FY2022/23 Actual (KES million). It checks the value read from the separate BROP outturn at the printed precision. It supplies no public fallback. This is the county transfer row.",
+        "disposition": "reviewed contextual value",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/888",
+        "reviewed_against": "FY2026/27 Treasury Budget Statement Statistical Annex Table 3A, physical PDF page 11, FY2022/23 Actual (KES million), SHA-256 8847f557e9663e06ab8e070427449f11d7d8b53502f256500302c6fea12f609f",
+        "review_context": "https://github.com/Rodgers31/audit_app/pull/1091"
+      }
+    ]
+  },
+  "backend/seeding/fiscal_historical_sources.py": {
+    "ast_sha256": "ee7663d354f4ec226e20a42913d2338768302ab2fe7cb3549b6bbc849290dc2e",
+    "sites": [
+      {
+        "signature": "'REVENUE_PAGE' is published from typed-in numbers [11]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "Physical PDF page locating the reviewed Statistical Annex Table 3A and its extraction receipts. This number carries no amount.",
+        "disposition": "reviewed contextual value",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/888",
+        "reviewed_against": "FY2026/27 Treasury Budget Statement Statistical Annex Table 3A, physical PDF page 11, FY2022/23 Actual (KES million), SHA-256 8847f557e9663e06ab8e070427449f11d7d8b53502f256500302c6fea12f609f",
+        "review_context": "https://github.com/Rodgers31/audit_app/pull/1091"
+      },
+      {
+        "signature": "'ORDINARY_REVENUE_MILLION' is published from typed-in numbers [2041119]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "Visually verified ordinary revenue excluding A-in-A in FY2026/27 Treasury Budget Statement Statistical Annex Table 3A, physical PDF page 11, FY2022/23 Actual (KES million). Checks the unchanged, independently sourced APDMR denominator and the tax and non-tax sum.",
+        "disposition": "reviewed contextual value",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/888",
+        "reviewed_against": "FY2026/27 Treasury Budget Statement Statistical Annex Table 3A, physical PDF page 11, FY2022/23 Actual (KES million), SHA-256 8847f557e9663e06ab8e070427449f11d7d8b53502f256500302c6fea12f609f",
+        "review_context": "https://github.com/Rodgers31/audit_app/pull/1091"
+      },
+      {
+        "signature": "'TAX_REVENUE_MILLION' is published from typed-in numbers [1961974]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "Visually verified tax split cell in FY2026/27 Treasury Budget Statement Statistical Annex Table 3A, physical PDF page 11, FY2022/23 Actual (KES million). Use requires the fresh exact annex and outturn PDFs, reconciliation and separate sealed extraction receipts.",
+        "disposition": "reviewed contextual value",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/888",
+        "reviewed_against": "FY2026/27 Treasury Budget Statement Statistical Annex Table 3A, physical PDF page 11, FY2022/23 Actual (KES million), SHA-256 8847f557e9663e06ab8e070427449f11d7d8b53502f256500302c6fea12f609f",
+        "review_context": "https://github.com/Rodgers31/audit_app/pull/1091"
+      },
+      {
+        "signature": "'NON_TAX_REVENUE_MILLION' is published from typed-in numbers [79145]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "Visually verified tax split cell in FY2026/27 Treasury Budget Statement Statistical Annex Table 3A, physical PDF page 11, FY2022/23 Actual (KES million). Use requires the fresh exact annex and outturn PDFs, reconciliation and separate sealed extraction receipts.",
+        "disposition": "reviewed contextual value",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/888",
+        "reviewed_against": "FY2026/27 Treasury Budget Statement Statistical Annex Table 3A, physical PDF page 11, FY2022/23 Actual (KES million), SHA-256 8847f557e9663e06ab8e070427449f11d7d8b53502f256500302c6fea12f609f",
+        "review_context": "https://github.com/Rodgers31/audit_app/pull/1091"
       }
     ]
   }
