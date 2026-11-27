@@ -47,7 +47,13 @@ On a checkout/CI runner, `cd backend` uses the same relative `data/seeding/cache
 
 ## Nightly and redeploy operation
 
-The separate nightly validation runner now restores `seed-pdf-cache-*`, explicitly invokes `python -m seeding.source_cache --profile county --fetch`, and only then executes FULL validation. Preparation failure blocks that validation stage; no `continue-on-error` or silent fallback is used. Workflow enablement and provider/account prerequisites remain with the owner; this code change does not dispatch or enable Actions.
+Both nightly jobs restore the shared PDF cache first. Ordinary audit seeding then tries `--profile county --county-archive`, and the separate validation runner uses `--profile county --fetch --county-archive` before running the integrity checks.
+
+For private intake, stage the exact reviewed `retained-oag-county-only.zip` in a private Cloudflare R2 bucket and supply a presigned GET URL for that key as the Actions secret `SEED_OAG_COUNTY_ARCHIVE_URL`. The archive must match the committed size (130,624,671 bytes) and SHA-256 (`b2dd9d5859c758b5189484fbfd2eb95255e09f7400b90482dd338925378482e2`). Set the secret through the approved credential path and renew it before expiry. R2 presigned URLs expire in at most seven days. The workflow passes the secret only to the two preparation steps.
+
+Each runner independently verifies the complete ZIP, all eight reviewed registrations, and both hashes of each PDF before installing missing files. A restored seed runner skips the shared Actions PDF cache save. The receipt reports `county_archive: restored` after verified installation or `not_needed` when the cache already contains every reviewed PDF. An unset or unavailable URL leaves the seed job's ordinary source acquisition active and the validator still tries official downloads. Bad configuration, unexpected archive content or mismatched bytes refuse preparation. Validation still requires all eight identities to pass.
+
+Archive restoration supplies retained bytes for validation and local reuse. An archive cache hit preserves the source's publisher verification dates. Fresh OAG evidence still requires an official acquisition or a previously qualified origin that the writer can revalidate. For acceptance, inspect each hosted runner's independent preparation receipt, the current-run writer classification, data integrity, and the signed revalidation result. A preparation receipt alone certifies filesystem readiness.
 
 Every new runtime instance has the same ephemeral filesystem limitation. The deploy/recovery procedure must run explicit preparation before claiming strict validation on that instance. No startup network generator or implicit API hydration is enabled. A provider-managed persistent artifact disk/store could reduce transfers, but is not assumed configured and is not required to invoke this bounded recovery command.
 

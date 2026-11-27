@@ -22,7 +22,7 @@ from .refresh_completion import REQUIRED_DOMAINS, accepted_records, fiscal_compo
 SCHEMA_HEAD = 'b953a11e0001'
 MAX_JOBS = 18
 PRIOR_STEPS = frozenset(('checkout', 'python', 'ocr', 'setup_python', 'dependencies', 'writer_tls',
-    'database', 'pdf_cache_period', 'restore_pdfs', 'native_boundary', 'cli',
+    'database', 'pdf_cache_period', 'restore_pdfs', 'county_archive', 'native_boundary', 'cli',
     'pdf_cache_state', 'save_pdfs'))
 
 
@@ -31,7 +31,7 @@ def prior_steps_success(steps, job_status, plan):
 
     job.status covers the runner's aggregate state; the exact identified-step
     inventory makes a failed-but-continued action visible. Only the conditional
-    restore/save steps may be skipped. This witness grants no source acceptance.
+    cache steps may be skipped. This witness grants no source acceptance.
     """
     validate_plan(plan)
     if job_status != 'success' or type(steps) is not dict or set(steps) != PRIOR_STEPS:
@@ -42,8 +42,14 @@ def prior_steps_success(steps, job_status, plan):
         pair = (step.get('outcome'), step.get('conclusion'))
         if pair == ('success', 'success'):
             continue
-        allowed_skip = name == 'save_pdfs' or (name == 'restore_pdfs' and
-            (plan.reacquire_pending_pdf or bool(plan.audits_source_acceptance)))
+        isolated_source = plan.reacquire_pending_pdf or bool(plan.audits_source_acceptance)
+        allowed_skip = (
+            name == 'save_pdfs'
+            or (name == 'restore_pdfs' and isolated_source)
+            or (name == 'county_archive' and (
+                isolated_source or plan.dry_run or 'audits' not in plan.domains
+            ))
+        )
         if not allowed_skip or pair != ('skipped', 'skipped'):
             return False
     return True
