@@ -60,6 +60,8 @@ class FiscalSummaryRecord:
     fiscal_measure_contract: dict[str, Any] | None = None
     tax_split_observation: dict[str, Any] | None = None
     source_evidence: list[dict[str, Any]] | None = None
+    historical_outturn_attempted: bool = False
+    historical_outturn_evidence: list[dict[str, Any]] | None = None
 
 
 def _safe_float(val: Any) -> float | None:
@@ -219,6 +221,8 @@ def parse_fiscal_summary_payload(payload: dict[str, Any]) -> list[FiscalSummaryR
                 fiscal_measure_contract=fy.get("fiscal_measure_contract"),
                 tax_split_observation=fy.get("tax_split_observation"),
                 source_evidence=fy.get("source_evidence"),
+                historical_outturn_attempted=fy.get("historical_outturn_attempted") is True,
+                historical_outturn_evidence=fy.get("historical_outturn_evidence"),
             )
         )
 

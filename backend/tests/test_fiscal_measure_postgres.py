@@ -346,3 +346,137 @@ def test_real_pg_invalid_proof_semantics_preserves_last_good(fiscal_pg,field,bad
         write_fiscal_summary_records(db,records,{})
     db.expire_all();row=db.query(FiscalSummary).filter_by(fiscal_year='FY 2022/23').one()
     assert (row.total_revenue,row.source_document_id,row.meta)==before
+
+
+def test_fy2022_23_outturn_links_two_sources_and_preserves_rows_on_refusal(
+    fiscal_pg, monkeypatch, tmp_path
+):
+    import hashlib
+    from types import SimpleNamespace
+
+    import httpx
+
+    from models import Extraction, FiscalSummary, SourceDocument
+    from seeding.config import SeedingSettings
+    from seeding.domains.fiscal_summary import actuals, historical_outturn as outturn
+    from seeding.http_client import SeedingHttpClient
+    from services import fiscal_historical_sources as reviewed
+    from services.fiscal_qualification import fiscal_values, published_framework
+
+    # The large official editions are covered by the exact-byte replay.
+    # This fixture mutates only the reviewed bytes and PDF-reader seam.
+    bodies = {
+        actuals.APDMR_URL: (Path(__file__).parent / "fixtures/fiscal_actuals/apdmr-2022-23.pdf").read_bytes(),
+        outturn.OUTTURN_URL: b"%PDF-1.7\nFixture outturn\n%%EOF",
+        outturn.REVENUE_URL: b"%PDF-1.7\nFixture tax\n%%EOF",
+    }
+    for url, variable in ((outturn.OUTTURN_URL, "OUTTURN_SHA256"), (outturn.REVENUE_URL, "REVENUE_SHA256")):
+        digest = hashlib.sha256(bodies[url]).hexdigest()
+        monkeypatch.setattr(outturn, variable, digest)
+        monkeypatch.setattr(reviewed, variable, digest)
+        monkeypatch.setitem(outturn.EDITIONS, url, (digest, *outturn.EDITIONS[url][1:]))
+
+    values = {
+        "total_revenue": 2360.5, "ordinary_revenue": 2041.1, "ministerial_aia": 319.4,
+        "expenditure": 3221.0, "recurrent": 2311.6, "interest": 687.3, "development": 493.7,
+        "county_transfers": 415.8, "equitable_share": 399.6, "contingency": 0.0,
+        "grants": 23.1, "fiscal_balance": -837.4, "adjustment_to_cash_basis": 37.0,
+        "statistical_discrepancy": -30.1, "total_financing": 770.3,
+        "net_foreign_financing": 310.8, "net_domestic_financing": 459.5, "nominal_gdp": 14299.2,
+    }
+    monkeypatch.setattr(outturn, "_read_outturn", lambda _path: SimpleNamespace(
+        values=values, fiscal_year=actuals.FY, identified_by="printed_actual_column",
+        column_label="Actual", checks=[], tax_split_ok=False,
+        tax_split_reason="edition_prints_no_tax_or_non_tax_row",
+    ))
+    unavailable = set()
+    changed = set()
+
+    def serve(request):
+        url = str(request.url)
+        if url in unavailable:
+            return httpx.Response(503, content=b"fixture unavailable")
+        body = bodies[url]
+        if url in changed:
+            body = body.replace(b"Fixture", b"Changed")
+        return httpx.Response(200, content=body, headers={"content-type": "application/pdf"})
+
+    settings = SeedingSettings(_env_file=None, cache_path=tmp_path / "cache",
+        storage_path=tmp_path / "storage", max_retries=1, http_cache_enabled=False)
+    with SeedingHttpClient(settings, client=httpx.Client(transport=httpx.MockTransport(serve))) as client:
+        baseline = {"fiscal_years": [{"fiscal_year": actuals.FY, "historical_outturn_attempted": True}]}
+        actuals.apply_apdmr(baseline, actuals.fetch_apdmr(client, settings))
+        payload = deepcopy(baseline)
+        outturn.apply_historical_outturn(payload, client, settings)
+        db = fiscal_pg
+        assert write(db, payload) == (1, 0)
+        db.commit()
+        row = db.query(FiscalSummary).one()
+        expected = fiscal_values(row)
+        assert expected["tax_revenue"] == 1_961_974_000_000
+        assert expected["non_tax_revenue"] == 79_145_000_000
+        assert expected["debt_service_per_shilling"] == 58.8
+        assert published_framework(row)["total_expenditure_billion"] == 3221
+        import main
+        main.clear_all_caches()
+        served = asyncio.run(main.get_fiscal_summary(db=db))["current"]
+        assert served["tax_revenue"] == expected["tax_revenue"]
+        assert served["debt_service_per_shilling"] == 58.8
+        for field, url in (("tax_revenue", outturn.REVENUE_URL),
+                           ("total_borrowing", outturn.OUTTURN_URL),
+                           ("total_revenue", actuals.APDMR_URL)):
+            proof = expected["measure_qualifications"][field]
+            source = db.get(SourceDocument, proof["source_document_id"])
+            extraction = db.get(Extraction, proof["extraction_id"])
+            assert source.url == url == proof["source"]["url"]
+            assert extraction.source_document_id == source.id
+            assert extraction.extracted_json["response_receipt"]["digest"] == proof["source"]["sha256"]
+        assert db.query(Extraction).count() == 3
+        assert write(db, payload) == (0, 1)
+        db.commit()
+        assert db.query(Extraction).count() == 3
+        snapshot = (deepcopy(row.meta), row.source_document_id, row.updated_at)
+        for url, reject in ((outturn.OUTTURN_URL, unavailable), (outturn.REVENUE_URL, changed)):
+            reject.add(url)
+            retry = deepcopy(baseline)
+            with pytest.raises((ValueError, httpx.HTTPError)):
+                outturn.apply_historical_outturn(retry, client, settings)
+            reject.clear()
+            assert retry == baseline
+            assert write(db, retry) == (0, 1)
+            db.commit()
+            assert (row.meta, row.source_document_id, row.updated_at) == snapshot
+            assert fiscal_values(row) == expected
+        assert db.query(Extraction).count() == 3
+
+        from seeding.domains.fiscal_summary import fetcher
+        from seeding.refresh_completion import fiscal_components_complete
+
+        def no_other_budget_sources(*_args, **_kwargs):
+            return None, "fixture not selected"
+
+        # Keep the actual fetcher's completeness decision. Only the unrelated
+        # source probes are fixtures; the historical acquisition still runs.
+        legacy_url = "https://www.treasury.go.ke/fixture-budget-summary.pdf"
+        monkeypatch.setattr(fetcher, "load_json_resource", lambda **_: deepcopy(baseline))
+        monkeypatch.setattr(fetcher, "_fetch_cob_headlines", lambda *_: (None, None, actuals.FY))
+        monkeypatch.setattr(fetcher, "_overlay_live_budget_headline", lambda data, *_a, **_k: (data, "promoted"))
+        monkeypatch.setattr(fetcher, "_fetch_budget_estimates", no_other_budget_sources)
+        monkeypatch.setattr(fetcher, "_fetch_revenue_estimates", no_other_budget_sources)
+        monkeypatch.setattr(fetcher, "_fetch_budget_summary_editions", lambda *_: (
+            [], {fetcher.LISTING_EDITIONS_FACT: {legacy_url: {"status": "unreadable(ConnectError)"}}}
+        ))
+        monkeypatch.setattr(fetcher, "_apply_fiscal_framework", lambda data, *_a, **_k: (data, "applied=[]"))
+        refreshed = fetcher.fetch_fiscal_summary_payload(client, settings)["_run_facts"]
+        assert refreshed["historical_outturn"]["state"] == "verified"
+        assert refreshed["refresh_components"]["framework"]["unreadable_editions"] == {
+            legacy_url: "unreadable(ConnectError)"
+        }
+        assert not fiscal_components_complete(refreshed["refresh_components"], [actuals.FY])
+        unavailable.add(outturn.REVENUE_URL)
+        monkeypatch.setattr(fetcher, "_fetch_budget_summary_editions", lambda *_: (
+            [], {fetcher.LISTING_EDITIONS_FACT: {legacy_url: {"status": "read"}}}
+        ))
+        held = fetcher.fetch_fiscal_summary_payload(client, settings)["_run_facts"]
+        assert held["historical_outturn"]["state"] == "unconfirmed"
+        assert not fiscal_components_complete(held["refresh_components"], [actuals.FY])

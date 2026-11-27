@@ -239,6 +239,25 @@ def fetch_fiscal_summary_payload(
                 "state": "unavailable", "reason": type(exc).__name__ + ": " + str(exc),
             }
 
+    from services.fiscal_historical_sources import OUTTURN_URL, YEAR
+    from .historical_outturn import apply_historical_outturn
+
+    historical_outturn_verified = False
+    historical_rows = [row for row in payload.get("fiscal_years", []) if row.get("fiscal_year") == YEAR]
+    for row in historical_rows:
+        row["historical_outturn_attempted"] = True
+    if historical_rows and settings.live_pdf_fetch_enabled:
+        try:
+            apply_historical_outturn(payload, client, settings)
+            historical_outturn_verified = True
+            refreshed_revenue_years.add(YEAR)
+        except Exception as exc:
+            logger.info("FY2022/23 Treasury actuals held: %s", type(exc).__name__)
+        payload.setdefault("_run_facts", {})["historical_outturn"] = {
+            "state": "verified" if historical_outturn_verified else "unconfirmed",
+            "fiscal_year": YEAR,
+        }
+
     # A successful budget overlay alone cannot establish complete revenue,
     # framework and historical-edition coverage for the whole domain.
     from ...freshness import mark_fixture, mark_live, mark_partial
@@ -251,7 +270,11 @@ def fetch_fiscal_summary_payload(
                 for row in payload.get("fiscal_years", [])
                 if not row.get("fiscal_framework") or row.get("fiscal_framework_absent_reason")
                 or row.get("tax_split_absent_reason")
-                or (row["fiscal_framework"].get("source") or {}).get("url") not in listed}
+                or ((row["fiscal_framework"].get("source") or {}).get("url") not in listed
+                    and not (historical_outturn_verified and row.get("fiscal_year") == YEAR
+                             and row["fiscal_framework"]["source"]["url"] == OUTTURN_URL))}
+    if historical_rows and not historical_outturn_verified:
+        row_gaps.setdefault(YEAR, "historical_treasury_sources_unconfirmed")
     framework_complete = bool(framework_applied and listed and not unreadable and not row_gaps
                               and " refused=" not in framework_status)
     expected_revenue_years = {str(row["fiscal_year"]) for row in payload.get("fiscal_years", [])

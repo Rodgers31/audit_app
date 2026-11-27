@@ -12,13 +12,11 @@ import re
 from decimal import Decimal
 
 from ...isolated_parser import isolated
+from services.fiscal_historical_sources import APDMR_SHA256, APDMR_URL, YEAR as FY
 from services.fiscal_qualification import VERSION, measure_evidence
 
-APDMR_URL = 'https://www.treasury.go.ke/sites/default/files/Annual%20borrowing/Annual-Public-Debt-Report-2022-2023-Sept-2023.pdf'
-APDMR_SHA256 = '00cf5f2e12e6b6733110d66e130404f63824b42d413b5a67b0250ec734f6eb1e'
 BROP_URL = 'https://www.treasury.go.ke/sites/default/files/BBB/2023-Budget-Review-and-Outlook-Paper_f.pdf'
 BROP_SHA256 = 'a8d6d4f38c9e4ec74134b98b1ed6164d8b4cd152714006740add1c9923e22986'
-FY = 'FY 2022/23'
 
 
 _PARSED_EDITION = object()

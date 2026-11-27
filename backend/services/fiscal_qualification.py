@@ -133,7 +133,9 @@ def fiscal_values(row):
     if all(f in q for f in split):
         signatures={(q[f]['source']['sha256'],q[f]['vintage'])for f in split}
         tolerance=sum(q[f]['precision_kes']/2 for f in split)
-        if len(signatures)!=1 or abs(result['tax_revenue']+result['non_tax_revenue']-result['total_revenue'])>tolerance:
+        from services.fiscal_historical_sources import matching_historical_tax_split
+        same_source = len(signatures) == 1 or matching_historical_tax_split(row.fiscal_year, q)
+        if not same_source or abs(result['tax_revenue']+result['non_tax_revenue']-result['total_revenue'])>tolerance:
             for f in split[1:]:
                 result[f]=None;q.pop(f,None);result['absent_reasons'][f]='tax_split_basis_or_vintage_disagrees'
     meta=row.meta if isinstance(row.meta,dict)else {}
