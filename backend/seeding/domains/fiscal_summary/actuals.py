@@ -12,7 +12,7 @@ import re
 from decimal import Decimal
 
 from ...isolated_parser import isolated
-from services.fiscal_historical_sources import APDMR_SHA256, APDMR_URL, YEAR as FY
+from seeding.fiscal_historical_sources import APDMR_SHA256, APDMR_URL, YEAR as FY
 from services.fiscal_qualification import VERSION, measure_evidence
 
 BROP_URL = 'https://www.treasury.go.ke/sites/default/files/BBB/2023-Budget-Review-and-Outlook-Paper_f.pdf'

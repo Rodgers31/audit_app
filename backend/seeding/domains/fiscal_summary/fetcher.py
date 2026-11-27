@@ -239,7 +239,7 @@ def fetch_fiscal_summary_payload(
                 "state": "unavailable", "reason": type(exc).__name__ + ": " + str(exc),
             }
 
-    from services.fiscal_historical_sources import OUTTURN_URL, YEAR
+    from seeding.fiscal_historical_sources import OUTTURN_URL, YEAR
     from .historical_outturn import apply_historical_outturn
 
     historical_outturn_verified = False

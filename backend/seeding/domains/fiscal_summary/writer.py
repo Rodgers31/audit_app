@@ -413,7 +413,7 @@ def _write_fiscal_summary_records(
     if not records:
         return created, updated
 
-    from services.fiscal_historical_sources import OUTTURN_SHA256, OUTTURN_URL, YEAR
+    from seeding.fiscal_historical_sources import OUTTURN_SHA256, OUTTURN_URL, YEAR
 
     source_doc = _get_or_create_source_document(session, metadata)
 

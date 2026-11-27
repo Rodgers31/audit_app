@@ -360,7 +360,7 @@ def test_fy2022_23_outturn_links_two_sources_and_preserves_rows_on_refusal(
     from seeding.config import SeedingSettings
     from seeding.domains.fiscal_summary import actuals, historical_outturn as outturn
     from seeding.http_client import SeedingHttpClient
-    from services import fiscal_historical_sources as reviewed
+    from seeding import fiscal_historical_sources as reviewed
     from services.fiscal_qualification import fiscal_values, published_framework
 
     # The large official editions are covered by the exact-byte replay.

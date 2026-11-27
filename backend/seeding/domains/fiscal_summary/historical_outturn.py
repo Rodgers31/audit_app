@@ -8,7 +8,7 @@ import re
 from tempfile import TemporaryDirectory
 
 from services.fiscal_framework_qualification import bind_framework_evidence
-from services.fiscal_historical_sources import (
+from seeding.fiscal_historical_sources import (
     APDMR_SHA256,
     APDMR_URL,
     NON_TAX_REVENUE_MILLION,

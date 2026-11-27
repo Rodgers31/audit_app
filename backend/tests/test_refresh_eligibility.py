@@ -251,7 +251,8 @@ def test_preflight_rejects_stale_and_wrong_typed_report(field,value):
     assert preflight(needs).returncode!=0
 
 
-def test_plan_identity_phase_has_no_database_import_dependency(tmp_path):
+@pytest.mark.parametrize('domain', ['pending_bills', 'fiscal_summary'])
+def test_plan_identity_phase_has_no_database_import_dependency(tmp_path, domain):
     import sys
     doc=yaml.safe_load((ROOT/'.github/workflows/seed.yml').read_text())
     step=next(s for s in doc['jobs']['source_plan']['steps']if s.get('name')=='Validate whitelisted plan')
@@ -259,13 +260,27 @@ def test_plan_identity_phase_has_no_database_import_dependency(tmp_path):
     env={'PATH':str(Path(sys.executable).parent)+':/usr/bin:/bin','PYTHONPATH':str(ROOT/'backend'),
         'GITHUB_OUTPUT':str(output),'GITHUB_SHA':SHA,'DATABASE_URL':'inert-invalid-driver://no-network',
         'PYTHON_DOTENV_DISABLED':'1','PYTHONDONTWRITEBYTECODE':doc['env']['PYTHONDONTWRITEBYTECODE'],
-        'SEED_PLAN_EVENT':'workflow_dispatch','SEED_PLAN_DOMAIN':'pending_bills',
+        'SEED_PLAN_EVENT':'workflow_dispatch','SEED_PLAN_DOMAIN':domain,
         'SEED_PLAN_DRY_RUN':'false','SEED_PLAN_BOOTSTRAP':'false'}
     result=subprocess.run(['bash','-eo','pipefail','-c',step['run']],cwd=ROOT,env=env,text=True,capture_output=True,timeout=10)
     assert result.returncode==0,result.stdout+result.stderr
     from tests.test_healthcheck_is_bounded import _outputs
     fields=_outputs(output.read_text())
     assert fields['source_sha']==SHA and len(fields['plan_sha256'])==64 and fields['dry_run']=='false'
+
+    if domain == 'fiscal_summary':
+        from seeding.fiscal_historical_sources import APDMR_URL, OUTTURN_URL, REVENUE_URL
+        from seeding.domains.fiscal_summary.actuals import BROP_URL
+
+        inventory_step = next(s for s in doc['jobs']['healthcheck']['steps'] if s.get('id') == 'inventory')
+        inventory = subprocess.run(['bash', '-eo', 'pipefail', '-c', inventory_step['run']],
+            cwd=ROOT, env={**env, 'RUNNER_TEMP': str(tmp_path), 'HC_SOURCE_SHA': fields['source_sha'],
+                          'HC_PLAN_SHA': fields['plan_sha256']}, text=True, capture_output=True, timeout=10)
+        assert inventory.returncode == 0, inventory.stdout + inventory.stderr
+        lines = (tmp_path/'seed-health-inventory').read_text().splitlines()
+        urls = [line.split('|')[1] for line in lines]
+        assert set((APDMR_URL, BROP_URL, OUTTURN_URL, REVENUE_URL)).issubset(urls)
+        assert all(urls.count(url) == 1 for url in (APDMR_URL, BROP_URL, OUTTURN_URL, REVENUE_URL))
 
 
 @pytest.mark.parametrize('exit_code',[0,1,2,17])
