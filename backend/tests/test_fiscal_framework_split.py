@@ -334,6 +334,9 @@ class _Client:
     def get(self, url, raise_for_status=True):
         return _Resp(self.html)
 
+    def download_to_file(self, _url, _path, **_options):
+        raise RuntimeError("404")
+
 
 LISTING = f"""
 <a href="/sites/default/files/Budget%20summary/Budget%20Summary%20for%20the%20FY%202026_27%20Budget.pdf">x</a>

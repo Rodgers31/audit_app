@@ -1,0 +1,83 @@
+{
+  "https://www.treasury.go.ke/sites/default/files/Budget%20summary/Budget-Summary-for-the-FY-2022_23.pdf": {
+    "fiscal_year": "FY 2022/23",
+    "pdf_url": "https://www.treasury.go.ke/sites/default/files/Budget%20summary/Budget-Summary-for-the-FY-2022_23.pdf",
+    "sha256": "9a59476df81d5cce4aadf66c8ebd6db41c617c6ee9c726895c45850dd5654655",
+    "size_bytes": 1609505,
+    "annex_page": 58,
+    "column": "2022/23 Budget",
+    "review": "Treasury cover and budget narrative paragraphs 22–24 identify the year and repeat the Annex 2a budget figures.",
+    "budget_column_kes_billions": {
+      "total_revenue": "2447.0",
+      "ordinary_revenue": "2141.6",
+      "ministerial_aia": "305.4",
+      "expenditure": "3342.8",
+      "recurrent": "2255.0",
+      "development": "676.7",
+      "county_transfers": "407.0",
+      "contingency": "4.0",
+      "grants": "33.3",
+      "fiscal_balance": "-862.5",
+      "adjustment_to_cash_basis": "0.0",
+      "fiscal_balance_cash": "-862.5",
+      "statistical_discrepancy": "0.0",
+      "total_financing": "862.5",
+      "net_foreign_financing": "280.7",
+      "net_domestic_financing": "581.7"
+    }
+  },
+  "https://oldsite.treasury.go.ke/wp-content/uploads/2025/03/Budget-Summary-for-the-FY-2024-25.pdf": {
+    "fiscal_year": "FY 2024/25",
+    "pdf_url": "https://www.parliament.go.ke/sites/default/files/2024-05/Budget%20Summary%20for%20FY%2024.25%20.pdf",
+    "sha256": "83f2f2b5f45d1000d0cb12080160a66ccdc6ccc7279a7b88cbbc7c43655469f9",
+    "size_bytes": 11573544,
+    "annex_page": 63,
+    "column": "2024/25 Budget",
+    "review": "Parliament’s scan of the Treasury edition. Its Annex 2a column agrees with the Treasury edition narrative paragraphs 20–21 and Table 1.",
+    "budget_column_kes_billions": {
+      "total_revenue": "3354.2",
+      "ordinary_revenue": "2913.2",
+      "ministerial_aia": "441.0",
+      "expenditure": "3920.7",
+      "recurrent": "2781.7",
+      "development": "687.9",
+      "county_transfers": "446.1",
+      "contingency": "5.0",
+      "grants": "51.8",
+      "fiscal_balance": "-514.7",
+      "adjustment_to_cash_basis": "0.0",
+      "fiscal_balance_cash": "-514.7",
+      "statistical_discrepancy": "0.0",
+      "total_financing": "514.7",
+      "net_foreign_financing": "256.8",
+      "net_domestic_financing": "257.9"
+    }
+  },
+  "https://oldsite.treasury.go.ke/wp-content/uploads/2025/06/Budget-Summary-for-the-FY-2025-26F.pdf": {
+    "fiscal_year": "FY 2025/26",
+    "pdf_url": "https://www.parliament.go.ke/sites/default/files/2025-05/BUDGET%20SUMMARY%20FOR%20FY%202025-26%20AND%20SUPPORTING%20INFORMATION.pdf",
+    "sha256": "c6eee40b75081e7f1668e4c1a625e155cdaa1145c8984201e1d23c2cfb2d456d",
+    "size_bytes": 46418077,
+    "annex_page": 69,
+    "column": "2025/26 Budget",
+    "review": "Parliament’s scan of the Treasury edition. Its Annex 2a column agrees with the Treasury edition narrative paragraphs 16–19 and Table 1.",
+    "budget_column_kes_billions": {
+      "total_revenue": "3316.9",
+      "ordinary_revenue": "2757.0",
+      "ministerial_aia": "559.9",
+      "expenditure": "4239.9",
+      "recurrent": "3119.2",
+      "development": "643.9",
+      "county_transfers": "474.9",
+      "contingency": "2.0",
+      "grants": "46.9",
+      "fiscal_balance": "-876.1",
+      "adjustment_to_cash_basis": "0.0",
+      "fiscal_balance_cash": "-876.1",
+      "statistical_discrepancy": "0.0",
+      "total_financing": "876.1",
+      "net_foreign_financing": "284.2",
+      "net_domestic_financing": "591.9"
+    }
+  }
+}

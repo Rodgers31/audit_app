@@ -504,6 +504,15 @@ jobs:
           body = Path(sys.argv[1]).read_bytes()
           if not body or len(body) > 8 * 1024 * 1024:
               raise SystemExit(2)
+          # Substitute only the exact official copies reviewed for these listed editions.
+          from os import environ
+          import json
+          workspace = Path(environ.get('GITHUB_WORKSPACE', '.'))
+          relative = Path('seeding/domains/fiscal_summary/data/reviewed_budget_editions.json')
+          manifest = workspace / 'backend' / relative
+          if not manifest.is_file() and 'GITHUB_WORKSPACE' not in environ:
+              manifest = workspace / relative
+          reviewed = json.loads(manifest.read_bytes())
           class Links(HTMLParser):
               def __init__(self):
                   super().__init__(); self.urls = set()
@@ -525,7 +534,8 @@ jobs:
           links = Links(); links.feed(body.decode('utf-8', errors='strict'))
           if not 1 <= len(links.urls) <= 24: raise SystemExit(2)
           for index, url in enumerate(sorted(links.urls), 1):
-              print(f'fiscal_summary framework edition {index}|{url}|true')
+              source_url = reviewed.get(url, {}).get('pdf_url', url)
+              print(f'fiscal_summary framework edition {index}|{source_url}|true')
           PY
             then
               while IFS= read -r edition; do SOURCES+=("$edition"); done < "$HC_TMP/editions"

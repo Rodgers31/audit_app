@@ -76,14 +76,18 @@ def test_unused_optional_brop_fallback_does_not_block_planning():
     assert 'Treasury actuals' in inventory
 
 
-@pytest.mark.parametrize('links', [True, False])
+@pytest.mark.parametrize('links', ['reviewed', 'unreviewed', None])
 def test_actual_health_shell_discovers_historical_editions_or_reports_missing(tmp_path, links):
+    from seeding.domains.fiscal_summary.reviewed_budget_editions import load_reviewed_budget_editions
+
     doc = yaml.safe_load((ROOT/'.github/workflows/seed.yml').read_text())
     script = next(s['run'] for s in doc['jobs']['healthcheck']['steps'] if s.get('id') == 'check')
     urls = [
         'https://oldsite.treasury.go.ke/wp-content/uploads/2025/06/Budget-Summary-for-the-FY-2025-26F.pdf',
         'https://oldsite.treasury.go.ke/wp-content/uploads/2025/03/Budget-Summary-for-the-FY-2024-25.pdf',
     ]
+    if links == 'unreviewed':
+        urls = [url.replace('/03/', '/04/').replace('/06/', '/07/') for url in urls]
     listing = tmp_path/'listing'
     listing.write_text(''.join(f'<a href="{url}">Budget Summary</a>' for url in urls) if links else '<p>No edition links</p>')
     calls = tmp_path/'calls'
@@ -108,12 +112,20 @@ esac
              'HEALTH_TEST_CALLS':str(calls),'HEALTH_TEST_LISTING':str(listing),
              'GITHUB_OUTPUT':str(output),'GITHUB_STEP_SUMMARY':str(tmp_path/'summary')})
     assert proc.returncode == 0,proc.stderr
-    assert 'has_failures=true' in output.read_text() and 'critical_reachable=false' in output.read_text()
-    if links:
+    outputs = output.read_text()
+    if links == 'reviewed':
+        profiles = load_reviewed_budget_editions()
+        requested = calls.read_text().splitlines()
+        assert all(requested.count(profiles[url]['pdf_url']) == 1 for url in urls), requested
+        assert not set(urls).intersection(requested), requested
+        assert 'has_failures=false' in outputs and 'critical_reachable=true' in outputs
+    elif links == 'unreviewed':
         assert all(calls.read_text().splitlines().count(url) == 1 for url in urls),calls.read_text()
-        assert 'TLS certificate verification failed' in output.read_text()
+        assert 'TLS certificate verification failed' in outputs
+        assert 'has_failures=true' in outputs and 'critical_reachable=false' in outputs
     else:
-        assert 'required diagnostic coverage unavailable' in output.read_text()
+        assert 'required diagnostic coverage unavailable' in outputs
+        assert 'has_failures=true' in outputs and 'critical_reachable=false' in outputs
 
 
 def test_native_prior_step_inventory_covers_every_preceding_workflow_step():
