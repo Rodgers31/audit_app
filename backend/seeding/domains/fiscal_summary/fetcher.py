@@ -241,6 +241,7 @@ def fetch_fiscal_summary_payload(
 
     from seeding.fiscal_historical_sources import OUTTURN_URL, YEAR
     from .historical_outturn import apply_historical_outturn
+    from .reviewed_budget_editions import VERIFIED_PRINTED_EDITION
 
     historical_outturn_verified = False
     historical_rows = [row for row in payload.get("fiscal_years", []) if row.get("fiscal_year") == YEAR]
@@ -262,7 +263,7 @@ def fetch_fiscal_summary_payload(
 
     listed = listing_facts.get(LISTING_EDITIONS_FACT) or {}
     unreadable = {url: entry.get("status", "unrecorded") for url, entry in listed.items()
-                  if entry.get("status") != "read"}
+                  if entry.get("status") not in ("read", VERIFIED_PRINTED_EDITION)}
     row_gaps = {str(row.get("fiscal_year")): row.get("fiscal_framework_absent_reason")
                 or row.get("tax_split_absent_reason") or "no_current_edition_framework"
                 for row in payload.get("fiscal_years", [])
@@ -579,6 +580,9 @@ def _fetch_budget_summary_editions(client, settings):
         read_edition,
     )
 
+    from .reviewed_budget_editions import load_reviewed_budget_editions, verify_reviewed_budget_edition
+
+    reviewed_editions = load_reviewed_budget_editions()
     page_url = settings.treasury_budget_summary_page_url
     facts: Dict[str, Any] = {
         "budget_summary_listing_url": page_url,
@@ -631,6 +635,16 @@ def _fetch_budget_summary_editions(client, settings):
         link_fy = parse_fiscal_year(url)
         entry: Dict[str, Any] = {"fiscal_year": link_fy}
         facts[LISTING_EDITIONS_FACT][url] = entry
+        if url in reviewed_editions:
+            try:
+                entry.update(verify_reviewed_budget_edition(client, settings, reviewed_editions[url]))
+            except FiscalFrameworkError as exc:
+                entry["status"] = f"refused:{exc.reason}"
+            except Exception as exc:
+                entry["status"] = f"unreadable({type(exc).__name__})"
+            # Historical budget originals establish edition coverage. Their
+            # projected figures do not replace the qualified current rows.
+            continue
         try:
             pdf_path = get_or_download_pdf(
                 client, url,
