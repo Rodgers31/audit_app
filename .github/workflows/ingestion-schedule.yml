@@ -1,0 +1,39 @@
+name: Dispatch approved nightly ingestion
+
+on:
+  schedule:
+    - cron: '0 2 * * 1-6'
+    - cron: '0 3 * * 0'
+
+permissions: {}
+
+jobs:
+  dispatch:
+    if: >-
+      github.repository == 'Rodgers31/audit_app' && github.ref == 'refs/heads/main' &&
+      vars.INGESTION_NIGHTLY_ENABLED == 'true' &&
+      vars.INGESTION_APPROVED_TAG_SCHEDULE_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          sparse-checkout: .github/scripts/dispatch-approved-nightly.cjs
+          sparse-checkout-cone-mode: false
+
+      - name: Dispatch the approved release and verify its captured SHA
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
+        env:
+          APPROVED_SHA: ${{ vars.INGESTION_WRITE_APPROVED_SHA }}
+        with:
+          script: |
+            const dispatch = require('./.github/scripts/dispatch-approved-nightly.cjs');
+            const run = await dispatch(github, context, process.env.APPROVED_SHA);
+            const url = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${run}`;
+            core.notice(`Writer captured ${process.env.APPROVED_SHA}. Follow the writer outcome at ${url}`);
+            await core.summary.addLink('Open the exact writer run', url).write();

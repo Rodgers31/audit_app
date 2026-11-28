@@ -51,7 +51,8 @@ _SOURCE_LITERALS = {
     'domains/cra/source.py': {'URL':str},
     'domains/opendata/source.py': {'URL':str, 'REPORT_URL':str},
     'domains/opendata/discovery.py': {'INDEX':str},
-    'domains/fiscal_summary/actuals.py': {'APDMR_URL':str, 'BROP_URL':str},
+    'domains/fiscal_summary/actuals.py': {'BROP_URL':str},
+    'fiscal_historical_sources.py': {'APDMR_URL':str, 'OUTTURN_URL':str, 'REVENUE_URL':str},
 }
 
 
@@ -202,13 +203,18 @@ class SourcePlan:
 
 def build_plan(*, event, schedule, domain, dry_run, cra, opendata, discovery,
                bootstrap='false', county_borrowing='false', audits_review='',
-               reacquire_pending_pdf='false', audits_source_acceptance=''):
+               reacquire_pending_pdf='false', audits_source_acceptance='',
+               routed_schedule=''):
     # Nonempty choices satisfy Actions semantic validation. Preserve older API
     # dispatches carrying empty inputs, and keep schedule inputs strictly empty.
     if event == 'workflow_dispatch':
         domain = '' if domain == 'all' else domain
         audits_review = '' if audits_review == 'none' else audits_review
         audits_source_acceptance = '' if audits_source_acceptance == 'none' else audits_source_acceptance
+    if routed_schedule:
+        if event != 'workflow_dispatch' or schedule:
+            raise ValueError('Unsupported routed source plan')
+        event, schedule = 'schedule', routed_schedule
     if type(audits_source_acceptance) is not str or audits_source_acceptance not in ('', OAG_SOURCE_ACCEPTANCE):
         raise ValueError('Unknown reviewed audits acquisition scope')
     if audits_review not in ('', 'oag-2542-20261026'):
@@ -258,7 +264,8 @@ def environment_plan():
         county_borrowing=os.environ.get('SEED_COUNTY_BORROWING_INGESTION_ENABLED', 'false'),
         audits_review=os.environ.get('SEED_PLAN_AUDITS_REVIEW', ''),
         reacquire_pending_pdf=os.environ.get('SEED_PLAN_REACQUIRE_PENDING_BILLS_PDF', 'false'),
-        audits_source_acceptance=os.environ.get('SEED_PLAN_AUDITS_SOURCE_ACCEPTANCE', ''))
+        audits_source_acceptance=os.environ.get('SEED_PLAN_AUDITS_SOURCE_ACCEPTANCE', ''),
+        routed_schedule=os.environ.get('SEED_PLAN_ROUTED_CRON', ''))
 
 
 def validate_plan(plan):
@@ -336,12 +343,15 @@ def health_source_lines(plan, settings=None):
         })
         if settings.treasury_brop_url:
             mapping['pending_bills'].append(('Treasury fallback edition',settings.treasury_brop_url,False))
-        # A delivered fiscal lane adds this exact native source. Until then the
-        # baseline has no APDMR fetch; no peer module is imported or adopted.
-        if (_SOURCE_ROOT/'domains/fiscal_summary/actuals.py').is_file():
-            actuals=literals('domains/fiscal_summary/actuals.py')
-            mapping['fiscal_summary'] += [('reviewed historical actuals',actuals['APDMR_URL']),
-                                         ('reviewed historical BROP',actuals['BROP_URL'])]
+        # These are reachability diagnostics for the exact native source URLs.
+        actuals = literals('domains/fiscal_summary/actuals.py')
+        historical = literals('fiscal_historical_sources.py')
+        mapping['fiscal_summary'] += [
+            ('reviewed historical actuals', historical['APDMR_URL']),
+            ('reviewed historical BROP', actuals['BROP_URL']),
+            ('FY2022/23 Treasury outturn', historical['OUTTURN_URL']),
+            ('FY2022/23 Treasury revenue split', historical['REVENUE_URL']),
+        ]
     else:
         for domain in ('audits','counties_budget','national_budget','stalled_projects','fiscal_summary','pending_bills','national_debt','debt_timeline'):
             mapping[domain] = [('live PDF sources disabled','missing')]

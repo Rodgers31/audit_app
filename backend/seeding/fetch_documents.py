@@ -26,9 +26,12 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .config import SeedingSettings
+from .county_archive import ARCHIVE_CACHE_ORIGIN
 from .http_client import PdfDownloadError, SeedingHttpClient
-from .pdf_download import get_or_download_pdf
-from .pdf_artifact import ARTIFACT_KEY, file_identity, valid_artifact
+from .pdf_download import cached_pdf_meta, get_or_download_pdf
+from .pdf_artifact import (
+    ARTIFACT_KEY, artifact_matches_document, file_identity, valid_artifact,
+)
 
 logger = logging.getLogger("seeding.fetch_documents")
 
@@ -144,6 +147,58 @@ def fetch_document(
         if current is None or current.id != doc.id:
             raise ValueError("Audit source changed during acquisition")
         doc = current
+    sidecar = cached_pdf_meta(cache_dir, url)
+    archive_hit = sidecar.get("restored_from") == ARCHIVE_CACHE_ORIGIN
+    if archive_hit:
+        # A retained file supplies bytes for this existing registration.
+        # Only the normal acquisition branch can stamp publisher bookkeeping.
+        artifact = (doc.meta or {}).get(ARTIFACT_KEY)
+        if (
+            doc.status != DocumentStatus.AVAILABLE
+            or doc.md5 != actual_identity["md5"]
+            or sidecar.get("sha256") != actual_identity["sha256"]
+            or not doc.file_path
+            or Path(doc.file_path).resolve() != pdf_path.resolve()
+            or (artifact is not None and (
+                not artifact_matches_document(artifact, doc)
+                or any(artifact[key] != value for key, value in actual_identity.items())
+            ))
+        ):
+            raise ValueError("County archive differs from the existing source binding")
+    else:
+        _record_pdf_download(doc, pdf_path, actual_identity, sidecar, title, dataset_id)
+        session.flush()
+    if acquisition_context is not None and dataset_id in ('oag_national_audits', 'oag_county_audits'):
+        from .domains.audits.acquisition import KEY, AuditOriginUnavailable, ensure_audit_origin
+        try:
+            origin = ensure_audit_origin(session, acquisition_context, doc.id, client, settings,
+                max_seconds=transfer_allowance - (time.monotonic() - transfer_started))
+        except (AuditOriginUnavailable, OSError, ValueError) as exc:
+            reason = exc.reason if isinstance(exc, AuditOriginUnavailable) else 'origin_unconfirmed'
+            origin = dict(version=1, state='held', reason=reason, source_document_id=doc.id,
+                ingestion_id=acquisition_context.job_id, origin_extraction_id=None,
+                retained_bytes=None, origin_qualified=False, native_publication_authority=False)
+        doc.meta = {**doc.meta, KEY: origin}
+        session.flush()
+    elif dataset_id in ('oag_national_audits', 'oag_county_audits') or 'audit_acquisition_origin_v1' in doc.meta:
+        # Layer 2 alone grants no job-bound authority, even for unchanged bytes.
+        doc.meta = {**doc.meta, 'audit_acquisition_origin_v1': dict(version=1, state='held',
+            reason='context_unavailable', source_document_id=doc.id, ingestion_id=None,
+            origin_extraction_id=None, retained_bytes=None, origin_qualified=False,
+            native_publication_authority=False)}
+        session.flush()
+    logger.info(
+        "%s document %s (%d bytes, md5 %s) -> %s",
+        "Read retained county" if archive_hit else "Fetched",
+        doc.id,
+        pdf_path.stat().st_size,
+        actual_identity["md5"],
+        pdf_path,
+    )
+    return doc
+
+
+def _record_pdf_download(doc, pdf_path, actual_identity, sidecar, title, dataset_id):
     new_md5 = actual_identity["md5"]
     now = datetime.now(timezone.utc)
     # A cache hit skips the network, so "verified now" would overstate.
@@ -152,19 +207,8 @@ def fetch_document(
     verified_at = now
     identity_verified_at = None
     try:
-        import json as _json
-        import time as _time
-
-        from .pdf_download import _cache_paths
-
-        _, meta_path = _cache_paths(cache_dir, url)
-        created = float(
-            _json.loads(meta_path.read_text(encoding="utf-8")).get(
-                "created_at", _time.time()
-            )
-        )
+        created = float(sidecar.get("created_at", now.timestamp()))
         verified_at = datetime.fromtimestamp(created, tz=timezone.utc)
-        sidecar = _json.loads(meta_path.read_text(encoding="utf-8"))
         # The timestamp is download context only when the sidecar names these
         # exact bytes. A cache filename or unchecked digest is not identity.
         if (sidecar.get("sha256") == actual_identity["sha256"]
@@ -222,9 +266,7 @@ def fetch_document(
     doc.meta = meta
     doc.md5 = new_md5
     doc.file_path = str(pdf_path)
-    doc.content_type = (
-        mimetypes.guess_type(url)[0] or "application/pdf"
-    )
+    doc.content_type = mimetypes.guess_type(doc.url)[0] or "application/pdf"
     doc.http_status = 200  # get_or_download_pdf validated a 200 PDF body
     doc.fetch_date = doc.fetch_date or now
     doc.last_verified_at = verified_at
@@ -234,34 +276,6 @@ def fetch_document(
         meta = dict(doc.meta or {})
         meta["dataset_id"] = dataset_id
         doc.meta = meta
-    session.flush()
-    if acquisition_context is not None and dataset_id in ('oag_national_audits', 'oag_county_audits'):
-        from .domains.audits.acquisition import KEY, AuditOriginUnavailable, ensure_audit_origin
-        try:
-            origin = ensure_audit_origin(session, acquisition_context, doc.id, client, settings,
-                max_seconds=transfer_allowance - (time.monotonic() - transfer_started))
-        except (AuditOriginUnavailable, OSError, ValueError) as exc:
-            reason = exc.reason if isinstance(exc, AuditOriginUnavailable) else 'origin_unconfirmed'
-            origin = dict(version=1, state='held', reason=reason, source_document_id=doc.id,
-                ingestion_id=acquisition_context.job_id, origin_extraction_id=None,
-                retained_bytes=None, origin_qualified=False, native_publication_authority=False)
-        doc.meta = {**doc.meta, KEY: origin}
-        session.flush()
-    elif dataset_id in ('oag_national_audits', 'oag_county_audits') or 'audit_acquisition_origin_v1' in doc.meta:
-        # Layer 2 alone grants no job-bound authority, even for unchanged bytes.
-        doc.meta = {**doc.meta, 'audit_acquisition_origin_v1': dict(version=1, state='held',
-            reason='context_unavailable', source_document_id=doc.id, ingestion_id=None,
-            origin_extraction_id=None, retained_bytes=None, origin_qualified=False,
-            native_publication_authority=False)}
-        session.flush()
-    logger.info(
-        "Fetched document %s (%d bytes, md5 %s) -> %s",
-        doc.id,
-        pdf_path.stat().st_size,
-        new_md5,
-        pdf_path,
-    )
-    return doc
 
 
 __all__ = ["fetch_document"]

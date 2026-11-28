@@ -34,3 +34,34 @@ def test_nonadmitted_writer_never_provisions(writer, tmp_path, name, value):
     with pytest.raises(Refusal):
         hosted_parser.main()
     assert not list(tmp_path.iterdir())
+
+
+@pytest.mark.parametrize('changes', [
+    {},
+    {'GITHUB_ACTOR': 'owner'},
+    {'APPROVED_SCHEDULE_ROUTING': 'false'},
+    {'NIGHTLY_ENABLED': 'false'},
+    {'SEED_PLAN_ROUTED_CRON': 'unknown'},
+    {'GITHUB_WORKFLOW_SHA': 'b' * 40},
+    {'APPROVED_SHA': 'b' * 40},
+])
+def test_release_tag_reaches_provisioning_only_with_the_exact_approved_context(
+    writer, tmp_path, monkeypatch, changes,
+):
+    class ProvisioningReached(Exception):
+        pass
+
+    def stop_at_provisioning(*args):
+        raise ProvisioningReached
+
+    ref = 'refs/tags/ingestion-release-' + writer['APPROVED_SHA']
+    writer.update(
+        GITHUB_REF=ref, GITHUB_WORKFLOW_REF=f'Rodgers31/audit_app/.github/workflows/seed.yml@{ref}',
+        GITHUB_EVENT_NAME='workflow_dispatch', GITHUB_ACTOR='github-actions[bot]',
+        APPROVED_SCHEDULE_ROUTING='true', SEED_PLAN_ROUTED_CRON='0 3 * * 0',
+    )
+    writer.update(changes)
+    monkeypatch.setattr(hosted_parser, 'prepare', stop_at_provisioning)
+    with pytest.raises(Refusal if changes else ProvisioningReached):
+        hosted_parser.main()
+    assert bool(list(tmp_path.iterdir())) is (not changes)

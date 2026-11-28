@@ -137,18 +137,34 @@ def prove_no_writer_secrets(env):
 
 def main():
     env = os.environ
-    ref = 'refs/heads/main'
+    ref = env.get('GITHUB_REF')
     workflow = '.github/workflows/seed.yml'
     jobs = {'migrate', 'bootstrap', 'seed', 'validate'}
     job = env.get('GITHUB_JOB')
+    event = env.get('GITHUB_EVENT_NAME')
+    routed_schedule = env.get('SEED_PLAN_ROUTED_CRON', '')
+    routing_enabled = env.get('APPROVED_SCHEDULE_ROUTING') == 'true'
+    nightly_enabled = env.get('NIGHTLY_ENABLED') == 'true'
+    revision = digest(env.get('GITHUB_SHA'), length=40)
+
+    if ref == 'refs/heads/main':
+        allowed_dispatch = not routed_schedule and (
+            event == 'workflow_dispatch'
+            or (event == 'schedule' and nightly_enabled and not routing_enabled)
+        )
+    else:
+        allowed_dispatch = (
+            ref == f'refs/tags/ingestion-release-{revision}'
+            and event == 'workflow_dispatch'
+            and env.get('GITHUB_ACTOR') == 'github-actions[bot]'
+            and routing_enabled and nightly_enabled
+            and routed_schedule in ('0 2 * * 1-6', '0 3 * * 0')
+        )
     require(env.get('GITHUB_ACTIONS') == 'true'
             and env.get('RUNNER_ENVIRONMENT') == 'github-hosted'
-            and env.get('GITHUB_REPOSITORY') == REPOSITORY and env.get('GITHUB_REF') == ref
-            and job in jobs and env.get('GITHUB_WORKFLOW_REF') == f'{REPOSITORY}/{workflow}@{ref}'
-            and (env.get('GITHUB_EVENT_NAME') == 'workflow_dispatch'
-                 or (env.get('GITHUB_EVENT_NAME') == 'schedule' and env.get('NIGHTLY_ENABLED') == 'true')),
+            and env.get('GITHUB_REPOSITORY') == REPOSITORY and allowed_dispatch
+            and job in jobs and env.get('GITHUB_WORKFLOW_REF') == f'{REPOSITORY}/{workflow}@{ref}',
             'reviewed writer workflow required')
-    revision = digest(env.get('GITHUB_SHA'), length=40)
     require(revision == env.get('APPROVED_SHA') == env.get('GITHUB_WORKFLOW_SHA') == checkout_revision(),
             'writer source is not admitted')
     prove_no_writer_secrets(env)
